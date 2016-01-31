@@ -1,0 +1,46 @@
+(1) Update the daily hitcounts
+
+This uses the 'hitcount_tools' package from SelectionBot. 
+See the README there for instructions. The goal is to
+create hitcounts.raw.gz, which has the merged hitcounts.
+These do not take redirects into account yet; that is handled
+as part of step (2)
+
+(2) Get a database dump and use it to generate counts.lst.gz
+
+This uses the 'selection_tools' package from SelectionBot.
+
+Once you have that installed:
+  mkdir enwiki
+  mkdir enwiki/source
+  mkdir enwiki/target
+
+Run WP10.sh to download the database dump, or put the necessary files
+into enwiki/source:
+
+  enwiki-latest-categorylinks.sql.gz  
+  enwiki-latest-page.sql.gz
+  enwiki-latest-langlinks.sql.gz      
+  enwiki-latest-redirect.sql.gz
+  enwiki-latest-pagelinks.sql.gz      
+  enwiki-latest-stub-meta-history.xml.gz
+
+Put hitcounts.raw.gz into enwiki/source as well.
+
+Run WP10.sh to generate counts.lst.gz. This takes redirects
+into account and lists the incoming pagelinks, language links,
+and hitcount for each article. 
+
+(3) Feed counts.lst.gz into selectiondata.pl
+
+Run:  gzcat counts.lst.gz | perl selectiondata.pl
+
+NOTE / WARNING: because I was having trouble with excessively large 
+transactions being aborted by mysql, selectiondata.pl does NOT run in a 
+transaction. It just deletes everything in the table and then (slowly) 
+repopulates it. In the meantime the output of the web tool is going to 
+be wrong and updates to project data will generate incorrect scores. 
+Also, after the seleciton data is updated, it takes an update of each 
+wikiproject to correct the article scores, because selectiondata.pl 
+only edits the selectiondata table but the scores are in the ratings 
+table.

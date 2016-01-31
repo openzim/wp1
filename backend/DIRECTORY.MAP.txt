@@ -1,0 +1,147 @@
+Directory map of ~/backend
+
+== Command line tools ==
+
+download.pl
+
+  Update script - gets assessment data from the wiki and updates
+  the enwp10 database from it. 
+
+copy_logs.pl
+
+  Upload script - Copy assessment logs to the wiki
+
+copy_tables.pl
+
+  Upload script - Copy assessment tables to the wiki
+
+copy_count.pl
+
+  Upload script - Copy the count of assessed articles to the wiki
+
+== Maintenance scripts ==
+
+Used only for infrequent tasks or for things that had to be done one 
+time in the past
+
+check_stats_page.pl
+
+  Maintenance script - Check that a project has a statistics table page
+  under [[Wikipedia:Version 1.0 Editorial Team/]]
+
+ckcustom.pl
+
+  Maintenance script to check the syntax of the custom table file.
+  Run this after you edit that file. 
+
+mktable.pl
+
+  Maintenance script - used to force regeneration of an assessment 
+  table. Used in the upload process to generate the global table
+  
+parse_logs.pl
+
+  Maintenance script - used when the bot was reimplemented to get old 
+  assesment logs from the wiki
+
+projectscores.pl
+
+  Maintenance script - Updates the p_score field of the project table
+
+read_custom.pl
+
+  Mainenance script to check the syntax of the files for creating
+  custom tables
+
+selectiondata.pl
+s2.pl
+s.pl
+
+  Mainenance script - used for 0.8 to insert revids for selected 
+  articles
+
+status.pl
+
+  Obselete script to count number of running processes
+
+insert_logs.pl
+
+  Maintenance script - was used at the when the bot was reimplemented
+  to put old log entries  into the database 
+
+update_global_scores.pl
+
+  Maintenance script - updates the global_articles table. This update
+  is normally done when the data is updated; this script is to force
+  regeneration
+
+utility.pl
+
+  Maintenance script - hack it to do what you want for one-off tasks
+
+testapi.pl
+
+  Maintenance script - just to make sure the API is functional
+
+== Data files ==
+
+Custom.tables.dat
+
+  Data file with configuration for custom assessment tables
+
+tables.sql
+
+  SQL to recreate the WP 1.0 database tables. Is usually out 
+  of date, check the live 'p_enwp10' user database to see the real schema
+
+drop.sql
+
+  SQL to drop all tables of the WP 1.0 system. Be careful...
+
+example.wp10.conf
+
+  Example configuration for the system. The real config is in 
+  ~/.wp10.conf
+
+DIRECTORY.MAP.txt
+
+  This file.
+
+== Libraries
+
+api_routines.pl
+
+  Library of routines to fetch data from the Wikipedia API. Most data
+  is fetched directly from the database instead, for performance, but
+  in principle it could be fetched from the API. However, since that has
+  not been tested in some time, it would need to be carefulyl watched if
+  we switched back to that method. 
+
+custom_tables.pl
+
+  Library - code to create certain custom tables
+
+database_routines.pl
+
+  Library - routines to fetch and store info from the databases
+
+RatingsTable.pm
+
+  Library - perl module to make a ratings table
+
+read_conf.pl
+
+  Library - load info from configuration file
+
+tables_lib.pl
+
+  Library of code for handling assessment tables
+
+toolserver_api.pl
+
+  Library - fetch data from the toolserver database replicas
+
+wp10_routines.pl
+
+  Library - routines to handle assessment data. The main logic of the
+  update process is here. 

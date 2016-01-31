@@ -1,0 +1,824 @@
+mysql> select concat(r_article) from ratings where r_project = 'Album' and r_quality = 'NotA-Class';
++----------------------------------------------------------------------------------------+
+| concat(r_article)                                                                      |
++----------------------------------------------------------------------------------------+
+| ...Something More Than Nothing                                                         |
+| 1,68 (Shorty album)                                                                    |
+| 1969 (album)                                                                           |
+| 2002 (Dr. Dre album)                                                                   |
+| 20th Century Masters: The Millennium Collection: The Best of the Songs of John Fogerty |
+| 24/7 (EP)                                                                              |
+| 4 anni di successi                                                                     |
+| 5, 6, 7, 8 – Bullenstaat!                                                            |
+| 7" picture disc                                                                        |
+| A Box of Dreams                                                                        |
+| A Drop of the Hard Stuff                                                               |
+| A Great Artist                                                                         |
+| A Mis Reinas                                                                           |
+| A Portrait of Patsy Cline                                                              |
+| A Postcard from the Day                                                                |
+| A Prairie Home Album                                                                   |
+| A Prairie Home Companion (soundtrack)                                                  |
+| A Sunset Panorama                                                                      |
+| A Taylor Horn Christmas                                                                |
+| A Wright Christmas                                                                     |
+| A la Carte (Fujifabric album)                                                          |
+| A la Mode                                                                              |
+| A la Molto                                                                             |
+| Across the Borderline                                                                  |
+| Adam Gregory (album)                                                                   |
+| Adult Entertainment (Raffi album)                                                      |
+| Ages 3 & Up                                                                            |
+| Agoraphobic Nosebleed / Apartment 213                                                  |
+| Alienoid Starmonica                                                                    |
+| Alive...in Poland                                                                      |
+| All of Me (album)                                                                      |
+| All or Nothing (Luba album)                                                            |
+| All the Leaves Are Gone                                                                |
+| Allure (album)                                                                         |
+| Altro                                                                                  |
+| Alvin Lee and Company                                                                  |
+| Always (Patsy Cline album)                                                             |
+| Always New Jan–Jun 2000                                                              |
+| Always New Jul–Dec 2000                                                              |
+| Am I the Kinda Girl?                                                                   |
+| Amanda Wilkinson (album)                                                               |
+| Amanti di valore                                                                       |
+| Amarillo Sky (album)                                                                   |
+| American Blues 'Is Here'                                                               |
+| Amii                                                                                   |
+| Amii Stewart (1983 album)                                                              |
+| An Díolaim                                                                            |
+| Animal House (U.D.O. album)                                                            |
+| Anyone Who Had a Heart (album)                                                         |
+| Apropos Cluster                                                                        |
+| Are You Ready for More?                                                                |
+| Are You a Dreamer?                                                                     |
+| As Long as She Needs Me (album)                                                        |
+| Asylum 45                                                                              |
+| Asylum Years                                                                           |
+| Atomkraft? Nein, Danke!                                                                |
+| Audio Assault Course                                                                   |
+| Avoid One Thing (album)                                                                |
+| B EP                                                                                   |
+| Babasónica Electrónica                                                               |
+| Baby I'm Bored                                                                         |
+| Back B4 You're Lonely                                                                  |
+| Back Street Crawler (Paul Kossoff album)                                               |
+| Back in Blood (Debauchery album)                                                       |
+| Back to Front (The Temptations album)                                                  |
+| Back to Reality 2                                                                      |
+| Bad Day for Trains                                                                     |
+| Bad Taste (album)                                                                      |
+| Basic Instructions                                                                     |
+| Batten the Hatches                                                                     |
+| Be as One                                                                              |
+| Benumb / Pig Destroyer                                                                 |
+| Beppu Nights                                                                           |
+| Bert & Ernie Sing-Along                                                                |
+| Bertie's Brochures                                                                     |
+| Best of 2Pac Part 2: Life                                                              |
+| Best of BTO (So Far)                                                                   |
+| Best of Bonkers                                                                        |
+| Bien Guillao de Gangster                                                               |
+| Big Boy Mega Mix                                                                       |
+| Big Hopes                                                                              |
+| Big Impact                                                                             |
+| Big When Far, Small When Close                                                         |
+| Bigger, Better Power Ballads II                                                        |
+| Birdtalk                                                                               |
+| Bjorøyl                                                                               |
+| Black August Revisited                                                                 |
+| Blake Lewis (EP)                                                                       |
+| Bliss (12 Rods album)                                                                  |
+| Blo.Torch (album)                                                                      |
+| Block Party (album)                                                                    |
+| Blood and Thunder (album)                                                              |
+| Bloodangel's Cry                                                                       |
+| Bloom, Red & the Ordinary Girl                                                         |
+| Blue Cheer (album)                                                                     |
+| Blue Cheese & Coney Island                                                             |
+| Blue Matter (album)                                                                    |
+| Blue Suede Shoes: A Rockabilly Session                                                 |
+| Blues from the Gutter                                                                  |
+| Blå himlen blues                                                                      |
+| Bo Diddley's Beach Party                                                               |
+| Bone Box                                                                               |
+| Bonkers 12: The Dirty Dozen                                                            |
+| Bonkers 13: Hardcore Horror Show                                                       |
+| Bonkers 16: Maximum Hardcore Energy!                                                   |
+| Bonkers 7: Millennium Fever                                                            |
+| Bonkers 8: The Rezurrection                                                            |
+| Bonkers 9: Hardcore Mutation                                                           |
+| Bonkers X                                                                              |
+| Bonkers XI: Forevolution                                                               |
+| Boomtown (album)                                                                       |
+| Boonoonoonoos                                                                          |
+| Boz (album)                                                                            |
+| Brain Capers                                                                           |
+| Brainstorm (album)                                                                     |
+| Brand New (Salt-n-Pepa album)                                                          |
+| Brand New Way, Brand New Situation (album)                                             |
+| Breakfast in Bed (album)                                                               |
+| Breedgreedbreed                                                                        |
+| Bright Midnight: Live in America                                                       |
+| Bringin It Thegither                                                                   |
+| Broken Wings (EP)                                                                      |
+| Broken Wings: Special Edition                                                          |
+| Bugiardo più che mai...più incosciente che mai...                                    |
+| Built Like That (album)                                                                |
+| Burnin' (Gil Grand album)                                                              |
+| Burns and Carlin at the Playboy Club Tonight                                           |
+| Buster's Happy Hour                                                                    |
+| Buster's Spanish Rocketship                                                            |
+| By Chance Upon Waking                                                                  |
+| By the Blessing of Satan                                                               |
+| Bäst of                                                                               |
+| Cake or Death (album)                                                                  |
+| Camouflage Heart                                                                       |
+| Cannon to a Whisper                                                                    |
+| Canzonissima '68                                                                       |
+| Careful Confessions                                                                    |
+| Catch Me If You Can (soundtrack)                                                       |
+| Catch the Brass Ring                                                                   |
+| Cedar EP                                                                               |
+| Ceerial Port                                                                           |
+| Cemetery Shoes                                                                         |
+| Centipede (album)                                                                      |
+| Cesária                                                                               |
+| Chain Reaction (Luba album)                                                            |
+| Channeling the Quintessence of Satan                                                   |
+| Chapitre 7                                                                             |
+| Charlie Hustle: The Blueprint of a Self-Made Millionaire                               |
+| Chat Chat                                                                              |
+| Chat and Business                                                                      |
+| Children Playing                                                                       |
+| Choir Practice                                                                         |
+| Chris Brown's Journey                                                                  |
+| Christmas Songs (album)                                                                |
+| Christmas Time Again                                                                   |
+| Christmas with You                                                                     |
+| Clic (album)                                                                           |
+| Cloud Nine (Kottonmouth Kings album)                                                   |
+| Coconut Telegraph                                                                      |
+| Collie Buddz (album)                                                                   |
+| Complex Full of Phantoms                                                               |
+| Criminal Activity                                                                      |
+| Crvena jabuka (album)                                                                  |
+| Culture Club (Box set)                                                                 |
+| Cyclone (Baby Bash album)                                                              |
+| Cypher (album)                                                                         |
+| Daimonion (album)                                                                      |
+| Dando Candela                                                                          |
+| Daniela Mercury (album)                                                                |
+| David (David Meece album)                                                              |
+| Dead Enz Kidz Doin' Lifetime Bidz                                                      |
+| Decade 1998–2002                                                                     |
+| Decade 2003–2007                                                                     |
+| Deep in the Hole (album)                                                               |
+| Diggin' On Blue                                                                        |
+| Dirt Farmer                                                                            |
+| Double Rainbow (album)                                                                 |
+| Double Trouble (Frankie Miller album)                                                  |
+| Drastic Measures (Dalbello album)                                                      |
+| Drinkin' and Courtin'                                                                  |
+| Dropera                                                                                |
+| Ear Candy for the Headphone Trippers                                                   |
+| Echo Presenta: Invasión                                                               |
+| El Tren de los Momentos En Vivo desde Buenos Aires                                     |
+| Engage the Enzyme                                                                      |
+| Esenciales: Sol                                                                        |
+| Eternamiente                                                                           |
+| Even Better Than the Real Thing Vol. 1                                                 |
+| Even Better Than the Real Thing Vol. 2                                                 |
+| Even If It Kills Me                                                                    |
+| Every Time Two Fools Collide                                                           |
+| Everyday Process: The Process of Illumination & Elimination                            |
+| Exposing the Sickness                                                                  |
+| Extra Credit (album)                                                                   |
+| E² (album)                                                                            |
+| Fadanuf Fa Erybody!!                                                                   |
+| Feast or Famine (Chuck Ragan album)                                                    |
+| Featuring Pigeon John                                                                  |
+| Feeding Frenzy: Jimmy Buffett Live!                                                    |
+| Feeling your UFO                                                                       |
+| Feindflug 'Vierte Version'                                                             |
+| Finally (Sean Ensign album)                                                            |
+| Find Me (album)                                                                        |
+| Finest (The Proclaimers album)                                                         |
+| Firestarr                                                                              |
+| Fireworks (This Busy Monster album)                                                    |
+| First Encounter Tour 1996                                                              |
+| Five Feet High and Rising                                                              |
+| Five Star (album)                                                                      |
+| Fix Me                                                                                 |
+| Flak 'n' Flight                                                                        |
+| Flashback: The Best of 38 Special                                                      |
+| Flowers on the Wall (album)                                                            |
+| For Sale                                                                               |
+| For Those Who Have Heart                                                               |
+| For Whom the Beat Tolls                                                                |
+| For the Hell of It                                                                     |
+| Forbidden Paradise 3: The Quest for Atlantis                                           |
+| Forbidden Paradise 4: High as a Kite                                                   |
+| Forbidden Paradise 5: Arctic Expedition                                                |
+| Forbidden Paradise 6: Valley of Fire                                                   |
+| Forbidden Paradise 7: Deep Forest                                                      |
+| Forever Glam!                                                                          |
+| Forever You                                                                            |
+| Forever Yours (Dottie West album)                                                      |
+| Forever, For Always, For Luther Volume II                                              |
+| Forward (Turn album)                                                                   |
+| Forward Motion                                                                         |
+| Four (Seaweed album)                                                                   |
+| Fourplay (album)                                                                       |
+| Fourteen Greatest Hits                                                                 |
+| Fourth of July on the Plains                                                           |
+| Fractured Life                                                                         |
+| Frames (album)                                                                         |
+| Frank Turner Demo                                                                      |
+| Freakshow (The Killer Barbies album)                                                   |
+| Freedom (Andy Griggs album)                                                            |
+| Freedom (Sheena Easton album)                                                          |
+| French Kiss 2 (Estelle Desanges album)                                                 |
+| French Skyline                                                                         |
+| Fresh Surrender                                                                        |
+| Friendliness (album)                                                                   |
+| From Me to You (Crunchy Black album)                                                   |
+| From Trash                                                                             |
+| Fuel of the Celebration                                                                |
+| Fujifabric (album)                                                                     |
+| Fulham Fallout                                                                         |
+| FullBlackHabit                                                                         |
+| Future Future Future Perfect                                                           |
+| Für die Nacht gemacht                                                                 |
+| Galleries (album)                                                                      |
+| Gallery (album)                                                                        |
+| Gama (album)                                                                           |
+| Gambling Days Are Over                                                                 |
+| Gangsta Pat & the Street Muthafuckas                                                   |
+| Gangster Classics                                                                      |
+| Gem (album)                                                                            |
+| Geminism                                                                               |
+| George Canyon (album)                                                                  |
+| Get Fired Up                                                                           |
+| Get into It                                                                            |
+| Get the Party Started (Shirley Bassey album)                                           |
+| Ghetto Guide                                                                           |
+| Ghettoblaster (album)                                                                  |
+| Gift Rap                                                                               |
+| Ginkai                                                                                 |
+| Girl 2 Lady                                                                            |
+| Girl with a Pearl Earring (soundtrack)                                                 |
+| Girls to Chat & Boys to Bounce                                                         |
+| Give a Girl a Reason                                                                   |
+| Glass Mountain (album)                                                                 |
+| Glory Bumps                                                                            |
+| Go Bo Diddley                                                                          |
+| Go Go Smear the Poison Ivy                                                             |
+| Go and Ask Peggy for the Principal Thing                                               |
+| Go for It (compilation album)                                                          |
+| Go for the Jugular                                                                     |
+| God is a Bullet                                                                        |
+| Gods & Monsters (Astrovamps album)                                                     |
+| Gold & Platinum                                                                        |
+| Gold: Recorded Live at the Troubadour                                                  |
+| Golden Best: 15th Anniversary                                                          |
+| Golden Stars (Baccara album)                                                           |
+| Golden Street                                                                          |
+| Gone (Entwine album)                                                                   |
+| Gone to Texas (album)                                                                  |
+| Good Day to Ride                                                                       |
+| Good Rocking Tonight (album)                                                           |
+| Good-bye My Loneliness (album)                                                         |
+| Goodnight L.A.                                                                         |
+| Grabsteinland I                                                                        |
+| Grabsteinland II Herrschaft der Vampire                                                |
+| Grabsteinland III Herz Der Finsternis                                                  |
+| Grace Submerged                                                                        |
+| Grass 2 Grace                                                                          |
+| Grass Geysers...Carbon Clouds                                                          |
+| Gravy Deco                                                                             |
+| Great Zeppelin: A Tribute to Led Zeppelin                                              |
+| Greatest Hits (Aretha Franklin album)                                                  |
+| Greatest Hits (Cat Stevens album)                                                      |
+| Greatest Hits (Diamond Rio album)                                                      |
+| Greatest Hits (Diana Ross album)                                                       |
+| Greatest Hits (Dr. Hook album)                                                         |
+| Greatest Hits (Five Star album)                                                        |
+| Greatest Hits (Great White album)                                                      |
+| Greatest Hits (Hank Williams, Jr. album)                                               |
+| Greatest Hits (Happy Mondays album)                                                    |
+| Greatest Hits (Joe Diffie album)                                                       |
+| Greatest Hits (John Anderson album)                                                    |
+| Greatest Hits (LeAnn Rimes album)                                                      |
+| Greatest Hits (Luther Vandross album)                                                  |
+| Greatest Hits (Patricia Conroy album)                                                  |
+| Greatest Hits (SWV album)                                                              |
+| Greatest Hits (Sean Maguire album)                                                     |
+| Greatest Hits Volume 2 (Hank Williams, Jr. album)                                      |
+| Greatest Hits Volume One (Toby Keith album)                                            |
+| Greatest Hits Volume One: The Singles                                                  |
+| Greatest Hits of All Times – Remix '88                                               |
+| Greatest Hits of All Times – Remix '89 – Volume II                                 |
+| Greatest Hits, Volume 2 (Diamond Rio album)                                            |
+| Greatest Hits: A Duncan Sheik Collection                                               |
+| Green (Ray LaMontagne album)                                                           |
+| Green Tour EP                                                                          |
+| Grigora I Ora Perase                                                                   |
+| Grime, Silk, & Thunder                                                                 |
+| Grimms (album)                                                                         |
+| Grizz (Harkonen EP)                                                                    |
+| Groove On                                                                              |
+| Ground (album)                                                                         |
+| Groundswell (Parts & Labor album)                                                      |
+| Guerilla City                                                                          |
+| Guilty (Gravity Kills song)                                                            |
+| Guilty as Charged (album)                                                              |
+| Guitar Goddess                                                                         |
+| Guitar Man (Hank Marvin album)                                                         |
+| Guitar Tribute to The Smashing Pumpkins                                                |
+| Guitar as Orchestra                                                                    |
+| Gulf Coast Blues & Impressions: A Hurricane Relief Benefit                             |
+| Gunfighter Ballads and Trail Songs                                                     |
+| Gutter Days                                                                            |
+| Gyakuten Saiban 4 Original Soundtrack                                                  |
+| H'its Huge '84                                                                         |
+| Habemus Capa                                                                           |
+| Hacked up for Barbecue                                                                 |
+| Halfway There: Electricity and the South                                               |
+| Hamburger Concerto                                                                     |
+| Hand Built by Robots                                                                   |
+| Hands (Bumblefoot album)                                                               |
+| Hanging with the Balls                                                                 |
+| Hank Williams, Jr. and Friends                                                         |
+| Hanky Panky (album)                                                                    |
+| Hanoï (album)                                                                         |
+| Happiness Was Free                                                                     |
+| Happy Ever After (album)                                                               |
+| Happy Mystery Child                                                                    |
+| Hard Rain (Hard Rain album)                                                            |
+| Hatwise Choice: Archive Recordings 1973-–1975, Volume 1                              |
+| Have Mercy (album)                                                                     |
+| Hawaii Five-O (album)                                                                  |
+| Hear Nothing See Nothing Say Nothing                                                   |
+| Heart (Amanda Lear album)                                                              |
+| Heart Full of Soul (album)                                                             |
+| Heart Machine (album)                                                                  |
+| Heart of Hearts                                                                        |
+| Heartland (Runrig album)                                                               |
+| Heaven Knows (Taylor Hicks song)                                                       |
+| Heaven's Mentality                                                                     |
+| Heavy Lies the Crown                                                                   |
+| Heeyy EP                                                                               |
+| Heitor TP                                                                              |
+| Hell Symphony                                                                          |
+| Hellish Crossfire                                                                      |
+| Hello, Dear Wind                                                                       |
+| Here Come the Brides (Brides of Destruction album)                                     |
+| Here Come the Waterworks                                                               |
+| Here Comes My Baby (album)                                                             |
+| Heroes (Commodores album)                                                              |
+| Hey, Brother, Pour the Wine                                                            |
+| Hibernaculum (album)                                                                   |
+| Hickory Dickory                                                                        |
+| Hidden Treasures (Stroke 9 album)                                                      |
+| Hide the Kitchen Knives                                                                |
+| High Class White Trash                                                                 |
+| High Havoc                                                                             |
+| High Time (Dottie West album)                                                          |
+| High Voltage!: A Brief History of Rock                                                 |
+| High till I Die                                                                        |
+| Higher (Ezio album)                                                                    |
+| Higher Definition                                                                      |
+| Higher Voltage!: Another Brief History of Rock                                         |
+| His Last Walk                                                                          |
+| Hit Collection (Boney M. 1996)                                                         |
+| Hit Collection (Boney M. 2007)                                                         |
+| Hit Pix '88                                                                            |
+| Hits of '89 Volume 1                                                                   |
+| Hits of '89 Volume 2                                                                   |
+| Hittin' the Road Live!                                                                 |
+| Hold Me (Zard album)                                                                   |
+| Hold on to Your Dreams                                                                 |
+| Holding Patterns                                                                       |
+| Holes in the Wall                                                                      |
+| Holla: The Best of Trin-i-tee 5:7                                                      |
+| Holy Culture                                                                           |
+| Home (This World Fair album)                                                           |
+| Home Again (Edwyn Collins album)                                                       |
+| Home at Last (Billy Ray Cyrus album)                                                   |
+| Home for Christmas (George Canyon album)                                               |
+| Homicidal Lifestyle                                                                    |
+| Honky Tonk Attitude                                                                    |
+| Hoodoo (John Fogerty album)                                                            |
+| Horizon (Culture Beat album)                                                           |
+| Horror Grind                                                                           |
+| House of Representatives (album)                                                       |
+| How High the Moon: Live at the Viper Room                                              |
+| Human Emergency                                                                        |
+| Human Like a House                                                                     |
+| Humanize Human                                                                         |
+| Humans Only                                                                            |
+| Humming Along                                                                          |
+| Humpty Dumpty (album)                                                                  |
+| Hurry Sundown (McBride & the Ride album)                                               |
+| I Believe in You. Your Magic Is Real                                                   |
+| I Created Disco                                                                        |
+| I Stoled This Record                                                                   |
+| I'm Only a Man                                                                         |
+| I'm Your Man (Jason Sellers album)                                                     |
+| Ice Age (album)                                                                        |
+| Ignite and Rebuild                                                                     |
+| Imaginary Friend (Th' Faith Healers album)                                             |
+| Imagine Our Love                                                                       |
+| In Concert (Rockapella album)                                                          |
+| In My Songs                                                                            |
+| In the Tail of a Comet                                                                 |
+| Indecent Songs                                                                         |
+| Insomniatic                                                                            |
+| Instruments (album)                                                                    |
+| Into the Skyline                                                                       |
+| Introducing Save Ferris                                                                |
+| Invisible Men                                                                          |
+| Ithyphallic (album)                                                                    |
+| Japan 1996 Live                                                                        |
+| Kill the Headlights                                                                    |
+| Live in Stuttgart                                                                      |
+| Love & Death (album)                                                                   |
+| MTV The Return of the Rock                                                             |
+| MTV Unplugged (Maxwell album)                                                          |
+| Make It Blur                                                                           |
+| Makin' Memories (album)                                                                |
+| Manipulated                                                                            |
+| Master of Styles                                                                       |
+| Melek (Candan Erçetin album)                                                          |
+| Melrose (album)                                                                        |
+| Mental Releases                                                                        |
+| Metamorphosis (Culture Beat album)                                                     |
+| Minneapolism                                                                           |
+| Moderne Zeiten                                                                         |
+| Moje najmilije                                                                         |
+| More Best of Leonard Cohen                                                             |
+| More of the Hard Stuff                                                                 |
+| Move It On Over (album)                                                                |
+| Move to This                                                                           |
+| Music from the Forthcoming Album Wide Angle                                            |
+| Music on The Shield                                                                    |
+| NFL Jams (1996 album)                                                                  |
+| NFL Jams (1998 album)                                                                  |
+| Neden (album)                                                                          |
+| Neu! '72 Live in Dusseldorf                                                            |
+| Never or Now                                                                           |
+| New Horizons (album)                                                                   |
+| Next (The Sensational Alex Harvey Band album)                                          |
+| Next (Vanessa Williams album)                                                          |
+| No Hay Más Na Que Hablar                                                              |
+| No Plan B                                                                              |
+| No Plan B, Pt. II                                                                      |
+| No Really, I'm Fine                                                                    |
+| Now 02 (Australian series)                                                             |
+| Now That's What I Call Music! 1993 – The Millennium Series                           |
+| Now That's What I Call Music! 25 (South African series)                                |
+| Now That's What I Call Music! 44 (South African series)                                |
+| Nu-Mixx Klazzics Vol. 2                                                                |
+| Okeeblow                                                                               |
+| Oklahoma! (soundtrack)                                                                 |
+| Old Friends (1997 Simon and Garfunkel album)                                           |
+| Omar Rodriguez-Lopez & Lydia Lunch                                                     |
+| One Chance (album)                                                                     |
+| One Hour                                                                               |
+| One Man (album)                                                                        |
+| One from the Heart (Soundtrack)                                                        |
+| Only Seconds                                                                           |
+| Oppression Live/As Blood Flows                                                         |
+| Oppressor (EP)                                                                         |
+| Organic Music for a Digital World                                                      |
+| Orgi Pörnchen 3                                                                       |
+| Ozzfest 2002 Summer Sampler                                                            |
+| Panic in the Streets (album)                                                           |
+| Peace Between Nations EP                                                               |
+| Peace on Earth (Johnny Maestro album)                                                  |
+| Perception (The Doors album)                                                           |
+| Perseverance (Percee P album)                                                          |
+| Phosphor (album)                                                                       |
+| Pilgrimage (Om album)                                                                  |
+| Pip Paine (Pay the £5000 You Owe)                                                     |
+| Play the Game Right                                                                    |
+| Population 1 (album)                                                                   |
+| Power in the Darkness                                                                  |
+| Pretty Girls (Dalbello album)                                                          |
+| Project Funk da World                                                                  |
+| Put Your Love in Me: Love Songs for the Apocalypse                                     |
+| Raggamuffin Soldier                                                                    |
+| Rare and Out of Print (EP)                                                             |
+| Razbliuto                                                                              |
+| Real Talk (Lecrae album)                                                               |
+| Receiving the Gift of Flavor                                                           |
+| Red Letter Day (album)                                                                 |
+| Redlight, Greenlight (EP)                                                              |
+| Remix (Candan Erçetin album)                                                          |
+| Resolution (Hidden in Plain View album)                                                |
+| Respect (4th Avenue Jones album)                                                       |
+| Return of Crystal Karma                                                                |
+| Revenge of the Underdog                                                                |
+| Rewind (video)                                                                         |
+| Road Music                                                                             |
+| Rocanlover                                                                             |
+| Rock Drill                                                                             |
+| Rock and Roll Part Three                                                               |
+| Rock the Block                                                                         |
+| Rogamar                                                                                |
+| Round 13                                                                               |
+| Russians and Americans                                                                 |
+| S.O.S.: Save Our Soul                                                                  |
+| SAHB Stories                                                                           |
+| SPA (album)                                                                            |
+| SWAX                                                                                   |
+| Sad (album)                                                                            |
+| Sage Ja!                                                                               |
+| Sakara Tour 2006                                                                       |
+| Schutzengel                                                                            |
+| Science and Nature                                                                     |
+| Scream Out Your Name to the Night                                                      |
+| Seattle Sessions                                                                       |
+| Second Grade Awakening                                                                 |
+| See the Light                                                                          |
+| Seminar (album)                                                                        |
+| Sentimental Journey: Pop Vocal Classics                                                |
+| Sevdim Sevilmedim                                                                      |
+| Sexto Sentido                                                                          |
+| Shadows Fall (EP)                                                                      |
+| Shiny                                                                                  |
+| Shot Full of Love                                                                      |
+| Shot, Illusion, New God (Gruntruck album)                                              |
+| Sick (Massacra album)                                                                  |
+| Silencer (Nels Cline Trio album)                                                       |
+| Simply the Best (series)                                                               |
+| Sing Along with Los Straitjackets                                                      |
+| Sinthetic                                                                              |
+| Situation Normal                                                                       |
+| Six Feet Above Yesterday                                                               |
+| Skeleton Key (EP)                                                                      |
+| Sky Motel                                                                              |
+| Slovenska Akropola                                                                     |
+| So Many Nights                                                                         |
+| Sobrenatural                                                                           |
+| Sojourner (album)                                                                      |
+| Solomon's Splendor                                                                     |
+| Solstice of Oppression                                                                 |
+| Solution (album)                                                                       |
+| Someday (Crystal Gayle album)                                                          |
+| Something Is Expected                                                                  |
+| Something to Be Proud Of: The Best of 1999–2005                                      |
+| Somewhere in the Real World                                                            |
+| Songs My Father Left Me                                                                |
+| Soul Dancing                                                                           |
+| Soul Discharge                                                                         |
+| Soul Dressing                                                                          |
+| Soul Limbo                                                                             |
+| Soul Merchant (Sam Lazar album)                                                        |
+| Soulmates Never Die (Live in Paris 2003)                                               |
+| Sound of Impact                                                                        |
+| Sound of the Republic                                                                  |
+| Sounds of the Season: The Enya Holiday Collection                                      |
+| Soundtrack to the Personal Revolution                                                  |
+| Southern Girl                                                                          |
+| Southern Rain                                                                          |
+| Southern Reunion                                                                       |
+| Soy Ante Todo Mujer                                                                    |
+| Space Flight (Sam Lazar album)                                                         |
+| Spanaway (album)                                                                       |
+| Speak and Destroy                                                                      |
+| Special Kind of Something – The Best of Kavana                                       |
+| Speckled Goats II                                                                      |
+| Spirit of Man (Bob Catley album)                                                       |
+| Spiritual Apocalypse                                                                   |
+| Spiritual Catharsis                                                                    |
+| Split/EP                                                                               |
+| Spoons (album)                                                                         |
+| Sprain Your Tapedeck                                                                   |
+| Sprawling Fawns                                                                        |
+| Squire (Alan Hull album)                                                               |
+| Stacked Rubbish                                                                        |
+| Staggering Heights                                                                     |
+| Stained Glass, Soma Fountains                                                          |
+| Star Bright                                                                            |
+| Stay Afraid                                                                            |
+| Stay the Same (album)                                                                  |
+| Stay with Me (Regina Belle album)                                                      |
+| Steel Warriors                                                                         |
+| Stereo: The Evolution of HipRockSoul                                                   |
+| Still Life with Guitar                                                                 |
+| Still Smokin                                                                           |
+| Still Waters Run Deep (Four Tops album)                                                |
+| Stitches (album)                                                                       |
+| Stock Aitken Waterman Gold                                                             |
+| Stone Crazy                                                                            |
+| Stories (Gloria Gaynor album)                                                          |
+| Storm Clouds Up Ahead                                                                  |
+| Stormbringer Ruler                                                                     |
+| Story of Dead Barbie and Ghost                                                         |
+| Storyteller (Crystal Waters album)                                                     |
+| Straight Checkn 'Em                                                                    |
+| Straight from the Desk                                                                 |
+| Strange Alliance                                                                       |
+| Strange Angels (Kristin Hersh album)                                                   |
+| Stranger than Fiction (Ultra Nate album)                                               |
+| Strangling from Within                                                                 |
+| Strapped Live!                                                                         |
+| Street Drum Corps (album)                                                              |
+| Street Warz                                                                            |
+| Stuck Between Iraq and a Hard Place                                                    |
+| Studio Sessions (Grand Slam album)                                                     |
+| Styx Classics Volume 15                                                                |
+| Styx Yesterday & Today                                                                 |
+| Suburban Light                                                                         |
+| Suicide Medicine                                                                       |
+| Sun Factory 8                                                                          |
+| Sunday Morning Coming Down (album)                                                     |
+| Sunny Border Blue                                                                      |
+| Sunny Side of the Street (album)                                                       |
+| Sunrise on the Sufferbus                                                               |
+| Super California                                                                       |
+| Super Hits (Alan Jackson album)                                                        |
+| Super Saucy                                                                            |
+| Superfast Rock n' Roll Played Slow                                                     |
+| Sure Shot Redemption                                                                   |
+| Suspended By Stars                                                                     |
+| Suture (album)                                                                         |
+| Suture and Other Songs                                                                 |
+| Swass                                                                                  |
+| Sweet Deceiver                                                                         |
+| System (album)                                                                         |
+| SóNós                                                                                |
+| Take This by the Storm                                                                 |
+| Take a Good Look                                                                       |
+| Takin' It to the Streets (FM album)                                                    |
+| Talking to the Dead                                                                    |
+| Tamarillo (album)                                                                      |
+| Tandoori Dog                                                                           |
+| Tangerine (album)                                                                      |
+| Taste the Blood of Singapore Sling                                                     |
+| Tattoos & Scars                                                                        |
+| Technologie                                                                            |
+| Temps mort                                                                             |
+| Ten Good Reasons                                                                       |
+| Ten Thousand Bars                                                                      |
+| Tequila (album)                                                                        |
+| Terry McBride & the Ride                                                               |
+| Thanatos (Relatives Menschsein album)                                                  |
+| That's All There Is                                                                    |
+| That's What You Get Babe                                                               |
+| That's the Way It Should Be                                                            |
+| The 20 Greatest Christmas Songs                                                        |
+| The 88 (album)                                                                         |
+| The Aggrolites (album)                                                                 |
+| The Album (Jeckyll & Hyde album)                                                       |
+| The Album (Lil Rob album)                                                              |
+| The Amazing Adventures of DJ Yoda                                                      |
+| The Answer (Gloria Gaynor album)                                                       |
+| The Anthology (Bachman–Turner Overdrive album)                                       |
+| The Art of Rolling                                                                     |
+| The Beat of the Brass                                                                  |
+| The Bells of 1 2                                                                       |
+| The Best Remixes, Vol. 1                                                               |
+| The Best of 10 Years – 32 Superhits                                                  |
+| The Best of Billy Ray Cyrus: Cover to Cover                                            |
+| The Best of Bizzy Bone                                                                 |
+| The Best of Boney M.                                                                   |
+| The Best of Crystal Waters                                                             |
+| The Best of Dottie West                                                                |
+| The Best of Peter Green's Fleetwood Mac                                                |
+| The Best of Play School                                                                |
+| The Best of Princess Superstar                                                         |
+| The Best of Sam Cooke                                                                  |
+| The Best of Santana Vol. 2                                                             |
+| The Best of The Proclaimers                                                            |
+| The Best of The Radiators: Songs from the Ancient Furnace                              |
+| The Big Dirty (album)                                                                  |
+| The Bite Back EP                                                                       |
+| The Blood (album)                                                                      |
+| The Bluegrass Sessions: Tales from the Acoustic Planet, Vol. 2                         |
+| The Booker T. Set                                                                      |
+| The Californian (Sunday's Best)                                                        |
+| The Choir Practice (album)                                                             |
+| The Clarence Greenwood Recordings                                                      |
+| The Collection (Boney M.)                                                              |
+| The Complete Collection (Boney M. album)                                               |
+| The Confessions of Dr. Dream and Other Stories                                         |
+| The Corruptor (soundtrack)                                                             |
+| The Cost of Living (Jason Webley album)                                                |
+| The Fires of Life                                                                      |
+| The Great Wide Open                                                                    |
+| The Greatest Hits (GRITS album)                                                        |
+| The Head Remixes                                                                       |
+| The Hierophant (album)                                                                 |
+| The Journey (Jessica Mauboy album)                                                     |
+| The Lost Paris Tapes                                                                   |
+| The Moon and Serpent Grand Egyptian Theatre of Marvels                                 |
+| The Most Gigantic Lying Mouth of All Time                                              |
+| The Other Side (Billy Ray Cyrus album)                                                 |
+| The Radiators (album)                                                                  |
+| The Return to Form Black Magick Party                                                  |
+| The Right Stuff (album)                                                                |
+| The Songs That Got Away                                                                |
+| The Sounds of History                                                                  |
+| The Southern Death Cult (album)                                                        |
+| The Streets Made Me                                                                    |
+| The String Quartet Tribute to The Smashing Pumpkins                                    |
+| The Sweetest Days (Vanessa Williams album)                                             |
+| The Ties That Blind                                                                    |
+| The Two EPs                                                                            |
+| The Ultimate Hits                                                                      |
+| The Videos 1994–2001                                                                 |
+| The Way (album)                                                                        |
+| These Old Charms                                                                       |
+| These Ones Are Bitter                                                                  |
+| This Is Hell (This Is Hell album)                                                      |
+| This Is Hell / Cancer Bats                                                             |
+| This Is It (Jack Ingram album)                                                         |
+| This Is My Song (Ray Conniff album)                                                    |
+| This Is an EP Release                                                                  |
+| Those Were the Days (Dolly Parton album)                                               |
+| Thuggin'                                                                               |
+| Thunderball (U.D.O. album)                                                             |
+| Tiffany Villarreal (album)                                                             |
+| Time Flies (Billy Ray Cyrus album)                                                     |
+| Time for Fantasy                                                                       |
+| Time of the Last Persecution                                                           |
+| Time's Up (Thee Majesty album)                                                         |
+| Timebomb (album)                                                                       |
+| Todo A Su Tiempo (Divino album)                                                        |
+| Tormenta Tropical, Vol. 1                                                              |
+| Torn Between Two Lovers (Mary MacGregor album)                                         |
+| Tot oder Lebendig (album)                                                              |
+| Trolltaar                                                                              |
+| True Love and High Adventure                                                           |
+| Try Love (Amii Stewart album)                                                          |
+| Trypes (album)                                                                         |
+| Tu Veneno                                                                              |
+| Turf Wars                                                                              |
+| Tutto Fabrizio De André                                                               |
+| Tvojim željama vođen                                                                 |
+| Two Shoes (North American Edition)                                                     |
+| Uh-Oh (Cowboy Mouth album)                                                             |
+| Ulterior Emotions                                                                      |
+| Umthombo Wamanzi                                                                       |
+| Under the Radar (Dispatch album)                                                       |
+| Unexpected (Sandy Mölling album)                                                      |
+| Unicornography                                                                         |
+| Unplugged (Aventura album)                                                             |
+| Unstoppable (Amii Stewart album)                                                       |
+| Unveil                                                                                 |
+| Upon Us (album)                                                                        |
+| Urban Legendz                                                                          |
+| V Live                                                                                 |
+| Valley of the Kings (EP)                                                               |
+| Verräter                                                                              |
+| Vida Eterna                                                                            |
+| Virus (Big Boy album)                                                                  |
+| Visitor (album)                                                                        |
+| Viva Dead Ponies                                                                       |
+| Voltage AC                                                                             |
+| Voltio (album)                                                                         |
+| Volume 1 (Fabrizio De André album)                                                    |
+| Von der Skyline zum Bordstein zurück                                                  |
+| Voodoo Soup                                                                            |
+| Voz d'Amor                                                                             |
+| Waking Giants                                                                          |
+| Walter Daniels Plays with Monsieur Jeffrey Evans & The Oblivians at Melissa's Garage   |
+| Wappinschaw                                                                            |
+| War of Words (Singers & Players album)                                                 |
+| Warschau (album)                                                                       |
+| We Broke the Rules (album)                                                             |
+| We Came to Party                                                                       |
+| We Ready (I Declare War)                                                               |
+| We'll Live and Die in These Towns                                                      |
+| We're in Like Sin                                                                      |
+| Welcome to the Western Lodge                                                           |
+| Well Meaning Fiction                                                                   |
+| Wesley Willis (album)                                                                  |
+| Western Wall: The Tucson Sessions                                                      |
+| What a Wonderful World (LeAnn Rimes album)                                             |
+| What's Really Going On                                                                 |
+| Where We All Belong                                                                    |
+| White Chalk                                                                            |
+| White Nights (soundtrack)                                                              |
+| Winter Song (album)                                                                    |
+| Wizzard Brew                                                                           |
+| Worse Than a Fairy Tale                                                                |
+| Yo Soy                                                                                 |
+| Young Black Brotha (album)                                                             |
+| Young, Rich & Dangerous                                                                |
+| Your Ghost Is a Gift                                                                   |
+| Ziggurats (album)                                                                      |
+| Zlatna kolekcija                                                                       |
+| Zola and the Tulip Tree                                                                |
+| Zoomer (album)                                                                         |
+| Álbum                                                                                 |
+| İçinde Aşk Var                                                                      |
++----------------------------------------------------------------------------------------+
+816 rows in set (0.08 sec)
+
+mysql> 

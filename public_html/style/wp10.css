@@ -1,0 +1,551 @@
+
+div.indent{
+  padding-left: 1em;
+}
+
+table.wikitable {
+  border-collapse: collapse;
+  border: 1px solid #aaa;
+  background: #eee;
+}
+
+table.ratingstable { 
+  max-width: 5.5in;
+  text-align: right;
+}
+
+table.ratingstable td { 
+  padding-right: 0.5em;
+}
+
+.ratingstable th { 
+  text-align: center;
+  border: 1px solid #aaa;
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+}
+
+table.wikitable tr.list-odd { background: #fff; }
+table.wikitable tr.list-even { background: #ffd; }
+
+table.wikitable a { text-decoration:none; }
+
+table.wikitable td {
+  border: 1px solid #aaa;
+  padding-left: 3pt;
+}
+
+table.wikitable th { 
+  background: #fff;
+}
+
+table.space { 
+  border: none;
+}
+
+td.toprow {
+  padding-bottom: .5em !important;
+  padding-top: .25em !important;
+}
+
+td.bottomrow { 
+   border-top: 1px solid black;
+   padding-top: .5em !important; 
+}
+
+table.outer {
+  border-collapse: collapse;
+  margin-left: 1em;
+}
+
+table.outer td { 
+  margin: 0px;
+  padding:0px;
+  vertical-align: top;
+}
+
+table.mainform td { 
+  padding-left: 0.5em !important;
+}
+
+input.submitButton { 
+  font-weight: bold;
+}
+
+.progress_cell {
+	background: #D3D3D3 none repeat scroll 0 0;
+	border: 1px solid gray;
+	height: 16px;
+	line-height: 1.5em;
+	margin: 0;
+	padding: 0;
+	position: relative;
+	width: 100px;
+}
+
+.progress_bar {
+	background: #A0A0FF none repeat scroll 0 0;
+	border: 0 none;
+	height: 100%;
+	line-height: 1.5em;
+	margin: 0;
+	padding: 0;
+	position: relative;
+	vertical-align: middle;
+}
+
+.progress_text {
+	border: 0 none;
+	font-size: 14px;
+	height: 100%;
+	left: 0;
+	line-height: 1em;
+	margin: -0.5em 0 0;
+	padding: 0;
+	position: absolute;
+	text-align: center;
+	top: 50%;
+	width: 100px;
+}
+
+img { 
+  border: none;
+  vertical-align: middle;
+}
+
+td.external { 
+  text-align: right;
+}
+
+td.score { 
+  text-align: right;
+}
+
+td.resultnum { 
+  text-align: right;
+}
+
+div.loginform { 
+  margin-left: 0.5em;
+}
+
+div.auth { 
+  border: 1px solid black;
+  padding: 0em; 
+  width: 3in;
+  position: relative;
+  top: 0px;
+  left: -1px;
+  margin: 1em;
+  border-bottom: 2px solid black;
+}
+
+div.auth h2 { 
+  background: #7979E7  none repeat scroll 0 0;
+  color: white;
+  margin: 0px; 
+  font-size: 14px;  
+  margin-bottom: 2px; 
+}
+
+div.loginform form { 
+  clear: none; 
+  margin: 0px; 
+  padding: 0px;
+}
+
+div.clear { clear: both; }
+
+span.authmsg { 
+  background-color: white;
+  border: 1px solid grey;
+}
+
+div.authline { 
+  width: 100%;
+  text-align: right;
+/*  border: 1px solid black; */
+  padding-right: 1em;
+  padding-bottom: 2px;
+  padding-top: 2px;
+  vertical-align: middle;
+  font-size: 130%;
+}
+
+span.notauthenticatederror { 
+  font-size: 125%;
+  color: red;
+}
+
+legend { 
+  font-weight: bold;
+}
+
+a.info { 
+  position: relative; 
+  border-bottom: 1px dotted #f00;
+}
+
+a.info:hover { background-color: #ff8; }
+
+a.info span {display: none;}
+
+a.info:hover span{ /*the span will display just on :hover state*/
+    display:block;
+    position:absolute;
+    top:3em; 
+    right:1em; 
+    width:15em;
+    padding: 4px;
+    border:1px solid #0cf;
+    font-weight: normal;
+    background-color:#cff; 
+    color:#000;
+    text-align: center;
+    z-index: 2;
+    
+}
+
+td.spacer { 
+  border-bottom: none;
+  border-top: none;
+}
+
+
+/* Layout */
+
+/* 
+http://colorschemedesigner.com/#3-31TsOsOK-K-
+*/
+
+body { 
+  margin: 0em;
+  padding: 0em;
+  border: none;
+  background: #eee;
+  font-family: sans-serif;
+  font-size: x-small;
+}
+
+#container {
+  width: 100%;
+  margin: 0;
+  background-color: #fff;
+  color: #333;
+  border: 1px solid gray;
+  border-left: none;
+  line-height: 130%; 
+}
+
+#head {
+  padding: 0;
+  margin: 0;
+  background-color: #003366;
+  height: 30px;
+  width: 100%;
+  border-bottom: 1px solid gray;
+  vertical-align: middle;
+}
+
+#head h1 {
+  padding: 0; 
+  padding-left: 0.5em;
+  padding-top: 8px;
+  margin: 0;
+  color: white;
+  font-family: sans-serif;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+#head h1 a { 
+  color: #fff;
+  text-decoration: none;
+}
+
+#head h1 a:hover { 
+  text-decoration: underline;
+}
+
+
+#subhead { 
+/*  background: #2626A1; */
+  background-color: #3c78b5;
+  padding: 0;
+  margin: 0;
+  padding-left: 0em;
+  margin: 0em;
+  line-height: 12pt;
+  clear: right;
+  text-align: right;
+  padding-right: 2em;
+  color: white;
+}
+
+#leftnav {
+  font-size: 130%;
+  float: left;
+  width: 180px;
+  margin: 0;
+  padding: 0em;
+  background-color: #f0f0f0;
+/*  background-color: #04044C; */
+  border-right: 1px solid gray;
+  border-bottom: 1px solid gray; 
+  padding-bottom: 0.5em;
+  margin-bottom: 1em;
+}
+
+#content {
+  margin-left: 180px;
+  border-left: 1px solid grey;
+  padding: 1em;
+  padding-bottom: 0em;
+/*  max-width: 36em; */
+  background: white;
+  min-height: 40em;
+  font-size: 130%;
+  line-height: 140%;
+}
+
+#footerbar { 
+  clear: both;
+  margin: 0;
+  padding: 0;
+  background: url(http://toolserver.org/~cbm/footer-grad.png) repeat-x 0 0;
+  line-height: 8px;
+}
+
+#footer {
+  clear: both;
+  margin: 0;
+  padding: .5em;
+  padding-top: 1em;
+  color: #333;
+  background-color: #ccc;
+  border-bottom: 1px solid grey;
+  font-size: 120%;
+}
+
+#leftnav p { margin: 0 0 1em 0; }
+#content h2 { margin: 0 0 .5em 0; }
+
+h5.menu1 { 
+  background-color: #dddddd;
+  margin: 0 0 0 0;
+  font-weight: bold;
+  border-bottom: solid 1px #3c78b5;
+  height: 1.3em;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-left: 0.5em;
+  font-size: 110%;
+}
+
+h5.later {
+  margin-top: 1em;
+  font-size: 110%;
+}
+
+ul {
+  list-style-image: url(http://toolserver.org/~cbm/bullet.gif);
+}
+
+#leftnav ul {
+  margin: 0 1em 0 1.5em;
+  padding: 0 0 0 0;
+}
+
+#leftnav ul li { 
+  padding-top: 2px;
+}
+
+div.navbox {
+  border: 1px solid black;
+/*  background-color: #8ABAEC; */
+/*   background-color: #CEA05E; */
+  background-color: #CAE1FF;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  padding: 0px;
+  text-align:center;
+  font-size: 100%;
+  line-height: 1.5em;
+}
+
+div.bignotice {
+  border: 1px solid black;
+/*  background-color: #8ABAEC; */
+/*   background-color: #CEA05E; */
+  background-color: #F9F2B0;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  padding: 0px;
+  text-align:center;
+  font-size: 100%;
+  line-height: 1.5em;
+}
+
+img.bignoticeicon { 
+  float: left;
+  margin-left: 10px;
+  margin-top: 10px;
+  border: none;
+}
+
+#leftnav a { 
+  text-decoration: none;
+}
+
+#leftnav a:visited { 
+  text-decoration: none;
+}
+
+#leftnav a:hover { 
+  text-decoration: underline;
+}
+
+#leftnav li.selected a { 
+  font-weight: bold;
+  color: black;
+
+}
+
+
+div.version { 
+  margin-top: 1em;
+}
+
+
+fieldset.inner { 
+  text-align: right;
+  width: 3.5in;
+  margin-bottom: 0.5em;
+  padding-bottom: 1em;
+  padding-right: 1em;
+  border: 1px solid #aaa;
+}
+
+legend { 
+  font-weight: bold;
+}
+
+div.formfirstcolumn { 
+  width: 3.8in;  
+  float: left;
+/*  margin-right: 1em; */
+  margin-bottom: 1em;
+}
+
+div.formsecondcolumn { 
+  width: 3.8in;
+  float: left;
+}
+
+input.submit { 
+  float: right;
+}
+
+div.bottomcontent { 
+  clear: both;
+  height: 1px;
+  width: 4in;
+  overflow:hidden;
+  margin: 0;
+  padding: 0;
+}
+
+
+div.note {  
+  padding-top: 4px; 
+  padding-bottom: 4px;
+  font-size: 95%;
+}
+
+div.checkbox { 
+  padding-bottom: 2px;
+}
+
+div.submit { 
+  text-align: center;
+  margin: 0;
+  margin-top: 0.5em;
+}
+
+.tsbutton {
+  height: 28px;
+  padding: 0;
+  margin: 0;
+  float: right;
+  background-color: #fff;  
+  border: 1px solid black;
+}
+
+.tsbuttoninner { 
+  float: left;
+  padding: 0;
+  margin:0;
+  width: 100px;
+}
+
+.tsbutton a { 
+  float: left;
+  text-decoration: none;
+  vertical-align: middle;
+  background: url(btn_stretch.png) repeat-x left top; 
+  padding: 0;
+  color: #000;
+}
+
+.tsbutton a:hover { 
+  text-decoration: underline;
+  color: yellow;
+}
+
+#poweredbyicon {
+  /*  margin-top: 0.5em; */
+  float: left; 
+  vertical-align: middle;
+  height: 25px;
+  margin-top: 1px;
+  margin-left: 5px;
+}
+
+.btntext { 
+  text-align: center;
+  padding: 0;
+  margin-left: 8px;
+  line-height: 14px;
+  font-size: 10px;
+  float: left;
+  height: 30px;
+  width: 60px;
+  vertical-align: top;
+}
+
+div.editfloat { 
+  float: right;
+  font-size: small;
+}
+
+
+
+
+pre.updatepre { 
+  background-color: #eee;
+  color: #333;
+  padding-left: 1em;
+}
+
+p.updatewait { 
+  color: red;
+}
+
+p.updatedone { 
+ color: green;
+}
+
+
+table.manualselection td { 
+  padding-right: 0.5em;
+}

@@ -1,0 +1,248 @@
+'Mathematics-Algebra' => { 
+   'type' => 'projectcategory',
+   'cat' => 'Mathematics articles related to algebra',
+   'catns' => 1,
+   'project' => 'Mathematics',
+   'title'=> '[[Wikipedia:WikiProject Mathematics/Wikipedia 1.0/Algebra|Algebra]] article ratings',
+   'dest' => "User:WP 1.0 bot/Tables/Custom/Mathematics-Algebra",
+   'config' => { 'importance-header' => "'''Priority'''", 
+                 'transpose' => 1, 
+                 'noassessed' => 1 }
+},
+
+
+'Mathematics-Analysis' => { 
+   'type' => 'projectcategory',
+   'cat' => 'Mathematics articles related to analysis',
+   'catns' => 1,
+   'project' => 'Mathematics',
+   'title'=> '[[Wikipedia:WikiProject Mathematics/Wikipedia 1.0/Analysis|Analysis]] article ratings',
+   'dest' => "User:WP 1.0 bot/Tables/Custom/Mathematics-Analysis",
+   'config' => { 'importance-header' => "'''Priority'''", 
+                 'transpose' => 1, 
+                 'noassessed' => 1 }
+},
+
+'Mathematics-Applied' => { 
+   'type' => 'projectcategory',
+   'cat' => 'Mathematics articles related to applied mathematics',
+   'catns' => 1,
+   'project' => 'Mathematics',
+   'title'=> '[[Wikipedia:WikiProject Mathematics/Wikipedia 1.0/Applied mathematics|Applied mathematics]] article ratings',
+   'dest' => "User:WP 1.0 bot/Tables/Custom/Mathematics-Applied",
+   'config' => { 'importance-header' => "'''Priority'''", 
+                 'transpose' => 1, 
+                 'noassessed' => 1 }
+},
+
+'Mathematics-Discrete' => { 
+   'type' => 'projectcategory',
+   'cat' => 'Mathematics articles related to discrete mathematics',
+   'catns' => 1,
+   'project' => 'Mathematics',
+   'title'=> '[[Wikipedia:WikiProject Mathematics/Wikipedia 1.0/Discrete mathematics|Discrete mathematics]] article ratings',
+   'dest' => "User:WP 1.0 bot/Tables/Custom/Mathematics-Discrete",
+   'config' => { 'importance-header' => "'''Priority'''", 
+                 'transpose' => 1, 
+                 'noassessed' => 1 }
+},
+
+
+'Mathematics-Basics' => { 
+   'type' => 'projectcategory',
+   'cat' => 'Mathematics articles related to basic mathematics',
+   'catns' => 1,
+   'project' => 'Mathematics',
+   'title'=> '[[Wikipedia:WikiProject Mathematics/Wikipedia 1.0/Basics|Basic mathematics]] article ratings',
+   'dest' => "User:WP 1.0 bot/Tables/Custom/Mathematics-Basics",
+   'config' => { 'importance-header' => "'''Priority'''", 
+                 'transpose' => 1, 
+                 'noassessed' => 1 }
+},
+
+'Mathematics-Foundations' => { 
+   'type' => 'projectcategory',
+   'cat' => 'Mathematics articles related to foundations, logic, and set theory',
+   'catns' => 1,
+   'project' => 'Mathematics',
+   'title'=> '[[Wikipedia:WikiProject Mathematics/Wikipedia 1.0/Foundations, logic, and set theory|Foundations, logic, and set theory]] article ratings',
+   'dest' => "User:WP 1.0 bot/Tables/Custom/Mathematics-Foundations",
+   'config' => { 'importance-header' => "'''Priority'''", 
+                 'transpose' => 1, 
+                 'noassessed' => 1 }
+},
+
+'Mathematics-Frequent' => { 
+   'type' => 'projectcategory',
+   'cat' => 'Frequently viewed mathematics articles',
+   'catns' => 1,
+   'project' => 'Mathematics',
+   'title'=> '[[Wikipedia:WikiProject Mathematics/Wikipedia 1.0/Frequently viewed|Frequently viewed mathematics article]] ratings',
+   'dest' => "User:WP 1.0 bot/Tables/Custom/Mathematics-Frequent",
+   'config' => { 'importance-header' => "'''Priority'''", 
+                 'transpose' => 1, 
+                 'noassessed' => 1 }
+},
+
+'Mathematics-General' => { 
+   'type' => 'projectcategory',
+   'cat' => 'Mathematics articles related to general mathematics',
+   'catns' => 1,
+   'project' => 'Mathematics',
+   'title'=> '[[Wikipedia:WikiProject Mathematics/Wikipedia 1.0/General|General mathematics]] article ratings',
+   'dest' => "User:WP 1.0 bot/Tables/Custom/Mathematics-General",
+   'config' => { 'importance-header' => "'''Priority'''", 
+                 'transpose' => 1, 
+                 'noassessed' => 1 }
+},
+
+'Mathematics-Geometry' => { 
+   'type' => 'projectcategory',
+   'cat' => 'Mathematics articles related to geometry',
+   'catns' => 1,
+   'project' => 'Mathematics',
+   'title'=> '[[Wikipedia:WikiProject Mathematics/Wikipedia 1.0/Geometry|Geometry]] article ratings',
+   'dest' => "User:WP 1.0 bot/Tables/Custom/Mathematics-Geometry",
+   'config' => { 'importance-header' => "'''Priority'''", 
+                 'transpose' => 1, 
+                 'noassessed' => 1 }
+},
+
+'Mathematics-History' => { 
+   'type' => 'projectcategory',
+   'cat' => 'Mathematics articles related to history of mathematics',
+   'catns' => 1,
+   'project' => 'Mathematics',
+   'title'=> '[[Wikipedia:WikiProject Mathematics/Wikipedia 1.0/History|History of mathematics]] article ratings',
+   'dest' => "User:WP 1.0 bot/Tables/Custom/Mathematics-History",
+   'config' => { 'importance-header' => "'''Priority'''", 
+                 'transpose' => 1, 
+                 'noassessed' => 1 }
+},
+
+
+'Mathematics-Physics' => { 
+   'type' => 'projectcategory',
+   'cat' => 'Mathematics articles related to mathematical physics',
+   'catns' => 1,
+   'project' => 'Mathematics',
+   'title'=> '[[Wikipedia:WikiProject Mathematics/Wikipedia 1.0/Mathematical_physics|Mathematical physics]] article ratings',
+   'dest' => "User:WP 1.0 bot/Tables/Custom/Mathematics-Physics",
+   'config' => { 'importance-header' => "'''Priority'''", 
+                 'transpose' => 1, 
+                 'noassessed' => 1 }
+},
+
+'Mathematics-Mathematicians' => { 
+   'type' => 'projectcategory',
+   'cat' => 'Mathematics articles related to mathematicians',
+   'catns' => 1,
+   'project' => 'Mathematics',
+   'title'=> '[[Wikipedia:WikiProject Mathematics/Wikipedia 1.0/Mathematicians|Mathematician]] article ratings',
+   'dest' => "User:WP 1.0 bot/Tables/Custom/Mathematics-Mathematicians",
+   'config' => { 'importance-header' => "'''Priority'''", 
+                 'transpose' => 1, 
+                 'noassessed' => 1 }
+},
+
+
+'Mathematics-NumberTheory' => { 
+   'type' => 'projectcategory',
+   'cat' => 'Mathematics articles related to number theory',
+   'catns' => 1,
+   'project' => 'Mathematics',
+   'title'=> '[[Wikipedia:WikiProject Mathematics/Wikipedia 1.0/Number theory|Number theory]] article ratings',
+   'dest' => "User:WP 1.0 bot/Tables/Custom/Mathematics-NumberTheory",
+   'config' => { 'importance-header' => "'''Priority'''", 
+                 'transpose' => 1, 
+                 'noassessed' => 1 }
+},
+
+'Mathematics-Probability' => { 
+   'type' => 'projectcategory',
+   'cat' => 'Mathematics articles related to probability and statistics',
+   'catns' => 1,
+   'project' => 'Mathematics',
+   'title'=> '[[Wikipedia:WikiProject Mathematics/Wikipedia 1.0/Probability and statistics|Probability and statistics]] article ratings',
+   'dest' => "User:WP 1.0 bot/Tables/Custom/Mathematics-Probability",
+   'config' => { 'importance-header' => "'''Priority'''", 
+                 'transpose' => 1, 
+                 'noassessed' => 1 }
+},
+
+
+'Mathematics-Topology' => { 
+   'type' => 'projectcategory',
+   'cat' => 'Mathematics articles related to topology',
+   'catns' => 1,
+   'project' => 'Mathematics',
+   'title'=> '[[Wikipedia:WikiProject Mathematics/Wikipedia 1.0/Topology|Topology]] article ratings',
+   'dest' => "User:WP 1.0 bot/Tables/Custom/Mathematics-Topology",
+   'config' => { 'importance-header' => "'''Priority'''", 
+                 'transpose' => 1, 
+                 'noassessed' => 1 }
+},
+
+
+'Mathematics-Vital' => { 
+   'type' => 'projectcategory',
+   'cat' => 'Vital mathematics articles',
+   'catns' => 1,
+   'project' => 'Mathematics',
+   'title'=> '[[Wikipedia:WikiProject Mathematics/Wikipedia 1.0/Vital articles|Vital mathematics article]] ratings',
+   'dest' => "User:WP 1.0 bot/Tables/Custom/Mathematics-Vital",
+   'config' => { 'importance-header' => "'''Priority'''", 
+                 'transpose' => 1, 
+                 'noassessed' => 1 }
+},
+
+
+'Mathematics-Overall' => { 
+   'type' => 'project',
+   'project' => 'Mathematics',
+   'title'=> '[[Wikipedia:WikiProject Mathematics/Wikipedia 1.0|Mathematics article ratings]]',
+   'dest' => "User:WP 1.0 bot/Tables/Custom/Mathematics-Overall",
+   'config' => { 'importance-header' => "'''Priority'''", 
+                 'transpose' => 1,
+                 'noassessed' => 1,
+                 'filterNamespace' => 0 }
+},
+
+'Mathematics-FQ' =>  { 
+  'type' => 'customsub',
+  'customsub' => \&custom_mathematics_table_field_quality,
+  'dest' => "User:WP 1.0 bot/Tables/Custom/Mathematics-Field-Quality",
+  },
+
+'Mathematics-FP' =>  { 
+  'type' => 'customsub',
+  'customsub' => \&custom_mathematics_table_field_priority,
+  'dest' => "User:WP 1.0 bot/Tables/Custom/Mathematics-Field-Priority",
+  },
+
+
+'Ships-1' =>  { 
+  'type' => 'customsub',
+  'customsub' => \&custom_ships_table_1,
+  'dest' => "User:WP 1.0 bot/Tables/Custom/Ships-1",
+  },
+
+
+'Essays-1' =>  { 
+  'type' => 'customsub',
+  'customsub' => \&custom_essays_table_1,
+  'dest' => "User:WP 1.0 bot/Tables/Custom/Essays-1",
+  },
+
+'Roads-1' => {
+  'type' => 'customsub',
+  'customsub' => \&custom_roads_table_1,
+  'dest' => "User:WP 1.0 bot/Tables/Custom/Roads-1",
+  },
+
+'Canada-Roads-1' => {
+  'type' => 'customsub',
+  'customsub' => \&custom_canada_roads_table_1,
+  'dest' => "User:WP 1.0 bot/Tables/Custom/Canada-Roads-1",
+  },
+
