@@ -1272,8 +1272,8 @@ sub makeXMLrequest {
     $self->print(4, "Info: " . $xml->{'error'} ->{'info'});
     $self->print(4, "Details: " . Dumper($xml) . "\n");
 
-    if ( $xml->{'error'}->{'info'} =~ /titleblacklist/ ) { 
-      $self->print(2, "E Some sort of titleblacklist error, aborting");
+    if ( $xml->{'error'}->{'info'} =~ /titleblacklist/ || $xml->{'error'}->{'code'} =~ /leparam_title/) {
+      $self->print(2, "E Some sort of titleblacklist or badtitle error, aborting");
       return undef;
     }
 
