@@ -75,7 +75,7 @@ sub toolserver_connect {
   'AutoCommit' => 0} )
   or die "Couldn't connect to database: " . DBI->errstr;
   
-  get_prefixes(get_conf('database_wiki_ts'), $db);
+  get_prefixes(get_conf('database_wiki_ts'));
 
         return $db;
 }
@@ -96,8 +96,8 @@ toolserver's global database into internal variables
 
 sub get_prefixes { 
   my $db = shift;
-  my $dbh = shift;
-  my $query = "SELECT ns_id, ns_name FROM p50380g50494_data.namespacename 
+  my $dbh = db_connect($Opts);
+  my $query = "SELECT ns_id, ns_name FROM namespacename
                  WHERE ns_type = 'primary' and dbname = ?";
   
   my $sth = $dbh->prepare($query);
