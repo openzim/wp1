@@ -77,7 +77,7 @@ sub toolserver_connect {
   
   get_prefixes(get_conf('database_wiki_ts'));
 
-        return $db;
+  return $db;
 }
 
 #####################################################################
@@ -90,7 +90,6 @@ toolserver's global database into internal variables
  Parameters:
  
  DB: database name
- DBH: database handle
  
 =cut
 
@@ -112,6 +111,8 @@ sub get_prefixes {
     $Prefix->{$row[0]} = $row[1];
     $PrefixRev->{$row[1]} = $row[0];
   }
+
+  $dbh->disconnect()
 
 ## Left over from toolserer namespacename table
 #  
