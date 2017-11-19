@@ -23,6 +23,9 @@ use POSIX 'strftime';
 
 our $Opts;
 require 'read_conf.pl';
+$Opts ||= read_conf();
+
+require 'database_routines.pl';
 
 my  $Prefix;
 my  $PrefixRev;

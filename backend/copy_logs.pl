@@ -65,6 +65,8 @@ use DBI;
 our $dbh = db_connect_ro($Opts);
 my $Namespaces = db_get_namespaces();
 
+our $wiki_dbh = toolserver_connect($Opts);
+
 use POSIX 'strftime';
 use URI::Escape;
 
@@ -562,7 +564,7 @@ sub get_revid {
                where rev_timestamp <= ? 
                order by rev_timestamp desc limit 1';
 
-  my $sth = $dbh->prepare($query);
+  my $sth = $wiki_dbh->prepare($query);
 
   my ($rev_page, $rev_talk);
   my @r;
@@ -579,6 +581,8 @@ sub get_revid {
 
   my $etime = time();
   push @i_revids, ($etime -$stime);
+
+  $sth->finish();
   return ($rev_page, $rev_talk);
 }
 
@@ -722,7 +726,7 @@ sub get_log_history {
                where page_namespace = ? and page_title = ?
                order by rev_timestamp desc limit 250";
 
-  my $sth = $dbh->prepare($query);
+  my $sth = $wiki_dbh->prepare($query);
   $sth->execute($ns, $page);
 
   my $hist = {};
@@ -745,6 +749,7 @@ sub get_log_history {
     }
   }
 
+  $sth->finish();
   return ($hist, $max);
 }
 
