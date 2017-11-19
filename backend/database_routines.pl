@@ -632,8 +632,11 @@ sub db_connect {
            . ":database=" . $opts->{'database'};
 
   if ( defined $opts->{'host'} ) {
-    $connect .= ":host="     . $opts->{'host'} ;
+    $connect .= ";host="     . $opts->{'host'} ;
   }
+
+  # timeouts
+  $connect .= ";mysql_connect_timeout=3600;mysql_write_timeout=3600;mysql_read_timeout=3600";
 
   if ( defined $opts->{'credentials-readwrite'} ) {
     $opts->{'password'} = $opts->{'password'} || "";
@@ -671,8 +674,9 @@ sub db_connect {
   }
 
 #  $db->{'RaiseError'} = 'on'; # die on DB error
-
 #  $db->{HandleError} = sub { confess(shift) };
+
+  $db->{mysql_auto_reconnect} = 1;
 
   return $db;
 }

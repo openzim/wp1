@@ -58,12 +58,14 @@ sub toolserver_connect {
    
    # For the enwiki_p db, this should be sql-s1
    if ( defined get_conf('host_wiki_ts') ) {
-         $connect .= ":host=" . get_conf('host_wiki_ts') ;
+         $connect .= ";host=" . get_conf('host_wiki_ts') ;
    }
-   
-   
-        my $username = get_conf('username') || "";
-        my $password = get_conf('password') || "";
+
+  # timeouts
+  $connect .= ";mysql_connect_timeout=3600;mysql_write_timeout=3600;mysql_read_timeout=3600";
+
+  my $username = get_conf('username') || "";
+  my $password = get_conf('password') || "";
 
   if ( defined get_conf('credentials-toolserver') ) {
     $connect .= ":mysql_read_default_file=" 
@@ -71,9 +73,12 @@ sub toolserver_connect {
   }
   
   my $db = DBI->connect($connect, $username, $password,
-  {'RaiseError' => 1, 
-  'AutoCommit' => 0} )
-  or die "Couldn't connect to database: " . DBI->errstr;
+  {
+      'RaiseError' => 1,
+      'AutoCommit' => 0
+  }) or die "Couldn't connect to database: " . DBI->errstr;
+
+  $db->{mysql_auto_reconnect} = 1;
   
   get_prefixes(get_conf('database_wiki_ts'));
 
