@@ -214,7 +214,7 @@ Return a hash reference that maps NAMESPACE_NUMBER => NAMESPACE_TITLE
 
 sub db_get_namespaces {
   my $sth = $dbh->prepare("SELECT ns_id, ns_name " 
-                        . "/* LIMIT:15 WEB */ FROM p50380g50494_data.namespacename "  
+                        . "/* LIMIT:15 WEB */ FROM namespacename "  
                         . " where (ns_type = 'canonical' or ns_type = 'primary')
                            and dbname = ?");
   $sth->execute('enwiki_p');
