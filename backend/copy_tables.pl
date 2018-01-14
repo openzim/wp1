@@ -94,7 +94,7 @@ sub copy_project_tables {
 
     my $page = "User:WP 1.0 bot/Tables/Project/$project";
     my $summary = "Copying assessment table to wiki";
-    my ( $html, $wiki, $timestamp, $acount) = cached_project_table($project);
+    my ($html, $wiki, $timestamp, $acount) = cached_project_table($project);
     $wiki = munge($wiki, 'project');
 
     if ( $acount == 0 ) { 
@@ -106,8 +106,8 @@ sub copy_project_tables {
 
 #    $wiki .= "<noinclude>{{DEFAULTSORT|$project}}</noinclude>";
 
-    if ( ! defined $ENV{'DRY_RUN'}) {
-      api_edit( $page, $wiki, $summary);
+    unless (defined $ENV{'DRY_RUN'}) {
+      api_edit($page, $wiki, $summary);
       print "Timestamp: $timestamp_u\n";
       db_set_upload_timestamp($project, $timestamp_u);
 
@@ -162,7 +162,6 @@ sub copy_custom_tables {
     $code = munge($code, 'project');
     $summary = "Copying custom table '$table' to wiki\n";
 
-
     if ( ! defined $ENV{'DRY_RUN'}) {
       api_edit($dest, $code, $summary);
     } else { 
@@ -180,10 +179,7 @@ sub project_category_table {
   my $cat = $data->{'cat'};
   my $catns = $data->{'catns'};
   my $title = $data->{'title'};
-  my $dest = $data->{'dest'};
   my $config = $data->{'config'};
-
-  my $summary = "Copying assessment table to wiki";
 
   my ($html, $wiki) = make_project_table($project, $cat, $catns, $title, $config);
 
@@ -199,10 +195,7 @@ sub project_custom_table {
   my $cat = undef;
   my $catns = undef;
   my $title = $data->{'title'};
-  my $dest = $data->{'dest'};
   my $config = $data->{'config'};
-
-  my $summary = "Copying assessment table to wiki";
 
   my ($html, $wiki) = make_project_table($project, $cat, $catns, $title, $config);
 
@@ -217,7 +210,7 @@ sub copy_global_table {
 
   my $page = "User:WP 1.0 bot/Tables/OverallArticles";
   my $summary = "Copying assessment table to wiki";
-  my ( $html, $wiki) = cached_global_ratings_table();
+  my ($html, $wiki) = cached_global_ratings_table();
   $wiki = munge($wiki, 'global');
 
   api_edit($page, $wiki, $summary);

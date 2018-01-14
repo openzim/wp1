@@ -421,6 +421,8 @@ sub edit_page {
   my $editSummary = shift;
   my $params = shift || [];
 
+  utf8::upgrade($pageContent);
+
   $self->print(1,"A Editing $pageTitle");
 
   my $editToken; 
