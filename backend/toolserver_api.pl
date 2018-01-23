@@ -182,6 +182,7 @@ sub toolserver_pages_in_category {
     push @qparam, $ns;
   };
 
+  unless ($dbh->ping) { $dbh->disconnect ; $dbh = toolserver_connect($Opts) }; 
   my $sth = $dbh->prepare($query);
   my $t = time();
   my $r = $sth->execute(@qparam);
