@@ -17,9 +17,9 @@ category_links_table = Table('categorylinks', metadata,
 
 page_category_join = join(page_table, category_links_table)
 
-Base = declarative_base()
+_Base = declarative_base()
 
-class Page(Base):
+class Page(_Base):
     __table__ = page_category_join
 
     page_id = column_property(page_table.c.page_id,

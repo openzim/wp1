@@ -1,5 +1,5 @@
-from db import Session
-from models.page import Page
+from wiki_db import Session
+from models.wiki.page import Page
 
 session = Session()
 
