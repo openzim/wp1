@@ -4,7 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 _Base = declarative_base()
 
 class Review(_Base):
-    __tablename__ = 'reviews'
+    __tablename__ = 'lucky_reviews'
 
     value = Column('rev_value', Binary(10))
     article = Column('rev_article', Binary(255), primary_key=True)
