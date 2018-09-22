@@ -1,4 +1,5 @@
 import logging
+import time
 
 from conf import get_conf
 import constants
@@ -30,6 +31,7 @@ def extract_release_category(title):
 
 title_to_release = get_title_to_release()
 
+seen = set()
 for category_page in logic_page.get_pages_by_category(
     wiki_session, category_name):
   logging.info('Processing category: %r', category_page.title)
@@ -37,8 +39,16 @@ for category_page in logic_page.get_pages_by_category(
 
   for page in logic_page.get_pages_by_category(
       wiki_session, category_page.title, ns=constants.CATEGORY_NS_INT):
+    seen.add(page.title)
     release = title_to_release.get(page.title)
     if release is None or release.category != release_category:
       logic_release.insert_or_update_release_data(
         wp10_session, page.title, release_category, page.timestamp)
   wp10_session.commit()
+
+for title in title_to_release.keys():
+  if title not in seen:
+    logger.info('Page not seen, setting release data to "None": %s', title)
+    logic_release.insert_or_update_release_data(
+      wp10_session, title, 'None', time.time())
+wp10_session.commit()
