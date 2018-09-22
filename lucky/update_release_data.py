@@ -21,9 +21,9 @@ config = get_conf()
 category_ns = config['CATEGORY_NS'].encode('utf-8')
 
 def get_title_to_release():
-    q = wp10_session.query(Release)
-    logger.info('Querying release data')
-    return dict((release.article, release) for release in q)
+  q = wp10_session.query(Release)
+  logger.info('Querying release data')
+  return dict((release.article, release) for release in q)
 
 def extract_release_category(title):
   return title.replace(suffix, b'').replace(category_ns, b'')
@@ -41,4 +41,4 @@ for category_page in logic_page.get_pages_by_category(
     if release is None or release.category != release_category:
       logic_release.insert_or_update_release_data(
         wp10_session, page.title, release_category, page.timestamp)
-wp10_session.commit()
+  wp10_session.commit()
