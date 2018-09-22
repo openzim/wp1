@@ -23,3 +23,11 @@ def insert_or_update_review_data(
     review.value = value
     review.timestamp = timestamp_binary
   wp10_session.add(review)
+
+
+def delete_review_data(wp10_session, page_title, value):
+  review = wp10_session.query(Review).get(page_title)
+  if review.value != value:
+    raise ValueError('Review value of %s does not match given old value %s' %
+                     (review.value, value))
+  wp10_session.delete(review)
