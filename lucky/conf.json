@@ -1,8 +1,11 @@
 {
+  "ARTICLES_LABEL": "articles",
+  "BY_QUALITY": "by_quality",
   "CATEGORY_NS": "Category",
   "REVIEW": {
     "GA": "Wikipedia_good_articles",
     "FA": "Wikipedia_featured_articles",
     "FL": "Wikipedia_featured_lists"
-  }
+  },
+  "ROOT_CATEGORY": "Wikipedia_1.0_assessments"
 }

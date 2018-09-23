@@ -2,6 +2,12 @@ from sqlalchemy import Table, Column, Integer, Binary, TIMESTAMP, MetaData, join
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import column_property
 
+from conf import get_conf
+
+config = get_conf()
+ARTICLES_LABEL_STR = config['ARTICLES_LABEL']
+BY_QUALITY_STR = config['BY_QUALITY']
+
 metadata = MetaData()
 
 page_table = Table(
@@ -32,4 +38,10 @@ class Page(_Base):
 
   def __repr__(self):
     return "<Page(page_id=%r, page_title=%r, page_namespace=%r)>" % (
-      self.page_id, self.page_title, self.page_namespace)
+      self.id, self.title, self.namespace)
+
+  @property
+  def base_title(self):
+    bytes_to_replace = ('_%s_%s' %
+                        (ARTICLES_LABEL_STR, BY_QUALITY_STR)).encode('utf-8')
+    return self.title.replace(bytes_to_replace, b'')
