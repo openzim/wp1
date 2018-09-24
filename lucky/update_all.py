@@ -1,10 +1,11 @@
 import logging
 import re
+import time
 
 from conf import get_conf
 import constants
 from logic import page as logic_page
-from models.wiki.page import Page
+from models.wp10.project import Project
 from wp10_db import Session as SessionWP10
 from wiki_db import Session as SessionWiki
 
@@ -23,7 +24,13 @@ ARTICLES_LABEL = config['ARTICLES_LABEL'].encode('utf-8')
 # %s formatting doesn't work for byes in Python 3.4
 RE_REJECT_GENERIC = re.compile(ARTICLES_LABEL + b'_' + BY_QUALITY, re.I)
 
-def projects_to_update():
+GLOBAL_TIMESTAMP = time.strftime('%Y%m%d%H%M%S', time.gmtime())
+GLOBAL_TIMESTAMP_WIKI = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+
+def page_name_to_project():
+  return dict((p.project, p) for p in wp10_session.query(Project))
+
+def project_pages_to_update():
   projects_in_root = logic_page.get_pages_by_category(
     wiki_session, ROOT_CATEGORY, constants.CATEGORY_NS_INT)
   for category_page in projects_in_root:
@@ -39,5 +46,3 @@ def projects_to_update():
 
     yield category_page
 
-for p in projects_to_update():
-  logging.info('Updating %s' % p.base_title.decode('utf-8'))
