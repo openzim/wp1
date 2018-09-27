@@ -1,4 +1,5 @@
-from sqlalchemy import Table, Column, Integer, Binary, TIMESTAMP, MetaData, join, ForeignKey
+from sqlalchemy import Table, Column, TIMESTAMP, MetaData, join, ForeignKey
+from sqlalchemy.dialects.mysql import BINARY, INTEGER
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import column_property
 
@@ -12,14 +13,14 @@ metadata = MetaData()
 
 page_table = Table(
   'page', metadata,
-  Column('page_id', Integer, primary_key=True),
-  Column('page_namespace', Integer),
-  Column('page_title', Binary(255)))
+  Column('page_id', INTEGER(8, unsigned=True), primary_key=True),
+  Column('page_namespace', INTEGER(11)),
+  Column('page_title', BINARY(255)))
 
 category_links_table = Table(
   'categorylinks', metadata,
-  Column('cl_from', Integer, ForeignKey('page.page_id')),
-  Column('cl_to', Binary(255)),
+  Column('cl_from', INTEGER(8, unsigned=True), ForeignKey('page.page_id')),
+  Column('cl_to', BINARY(255)),
   Column('cl_timestamp', TIMESTAMP))
 
 page_category_join = join(page_table, category_links_table)
