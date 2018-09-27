@@ -1,22 +1,25 @@
 from collections import defaultdict
+import logging
 import re
 
 import mwparserfromhell
 
 from api import site
 from conf import get_conf
+from constants import AssessmentKind
+from logic import util as logic_util
+
+logger = logging.getLogger(__name__)
 
 config = get_conf()
 CATEGORY_NS_STR = config['CATEGORY_NS']
-BY_QUALITY_STR = config['BY_QUALITY']
-ARTICLES_LABEL_STR = config['ARTICLES_LABEL']
 
 RE_EXTRA = re.compile('extra(\d)-(.+)')
 
-def get_extra_assessments(project):
-  page_name = '%s:%s_%s_%s' % (
-    CATEGORY_NS_STR, project, ARTICLES_LABEL_STR, BY_QUALITY_STR)
-  print(page_name)
+def get_extra_assessments(project_name):
+  page_name = logic_util.category_for_project_by_kind(
+    project_name, AssessmentKind.QUALITY).decode('utf-8')
+  logging.info('Retrieving page %s from API', page_name)
   page = site.pages[page_name]
   text = page.text(section=0)
   wikicode = mwparserfromhell.parse(text)
@@ -27,18 +30,30 @@ def get_extra_assessments(project):
       template = candidate_template
       break
 
+  ans = {'extra': {}}
   if template is None:
-    return None
+    return ans
 
-  ans = {'extra': defaultdict(dict)}
+
   for key in ('parent', 'shortname', 'homepage'):
     if template.has(key):
       ans[key] = template.get(key).value.strip()
 
+  extra = defaultdict(dict)
   for param in template.params:
     md = RE_EXTRA.match(param.name.strip())
     if md:
-      ans['extra'][md.group(1)][md.group(2)] = (
+      extra[md.group(1)][md.group(2)] = (
         template.get(param.name).value.strip())
+
+  for num_str, params in extra.items():
+    if ('title' not in params or 'type' not in params or
+        'category' not in params or 'ranking' not in params):
+      continue
+
+    category = params['category'].replace('%s:' % CATEGORY_NS_STR, '').replace(
+      ' ', '_')
+    params['category'] = category
+    ans['extra'][category] = params
 
   return ans

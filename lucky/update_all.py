@@ -4,13 +4,14 @@ import time
 
 from conf import get_conf
 import constants
-from logic import page as logic_page
+from logic import page as logic_page, project as logic_project
 from models.wp10.project import Project
 from wp10_db import Session as SessionWP10
 from wiki_db import Session as SessionWiki
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+logging.getLogger('mwclient.client').setLevel(logging.CRITICAL)
 
 wp10_session = SessionWP10()
 wiki_session = SessionWiki()
@@ -27,8 +28,8 @@ RE_REJECT_GENERIC = re.compile(ARTICLES_LABEL + b'_' + BY_QUALITY, re.I)
 GLOBAL_TIMESTAMP = time.strftime('%Y%m%d%H%M%S', time.gmtime())
 GLOBAL_TIMESTAMP_WIKI = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
 
-def page_name_to_project():
-  return dict((p.project, p) for p in wp10_session.query(Project))
+# Preload all projects
+list(wp10_session.query(Project))
 
 def project_pages_to_update():
   projects_in_root = logic_page.get_pages_by_category(
@@ -44,5 +45,10 @@ def project_pages_to_update():
                     category_page)
       continue
 
-    yield category_page
+    project = wp10_session.query(Project).get(category_page.base_title)
+    if project is None:
+      project = Project(project=category_page.base_title)
+    yield project
 
+for project in project_pages_to_update():
+  logic_project.update_project(wiki_session, wp10_session, project)

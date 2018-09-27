@@ -1,7 +1,37 @@
 {
   "ARTICLES_LABEL": "articles",
   "BY_QUALITY": "by_quality",
+  "BY_IMPORTANCE": "by_importance",
   "CATEGORY_NS": "Category",
+  "CLASS": "Class",
+  "IMPORTANCE": {
+    "Top-Class": 400,
+    "High-Class": 300,
+    "Mid-Class": 200,
+    "Low-Class": 100,
+    "NA-Class": 25,
+    "Unknown-Class": 0
+  },
+  "QUALITY": {
+    "FA-Class": 500,
+    "FL-Class": 480,
+    "A-Class": 425,
+    "GA-Class": 400,
+    "B-Class": 300,
+    "C-Class": 225,
+    "Start-Class": 150,
+    "Stub-Class": 100,
+    "List-Class":  80,
+    "Current-Class": 70,
+    "Future-Class": 60,
+    "Category-Class": 50,
+    "Disambig-Class": 48,
+    "Portal-Class": 46,
+    "Template-Class": 40,
+    "NA-Class": 25,
+    "Assessed-Class": 20,
+    "Unassessed-Class": 0
+  },
   "REVIEW": {
     "GA": "Wikipedia_good_articles",
     "FA": "Wikipedia_featured_articles",

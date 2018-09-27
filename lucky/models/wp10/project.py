@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Binary
-from sqlalchemy.dialects.mysql import INTEGER
+from sqlalchemy import Column
+from sqlalchemy.dialects.mysql import BINARY, INTEGER
 from sqlalchemy.ext.declarative import declarative_base
 
 _Base = declarative_base()
@@ -9,10 +9,10 @@ _Base = declarative_base()
 class Project(_Base):
   __tablename__ = 'lucky_projects'
 
-  project = Column('p_project', Binary(63), primary_key=True)
-  timestamp = Column('p_timestamp', Binary(14))
+  project = Column('p_project', BINARY(63), primary_key=True)
+  timestamp = Column('p_timestamp', BINARY(14))
   count = Column('p_count', INTEGER(10, unsigned=True))
-  upload_timestamp = Column('p_upload_timestamp', Binary(14))
+  upload_timestamp = Column('p_upload_timestamp', BINARY(14))
 
   def __repr__(self):
     return ('<Project(project=%r, timestamp=%r, count=%r,'
