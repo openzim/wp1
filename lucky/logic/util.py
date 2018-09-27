@@ -5,13 +5,18 @@ config = get_conf()
 CATEGORY_NS_STR = config['CATEGORY_NS']
 BY_QUALITY_STR = config['BY_QUALITY']
 BY_IMPORTANCE_STR = config['BY_IMPORTANCE']
+BY_IMPORTANCE_ALT_STR = config['BY_IMPORTANCE_ALT']
 ARTICLES_LABEL_STR = config['ARTICLES_LABEL']
 
-def category_for_project_by_kind(project_name, kind, category_prefix=True):
+def category_for_project_by_kind(
+    project_name, kind, category_prefix=True, use_alt=False):
   if kind == AssessmentKind.QUALITY:
     kind_tag = BY_QUALITY_STR
   elif kind == AssessmentKind.IMPORTANCE:
-    kind_tag = BY_IMPORTANCE_STR
+    if use_alt:
+      kind_tag = BY_IMPORTANCE_ALT_STR
+    else:
+      kind_tag = BY_IMPORTANCE_STR
   else:
     raise ValueError('Parameter kind must be one of QUALITY or IMPORTANCE')
 

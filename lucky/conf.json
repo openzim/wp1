@@ -2,6 +2,7 @@
   "ARTICLES_LABEL": "articles",
   "BY_QUALITY": "by_quality",
   "BY_IMPORTANCE": "by_importance",
+  "BY_IMPORTANCE_ALT": "by_priority",
   "CATEGORY_NS": "Category",
   "CLASS": "Class",
   "IMPORTANCE": {

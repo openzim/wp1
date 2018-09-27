@@ -20,6 +20,7 @@ page_table = Table(
 category_links_table = Table(
   'categorylinks', metadata,
   Column('cl_from', INTEGER(8, unsigned=True), ForeignKey('page.page_id')),
+  Column('cl_sortkey', BINARY(230)),
   Column('cl_to', BINARY(255)),
   Column('cl_timestamp', TIMESTAMP))
 
@@ -34,8 +35,10 @@ class Page(_Base):
                               category_links_table.c.cl_from)
   title = page_table.c.page_title
   namespace = page_table.c.page_namespace
+
   category = category_links_table.c.cl_to
   timestamp = category_links_table.c.cl_timestamp
+  sortkey = category_links_table.c.cl_sortkey
 
   def __repr__(self):
     return "<Page(page_id=%r, page_title=%r, page_namespace=%r)>" % (
