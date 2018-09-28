@@ -10,8 +10,11 @@ from wp10_db import Session as SessionWP10
 from wiki_db import Session as SessionWiki
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
-logging.getLogger('mwclient.client').setLevel(logging.CRITICAL)
+logging.basicConfig(level=logging.DEBUG)
+logging.getLogger('mwclient').setLevel(logging.CRITICAL)
+logging.getLogger('urllib3').setLevel(logging.CRITICAL)
+logging.getLogger('requests_oauthlib').setLevel(logging.CRITICAL)
+logging.getLogger('oauthlib').setLevel(logging.CRITICAL)
 
 wp10_session = SessionWP10()
 wiki_session = SessionWiki()

@@ -5,6 +5,7 @@
   "BY_IMPORTANCE_ALT": "by_priority",
   "CATEGORY_NS": "Category",
   "CLASS": "Class",
+  "DATABASE_WIKI_TS": "enwiki_p",
   "IMPORTANCE": {
     "Top-Class": 400,
     "High-Class": 300,
@@ -13,6 +14,7 @@
     "NA-Class": 25,
     "Unknown-Class": 0
   },
+  "NOT_A_CLASS": "NotA-Class",
   "QUALITY": {
     "FA-Class": 500,
     "FL-Class": 480,
