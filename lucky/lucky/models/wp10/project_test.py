@@ -17,21 +17,21 @@ class ModelsProjectTest(BaseWpOneOrmTest):
 
   def test_project_retrieval(self):
     actual = self.session.query(Project).get(self.project_name)
-    self.assertEquals(self.project, actual)
+    self.assertEqual(self.project, actual)
 
   def test_project_fields(self):
     actual = self.session.query(Project).get(self.project_name)
-    self.assertEquals(self.project.project, actual.project)
-    self.assertEquals(self.project.timestamp, actual.timestamp)
-    self.assertEquals(self.project.count, actual.count)
-    self.assertEquals(
+    self.assertEqual(self.project.project, actual.project)
+    self.assertEqual(self.project.timestamp, actual.timestamp)
+    self.assertEqual(self.project.count, actual.count)
+    self.assertEqual(
       self.project.upload_timestamp, actual.upload_timestamp)
 
   def test_timestamp_dt(self):
     dt = self.project.timestamp_dt
-    self.assertEquals(2018, dt.year)
-    self.assertEquals(9, dt.month)
-    self.assertEquals(30, dt.day)
-    self.assertEquals(12, dt.hour)
-    self.assertEquals(30, dt.minute)
-    self.assertEquals(0, dt.second)
+    self.assertEqual(2018, dt.year)
+    self.assertEqual(9, dt.month)
+    self.assertEqual(30, dt.day)
+    self.assertEqual(12, dt.hour)
+    self.assertEqual(30, dt.minute)
+    self.assertEqual(0, dt.second)

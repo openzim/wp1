@@ -1,4 +1,4 @@
-from sqlalchemy import Table, Column, TIMESTAMP, MetaData, join, ForeignKey
+from sqlalchemy import Table, Column, TIMESTAMP, join, ForeignKey
 from sqlalchemy.dialects.mysql import BINARY, INTEGER
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import column_property
@@ -10,16 +10,14 @@ config = get_conf()
 ARTICLES_LABEL_STR = config['ARTICLES_LABEL']
 BY_QUALITY_STR = config['BY_QUALITY']
 
-metadata = MetaData()
-
 page_table = Table(
-  'page', metadata,
+  'page', Base.metadata,
   Column('page_id', INTEGER(8, unsigned=True), primary_key=True),
   Column('page_namespace', INTEGER(11)),
   Column('page_title', BINARY(255)))
 
 category_links_table = Table(
-  'categorylinks', metadata,
+  'categorylinks', Base.metadata,
   Column('cl_from', INTEGER(8, unsigned=True), ForeignKey('page.page_id')),
   Column('cl_sortkey', BINARY(230)),
   Column('cl_to', BINARY(255)),
