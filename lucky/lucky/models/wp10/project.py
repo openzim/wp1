@@ -4,9 +4,9 @@ from sqlalchemy import Column
 from sqlalchemy.dialects.mysql import BINARY, INTEGER
 from sqlalchemy.ext.declarative import declarative_base
 
-_Base = declarative_base()
+from lucky.wp10_db import Base
 
-class Project(_Base):
+class Project(Base):
   __tablename__ = 'lucky_projects'
 
   project = Column('p_project', BINARY(63), primary_key=True)
@@ -22,5 +22,5 @@ class Project(_Base):
   # The timestamp parsed into a datetime.datetime object.
   @property
   def timestamp_dt(self):
-    return dateimte.strptime(
+    return datetime.strptime(
       self.timestamp.decode('utf-8'), '%Y-%m-%dT%H:%M:%SZ')
