@@ -91,8 +91,6 @@ def update_project_assessments(
     old_ratings[rating_ref] = rating
 
   seen = set()
-  moved = set()
-
   rating_to_category = update_project_categories_by_kind(
     wiki_session, wp10_session, project, extra_assessments, kind)
 
@@ -154,8 +152,9 @@ def update_project_assessments(
       wiki_session, wp10_session, ns, title, project.timestamp)
 
     if move_data is not None:
-      pass
-      # TODO: Update move table
+      logic_page.update_page_moved(
+        wp10_session, project, ns, title, move_data['dest-ns'],
+        move_data['dest-title'], move_data['timestamp_dt'])
       
     current_rating = Rating(
       project=project.project, namespace=ns, article=title, score=0)
@@ -163,6 +162,8 @@ def update_project_assessments(
       current_rating.quality = NOT_A_CLASS.encode('utf-8')
     elif kind == AssessmentKind.IMPORTANCE:
       current_rating.importance = NOT_A_CLASS.encode('utf-8')
+
+    # TODO: update logging table
     current_rating = wp10_session.merge(current_rating)
     wp10_session.add(current_rating)
   wp10_session.commit()

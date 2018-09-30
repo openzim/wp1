@@ -1,5 +1,8 @@
+from datetime import datetime
+
 from models.wiki.page import Page
 from models.wiki.log import Log
+from models.wp10.move import Move
 from logic.api import page as api_page
 import logic.util as logic_util
 
@@ -9,13 +12,38 @@ def get_pages_by_category(wiki_session, category, ns=None):
     q.filter(Page.namespace == ns)
   yield from q
 
+def update_page_moved(
+    wp10_session, project, old_ns, old_title, new_ns, new_title,
+    move_timestamp_dt):
+  logging.warning('Updating moves table for %s -> %s', old_title.decode('utf-8'),
+               new_title.decode('utf-8'))
+  db_timestamp = move_timestamp_dt.strftime(TS_FORMAT).encode('utf-8')
+  existing_move = wp10_sesion.query(Move).filter(
+    Move.timestamp == db_timestamp).filter(
+    Move.old_namespace == old_ns).filter(
+    Move.old_article == old_title).first()
+
+  if existing_move is not None:
+    logging.warning('Move %r already recorded', existing_move)
+  else:
+    new_move = Move(
+      timestamp=db_timestamp, old_namespace=old_ns, old_article=old_title,
+      new_namespace=new_ns, new_article=new_title)
+    wp10_session.add(new_move)
+
+  # TODO: Update logging table
+
 def _get_moves_from_api(wp10title, timestamp):
   title_with_ns = logic_util.title_for_api(wp10_session, namespace, title)
   moves = api_page.get_moves(title_with_ns)
   if moves is not None:
     for move in moves:
       if move['timestamp'] > timestamp:
-        return move
+        return {
+          'dest_ns': move['ns'],
+          'dest_title': move['title'].encode('utf-8'),
+          'timestamp_dt': move['timestamp'],
+        }
   return None
 
 def _get_redirects_from_api(wp10_session, namespace, title, timestamp):

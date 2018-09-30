@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 import logging
 import time
 
@@ -23,7 +23,7 @@ def get_redirect(title_with_ns):
   return {
     'ns': page['ns'],
     'title': page['title'],
-    'timestamp': datetime.datetime.strptime(
+    'timestamp': datetime.strptime(
       page['revisions'][0]['timestamp'], '%Y-%m-%dT%H:%M:%SZ'),
   }
 
@@ -39,8 +39,7 @@ def get_moves(title_with_ns):
     ans.append({
       'ns': event['params']['target_ns'],
       'title': event['params']['target_title'],
-      'timestamp': datetime.datetime.fromtimestamp(
-        time.mktime(event['timestamp'])),
+      'timestamp': datetime.fromtimestamp(time.mktime(event['timestamp'])),
     })
 
   return ans or None

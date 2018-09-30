@@ -4,9 +4,9 @@ from sqlalchemy import Column
 from sqlalchemy.dialects.mysql import INTEGER, BINARY
 from sqlalchemy.ext.declarative import declarative_base
 
-_Base = declarative_base()
+from constants import TS_FORMAT
 
-TABLE_TS_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
+_Base = declarative_base()
 
 class Rating(_Base):
   __tablename__ = 'lucky_ratings'
@@ -30,17 +30,17 @@ class Rating(_Base):
   @property
   def quality_timestamp_dt(self):
     return datetime.strptime(
-      self.quality_timestamp.decode('utf-8'), TABLE_TS_FORMAT)
+      self.quality_timestamp.decode('utf-8'), TS_FORMAT)
 
   @property
   def importance_timestamp_dt(self):
     return datetime.strptime(
-      self.importance_timestamp.decode('utf-8'), TABLE_TS_FORMAT)
+      self.importance_timestamp.decode('utf-8'), TS_FORMAT)
 
   def set_quality_timestamp_dt(self, dt):
     """Sets the quality_timestamp field using a datetime.datetime object"""
-    self.quality_timestamp = dt.strftime(TABLE_TS_FORMAT).encode('utf-8')
+    self.quality_timestamp = dt.strftime(TS_FORMAT).encode('utf-8')
 
   def set_importance_timestamp_dt(self, dt):
     """Sets the quality_timestamp field using a datetime.datetime object"""
-    self.importance_timestamp = dt.strftime(TABLE_TS_FORMAT).encode('utf-8')
+    self.importance_timestamp = dt.strftime(TS_FORMAT).encode('utf-8')
