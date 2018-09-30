@@ -1,6 +1,6 @@
 import mwclient
 
-from credentials import API_CREDS
+from lucky.credentials import API_CREDS
 
 _ua = 'WP1.0Bot/3.0. Run by User:Audiodude. Using mclient/0.9.1'
 site = mwclient.Site('en.wikipedia.org',

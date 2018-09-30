@@ -1,8 +1,7 @@
-
-
+import logging
 import time
 
-from models.wp10.release import Release
+from lucky.models.wp10.release import Release
 
 logger = logging.getLogger(__name__)
 
@@ -13,11 +12,11 @@ def insert_or_update_release_data(
 
   release = wp10_session.query(Release).get(page_title)
   if release is None:
-    logging.info('New article %r found', page_title)
+    logging.info('New article found: %s', page_title.decode('utf-8'))
     release = Release(
       article=page_title, category=category, timestamp=timestamp_binary)
   else:
-    logging.info('Updating article %r', page_title)
+    logging.info('Updating article: %s', page_title.decode('utf-8'))
     release.article = page_title
     release.category = category
     release.timestamp = timestamp_binary

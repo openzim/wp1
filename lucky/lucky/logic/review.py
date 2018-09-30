@@ -1,7 +1,7 @@
 import logging
 import time
 
-from models.wp10.review import Review
+from lucky.models.wp10.review import Review
 
 logger = logging.getLogger(__name__)
 
@@ -14,11 +14,11 @@ def insert_or_update_review_data(
 
   review = wp10_session.query(Review).get(page_title)
   if review is None:
-    logging.info('New article %r found', page_title)
+    logging.info('New article found: %s', page_title.decode('utf-8'))
     review = Review(
       article=page_title, value=value, timestamp=timestamp_binary)
   else:
-    logging.info('Updating article %r', page_title)
+    logging.info('Updating article: %s', page_title.decode('utf-8'))
     review.article = page_title
     review.value = value
     review.timestamp = timestamp_binary

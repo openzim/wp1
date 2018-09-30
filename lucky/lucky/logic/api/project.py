@@ -4,10 +4,10 @@ import re
 
 import mwparserfromhell
 
-from api import site
-from conf import get_conf
-from constants import AssessmentKind
-from logic import util as logic_util
+from lucky.api import site
+from lucky.conf import get_conf
+from lucky.constants import AssessmentKind
+from lucky.logic import util as logic_util
 
 logger = logging.getLogger(__name__)
 

@@ -2,8 +2,8 @@ from datetime import datetime
 import logging
 import time
 
-from api import site
-import logic.util as logic_util
+from lucky.api import site
+import lucky.logic.util as logic_util
 
 logger = logging.getLogger(__name__)
 

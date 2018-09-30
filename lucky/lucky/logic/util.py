@@ -1,6 +1,6 @@
-from conf import get_conf
-from constants import AssessmentKind
-from models.wp10.namespace import Namespace
+from lucky.conf import get_conf
+from lucky.constants import AssessmentKind
+from lucky.models.wp10.namespace import Namespace
 
 config = get_conf()
 CATEGORY_NS_STR = config['CATEGORY_NS']

@@ -1,11 +1,11 @@
 import logging
 
-from conf import get_conf
-from logic import page as logic_page, review as logic_review
-from models.wiki.page import Page
-from models.wp10.review import Review
-from wp10_db import Session as SessionWP10
-from wiki_db import Session as SessionWiki
+from lucky.conf import get_conf
+from lucky.logic import page as logic_page, review as logic_review
+from lucky.models.wiki.page import Page
+from lucky.models.wp10.review import Review
+from lucky.wp10_db import Session as SessionWP10
+from lucky.wiki_db import Session as SessionWiki
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -26,6 +26,7 @@ seen = set()
 for value, category in review_value_to_category.items():
   value = value.encode('utf-8')
   category = category.encode('utf-8')
+  logging.info('Querying pages in category %s', category.decode('utf-8'))
   for page in logic_page.get_pages_by_category(wiki_session, category):
     seen.add(page.title)
     old_value = title_to_value.get(page.title)

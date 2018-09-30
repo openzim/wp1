@@ -1,13 +1,13 @@
 import logging
 import re
 
-from conf import get_conf
-from constants import AssessmentKind, CATEGORY_NS_INT
-from logic import page as logic_page, util as logic_util
-from logic.api import project as api_project
-from models.wp10.category import Category
-from models.wp10.project import Project
-from models.wp10.rating import Rating
+from lucky.conf import get_conf
+from lucky.constants import AssessmentKind, CATEGORY_NS_INT
+from lucky.logic import page as logic_page, util as logic_util
+from lucky.logic.api import project as api_project
+from lucky.models.wp10.category import Category
+from lucky.models.wp10.project import Project
+from lucky.models.wp10.rating import Rating
 
 logger = logging.getLogger(__name__)
 
