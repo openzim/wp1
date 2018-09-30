@@ -17,8 +17,8 @@ class _OrmTest(unittest.TestCase):
   def tearDown(self):
     self.Base.metadata.drop_all(self.engine)
 
-class BaseWpOneOrmTest(unittest.TestCase):
+class BaseWpOneOrmTest(_OrmTest):
   Base = WpOneBase
 
-class BaseWikiOrmTest(unittest.TestCase):
+class BaseWikiOrmTest(_OrmTest):
   Base = WikiBase
