@@ -2,9 +2,9 @@ from sqlalchemy import Column
 from sqlalchemy.dialects.mysql import BINARY, INTEGER
 from sqlalchemy.ext.declarative import declarative_base
 
-_Base = declarative_base()
+from lucky.wp10_db import Base
 
-class Category(_Base):
+class Category(Base):
   __tablename__ = 'lucky_categories'
 
   project = Column('c_project', BINARY(63), primary_key=True)

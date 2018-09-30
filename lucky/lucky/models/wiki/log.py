@@ -4,9 +4,9 @@ from sqlalchemy import Column
 from sqlalchemy.dialects.mysql import BIGINT, BINARY, BLOB, INTEGER
 from sqlalchemy.ext.declarative import declarative_base
 
-_Base = declarative_base()
+from lucky.wiki_db import Base
 
-class Log(_Base):
+class Log(Base):
   __tablename__ = 'logging'
 
   id = Column('log_id', INTEGER(10, unsigned=True), primary_key=True)

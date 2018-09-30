@@ -4,6 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import column_property
 
 from lucky.conf import get_conf
+from lucky.wiki_db import Base
 
 config = get_conf()
 ARTICLES_LABEL_STR = config['ARTICLES_LABEL']
@@ -26,9 +27,7 @@ category_links_table = Table(
 
 page_category_join = join(page_table, category_links_table)
 
-_Base = declarative_base()
-
-class Page(_Base):
+class Page(Base):
   __table__ = page_category_join
 
   id = column_property(page_table.c.page_id,

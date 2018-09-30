@@ -5,10 +5,9 @@ from sqlalchemy.dialects.mysql import BINARY, INTEGER
 from sqlalchemy.ext.declarative import declarative_base
 
 from lucky.constants import TS_FORMAT
+from lucky.wp10_db import Base
 
-_Base = declarative_base()
-
-class Move(_Base):
+class Move(Base):
   __tablename__ = 'lucky_moves'
 
   timestamp = Column('m_timestamp', BINARY(20), primary_key=True)
