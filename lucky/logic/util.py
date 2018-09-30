@@ -43,6 +43,11 @@ def is_namespace_acceptable(ns):
     return False
   return True
 
+def title_for_api(wp10_session, namespace, title):
+  title = title.decode('utf-8')
+  ns_str = int_to_ns(wp10_session)[namespace].decode('utf-8')
+  return '%s:%s' % (ns_str, title)
+
 _NS_TO_INT = None
 _INT_TO_NS = None
 def ns_to_int(wp10_session):
@@ -56,7 +61,7 @@ def ns_to_int(wp10_session):
 
     _NS_TO_INT = dict((ns.name, ns.id) for ns in
                       wp10_session.query(Namespace).filter(
-                        Namespace.dbname == DATABASE_WIKI_TS))
+                        Namespace.dbname == DATABASE_WIKI_TS.encode('utf-8')))
     return _NS_TO_INT
 
 def int_to_ns(wp10_session):
@@ -64,5 +69,5 @@ def int_to_ns(wp10_session):
   if _INT_TO_NS is not None:
     return _INT_TO_NS
   else:
-    _INT_TO_NS = {v: k for k, v in ns_to_int().items()}
+    _INT_TO_NS = {v: k for k, v in ns_to_int(wp10_session).items()}
     return _INT_TO_NS
