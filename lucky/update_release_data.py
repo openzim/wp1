@@ -1,13 +1,13 @@
 import logging
 import time
 
-from conf import get_conf
-import constants
-from logic import page as logic_page, release as logic_release
-from models.wiki.page import Page
-from models.wp10.release import Release
-from wp10_db import Session as SessionWP10
-from wiki_db import Session as SessionWiki
+from lucky.conf import get_conf
+from lucky import constants
+from lucky.logic import page as logic_page, release as logic_release
+from lucky.models.wiki.page import Page
+from lucky.models.wp10.release import Release
+from lucky.wp10_db import Session as SessionWP10
+from lucky.wiki_db import Session as SessionWiki
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)

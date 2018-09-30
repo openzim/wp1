@@ -3,7 +3,7 @@ from sqlalchemy.dialects.mysql import BINARY, INTEGER
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import column_property
 
-from conf import get_conf
+from lucky.conf import get_conf
 
 config = get_conf()
 ARTICLES_LABEL_STR = config['ARTICLES_LABEL']

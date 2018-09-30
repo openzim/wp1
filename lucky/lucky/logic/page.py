@@ -1,10 +1,10 @@
 from datetime import datetime
 
-from models.wiki.page import Page
-from models.wiki.log import Log
-from models.wp10.move import Move
-from logic.api import page as api_page
-import logic.util as logic_util
+from lucky.models.wiki.page import Page
+from lucky.models.wiki.log import Log
+from lucky.models.wp10.move import Move
+from lucky.logic.api import page as api_page
+import lucky.logic.util as logic_util
 
 def get_pages_by_category(wiki_session, category, ns=None):
   q = wiki_session.query(Page).filter(Page.category == category)
