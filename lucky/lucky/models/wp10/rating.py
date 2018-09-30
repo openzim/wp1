@@ -4,11 +4,10 @@ from sqlalchemy import Column
 from sqlalchemy.dialects.mysql import INTEGER, BINARY
 from sqlalchemy.ext.declarative import declarative_base
 
-from constants import TS_FORMAT
+from lucky.constants import TS_FORMAT
+from lucky.wp10_db import Base
 
-_Base = declarative_base()
-
-class Rating(_Base):
+class Rating(Base):
   __tablename__ = 'lucky_ratings'
 
   project = Column('r_project', BINARY(63), primary_key=True)

@@ -2,9 +2,9 @@ from sqlalchemy import Column
 from sqlalchemy.dialects.mysql import BINARY
 from sqlalchemy.ext.declarative import declarative_base
 
-_Base = declarative_base()
+from lucky.wp10_db import Base
 
-class Release(_Base):
+class Release(Base):
   __tablename__ = 'lucky_releases'
 
   article = Column('rel_article', BINARY(255), primary_key=True)

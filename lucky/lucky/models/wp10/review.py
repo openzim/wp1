@@ -2,9 +2,9 @@ from sqlalchemy import Column
 from sqlalchemy.dialects.mysql import BINARY
 from sqlalchemy.ext.declarative import declarative_base
 
-_Base = declarative_base()
+from lucky.wp10_db import Base
 
-class Review(_Base):
+class Review(Base):
   __tablename__ = 'lucky_reviews'
 
   value = Column('rev_value', BINARY(10))

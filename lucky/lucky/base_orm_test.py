@@ -4,14 +4,21 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from lucky.wp10_db import Base as WpOneBase
+from lucky.wiki_db import Base as WikiBase
 
-class BaseWpOneOrmTest(unittest.TestCase):
+class _OrmTest(unittest.TestCase):
   engine = create_engine('sqlite:///:memory:')
   Session = sessionmaker(bind=engine)
   session = Session()
 
   def setUp(self):
-    WpOneBase.metadata.create_all(self.engine)
+    self.Base.metadata.create_all(self.engine)
 
   def tearDown(self):
-    WpOneBase.metadata.drop_all(self.engine)
+    self.Base.metadata.drop_all(self.engine)
+
+class BaseWpOneOrmTest(unittest.TestCase):
+  Base = WpOneBase
+
+class BaseWikiOrmTest(unittest.TestCase):
+  Base = WikiBase
