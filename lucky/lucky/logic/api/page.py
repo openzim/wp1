@@ -3,6 +3,7 @@ import logging
 import time
 
 from lucky.api import site
+from lucky.constants import TS_FORMAT
 import lucky.logic.util as logic_util
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,7 @@ def get_redirect(title_with_ns):
     'ns': page['ns'],
     'title': page['title'],
     'timestamp': datetime.strptime(
-      page['revisions'][0]['timestamp'], '%Y-%m-%dT%H:%M:%SZ'),
+      page['revisions'][0]['timestamp'], TS_FORMAT),
   }
 
 def get_moves(title_with_ns):
