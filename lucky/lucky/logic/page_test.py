@@ -1,7 +1,11 @@
 from datetime import datetime
+from unittest.mock import patch
+import time
 
-from lucky.base_orm_test import BaseWikiOrmTest
+from lucky.base_orm_test import BaseWikiOrmTest, BaseWpOneOrmTest
+from lucky.constants import TS_FORMAT
 from lucky.logic import page as logic_page
+from lucky.models.wp10.namespace import Namespace, NsType
 from lucky.models.wiki.page import Page
 
 class LogicPageCategoryTest(BaseWikiOrmTest):
@@ -51,3 +55,112 @@ class LogicPageCategoryTest(BaseWikiOrmTest):
     self.assertEqual(2, len(titles))
     self.assertTrue(b'Superman Facts' in titles)
     self.assertTrue(b'Places Superman vacations' in titles)
+
+
+class LogicPageMovesTest(BaseWpOneOrmTest):
+  def setUp(self):
+    super().setUp()
+    n = Namespace(dbname=b'enwiki_p', domain=b'en.wikipedia.org', id=0,
+                  name=b'', type=NsType.primary)
+    self.session.add(n)
+    self.session.commit()
+
+    self.timestamp_str = '2011-04-28T12:30:00Z'
+    self.expected_ns = 0
+    self.expected_title = 'Article moved to'
+    self.expected_dt = datetime.strptime(self.timestamp_str, TS_FORMAT)
+
+    self.api_return = {
+      'query': {
+        'redirects': [{'to': self.expected_title}],
+        'pages': {123: {
+          'ns': self.expected_ns,
+          'title': self.expected_title,
+          'revisions': [{'timestamp': self.timestamp_str}],
+        }},
+      },
+    }
+
+    self.le_return = [{
+      'params': {
+        'target_ns': self.expected_ns,
+        'target_title': self.expected_title,
+      },
+      'timestamp': time.strptime(self.timestamp_str, TS_FORMAT),
+    }]
+
+    self.le_multi = [{
+      'params': {
+        'target_ns': self.expected_ns,
+        'target_title': self.expected_title,
+      },
+      'timestamp': time.strptime(self.timestamp_str, TS_FORMAT),
+    }, {
+      'params': {
+        'target_ns': self.expected_ns + 10,
+        'target_title': 'Some other article',
+      },
+      'timestamp': time.strptime('2010-08-08T12:30:00Z', TS_FORMAT),
+    }, {
+      'params': {
+        'target_ns': self.expected_ns + 20,
+        'target_title': 'Another crazy article',
+      },
+      'timestamp': time.strptime('2008-08-08T12:30:00Z', TS_FORMAT),
+  }]
+
+  @patch('lucky.logic.api.page.site')
+  def test_no_redirect_no_move(self, unused_patched_site):
+    move_data = logic_page.get_move_data(
+      self.session, 0, b'Some Moved Article', datetime(1970, 1, 1))
+    self.assertIsNone(move_data)
+
+  @patch('lucky.logic.api.page.site')
+  def test_get_redirect_from_api(self, patched_site):
+    patched_site.api.side_effect = lambda *args, **kwargs: self.api_return
+    move_data = logic_page.get_move_data(
+      self.session, 0, b'Some Moved Article', datetime(1970, 1, 1))
+
+    self.assertIsNotNone(move_data)
+    self.assertEqual(self.expected_ns, move_data['dest_ns'])
+    self.assertEqual(self.expected_title.encode('utf-8'),
+                     move_data['dest_title'])
+    self.assertEqual(self.expected_dt, move_data['timestamp_dt'])
+
+  @patch('lucky.logic.api.page.site')
+  def test_get_single_move_from_api(self, patched_site):
+    patched_site.logevents.side_effect = lambda *args, **kwargs: self.le_return
+    move_data = logic_page.get_move_data(
+      self.session, 0, b'Some Moved Article', datetime(1970, 1, 1))
+
+    self.assertIsNotNone(move_data)
+    self.assertEqual(self.expected_ns, move_data['dest_ns'])
+    self.assertEqual(self.expected_title.encode('utf-8'),
+                     move_data['dest_title'])
+    self.assertEqual(self.expected_dt, move_data['timestamp_dt'])
+
+  @patch('lucky.logic.api.page.site')
+  def test_get_most_recent_move_from_api(self, patched_site):
+    patched_site.logevents.side_effect = lambda *args, **kwargs: self.le_multi
+    move_data = logic_page.get_move_data(
+      self.session, 0, b'Some Moved Article', datetime(1970, 1, 1))
+
+    self.assertIsNotNone(move_data)
+    self.assertEqual(self.expected_ns, move_data['dest_ns'])
+    self.assertEqual(self.expected_title.encode('utf-8'),
+                     move_data['dest_title'])
+    self.assertEqual(self.expected_dt, move_data['timestamp_dt'])
+
+  @patch('lucky.logic.api.page.site')
+  def test_get_redirect_too_old_from_api(self, patched_site):
+    patched_site.api.side_effect = lambda *args, **kwargs: self.api_return
+    move_data = logic_page.get_move_data(
+      self.session, 0, b'Some Moved Article', datetime(2014, 1, 1))
+    self.assertIsNone(move_data)
+    
+  @patch('lucky.logic.api.page.site')
+  def test_get_single_move_too_old_from_api(self, patched_site):
+    patched_site.logevents.side_effect = lambda *args, **kwargs: self.le_return
+    move_data = logic_page.get_move_data(
+      self.session, 0, b'Some Moved Article', datetime(2014, 1, 1))
+    self.assertIsNone(move_data)

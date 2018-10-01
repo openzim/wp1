@@ -33,7 +33,7 @@ def update_page_moved(
 
   # TODO: Update logging table
 
-def _get_moves_from_api(wp10title, timestamp):
+def _get_moves_from_api(wp10_session, namespace, title, timestamp):
   title_with_ns = logic_util.title_for_api(wp10_session, namespace, title)
   moves = api_page.get_moves(title_with_ns)
   if moves is not None:
@@ -57,9 +57,8 @@ def _get_redirects_from_api(wp10_session, namespace, title, timestamp):
     }
   return None
 
-def get_move_data(wiki_session, wp10_session, namespace, title, timestamp):
-  moves = _get_redirects_from_api(namespace, title, timestamp)
+def get_move_data(wp10_session, namespace, title, timestamp):
+  moves = _get_redirects_from_api(wp10_session, namespace, title, timestamp)
   if moves is None:
-    moves = _get_moves_from_api(
-      wiki_session, wp10_session, namespace, title, timestamp)
+    moves = _get_moves_from_api(wp10_session, namespace, title, timestamp)
   return moves

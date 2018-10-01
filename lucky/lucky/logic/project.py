@@ -149,8 +149,7 @@ def update_project_assessments(
     title = title.encode('utf-8')
 
     move_data = logic_page.get_move_data(
-      wiki_session, wp10_session, ns, title, project.timestamp)
-
+      wp10_session, ns, title, project.timestamp)
     if move_data is not None:
       logic_page.update_page_moved(
         wp10_session, project, ns, title, move_data['dest-ns'],
