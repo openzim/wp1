@@ -2,7 +2,6 @@ import datetime
 
 from sqlalchemy import Column
 from sqlalchemy.dialects.mysql import BIGINT, BINARY, BLOB, INTEGER
-from sqlalchemy.ext.declarative import declarative_base
 
 from lucky.wiki_db import Base
 

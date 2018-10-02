@@ -2,7 +2,6 @@ import enum
 
 from sqlalchemy import Column, Enum
 from sqlalchemy.dialects.mysql import BINARY, INTEGER
-from sqlalchemy.ext.declarative import declarative_base
 
 from lucky.wp10_db import Base
 

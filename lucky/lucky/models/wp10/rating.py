@@ -2,7 +2,6 @@ from datetime import datetime
 
 from sqlalchemy import Column
 from sqlalchemy.dialects.mysql import INTEGER, BINARY
-from sqlalchemy.ext.declarative import declarative_base
 
 from lucky.constants import TS_FORMAT
 from lucky.wp10_db import Base
