@@ -1,10 +1,14 @@
 from datetime import datetime
+import logging
 
+from lucky.constants import TS_FORMAT
 from lucky.models.wiki.page import Page
 from lucky.models.wiki.log import Log
 from lucky.models.wp10.move import Move
 from lucky.logic.api import page as api_page
 import lucky.logic.util as logic_util
+
+logger = logging.getLogger(__name__)
 
 def get_pages_by_category(wiki_session, category, ns=None):
   q = wiki_session.query(Page).filter(Page.category == category)
@@ -15,16 +19,16 @@ def get_pages_by_category(wiki_session, category, ns=None):
 def update_page_moved(
     wp10_session, project, old_ns, old_title, new_ns, new_title,
     move_timestamp_dt):
-  logging.warning('Updating moves table for %s -> %s', old_title.decode('utf-8'),
-               new_title.decode('utf-8'))
+  logger.warning('Updating moves table for %s -> %s',
+                  old_title.decode('utf-8'), new_title.decode('utf-8'))
   db_timestamp = move_timestamp_dt.strftime(TS_FORMAT).encode('utf-8')
-  existing_move = wp10_sesion.query(Move).filter(
+  existing_move = wp10_session.query(Move).filter(
     Move.timestamp == db_timestamp).filter(
     Move.old_namespace == old_ns).filter(
     Move.old_article == old_title).first()
 
   if existing_move is not None:
-    logging.warning('Move %r already recorded', existing_move)
+    logger.warning('Move already recorded: %r', existing_move)
   else:
     new_move = Move(
       timestamp=db_timestamp, old_namespace=old_ns, old_article=old_title,

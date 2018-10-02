@@ -17,11 +17,12 @@ class Move(Base):
   new_article = Column('m_new_article', BINARY(255))
 
   def __repr__(self):
-    return ('<Move(timestamp=%r, count=%r,'
-            ' upload_timestamp=%r)>' % (
-              self.project, self.timestamp, self.count, self.upload_timestamp))
+    return ('<Move(timestamp=%r, old_namespace=%r, old_article=%r,'
+            ' new_namespace=%r, new_article=%r)>' % (
+              self.timestamp, self.old_namespace, self.old_article,
+              self.new_namespace, self.new_article))
 
   # The timestamp parsed into a datetime.datetime object.
   @property
   def timestamp_dt(self):
-    return dateimte.strptime(self.timestamp.decode('utf-8'), TS_FORMAT)
+    return datetime.strptime(self.timestamp.decode('utf-8'), TS_FORMAT)

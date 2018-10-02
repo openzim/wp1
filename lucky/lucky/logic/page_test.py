@@ -5,7 +5,9 @@ import time
 from lucky.base_orm_test import BaseWikiOrmTest, BaseWpOneOrmTest
 from lucky.constants import TS_FORMAT
 from lucky.logic import page as logic_page
+from lucky.models.wp10.move import Move
 from lucky.models.wp10.namespace import Namespace, NsType
+from lucky.models.wp10.project import Project
 from lucky.models.wiki.page import Page
 
 class LogicPageCategoryTest(BaseWikiOrmTest):
@@ -164,3 +166,48 @@ class LogicPageMovesTest(BaseWpOneOrmTest):
     move_data = logic_page.get_move_data(
       self.session, 0, b'Some Moved Article', datetime(2014, 1, 1))
     self.assertIsNone(move_data)
+
+class LogicPageMoveDbTest(BaseWpOneOrmTest):
+  def setUp(self):
+    super().setUp()
+    self.project = Project(project=b'Testing')
+    self.session.add(self.project)
+    self.session.commit()
+
+    self.old_ns = 0
+    self.old_article = b'The history of testing'
+    self.new_ns = 0
+    self.new_article = b'History of testing'
+    self.dt = datetime(2015, 4, 1)
+    self.timestamp_db = self.dt.strftime(TS_FORMAT).encode('utf-8')
+
+  
+  def test_new_move(self):
+    logic_page.update_page_moved(
+      self.session, self.project, self.old_ns, self.old_article,
+      self.new_ns, self.new_article, self.dt)
+    self.session.commit()
+
+    move = self.session.query(Move).filter(
+      Move.old_article == self.old_article).first()
+
+    self.assertIsNotNone(move)
+    self.assertEqual(self.old_ns, move.old_namespace)
+    self.assertEqual(self.old_article, move.old_article)
+    self.assertEqual(self.new_ns, move.new_namespace)
+    self.assertEqual(self.new_article, move.new_article)
+    self.assertEqual(self.timestamp_db, move.timestamp)
+
+  def test_does_not_add_existing_move(self):
+    logic_page.update_page_moved(
+      self.session, self.project, self.old_ns, self.old_article,
+      self.new_ns, self.new_article, self.dt)
+    self.session.commit()
+
+    logic_page.update_page_moved(
+      self.session, self.project, self.old_ns, self.old_article,
+      self.new_ns, self.new_article, self.dt)
+    self.session.commit()
+
+    all_moves = list(self.session.query(Move).all())
+    self.assertEqual(1, len(all_moves))
