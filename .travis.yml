@@ -4,4 +4,4 @@ python:
 install:
   - pip install -r lucky/requirements.txt
 script:
-  - nosetests lucky
+  - cd lucky && nosetests
