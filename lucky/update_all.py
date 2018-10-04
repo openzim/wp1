@@ -28,9 +28,6 @@ ARTICLES_LABEL = config['ARTICLES_LABEL'].encode('utf-8')
 # %s formatting doesn't work for byes in Python 3.4
 RE_REJECT_GENERIC = re.compile(ARTICLES_LABEL + b'_' + BY_QUALITY, re.I)
 
-GLOBAL_TIMESTAMP = time.strftime('%Y%m%d%H%M%S', time.gmtime())
-GLOBAL_TIMESTAMP_WIKI = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
-
 # Preload all projects
 list(wp10_session.query(Project))
 

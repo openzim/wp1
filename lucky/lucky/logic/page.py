@@ -1,9 +1,9 @@
 from datetime import datetime
 import logging
 
-from lucky.constants import TS_FORMAT
+from lucky.constants import TS_FORMAT, GLOBAL_TIMESTAMP
 from lucky.models.wiki.page import Page
-from lucky.models.wiki.log import Log
+from lucky.models.wp10.log import Log
 from lucky.models.wp10.move import Move
 from lucky.logic.api import page as api_page
 import lucky.logic.util as logic_util
@@ -35,7 +35,21 @@ def update_page_moved(
       new_namespace=new_ns, new_article=new_title)
     wp10_session.add(new_move)
 
-  # TODO: Update logging table
+  existing_log = wp10_session.query(Log).filter(
+    Log.project == project.project).filter(
+    Log.namespace == old_ns).filter(
+    Log.article == old_title).filter(
+    Log.action == b'moved').filter(
+    Log.revision_timestamp == db_timestamp).first()
+
+  if existing_log is not None:
+    logger.warning('Move already recorded in logging table: %r', existing_log)
+  else:
+    new_log = Log(
+      project=project.project, namespace=old_ns, article=old_title,
+      action=b'moved', timestamp=GLOBAL_TIMESTAMP, old=b'', new=b'',
+      revision_timestamp=db_timestamp)
+    wp10_session.add(new_log)
 
 def _get_moves_from_api(wp10_session, namespace, title, timestamp):
   title_with_ns = logic_util.title_for_api(wp10_session, namespace, title)
