@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import Column
 from sqlalchemy.dialects.mysql import BINARY, INTEGER
 
+from lucky.constants import TS_FORMAT
 from lucky.wp10_db import Base
 
 class Project(Base):
@@ -21,5 +22,4 @@ class Project(Base):
   # The timestamp parsed into a datetime.datetime object.
   @property
   def timestamp_dt(self):
-    return datetime.strptime(
-      self.timestamp.decode('utf-8'), '%Y-%m-%dT%H:%M:%SZ')
+    return datetime.strptime(self.timestamp.decode('utf-8'), TS_FORMAT)
