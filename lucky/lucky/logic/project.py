@@ -107,33 +107,35 @@ def update_project_assessments(
 
       article_ref = str(namespace).encode('utf-8') + b':' +  page.title
       seen.add(article_ref)
+      old_rating = old_ratings.get(article_ref)
+      old_rating_value = None
 
       current_rating = Rating(project=project.project, namespace=namespace,
                               article=page.title, score=0)
       if kind == AssessmentKind.QUALITY:
         current_rating.quality = rating.encode('utf-8')
         current_rating.set_quality_timestamp_dt(page.timestamp)
+        if old_rating:
+          old_rating_value = old_rating.quality
       elif kind == AssessmentKind.IMPORTANCE:
         current_rating.importance = rating.encode('utf-8')
         current_rating.set_importance_timestamp_dt(page.timestamp)
+        if old_rating:
+          old_rating_value = old_rating.importance
+
+      if old_rating_value is None:
+        old_rating_value = NOT_A_CLASS
 
       # If the article is new, or if the rating doesn't match, save the rating.
       if (article_ref not in old_ratings or
-          (kind == AssessmentKind.QUALITY and
-          old_ratings[article_ref].quality != rating) or (
-          kind == AssessmentKind.IMPORTANCE and
-          old_ratings[article_ref].importance != rating)):
-        # TODO: update logging table
+          old_rating_value != rating):
         current_rating = wp10_session.merge(current_rating)
         wp10_session.add(current_rating)
+        logic_rating.add_log_for_rating(current_rating, kind, old_rating_value)
     wp10_session.commit()
 
   logging.debug('Looking for unseen articles')
   for ref, old_rating in old_ratings.items():
-    # TODO: Figure out how to process unseen articles without hanging forever
-    # on the logging table lookup
-    continue
-
     if ref in seen:
       continue
 
@@ -143,7 +145,7 @@ def update_project_assessments(
          old_rating.importance == NOT_A_CLASS or old_rating.importance == '')):
       continue
 
-    logging.debug('Processing unseen article %s', ref)
+    logging.debug('Processing unseen article %s', ref.decode('utf-8'))
     ns, title = ref.decode('utf-8').split(':')
     ns = ns.encode('utf-8')
     title = title.encode('utf-8')
@@ -159,12 +161,14 @@ def update_project_assessments(
       project=project.project, namespace=ns, article=title, score=0)
     if kind == AssessmentKind.QUALITY:
       current_rating.quality = NOT_A_CLASS.encode('utf-8')
+      old_rating_value = old_rating.quality
     elif kind == AssessmentKind.IMPORTANCE:
       current_rating.importance = NOT_A_CLASS.encode('utf-8')
+      old_rating_value = old_rating.importance
 
-    # TODO: update logging table
     current_rating = wp10_session.merge(current_rating)
     wp10_session.add(current_rating)
+    logic_rating.add_log_for_rating(current_rating, kind, old_rating_value)
   wp10_session.commit()
 
 def update_project(wiki_session, wp10_session, project):
