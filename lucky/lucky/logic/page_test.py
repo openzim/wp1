@@ -5,6 +5,7 @@ import time
 from lucky.base_orm_test import BaseWikiOrmTest, BaseWpOneOrmTest
 from lucky.constants import TS_FORMAT
 from lucky.logic import page as logic_page
+from lucky.models.wp10.log import Log
 from lucky.models.wp10.move import Move
 from lucky.models.wp10.namespace import Namespace, NsType
 from lucky.models.wp10.project import Project
@@ -198,6 +199,23 @@ class LogicPageMoveDbTest(BaseWpOneOrmTest):
     self.assertEqual(self.new_article, move.new_article)
     self.assertEqual(self.timestamp_db, move.timestamp)
 
+  def test_new_move_log(self):
+    logic_page.update_page_moved(
+      self.session, self.project, self.old_ns, self.old_article,
+      self.new_ns, self.new_article, self.dt)
+    self.session.commit()
+
+    log = self.session.query(Log).filter(
+      Log.article == self.old_article).first()
+
+    self.assertIsNotNone(log)
+    self.assertEqual(self.old_ns, log.namespace)
+    self.assertEqual(self.old_article, log.article)
+    self.assertEqual(b'moved', log.action)
+    self.assertEqual(b'', log.old)
+    self.assertEqual(b'', log.new)
+    self.assertEqual(self.timestamp_db, log.revision_timestamp)
+
   def test_does_not_add_existing_move(self):
     logic_page.update_page_moved(
       self.session, self.project, self.old_ns, self.old_article,
@@ -210,4 +228,18 @@ class LogicPageMoveDbTest(BaseWpOneOrmTest):
     self.session.commit()
 
     all_moves = list(self.session.query(Move).all())
+    self.assertEqual(1, len(all_moves))
+
+  def test_does_not_add_existing_log(self):
+    logic_page.update_page_moved(
+      self.session, self.project, self.old_ns, self.old_article,
+      self.new_ns, self.new_article, self.dt)
+    self.session.commit()
+
+    logic_page.update_page_moved(
+      self.session, self.project, self.old_ns, self.old_article,
+      self.new_ns, self.new_article, self.dt)
+    self.session.commit()
+
+    all_moves = list(self.session.query(Log).all())
     self.assertEqual(1, len(all_moves))
