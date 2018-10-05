@@ -21,14 +21,18 @@ RE_INDICATOR = re.compile(b'([A-Za-z]+)[ _-]')
 
 def update_category(
     wp10_session, project, page, extra, kind, rating_to_category):
+  replaces = None
   extra_category = extra.get(page.title)
   if extra_category is not None:
     rating = extra_category['title']
     ranking = extra_category['ranking']
+    if kind == AssessmentKind.QUALITY:
+      replaces = extra_category['replaces']
   else:
     md = RE_INDICATOR.search(page.title)
     if not md:
-      logger.debug('Skipping page with no class match: %s', page.title)
+      logger.debug('Skipping page with no class match: %s',
+                   page.title.decode('utf-8'))
       return
 
     rating = ('%s-%s' % (md.group(1).decode('utf-8'), CLASS))
@@ -38,17 +42,19 @@ def update_category(
       rating_map = IMPORTANCE
 
     if rating not in rating_map:
-      logger.debug('Skipping page with unrecognized indicator: %s - %s',
-                   page.title, rating)
+      logger.debug('Skipping page with indicator not in mapping: %s | %s',
+                   page.title.decode('utf-8'), rating)
       return
     ranking = rating_map[rating]
 
   rating_to_category[rating] = page.title
+  if replaces is None:
+    replaces = rating
 
   category = Category(
     project=project.project, type=kind.value.encode('utf-8'),
     rating=rating.encode('utf-8'), category=page.title, ranking=ranking,
-    replacement=rating.encode('utf-8'))
+    replacement=replaces.encode('utf-8'))
   # If there is an existing category, merge in our changes
   category = wp10_session.merge(category)
   wp10_session.add(category)
