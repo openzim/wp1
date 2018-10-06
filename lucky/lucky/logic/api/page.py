@@ -24,7 +24,7 @@ def get_redirect(title_with_ns):
   return {
     'ns': page['ns'],
     'title': page['title'],
-    'timestamp': datetime.strptime(
+    'timestamp_dt': datetime.strptime(
       page['revisions'][0]['timestamp'], TS_FORMAT),
   }
 
@@ -40,7 +40,7 @@ def get_moves(title_with_ns):
     ans.append({
       'ns': event['params']['target_ns'],
       'title': event['params']['target_title'],
-      'timestamp': datetime.fromtimestamp(time.mktime(event['timestamp'])),
+      'timestamp_dt': datetime.fromtimestamp(time.mktime(event['timestamp'])),
     })
 
   return ans or None

@@ -3,7 +3,7 @@ import re
 
 from lucky.conf import get_conf
 from lucky.constants import AssessmentKind, CATEGORY_NS_INT
-from lucky.logic import page as logic_page, util as logic_util
+from lucky.logic import page as logic_page, util as logic_util, rating as logic_rating
 from lucky.logic.api import project as api_project
 from lucky.models.wp10.category import Category
 from lucky.models.wp10.project import Project
@@ -130,14 +130,15 @@ def update_project_assessments(
           old_rating_value = old_rating.importance
 
       if old_rating_value is None:
-        old_rating_value = NOT_A_CLASS
+        old_rating_value = NOT_A_CLASS.encode('utf-8')
 
       # If the article is new, or if the rating doesn't match, save the rating.
       if (article_ref not in old_ratings or
           old_rating_value != rating):
         current_rating = wp10_session.merge(current_rating)
         wp10_session.add(current_rating)
-        logic_rating.add_log_for_rating(current_rating, kind, old_rating_value)
+        logic_rating.add_log_for_rating(
+          wp10_session, current_rating, kind, old_rating_value)
     wp10_session.commit()
 
   logging.debug('Looking for unseen articles')
@@ -148,20 +149,22 @@ def update_project_assessments(
     if ((kind == AssessmentKind.QUALITY and
          old_rating.quality == NOT_A_CLASS) or
         (kind == AssessmentKind.IMPORTANCE and
-         old_rating.importance == NOT_A_CLASS or old_rating.importance == '')):
+         (old_rating.importance == NOT_A_CLASS
+          or old_rating.importance == ''
+          or old_rating.importance is None))):
       continue
 
     logging.debug('Processing unseen article %s', ref.decode('utf-8'))
     ns, title = ref.decode('utf-8').split(':')
-    ns = ns.encode('utf-8')
+    ns = int(ns.encode('utf-8'))
     title = title.encode('utf-8')
 
     move_data = logic_page.get_move_data(
-      wp10_session, ns, title, project.timestamp)
+      wp10_session, ns, title, project.timestamp_dt)
     if move_data is not None:
       logic_page.update_page_moved(
-        wp10_session, project, ns, title, move_data['dest-ns'],
-        move_data['dest-title'], move_data['timestamp_dt'])
+        wp10_session, project, ns, title, move_data['dest_ns'],
+        move_data['dest_title'], move_data['timestamp_dt'])
       
     current_rating = Rating(
       project=project.project, namespace=ns, article=title, score=0)
@@ -174,7 +177,8 @@ def update_project_assessments(
 
     current_rating = wp10_session.merge(current_rating)
     wp10_session.add(current_rating)
-    logic_rating.add_log_for_rating(current_rating, kind, old_rating_value)
+    logic_rating.add_log_for_rating(
+      wp10_session, current_rating, kind, old_rating_value)
   wp10_session.commit()
 
 def update_project(wiki_session, wp10_session, project):
