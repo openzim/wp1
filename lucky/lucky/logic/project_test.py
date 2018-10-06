@@ -179,6 +179,15 @@ class UpdateProjectCategoriesByKindTest(BaseCombinedOrmTest):
     category_replaces = set(category.replacement for category in categories)
     self.assertEqual(expected_ratings, category_replaces)
 
+  def test_update_quality_rating_to_category(self):
+    self._insert_pages(self.quality_pages)
+    rating_to_category = logic_project.update_project_categories_by_kind(
+      self.wiki_session, self.wp10_session, self.project, {},
+      AssessmentKind.QUALITY)
+
+    expected = dict((p[3].decode('utf-8'), p[1]) for p in self.quality_pages)
+    self.assertEqual(expected, rating_to_category)
+
   def test_update_importance(self):
     self._insert_pages(self.importance_pages)
     logic_project.update_project_categories_by_kind(
