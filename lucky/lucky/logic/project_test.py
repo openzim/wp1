@@ -1,6 +1,6 @@
-from lucky.base_orm_test import BaseWpOneOrmTest
+from lucky.base_orm_test import BaseWpOneOrmTest, BaseCombinedOrmTest
 from lucky.conf import get_conf
-from lucky.constants import AssessmentKind
+from lucky.constants import AssessmentKind, CATEGORY_NS_INT
 from lucky.logic import project as logic_project
 from lucky.models.wiki.page import Page
 from lucky.models.wp10.category import Category
@@ -94,3 +94,133 @@ class UpdateCategoryTest(BaseWpOneOrmTest):
     category = self.session.query(Category).first()
     self.assertIsNone(category)
     self.assertEqual(0, len(rating_to_category))
+
+class UpdateProjectCategoriesByKindTest(BaseCombinedOrmTest):
+  quality_pages = (
+    (101, b'FA-Class_Test_articles', b'Test_articles_by_quality', b'FA-Class'),
+    (102, b'FL-Class_Test_articles', b'Test_articles_by_quality', b'FL-Class'),
+    (103, b'A-Class_Test_articles', b'Test_articles_by_quality', b'A-Class'),
+    (104, b'GA-Class_Test_articles', b'Test_articles_by_quality', b'GA-Class'),
+    (105, b'B-Class_Test_articles', b'Test_articles_by_quality', b'B-Class'),
+    (106, b'C-Class_Test_articles', b'Test_articles_by_quality', b'C-Class'),
+  )
+
+  additional_junk_pages = (
+    (201, b'FA-Class_Foo_articles', b'Foo_articles_by_quality', b'FA-Class'),
+    (202, b'FL-Class_Bar_articles', b'Bar_articles_by_quality', b'FL-Class'),
+    (203, b'Mid-Class_Foo_articles', b'Foo_articles_by_importance',
+     b'Mid-Class'),
+    (204, b'Low-Class_Bar_articles', b'Bar_articles_by_importance',
+     b'Low-Class'),
+  )
+
+  importance_pages = (
+    (101, b'Top-Class_Test_articles', b'Test_articles_by_importance',
+     b'Top-Class'),
+    (102, b'High-Class_Test_articles', b'Test_articles_by_importance',
+     b'High-Class'),
+    (103, b'Mid-Class_Test_articles', b'Test_articles_by_importance',
+     b'Mid-Class'),
+    (104, b'Low-Class_Test_articles', b'Test_articles_by_importance',
+     b'Low-Class'),
+  )
+
+  priority_pages = (
+    (101, b'Top-Class_Test_articles', b'Test_articles_by_priority',
+     b'Top-Class'),
+    (102, b'High-Class_Test_articles', b'Test_articles_by_priority',
+     b'High-Class'),
+    (103, b'Mid-Class_Test_articles', b'Test_articles_by_priority',
+     b'Mid-Class'),
+    (104, b'Low-Class_Test_articles', b'Test_articles_by_priority',
+     b'Low-Class'),
+  )
+
+  def _insert_pages(self, pages):
+    for p in pages:
+      self.wiki_session.execute('''
+        INSERT INTO page (page_id, page_namespace, page_title)
+        VALUES (:id, :ns, :title)
+      ''', [
+        {'id': p[0], 'ns': 14, 'title': p[1]},
+      ])
+      self.wiki_session.execute('''
+        INSERT INTO categorylinks (cl_from, cl_to)
+        VALUES (:from, :to)
+      ''', [
+        {'from': p[0], 'to': p[2]},
+      ])
+
+  def setUp(self):
+    super().setUp()
+    self.project = Project(project=b'Test')
+    self._insert_pages(self.additional_junk_pages)
+
+  def test_update_quality(self):
+    self._insert_pages(self.quality_pages)
+    logic_project.update_project_categories_by_kind(
+      self.wiki_session, self.wp10_session, self.project, {},
+      AssessmentKind.QUALITY)
+
+    categories = self.wp10_session.query(Category).all()
+    self.assertNotEqual(0, len(categories))
+    for category in categories:
+      self.assertEqual(self.project.project, category.project)
+      self.assertEqual(b'quality', category.type)
+
+    category_titles = set(category.category for category in categories)
+    expected_titles = set(p[1] for p in self.quality_pages)
+    self.assertEqual(expected_titles, category_titles)
+
+    category_ratings = set(category.rating for category in categories)
+    expected_ratings = set(p[3] for p in self.quality_pages)
+    self.assertEqual(expected_ratings, category_ratings)
+
+    category_replaces = set(category.replacement for category in categories)
+    self.assertEqual(expected_ratings, category_replaces)
+
+  def test_update_importance(self):
+    self._insert_pages(self.importance_pages)
+    logic_project.update_project_categories_by_kind(
+      self.wiki_session, self.wp10_session, self.project, {},
+      AssessmentKind.IMPORTANCE)
+
+    categories = self.wp10_session.query(Category).all()
+    self.assertNotEqual(0, len(categories))
+    for category in categories:
+      self.assertEqual(self.project.project, category.project)
+      self.assertEqual(b'importance', category.type)
+
+    category_titles = set(category.category for category in categories)
+    expected_titles = set(p[1] for p in self.importance_pages)
+    self.assertEqual(expected_titles, category_titles)
+
+    category_ratings = set(category.rating for category in categories)
+    expected_ratings = set(p[3] for p in self.importance_pages)
+    self.assertEqual(expected_ratings, category_ratings)
+
+    category_replaces = set(category.replacement for category in categories)
+    self.assertEqual(expected_ratings, category_replaces)
+
+  def test_update_priority(self):
+    self._insert_pages(self.priority_pages)
+    logic_project.update_project_categories_by_kind(
+      self.wiki_session, self.wp10_session, self.project, {},
+      AssessmentKind.IMPORTANCE)
+
+    categories = self.wp10_session.query(Category).all()
+    self.assertNotEqual(0, len(categories))
+    for category in categories:
+      self.assertEqual(self.project.project, category.project)
+      self.assertEqual(b'importance', category.type)
+
+    category_titles = set(category.category for category in categories)
+    expected_titles = set(p[1] for p in self.priority_pages)
+    self.assertEqual(expected_titles, category_titles)
+
+    category_ratings = set(category.rating for category in categories)
+    expected_ratings = set(p[3] for p in self.priority_pages)
+    self.assertEqual(expected_ratings, category_ratings)
+
+    category_replaces = set(category.replacement for category in categories)
+    self.assertEqual(expected_ratings, category_replaces)
