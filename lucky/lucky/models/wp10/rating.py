@@ -1,10 +1,13 @@
 from datetime import datetime
+import logging
 
 from sqlalchemy import Column
 from sqlalchemy.dialects.mysql import INTEGER, BINARY
 
 from lucky.constants import TS_FORMAT
 from lucky.wp10_db import Base
+
+logger = logging.getLogger(__name__)
 
 class Rating(Base):
   __tablename__ = 'lucky_ratings'
@@ -20,9 +23,12 @@ class Rating(Base):
   score = Column('r_score', INTEGER(8, unsigned=True))
 
   def __repr__(self):
-    return ('<Rating(project=%r, timestamp=%r, count=%r,'
-            ' upload_timestamp=%r)>' % (
-              self.project, self.timestamp, self.count, self.upload_timestamp))
+    return ('<Rating(project=%r, namespace=%r, article=%r, quality=%r,'
+            ' quality_timestamp=%r, importance=%r, importance_timestamp=%r,'
+            ' score=%r)>' % (
+              self.project, self.namespace, self.article, self.quality,
+              self.quality_timestamp, self.importance,
+              self.importance_timestamp, self.score))
 
   # The timestamp parsed into a datetime.datetime object.
   @property
@@ -37,8 +43,15 @@ class Rating(Base):
 
   def set_quality_timestamp_dt(self, dt):
     """Sets the quality_timestamp field using a datetime.datetime object"""
+    if dt is None:
+      logger.warning('Attempt to set rating quality_timestamp to None ignored')
+      return
     self.quality_timestamp = dt.strftime(TS_FORMAT).encode('utf-8')
 
   def set_importance_timestamp_dt(self, dt):
     """Sets the quality_timestamp field using a datetime.datetime object"""
+    if dt is None:
+      logger.warning(
+        'Attempt to set rating importance_timestamp to None ignored')
+      return
     self.importance_timestamp = dt.strftime(TS_FORMAT).encode('utf-8')

@@ -14,7 +14,7 @@ class Category(Base):
   ranking = Column('c_ranking', INTEGER(10, unsigned=True))
 
   def __repr__(self):
-    return ('<Category(project=%r, type=%r, rating=%r, replacement=%r',
+    return ('<Category(project=%r, type=%r, rating=%r, replacement=%r'
             ' category=%r, ranking=%r)>' % (
               self.project, self.type, self.rating, self.replacement,
               self.category, self.ranking))
