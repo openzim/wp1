@@ -22,3 +22,20 @@ class BaseWpOneOrmTest(_OrmTest):
 
 class BaseWikiOrmTest(_OrmTest):
   Base = WikiBase
+
+class BaseCombinedOrmTest(unittest.TestCase):
+  wiki_engine = create_engine('sqlite:///:memory:')
+  WikiSession = sessionmaker(bind=wiki_engine)
+  wiki_session = WikiSession()
+
+  wp10_engine = create_engine('sqlite:///:memory:')
+  Wp10Session = sessionmaker(bind=wp10_engine)
+  wp10_session = Wp10Session()
+
+  def setUp(self):
+    WpOneBase.metadata.create_all(self.wp10_engine)
+    WikiBase.metadata.create_all(self.wiki_engine)
+
+  def tearDown(self):
+    WpOneBase.metadata.drop_all(self.wp10_engine)
+    WikiBase.metadata.drop_all(self.wiki_engine)

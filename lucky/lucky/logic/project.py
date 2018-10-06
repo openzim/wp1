@@ -79,7 +79,7 @@ def update_project_categories_by_kind(
 
     # There might not be any pages listed "by importance" so we have to check
     # the alternate name ("by priority"), unless we already found pages.
-    if found_page:
+    if found_page or category_name_main == category_name_alt:
       break
 
   return rating_to_category

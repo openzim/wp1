@@ -27,8 +27,7 @@ page_category_join = join(page_table, category_links_table)
 class Page(Base):
   __table__ = page_category_join
 
-  id = column_property(page_table.c.page_id,
-                              category_links_table.c.cl_from)
+  id = column_property(page_table.c.page_id, category_links_table.c.cl_from)
   title = page_table.c.page_title
   namespace = page_table.c.page_namespace
 
