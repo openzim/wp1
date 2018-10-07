@@ -553,7 +553,6 @@ class CleanupProjectTest(BaseWpOneOrmTest):
 
     qual_ts = b'2018-04-01T12:30:00Z'
     imp_ts = b'2018-05-01T13:45:10Z'
-
     for r in self.ratings:
       rating = Rating(project=self.project.project, namespace=0, article=r[0],
                       quality=r[1], importance=r[2], quality_timestamp=qual_ts,
@@ -585,3 +584,55 @@ class CleanupProjectTest(BaseWpOneOrmTest):
       rating = self.session.query(Rating).filter(
         Rating.article == article).first()
       self.assertEqual(self.not_a_class_db, rating.importance)
+
+class UpdateProjectRecordTest(BaseWpOneOrmTest):
+  ratings = (
+    (b'Art of testing', b'FA-Class', b'High-Class'),
+    (b'Testing mechanics', b'FA-Class', b'Mid-Class'),
+    (b'Rules of testing',  b'FA-Class', b'NotA-Class'),
+    (b'Test frameworks', b'NotA-Class', b'Mid-Class'),
+    (b'Test practices', b'FL-Class', b'Unassesed-Class'),
+    (b'Testing history', b'FL-Class', b'Unknown-Class'),
+    (b'Testing figures', b'NotA-Class', b'Low-Class'),
+    (b'Important tests', b'Unassessed-Class', b'Low-Class'),
+  )
+
+  def setUp(self):
+    super().setUp()
+    self.project = Project(project=b'Test')
+
+    qual_ts = b'2018-04-01T12:30:00Z'
+    imp_ts = b'2018-05-01T13:45:10Z'
+    for r in self.ratings:
+      rating = Rating(project=self.project.project, namespace=0, article=r[0],
+                      quality=r[1], importance=r[2], quality_timestamp=qual_ts,
+                      importance_timestamp=imp_ts)
+      self.session.add(rating)
+    self.session.commit()
+
+    self.metadata = {
+      'homepage': '/homepage',
+      'shortname': 'Test',
+      'parent': 'Nothing',
+    }
+    logic_project.update_project_record(
+      self.session, self.project, self.metadata)
+    self.session.commit()
+    self.session.refresh(self.project)
+
+  def test_metadata_correct(self):
+    self.assertEqual(self.metadata['homepage'],
+                     self.project.wikipage.decode('utf-8'))
+    self.assertEqual(self.metadata['shortname'],
+                     self.project.shortname.decode('utf-8'))
+    self.assertEqual(self.metadata['parent'],
+                     self.project.parent.decode('utf-8'))
+
+  def test_count(self):
+    self.assertEqual(8, self.project.count)
+
+  def test_quality_count(self):
+    self.assertEqual(5, self.project.qcount)
+
+  def test_importance_count(self):
+    self.assertEqual(6, self.project.icount)
