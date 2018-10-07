@@ -1,6 +1,8 @@
 import logging
 import re
 
+from sqlalchemy import or_
+
 from lucky.conf import get_conf
 from lucky.constants import AssessmentKind, CATEGORY_NS_INT
 from lucky.logic import page as logic_page, util as logic_util, rating as logic_rating
@@ -181,6 +183,43 @@ def update_project_assessments(
       wp10_session, current_rating, kind, old_rating_value)
   wp10_session.commit()
 
+def cleanup_project(wp10_session, project):
+  not_a_class_db = NOT_A_CLASS.encode('utf-8')
+  # If both quality and importance are 'NotA-Class', that means the article
+  # was once rated but isn't any more, so we delete the row
+  count = wp10_session.query(Rating).filter(
+    Rating.project == project.project).filter(
+    or_(Rating.quality == not_a_class_db, Rating.quality == None)).filter(
+    or_(Rating.importance == not_a_class_db,
+        Rating.importance == None)).delete()
+  logger.info('Deleted %s ratings that were empty from project: %s',
+              count, project.project.decode('utf-8'))
+
+  # It's possible for the quality to be NULL if the article has a 
+  # rated importance but no rated quality (not even Unassessed-Class).
+  # This will always happen if the article has a quality rating that the 
+  # bot doesn't recognize. Change the NULL to sentinel value.
+  count = wp10_session.query(Rating).filter(
+    Rating.project == project.project).filter(
+    Rating.quality == None).update({
+      Rating.quality: not_a_class_db,
+      Rating.quality_timestamp: Rating.importance_timestamp
+    })
+  logger.info('Updated %s ratings, quality == NotAClass from project: %s',
+              count, project.project.decode('utf-8'))
+
+  # Finally, if a quality is assigned but not an importance, it is
+  # possible for the importance field to be null. Set it to 
+  # $NotAClass in this case.
+  count = wp10_session.query(Rating).filter(
+    Rating.project == project.project).filter(
+    Rating.importance == None).update({
+      Rating.importance: not_a_class_db,
+      Rating.importance_timestamp: Rating.quality_timestamp
+    })
+  logger.info('Updated %s ratings, importance == NotAClass from project: %s',
+        count, project.project.decode('utf-8'))
+
 def update_project(wiki_session, wp10_session, project):
   extra_assessments = api_project.get_extra_assessments(project.project)
   timestamp = project.timestamp
@@ -191,3 +230,5 @@ def update_project(wiki_session, wp10_session, project):
     update_project_assessments(
       wiki_session, wp10_session, project, extra_assessments['extra'], kind)
     wp10_session.commit()
+
+  cleanup_project(wp10_session, project)

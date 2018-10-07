@@ -29,7 +29,7 @@ ARTICLES_LABEL = config['ARTICLES_LABEL'].encode('utf-8')
 RE_REJECT_GENERIC = re.compile(ARTICLES_LABEL + b'_' + BY_QUALITY, re.I)
 
 # Preload all projects
-list(wp10_session.query(Project))
+projects = wp10_session.query(Project).all()
 
 def project_pages_to_update():
   projects_in_root = logic_page.get_pages_by_category(

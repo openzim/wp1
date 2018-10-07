@@ -530,3 +530,58 @@ class UpdateProjectAssessmentsTest(BaseCombinedOrmTest):
       else:
         self.assertEqual(page_to_rating[r.article], r.importance, repr(r))
 
+class CleanupProjectTest(BaseWpOneOrmTest):
+  ratings = (
+    (b'Art of testing', b'FA-Class', b'High-Class'),
+    (b'Testing mechanics', b'FA-Class', b'Mid-Class'),
+    (b'Rules of testing',  b'FA-Class', b'NotA-Class'),
+    (b'Test frameworks', b'NotA-Class', b'Mid-Class'),
+    (b'Test practices', b'FL-Class', None),
+    (b'Testing history', b'FL-Class', None),
+    (b'Testing figures', None, b'Low-Class'),
+    (b'Important tests', None, b'Low-Class'),
+    (b'Test results', b'NotA-Class', b'NotA-Class'),
+    (b'Test main inheritance', b'NotA-Class', b'NotA-Class'),
+    (b'Failures of tests', None, None),
+    (b'How to test', None, None),
+  )
+  not_a_class_db = NOT_A_CLASS.encode('utf-8')
+
+  def setUp(self):
+    super().setUp()
+    self.project = Project(project=b'Test')
+
+    qual_ts = b'2018-04-01T12:30:00Z'
+    imp_ts = b'2018-05-01T13:45:10Z'
+
+    for r in self.ratings:
+      rating = Rating(project=self.project.project, namespace=0, article=r[0],
+                      quality=r[1], importance=r[2], quality_timestamp=qual_ts,
+                      importance_timestamp=imp_ts)
+      self.session.add(rating)
+    self.session.commit()
+      
+    logic_project.cleanup_project(self.session, self.project)
+    self.session.commit()
+
+  def test_deletes_empty(self):
+    ratings = self.session.query(Rating).all()
+    self.assertEqual(8, len(ratings))
+
+    titles = set(r.article for r in ratings)
+    self.assertTrue(b'Test results' not in titles, titles)
+    self.assertTrue(b'Test main inheritance' not in titles, titles)
+    self.assertTrue(b'Failures of tests' not in titles, titles)
+    self.assertTrue(b'How to test' not in titles, titles)
+    
+  def test_updates_quality(self):
+    for article in (b'Testing figures', b'Important tests'):
+      rating = self.session.query(Rating).filter(
+        Rating.article == article).first()
+      self.assertEqual(self.not_a_class_db, rating.quality)
+
+  def test_updates_importance(self):
+    for article in (b'Testing history', b'Test practices'):
+      rating = self.session.query(Rating).filter(
+        Rating.article == article).first()
+      self.assertEqual(self.not_a_class_db, rating.importance)
