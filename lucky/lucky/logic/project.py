@@ -4,7 +4,7 @@ import re
 from sqlalchemy import or_
 
 from lucky.conf import get_conf
-from lucky.constants import AssessmentKind, CATEGORY_NS_INT
+from lucky.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP
 from lucky.logic import page as logic_page, util as logic_util, rating as logic_rating
 from lucky.logic.api import project as api_project
 from lucky.models.wp10.category import Category
@@ -18,6 +18,8 @@ CLASS = config['CLASS']
 QUALITY = config['QUALITY']
 IMPORTANCE = config['IMPORTANCE']
 NOT_A_CLASS = config['NOT_A_CLASS']
+UNASSESSED_CLASS = config['UNASSESSED_CLASS']
+UNKNOWN_CLASS = config['UNKNOWN_CLASS']
 
 RE_INDICATOR = re.compile(b'([A-Za-z]+)[ _-]')
 
@@ -220,6 +222,49 @@ def cleanup_project(wp10_session, project):
   logger.info('Updated %s ratings, importance == NotAClass from project: %s',
         count, project.project.decode('utf-8'))
 
+def update_project_record(wp10_session, project, metadata):
+  not_a_class_db = NOT_A_CLASS.encode('utf-8')
+  unassessed_db = UNASSESSED_CLASS.encode('utf-8')
+  unknown_db = UNKNOWN_CLASS.encode('utf-8')
+
+  num_ratings = wp10_session.query(Rating).filter(
+    Rating.project == project.project).count()
+
+  num_unassessed_quality = wp10_session.query(Rating).filter(
+    or_(Rating.quality == not_a_class_db,
+        Rating.quality == unassessed_db)).count()
+  quality_count = num_ratings - num_unassessed_quality
+
+  num_unassessed_importance = wp10_session.query(Rating).filter(
+    or_(Rating.importance == not_a_class_db,
+        Rating.importance == unassessed_db,
+        Rating.importance == unknown_db)).count()
+  importance_count = num_ratings - num_unassessed_importance
+
+  # Okay, update the fields of the project, warning if we're setting NULLs.
+  project_display = project.project.decode('utf-8')
+  project.timestamp = GLOBAL_TIMESTAMP
+  wikipage = metadata.get('homepage')
+  if wikipage is None:
+    logger.warning('Setting NULL wikipage for project: %s', project_display)
+  else:
+    project.wikipage = wikipage.encode('utf-8')
+  parent = metadata.get('parent')
+  if parent is None:
+    logger.warning('Setting NULL parent for project: %s', project_display)
+  else:
+    project.parent = parent.encode('utf-8')
+  shortname = metadata.get('shortname')
+  if shortname is None:
+    logger.warning('Setting NULL shortname for project: %s', project_display)
+  else:
+    project.shortname = shortname.encode('utf-8')
+  project.count = num_ratings
+  project.qcount = quality_count
+  project.icount = importance_count
+
+  wp10_session.add(project)
+
 def update_project(wiki_session, wp10_session, project):
   extra_assessments = api_project.get_extra_assessments(project.project)
   timestamp = project.timestamp
@@ -232,3 +277,6 @@ def update_project(wiki_session, wp10_session, project):
     wp10_session.commit()
 
   cleanup_project(wp10_session, project)
+  wp10_session.commit()
+
+  update_project_record(wp10_session, project, extra_assessments)

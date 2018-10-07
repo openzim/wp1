@@ -40,5 +40,7 @@
     "FA": "Wikipedia_featured_articles",
     "FL": "Wikipedia_featured_lists"
   },
-  "ROOT_CATEGORY": "Wikipedia_1.0_assessments"
+  "ROOT_CATEGORY": "Wikipedia_1.0_assessments",
+  "UNASSESSED_CLASS": "Unassessed-Class",
+  "UNKNOWN_CLASS": "Unknown-Class"
 }
