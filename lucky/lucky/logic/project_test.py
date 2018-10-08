@@ -336,7 +336,7 @@ class UpdateProjectAssessmentsTest(BaseCombinedOrmTest):
 
   def setUp(self):
     super().setUp()
-    self.project = Project(project=b'Test', timestamp=b'2010-01-01T00:00:00Z')
+    self.project = Project(project=b'Test', timestamp=b'20100101000000')
 
     self.timestamp_str = '2011-04-28T12:30:00Z'
     self.expected_ns = 0

@@ -1,15 +1,18 @@
 import logging
+import math
 import re
 
 from sqlalchemy import or_
 
 from lucky.conf import get_conf
-from lucky.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP
+from lucky.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP, GLOBAL_TIMESTAMP_WIKI
 from lucky.logic import page as logic_page, util as logic_util, rating as logic_rating
 from lucky.logic.api import project as api_project
 from lucky.models.wp10.category import Category
+from lucky.models.wp10.global_ranking import GlobalRanking
 from lucky.models.wp10.project import Project
 from lucky.models.wp10.rating import Rating
+from lucky.models.wp10.selection_data import SelectionData
 
 logger = logging.getLogger(__name__)
 
@@ -159,7 +162,7 @@ def update_project_assessments(
       continue
 
     logging.debug('Processing unseen article %s', ref.decode('utf-8'))
-    ns, title = ref.decode('utf-8').split(':')
+    ns, title = ref.decode('utf-8').split(':', 1)
     ns = int(ns.encode('utf-8'))
     title = title.encode('utf-8')
 
@@ -175,9 +178,17 @@ def update_project_assessments(
     if kind == AssessmentKind.QUALITY:
       current_rating.quality = NOT_A_CLASS.encode('utf-8')
       old_rating_value = old_rating.quality
+      if move_data:
+        current_rating.set_quality_timestamp_dt(move_data['timestamp_dt'])
+      else:
+        current_rating.quality_timestamp = GLOBAL_TIMESTAMP_WIKI
     elif kind == AssessmentKind.IMPORTANCE:
       current_rating.importance = NOT_A_CLASS.encode('utf-8')
       old_rating_value = old_rating.importance
+      if move_data:
+        current_rating.set_importance_timestamp_dt(move_data['timestamp_dt'])
+      else:
+        current_rating.importance_timestamp = GLOBAL_TIMESTAMP_WIKI
 
     current_rating = wp10_session.merge(current_rating)
     wp10_session.add(current_rating)
@@ -223,6 +234,9 @@ def cleanup_project(wp10_session, project):
         count, project.project.decode('utf-8'))
 
 def update_project_record(wp10_session, project, metadata):
+  project_display = project.project.decode('utf-8')
+  logging.info('Updating project record: %r', project_display)
+
   not_a_class_db = NOT_A_CLASS.encode('utf-8')
   unassessed_db = UNASSESSED_CLASS.encode('utf-8')
   unknown_db = UNKNOWN_CLASS.encode('utf-8')
@@ -232,17 +246,18 @@ def update_project_record(wp10_session, project, metadata):
 
   num_unassessed_quality = wp10_session.query(Rating).filter(
     or_(Rating.quality == not_a_class_db,
-        Rating.quality == unassessed_db)).count()
+        Rating.quality == unassessed_db)).filter(
+    Rating.project == project.project).count()
   quality_count = num_ratings - num_unassessed_quality
 
   num_unassessed_importance = wp10_session.query(Rating).filter(
     or_(Rating.importance == not_a_class_db,
         Rating.importance == unassessed_db,
-        Rating.importance == unknown_db)).count()
+        Rating.importance == unknown_db)).filter(
+    Rating.project == project.project).count()
   importance_count = num_ratings - num_unassessed_importance
 
   # Okay, update the fields of the project, warning if we're setting NULLs.
-  project_display = project.project.decode('utf-8')
   project.timestamp = GLOBAL_TIMESTAMP
   wikipage = metadata.get('homepage')
   if wikipage is None:
@@ -262,8 +277,68 @@ def update_project_record(wp10_session, project, metadata):
   project.count = num_ratings
   project.qcount = quality_count
   project.icount = importance_count
+  project.scope = 0
+  project.upload_timestamp = b'00000000000000'
 
   wp10_session.add(project)
+
+def update_project_scores(wp10_session, project):
+  i_rating_to_ranking = dict(
+    (gr.rating, gr.ranking) for gr in
+    wp10_session.query(GlobalRanking).filter(
+      GlobalRanking.type == b'importance'))
+
+  q_rating_to_ranking = dict(
+    (gr.rating, gr.ranking) for gr in
+    wp10_session.query(GlobalRanking).filter(GlobalRanking.type == b'quality'))
+
+  i_rating_to_replaces = dict(
+    (c.rating, c.replacement) for c in
+    wp10_session.query(Category).filter(
+      Category.project == project.project).filter(
+      Category.type == b'importance'))
+
+  q_rating_to_replaces = dict(
+    (c.rating, c.replacement) for c in
+    wp10_session.query(Category).filter(
+      Category.project == project.project).filter(
+      Category.type == b'quality'))
+
+  ratings_for_project = wp10_session.query(Rating).filter(
+    Rating.project == project.project).filter(
+    Rating.namespace == 0)
+
+  uses_importance = project.icount != 0
+  logger.debug('Project %s uses importance: %s',
+               project.project.decode('utf-8'), uses_importance)
+
+  for r in ratings_for_project:
+    sd = wp10_session.query(SelectionData).filter(
+      SelectionData.article == r.article).first()
+    if sd is None:
+      logging.debug('No selection_data for article: %s',
+                    r.article.decode('utf-8'))
+      continue
+
+    i_ranking = 0
+    if uses_importance:
+      i_ranking = i_rating_to_ranking.get(
+        i_rating_to_replaces.get(r.importance))
+    q_ranking = q_rating_to_ranking.get(
+      q_rating_to_replaces.get(r.quality))
+    if i_ranking is None or q_ranking is None:
+      logging.debug('No ranking for ratings: %s %s', r.quality, r.importance)
+      continue
+
+    hc_part = math.log10(sd.hitcount) if sd.hitcount > 0 else 0
+    pl_part = math.log10(sd.pagelinks) if sd.pagelinks > 0 else 0
+    ll_part = math.log10(sd.langlinks) if sd.langlinks > 0 else 0
+    modifier = 4/3 if i_ranking == 0 else 1
+    scope_part = 0.5 * project.scope if project.scope else 500
+
+    r.score = math.floor(
+      modifier * (50 * hc_part + 100 * pl_part + 250 * ll_part) +
+      i_ranking + q_ranking + scope_part - 500)
 
 def update_project(wiki_session, wp10_session, project):
   extra_assessments = api_project.get_extra_assessments(project.project)
@@ -280,3 +355,7 @@ def update_project(wiki_session, wp10_session, project):
   wp10_session.commit()
 
   update_project_record(wp10_session, project, extra_assessments)
+  wp10_session.commit()
+
+  update_project_scores(wp10_session, project)
+  wp10_session.commit()

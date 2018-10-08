@@ -22,6 +22,7 @@ def update_page_moved(
   logger.info('Updating moves table for %s -> %s',
               old_title.decode('utf-8'), new_title.decode('utf-8'))
   db_timestamp = move_timestamp_dt.strftime(TS_FORMAT).encode('utf-8')
+  logging.warning('db_timestamp: %r', db_timestamp)
   existing_move = wp10_session.query(Move).filter(
     Move.timestamp == db_timestamp).filter(
     Move.old_namespace == old_ns).filter(

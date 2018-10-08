@@ -2,15 +2,15 @@ import logging
 import re
 import time
 
-from conf import get_conf
-import constants
-from logic import page as logic_page, project as logic_project
-from models.wp10.project import Project
-from wp10_db import Session as SessionWP10
-from wiki_db import Session as SessionWiki
+from lucky.conf import get_conf
+import lucky.constants as constants
+from lucky.logic import page as logic_page, project as logic_project
+from lucky.models.wp10.project import Project
+from lucky.wp10_db import Session as SessionWP10
+from lucky.wiki_db import Session as SessionWiki
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.INFO)
 logging.getLogger('mwclient').setLevel(logging.CRITICAL)
 logging.getLogger('urllib3').setLevel(logging.CRITICAL)
 logging.getLogger('requests_oauthlib').setLevel(logging.CRITICAL)

@@ -21,4 +21,5 @@ def add_log_for_rating(wp10_session, new_rating, kind, old_rating_value):
     project=new_rating.project, namespace=new_rating.namespace,
     article=new_rating.article, timestamp=GLOBAL_TIMESTAMP, action=action,
     old=old_rating_value, new=new, revision_timestamp=timestamp)
+  log = wp10_session.merge(log)
   wp10_session.add(log)

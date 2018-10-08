@@ -1,5 +1,5 @@
+from datetime import datetime
 import logging
-import time
 
 from lucky.conf import get_conf
 from lucky import constants
@@ -50,5 +50,5 @@ for title in title_to_release.keys():
   if title not in seen:
     logger.info('Page not seen, setting release data to "None": %s', title)
     logic_release.insert_or_update_release_data(
-      wp10_session, title, 'None', time.time())
+      wp10_session, title, b'None', datetime.now())
 wp10_session.commit()
