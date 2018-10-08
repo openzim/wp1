@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import Column
 from sqlalchemy.dialects.mysql import BINARY, INTEGER
 
-from lucky.constants import TS_FORMAT
+from lucky.constants import TS_FORMAT_WP10
 from lucky.wp10_db import Base
 
 class Project(Base):
@@ -21,14 +21,16 @@ class Project(Base):
   upload_timestamp = Column('p_upload_timestamp', BINARY(14))
 
   def __repr__(self):
-    return ('<Project(project=%r, timestamp=%r, count=%r, qcount=%r, pcount=%r'
+    return ('<Project(project=%r, timestamp=%r, count=%r, qcount=%r, icount=%r'
             ' scope=%r, wikipage=%r, parent=%r, shortname=%r'
             ' upload_timestamp=%r)>' % (
               self.project, self.timestamp, self.count, self.qcount,
-              self.pcount, self.scope, self.wikipage, self.parent,
+              self.icount, self.scope, self.wikipage, self.parent,
               self.shortname, self.upload_timestamp))
 
   @property
   def timestamp_dt(self):
     '''The timestamp parsed into a datetime.datetime object.'''
-    return datetime.strptime(self.timestamp.decode('utf-8'), TS_FORMAT)
+    if self.timestamp is None:
+      return datetime(1970, 1, 1)
+    return datetime.strptime(self.timestamp.decode('utf-8'), TS_FORMAT_WP10)

@@ -9,7 +9,7 @@ from lucky.wp10_db import Base
 class Log(Base):
   __tablename__ = 'lucky_logging'
 
-  project = Column('p_project', BINARY(63), primary_key=True)
+  project = Column('l_project', BINARY(63), primary_key=True)
   namespace = Column(
     'l_namespace', INTEGER(10, unsigned=True), primary_key=True)
   article = Column('l_article', BINARY(255), primary_key=True)

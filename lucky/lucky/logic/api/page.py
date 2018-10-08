@@ -23,7 +23,7 @@ def get_redirect(title_with_ns):
   page = res['query']['pages'][key]
   return {
     'ns': page['ns'],
-    'title': page['title'],
+    'title': page['title'].replace(' ', '_'),
     'timestamp_dt': datetime.strptime(
       page['revisions'][0]['timestamp'], TS_FORMAT),
   }
@@ -34,12 +34,11 @@ def get_moves(title_with_ns):
 
   ans = []
   for event in res:
-    print(repr(event))
     if 'params' not in event:
       continue
     ans.append({
       'ns': event['params']['target_ns'],
-      'title': event['params']['target_title'],
+      'title': event['params']['target_title'].replace(' ', '_'),
       'timestamp_dt': datetime.fromtimestamp(time.mktime(event['timestamp'])),
     })
 

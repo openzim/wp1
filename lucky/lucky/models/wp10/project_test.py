@@ -6,14 +6,17 @@ class ModelsProjectTest(BaseWpOneOrmTest):
     super().setUp()
     self.project_name = b'My test project'
     self.project = Project(
-      project=self.project_name, timestamp=b'2018-09-30T12:30:00Z', count=100,
-      upload_timestamp=b'20180-09-29T12:00:00Z')
+      project=self.project_name, timestamp=b'20180930123000', count=100,
+      upload_timestamp=b'201800929120000')
     self.session.add(self.project)
     self.session.commit()
 
   def tearDown(self):
     self.session.delete(self.project)
     self.session.commit()
+
+  def test_project_repr(self):
+    print(repr(self.project))
 
   def test_project_retrieval(self):
     actual = self.session.query(Project).get(self.project_name)
