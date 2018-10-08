@@ -70,7 +70,7 @@ class LogicPageMovesTest(BaseWpOneOrmTest):
 
     self.timestamp_str = '2011-04-28T12:30:00Z'
     self.expected_ns = 0
-    self.expected_title = 'Article moved to'
+    self.expected_title = 'Article_moved_to'
     self.expected_dt = datetime.strptime(self.timestamp_str, TS_FORMAT)
 
     self.api_return = {
