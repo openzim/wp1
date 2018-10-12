@@ -9,10 +9,8 @@ from lucky.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP, G
 from lucky.logic import page as logic_page, util as logic_util, rating as logic_rating
 from lucky.logic.api import project as api_project
 from lucky.models.wp10.category import Category
-from lucky.models.wp10.global_ranking import GlobalRanking
 from lucky.models.wp10.project import Project
 from lucky.models.wp10.rating import Rating
-from lucky.models.wp10.selection_data import SelectionData
 
 logger = logging.getLogger(__name__)
 
@@ -282,64 +280,6 @@ def update_project_record(wp10_session, project, metadata):
 
   wp10_session.add(project)
 
-def update_project_scores(wp10_session, project):
-  i_rating_to_ranking = dict(
-    (gr.rating, gr.ranking) for gr in
-    wp10_session.query(GlobalRanking).filter(
-      GlobalRanking.type == b'importance'))
-
-  q_rating_to_ranking = dict(
-    (gr.rating, gr.ranking) for gr in
-    wp10_session.query(GlobalRanking).filter(GlobalRanking.type == b'quality'))
-
-  i_rating_to_replaces = dict(
-    (c.rating, c.replacement) for c in
-    wp10_session.query(Category).filter(
-      Category.project == project.project).filter(
-      Category.type == b'importance'))
-
-  q_rating_to_replaces = dict(
-    (c.rating, c.replacement) for c in
-    wp10_session.query(Category).filter(
-      Category.project == project.project).filter(
-      Category.type == b'quality'))
-
-  ratings_for_project = wp10_session.query(Rating).filter(
-    Rating.project == project.project).filter(
-    Rating.namespace == 0)
-
-  uses_importance = project.icount != 0
-  logger.debug('Project %s uses importance: %s',
-               project.project.decode('utf-8'), uses_importance)
-
-  for r in ratings_for_project:
-    sd = wp10_session.query(SelectionData).filter(
-      SelectionData.article == r.article).first()
-    if sd is None:
-      logging.debug('No selection_data for article: %s',
-                    r.article.decode('utf-8'))
-      continue
-
-    i_ranking = 0
-    if uses_importance:
-      i_ranking = i_rating_to_ranking.get(
-        i_rating_to_replaces.get(r.importance))
-    q_ranking = q_rating_to_ranking.get(
-      q_rating_to_replaces.get(r.quality))
-    if i_ranking is None or q_ranking is None:
-      logging.debug('No ranking for ratings: %s %s', r.quality, r.importance)
-      continue
-
-    hc_part = math.log10(sd.hitcount) if sd.hitcount > 0 else 0
-    pl_part = math.log10(sd.pagelinks) if sd.pagelinks > 0 else 0
-    ll_part = math.log10(sd.langlinks) if sd.langlinks > 0 else 0
-    modifier = 4/3 if i_ranking == 0 else 1
-    scope_part = 0.5 * project.scope if project.scope else 500
-
-    r.score = math.floor(
-      modifier * (50 * hc_part + 100 * pl_part + 250 * ll_part) +
-      i_ranking + q_ranking + scope_part - 500)
-
 def update_project(wiki_session, wp10_session, project):
   extra_assessments = api_project.get_extra_assessments(project.project)
   timestamp = project.timestamp
@@ -357,5 +297,8 @@ def update_project(wiki_session, wp10_session, project):
   update_project_record(wp10_session, project, extra_assessments)
   wp10_session.commit()
 
-  update_project_scores(wp10_session, project)
-  wp10_session.commit()
+  ## This is where the old code would update the project scores. However, since we don't have
+  ## reliable selection_data at the moment, and we're not sure if the score metrics will be
+  ## changing, skip it for now.
+  # update_project_scores(wp10_session, project)
+  # wp10_session.commit()
