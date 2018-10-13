@@ -281,33 +281,37 @@ def update_project_record(wp10_session, project, metadata):
   wp10_session.add(project)
 
 def update_articles_table(wp10_session, project):
-  # This is a fairly complex query, but it performs relatively well. It would be complex to
-  # translate it to the ORM layer and perserve the nuance of what to do when certain values are
-  # NULL, etc. So we'll just copy it from the old codebase and execute it.
+  # This is a fairly complex query, but it performs relatively well. It would
+  # be complex to translate it to the ORM layer and perserve the nuance of wha
+  # to do when certain values are NULL, etc. So we'll just copy it from the old
+  # codebase and execute it.
   wp10_session.execute('''
     REPLACE INTO lucky_global_articles
     SELECT art, max(qrating), max(irating), max(score)
     FROM
     ( SELECT art, qrating, irating, score
       FROM
-        (SELECT a_article as art, a_quality as qrating, a_importance as irating, 
-                a_score as score
+        (SELECT a_article as art, a_quality as qrating,
+                a_importance as irating, a_score as score
            FROM global_articles
            JOIN ratings 
-               ON r_namespace = 0 AND r_project = :project AND a_article = r_article
+               ON r_namespace = 0 AND r_project = :project AND
+                  a_article = r_article
         ) AS tableone
       UNION
-        (SELECT r_article as art, qual.gr_ranking as qrating, imp.gr_ranking as irating, 
-                r_score as score
-          FROM  ratings
-          JOIN  categories as ci ON r_project = ci.c_project
-            AND ci.c_type = 'importance' AND r_importance = ci.c_rating
-          JOIN  categories as cq ON r_project = cq.c_project
-            AND cq.c_type = 'quality' AND r_quality = cq.c_rating
-          JOIN  global_rankings AS qual ON qual.gr_type = 'quality' 
-                                  AND qual.gr_rating = cq.c_replacement
-          JOIN  global_rankings AS imp  ON imp.gr_type = 'importance' 
-                                     AND imp.gr_rating = ci.c_replacement
+        (SELECT r_article as art, qual.gr_ranking as qrating,
+                imp.gr_ranking as irating, r_score as score
+          FROM ratings
+          JOIN categories as ci
+            ON r_project = ci.c_project AND ci.c_type = 'importance' AND
+               r_importance = ci.c_rating
+          JOIN categories as cq
+            ON r_project = cq.c_project AND
+               cq.c_type = 'quality' AND r_quality = cq.c_rating
+          JOIN global_rankings AS qual
+            ON qual.gr_type = 'quality' AND qual.gr_rating = cq.c_replacement
+          JOIN  global_rankings AS imp
+            ON imp.gr_type = 'importance' AND imp.gr_rating = ci.c_replacement
         WHERE r_namespace = 0 and r_project = :project )
     ) as tabletwo
     GROUP BY art
@@ -330,9 +334,9 @@ def update_project(wiki_session, wp10_session, project):
   update_project_record(wp10_session, project, extra_assessments)
   wp10_session.commit()
 
-  ## This is where the old code would update the project scores. However, since we don't have
-  ## reliable selection_data at the moment, and we're not sure if the score metrics will be
-  ## changing, skip it for now.
+  ## This is where the old code would update the project scores. However, since
+  ## we don't have reliable selection_data at the moment, and we're not sure if
+  ## the score metrics will be changing, skip it for now.
   # update_project_scores(wp10_session, project)
   # wp10_session.commit()
 
