@@ -11,7 +11,8 @@ import lucky.logic.util as logic_util
 logger = logging.getLogger(__name__)
 
 def get_pages_by_category(wiki_session, category, ns=None):
-  q = wiki_session.query(Page).filter(Page.category == category)
+  q = wiki_session.query(Page).prefix_with('/* SLOW_OK */').filter(
+    Page.category == category)
   if ns is not None:
     q = q.filter(Page.namespace == ns)
   yield from q

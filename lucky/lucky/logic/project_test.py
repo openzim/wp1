@@ -360,7 +360,7 @@ class UpdateProjectAssessmentsTest(BaseCombinedOrmTest):
     self._insert_ratings(self.quality_pages[6:], 0, AssessmentKind.QUALITY)
 
     logic_project.update_project_assessments(
-      self.wiki_session, self.wp10_session, self.project, {},
+      self.WikiSession, self.wp10_session, self.project, {},
       AssessmentKind.QUALITY)
 
     ratings = self.wp10_session.query(Rating).all()
@@ -381,7 +381,7 @@ class UpdateProjectAssessmentsTest(BaseCombinedOrmTest):
       self.importance_pages[4:], 0, AssessmentKind.IMPORTANCE)
 
     logic_project.update_project_assessments(
-      self.wiki_session, self.wp10_session, self.project, {},
+      self.WikiSession, self.wp10_session, self.project, {},
       AssessmentKind.IMPORTANCE)
 
     ratings = self.wp10_session.query(Rating).all()
@@ -403,7 +403,7 @@ class UpdateProjectAssessmentsTest(BaseCombinedOrmTest):
       override_rating=NOT_A_CLASS.encode('utf-8'))
 
     logic_project.update_project_assessments(
-      self.wiki_session, self.wp10_session, self.project, {},
+      self.WikiSession, self.wp10_session, self.project, {},
       AssessmentKind.QUALITY)
 
     ratings = self.wp10_session.query(Rating).all()
@@ -425,7 +425,7 @@ class UpdateProjectAssessmentsTest(BaseCombinedOrmTest):
       override_rating=NOT_A_CLASS.encode('utf-8'))
 
     logic_project.update_project_assessments(
-      self.wiki_session, self.wp10_session, self.project, {},
+      self.WikiSession, self.wp10_session, self.project, {},
       AssessmentKind.IMPORTANCE)
 
     ratings = self.wp10_session.query(Rating).all()
@@ -448,10 +448,10 @@ class UpdateProjectAssessmentsTest(BaseCombinedOrmTest):
       override_rating=NOT_A_CLASS.encode('utf-8'))
 
     logic_project.update_project_assessments(
-      self.wiki_session, self.wp10_session, self.project, {},
+      self.WikiSession, self.wp10_session, self.project, {},
       AssessmentKind.QUALITY)
     logic_project.update_project_assessments(
-      self.wiki_session, self.wp10_session, self.project, {},
+      self.WikiSession, self.wp10_session, self.project, {},
       AssessmentKind.IMPORTANCE)
 
     ratings = self.wp10_session.query(Rating).all()
@@ -481,7 +481,7 @@ class UpdateProjectAssessmentsTest(BaseCombinedOrmTest):
     patched_site.api.side_effect = fake_api
 
     logic_project.update_project_assessments(
-      self.wiki_session, self.wp10_session, self.project, {},
+      self.WikiSession, self.wp10_session, self.project, {},
       AssessmentKind.QUALITY)
 
     ratings = self.wp10_session.query(Rating).all()
@@ -512,7 +512,7 @@ class UpdateProjectAssessmentsTest(BaseCombinedOrmTest):
     patched_site.api.side_effect = fake_api
 
     logic_project.update_project_assessments(
-      self.wiki_session, self.wp10_session, self.project, {},
+      self.WikiSession, self.wp10_session, self.project, {},
       AssessmentKind.IMPORTANCE)
 
     ratings = self.wp10_session.query(Rating).all()

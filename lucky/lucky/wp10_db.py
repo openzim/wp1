@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 
 try:
   from lucky.credentials import WP10_DB_STRING
-  _engine = create_engine(WP10_DB_STRING)
+  _engine = create_engine(WP10_DB_STRING, pool_pre_ping=True)
 except ImportError:
   # This won't actually work because the tables are not there
   _engine = create_engine('sqlite:///:memory:')

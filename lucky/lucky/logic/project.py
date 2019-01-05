@@ -90,25 +90,34 @@ def update_project_categories_by_kind(
   return rating_to_category
 
 def update_project_assessments(
-    wiki_session, wp10_session, project, extra_assessments, kind):
+    WikiSessionClass, Wp10SessionClass, project, extra_assessments, kind):
   if kind not in (AssessmentKind.QUALITY, AssessmentKind.IMPORTANCE):
     raise ValueError('Parameter "kind" was not one of QUALITY or IMPORTANCE')
 
   logging.info('Updating project %s assessments for %s', kind, project.project)
   old_ratings = {}
-  for rating in wp10_session.query(Rating).filter(
+  rating_session = Wp10SessionClass()
+  for rating in rating_session.query(Rating).filter(
       Rating.project == project.project):
     rating_ref = str(rating.namespace).encode('utf-8') + b':' + rating.article
     old_ratings[rating_ref] = rating
 
   seen = set()
+  wiki_session = WikiSessionClass()
+  wp10_session = Wp10SessionClass()
   rating_to_category = update_project_categories_by_kind(
     wiki_session, wp10_session, project, extra_assessments, kind)
+  wiki_session.close()
+  wp10_session.close()
 
-  for rating, category in rating_to_category.items():
+  n = 0
+  wp10_session = Wp10SessionClass()
+  for current_rating, category in rating_to_category.items():
     logging.info('Fetching article list for %r' % category.decode('utf-8'))
     count = 0
+    wiki_session = WikiSessionClass()
     for page in logic_page.get_pages_by_category(wiki_session, category):
+      wiki_session.close()
       # Talk pages are tagged, we want the NS of the article itself.
       count += 1
       namespace = page.namespace - 1
@@ -121,32 +130,41 @@ def update_project_assessments(
       old_rating = old_ratings.get(article_ref)
       old_rating_value = None
 
-      current_rating = Rating(project=project.project, namespace=namespace,
+      if old_rating:
+        rating = old_rating
+        if kind == AssessmentKind.QUALITY:
+          old_rating_value = rating.quality
+        elif kind == AssessmentKind.IMPORTANCE:
+          old_rating_value = rating.importance
+      else:
+        rating = Rating(project=project.project, namespace=namespace,
                               article=page.title, score=0)
-      if kind == AssessmentKind.QUALITY:
-        current_rating.quality = rating.encode('utf-8')
-        current_rating.set_quality_timestamp_dt(page.timestamp)
-        if old_rating:
-          old_rating_value = old_rating.quality
-      elif kind == AssessmentKind.IMPORTANCE:
-        current_rating.importance = rating.encode('utf-8')
-        current_rating.set_importance_timestamp_dt(page.timestamp)
-        if old_rating:
-          old_rating_value = old_rating.importance
-
-      if old_rating_value is None:
         old_rating_value = NOT_A_CLASS.encode('utf-8')
 
-      # If the article is new, or if the rating doesn't match, save the rating.
-      if (article_ref not in old_ratings or
-          old_rating_value != rating):
-        current_rating = wp10_session.merge(current_rating)
-        wp10_session.add(current_rating)
+      if kind == AssessmentKind.QUALITY:
+        rating.quality = current_rating.encode('utf-8')
+        rating.set_quality_timestamp_dt(page.timestamp)
+      elif kind == AssessmentKind.IMPORTANCE:
+        rating.importance = current_rating.encode('utf-8')
+        rating.set_importance_timestamp_dt(page.timestamp)
+
+      if (article_ref in old_ratings and old_rating_value != rating):
+        # If the article doesn't match its rating, update the logging table.
         logic_rating.add_log_for_rating(
-          wp10_session, current_rating, kind, old_rating_value)
+          wp10_session, rating, kind, old_rating_value)
+      else:
+        # Add the newly created rating.
+        rating_session.add(rating)
+    logger.debug('Committing wp10 session')
     wp10_session.commit()
+    wp10_session.close()
+  logger.debug('Committing rating session')
+  rating_session.commit()
+  rating_session.close()
+
 
   logging.debug('Looking for unseen articles')
+  n = 0
   for ref, old_rating in old_ratings.items():
     if ref in seen:
       continue
@@ -164,35 +182,45 @@ def update_project_assessments(
     ns = int(ns.encode('utf-8'))
     title = title.encode('utf-8')
 
+    wp10_session = Wp10SessionClass()
     move_data = logic_page.get_move_data(
       wp10_session, ns, title, project.timestamp_dt)
     if move_data is not None:
       logic_page.update_page_moved(
         wp10_session, project, ns, title, move_data['dest_ns'],
         move_data['dest_title'], move_data['timestamp_dt'])
-      
-    current_rating = Rating(
+
+    rating = Rating(
       project=project.project, namespace=ns, article=title, score=0)
     if kind == AssessmentKind.QUALITY:
-      current_rating.quality = NOT_A_CLASS.encode('utf-8')
+      rating.quality = NOT_A_CLASS.encode('utf-8')
       old_rating_value = old_rating.quality
       if move_data:
         current_rating.set_quality_timestamp_dt(move_data['timestamp_dt'])
       else:
         current_rating.quality_timestamp = GLOBAL_TIMESTAMP_WIKI
     elif kind == AssessmentKind.IMPORTANCE:
-      current_rating.importance = NOT_A_CLASS.encode('utf-8')
+      rating.importance = NOT_A_CLASS.encode('utf-8')
       old_rating_value = old_rating.importance
       if move_data:
-        current_rating.set_importance_timestamp_dt(move_data['timestamp_dt'])
+        rating.set_importance_timestamp_dt(move_data['timestamp_dt'])
       else:
-        current_rating.importance_timestamp = GLOBAL_TIMESTAMP_WIKI
+        rating.importance_timestamp = GLOBAL_TIMESTAMP_WIKI
 
     current_rating = wp10_session.merge(current_rating)
     wp10_session.add(current_rating)
     logic_rating.add_log_for_rating(
-      wp10_session, current_rating, kind, old_rating_value)
+      wp10_session, rating, kind, old_rating_value)
+    n += 1
+    if n >= 500:
+      n = 0
+      logging.debug('Checkpoint: Commiting wp10 session for unseen articles')
+      wp10_session.commit()
+      wp10_session.close()
+      wp10_session = Wp10SessionClass()
+  logging.debug('Finishing: Commiting wp10 session for unseen articles')
   wp10_session.commit()
+  wp10_session.close()
 
 def cleanup_project(wp10_session, project):
   not_a_class_db = NOT_A_CLASS.encode('utf-8')
@@ -317,7 +345,7 @@ def update_articles_table(wp10_session, project):
     GROUP BY art
   ''', {'project': project.project})
 
-def update_project(wiki_session, wp10_session, project):
+def update_project(WikiSessionClass, Wp10SessionClass, project):
   extra_assessments = api_project.get_extra_assessments(project.project)
   timestamp = project.timestamp
 
@@ -325,14 +353,19 @@ def update_project(wiki_session, wp10_session, project):
     logger.debug('Updating %s assessments by %s',
                  project.project.decode('utf-8'), kind)
     update_project_assessments(
-      wiki_session, wp10_session, project, extra_assessments['extra'], kind)
-    wp10_session.commit()
+      WikiSessionClass, Wp10SessionClass, project, extra_assessments['extra'],
+      kind)
 
+  wp10_session = Wp10SessionClass()
   cleanup_project(wp10_session, project)
   wp10_session.commit()
+  wp10_session.close()
 
+  wp10_session = Wp10SessionClass()
+  wp10_session.merge(project)
   update_project_record(wp10_session, project, extra_assessments)
   wp10_session.commit()
+  wp10_session.close()
 
   ## This is where the old code would update the project scores. However, since
   ## we don't have reliable selection_data at the moment, and we're not sure if
@@ -340,4 +373,7 @@ def update_project(wiki_session, wp10_session, project):
   # update_project_scores(wp10_session, project)
   # wp10_session.commit()
 
+  wp10_session = Wp10SessionClass()
   update_articles_table(wp10_session, project)
+  wp10_session.commit()
+  wp10_session.close()
