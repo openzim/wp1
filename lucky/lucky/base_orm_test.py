@@ -26,12 +26,12 @@ class BaseWikiOrmTest(_OrmTest):
 class BaseCombinedOrmTest(unittest.TestCase):
   def setUp(self):
     self.wiki_engine = create_engine('sqlite:///:memory:')
-    WikiSession = sessionmaker(bind=self.wiki_engine)
-    self.wiki_session = WikiSession()
+    self.WikiSession = sessionmaker(bind=self.wiki_engine)
+    self.wiki_session = self.WikiSession()
 
     self.wp10_engine = create_engine('sqlite:///:memory:')
-    Wp10Session = sessionmaker(bind=self.wp10_engine)
-    self.wp10_session = Wp10Session()
+    self.Wp10Session = sessionmaker(bind=self.wp10_engine)
+    self.wp10_session = self.Wp10Session()
 
     WpOneBase.metadata.create_all(self.wp10_engine)
     WikiBase.metadata.create_all(self.wiki_engine)
@@ -39,3 +39,7 @@ class BaseCombinedOrmTest(unittest.TestCase):
   def tearDown(self):
     WpOneBase.metadata.drop_all(self.wp10_engine)
     WikiBase.metadata.drop_all(self.wiki_engine)
+    self.wiki_session.close()
+    self.wp10_session.close()
+    self.wiki_engine.dispose()
+    self.wp10_engine.dispose()

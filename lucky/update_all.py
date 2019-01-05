@@ -1,6 +1,5 @@
 import logging
 import re
-import time
 
 from lucky.conf import get_conf
 import lucky.constants as constants
@@ -17,7 +16,6 @@ logging.getLogger('requests_oauthlib').setLevel(logging.CRITICAL)
 logging.getLogger('oauthlib').setLevel(logging.CRITICAL)
 
 wp10_session = SessionWP10()
-wiki_session = SessionWiki()
 
 config = get_conf()
 ROOT_CATEGORY = config['ROOT_CATEGORY'].encode('utf-8')
@@ -32,6 +30,7 @@ RE_REJECT_GENERIC = re.compile(ARTICLES_LABEL + b'_' + BY_QUALITY, re.I)
 projects = wp10_session.query(Project).all()
 
 def project_pages_to_update():
+  wiki_session = SessionWiki()
   projects_in_root = logic_page.get_pages_by_category(
     wiki_session, ROOT_CATEGORY, constants.CATEGORY_NS_INT)
   for category_page in projects_in_root:
@@ -49,6 +48,7 @@ def project_pages_to_update():
     if project is None:
       project = Project(project=category_page.base_title)
     yield project
+  wiki_session.close()
 
 for project in project_pages_to_update():
-  logic_project.update_project(wiki_session, wp10_session, project)
+  logic_project.update_project(SessionWiki, wp10_session, project)
