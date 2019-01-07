@@ -17,37 +17,37 @@ class LogicRatingTest(BaseWpOneDbTest):
     with get_cursor_context(self.wp10db) as cursor:
       cursor.execute('''
         SELECT * FROM ''' + Log.table_name + '''
-        WHERE l_article = ?
+        WHERE l_article = %s
       ''', (b'Testing Stuff',))
       db_log = cursor.fetchone()
       self.assertIsNotNone(db_log)
       log = Log(**db_log)
-    self.assertEqual(b'Test Project', log.project)
-    self.assertEqual(0, log.namespace)
-    self.assertEqual(b'Testing Stuff', log.article)
-    self.assertEqual(b'GA-Class', log.new)
-    self.assertEqual(b'NotA-Class', log.old)
-    self.assertEqual(b'quality', log.action)
+    self.assertEqual(b'Test Project', log.l_project)
+    self.assertEqual(0, log.l_namespace)
+    self.assertEqual(b'Testing Stuff', log.l_article)
+    self.assertEqual(b'GA-Class', log.l_new)
+    self.assertEqual(b'NotA-Class', log.l_old)
+    self.assertEqual(b'quality', log.l_action)
 
   def test_add_log_for_importance_rating(self):
     rating = Rating(
       r_project=b'Test Project', r_namespace=0, r_article=b'Testing Stuff',
       r_importance=b'Mid-Class',
-      r_quality_timestamp=b'2018-04-01T12:30:00Z')
+      r_importance_timestamp=b'2018-04-01T12:30:00Z')
     logic_rating.add_log_for_rating(
       self.wp10db, rating, AssessmentKind.IMPORTANCE, b'NotA-Class')
 
     with get_cursor_context(self.wp10db) as cursor:
       cursor.execute('''
         SELECT * FROM ''' + Log.table_name + '''
-        WHERE l_article = ?
+        WHERE l_article = %s
       ''', (b'Testing Stuff',))
       db_log = cursor.fetchone()
       self.assertIsNotNone(db_log)
       log = Log(**db_log)
-    self.assertEqual(b'Test Project', log.project)
-    self.assertEqual(0, log.namespace)
-    self.assertEqual(b'Testing Stuff', log.article)
-    self.assertEqual(b'Mid-Class', log.new)
-    self.assertEqual(b'NotA-Class', log.old)
-    self.assertEqual(b'importance', log.action)
+    self.assertEqual(b'Test Project', log.l_project)
+    self.assertEqual(0, log.l_namespace)
+    self.assertEqual(b'Testing Stuff', log.l_article)
+    self.assertEqual(b'Mid-Class', log.l_new)
+    self.assertEqual(b'NotA-Class', log.l_old)
+    self.assertEqual(b'importance', log.l_action)

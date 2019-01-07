@@ -1,5 +1,5 @@
 import unittest
-import sqlite3
+import pymysql
 
 
 def parse_sql(filename):
@@ -33,14 +33,25 @@ def parse_sql(filename):
 
 class BaseWpOneDbTest(unittest.TestCase):
   def _setup_wp_one_db(self):
-    self.wp10db = sqlite3.connect(':memory:')
-    stmts = parse_sql('wp10_test.schema.sql')
-    cursor = self.wp10db.cursor()
-    for stmt in stmts:
-      cursor.execute(stmt)
+    self.wp10db = pymysql.connect(
+      host='localhost',
+      db='enwp10_test',
+      user='root',
+      charset=None,
+      use_unicode=False,
+      cursorclass=pymysql.cursors.DictCursor)
+    stmts = parse_sql('wp10_test.up.sql')
+    with self.wp10db.cursor() as cursor:
+      for stmt in stmts:
+        cursor.execute(stmt)
     self.wp10db.commit()
 
   def _teardown_wp_one_db(self):
+    stmts = parse_sql('wp10_test.down.sql')
+    with self.wp10db.cursor() as cursor:
+      for stmt in stmts:
+        cursor.execute(stmt)
+    self.wp10db.commit()
     self.wp10db.close()
 
   def setUp(self):
@@ -52,14 +63,25 @@ class BaseWpOneDbTest(unittest.TestCase):
 
 class BaseWikiDbTest(unittest.TestCase):
   def _setup_wiki_db(self):
-    self.wikidb = sqlite3.connect(':memory:')
-    stmts = parse_sql('wiki_test.schema.sql')
-    cursor = self.wikidb.cursor()
-    for stmt in stmts:
-      cursor.execute(stmt)
+    self.wikidb = pymysql.connect(
+      host='localhost',
+      db='enwikip_test',
+      user='root',
+      charset=None,
+      use_unicode=False,
+      cursorclass=pymysql.cursors.DictCursor)
+    stmts = parse_sql('wiki_test.up.sql')
+    with self.wikidb.cursor() as cursor:
+      for stmt in stmts:
+        cursor.execute(stmt)
     self.wikidb.commit()
 
   def _teardown_wiki_db(self):
+    stmts = parse_sql('wiki_test.down.sql')
+    with self.wikidb.cursor() as cursor:
+      for stmt in stmts:
+        cursor.execute(stmt)
+    self.wikidb.commit()
     self.wikidb.close()
 
   def setUp(self):
