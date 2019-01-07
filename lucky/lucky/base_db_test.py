@@ -32,6 +32,13 @@ def parse_sql(filename):
 
 
 class BaseWpOneDbTest(unittest.TestCase):
+  def _clean_wp_one_db(self):
+    stmts = parse_sql('wp10_test.down.sql')
+    with self.wp10db.cursor() as cursor:
+      for stmt in stmts:
+        cursor.execute(stmt)
+    self.wp10db.commit()
+
   def _setup_wp_one_db(self):
     self.wp10db = pymysql.connect(
       host='localhost',
@@ -43,15 +50,15 @@ class BaseWpOneDbTest(unittest.TestCase):
     stmts = parse_sql('wp10_test.up.sql')
     with self.wp10db.cursor() as cursor:
       for stmt in stmts:
-        cursor.execute(stmt)
+        try:
+          cursor.execute(stmt)
+        except pymysql.err.InternalError:
+          self._clean_wp_one_db()
+          raise
     self.wp10db.commit()
 
   def _teardown_wp_one_db(self):
-    stmts = parse_sql('wp10_test.down.sql')
-    with self.wp10db.cursor() as cursor:
-      for stmt in stmts:
-        cursor.execute(stmt)
-    self.wp10db.commit()
+    self._clean_wp_one_db()
     self.wp10db.close()
 
   def setUp(self):
@@ -62,6 +69,13 @@ class BaseWpOneDbTest(unittest.TestCase):
 
 
 class BaseWikiDbTest(unittest.TestCase):
+  def _clean_wiki_db(self):
+    stmts = parse_sql('wiki_test.down.sql')
+    with self.wikidb.cursor() as cursor:
+      for stmt in stmts:
+        cursor.execute(stmt)
+    self.wikidb.commit()
+
   def _setup_wiki_db(self):
     self.wikidb = pymysql.connect(
       host='localhost',
@@ -73,15 +87,14 @@ class BaseWikiDbTest(unittest.TestCase):
     stmts = parse_sql('wiki_test.up.sql')
     with self.wikidb.cursor() as cursor:
       for stmt in stmts:
-        cursor.execute(stmt)
+        try:
+          cursor.execute(stmt)
+        except pymysql.err.InternalError:
+          self._clean_wiki_db()
     self.wikidb.commit()
 
   def _teardown_wiki_db(self):
-    stmts = parse_sql('wiki_test.down.sql')
-    with self.wikidb.cursor() as cursor:
-      for stmt in stmts:
-        cursor.execute(stmt)
-    self.wikidb.commit()
+    self._clean_wiki_db()
     self.wikidb.close()
 
   def setUp(self):
@@ -97,5 +110,5 @@ class BaseCombinedDbTest(BaseWikiDbTest, BaseWpOneDbTest):
     self._setup_wp_one_db()
 
   def tearDown(self):
-    self._teardown_wiki_db()
     self._teardown_wp_one_db()
+    self._teardown_wiki_db()

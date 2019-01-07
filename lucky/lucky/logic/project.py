@@ -2,12 +2,11 @@ import logging
 import math
 import re
 
-from sqlalchemy import or_
-
 from lucky.conf import get_conf
 from lucky.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP, GLOBAL_TIMESTAMP_WIKI
 from lucky.logic import page as logic_page, util as logic_util, rating as logic_rating, category as logic_category
 from lucky.logic.api import project as api_project
+from lucky.models.wiki.page import Page
 from lucky.models.wp10.category import Category
 from lucky.models.wp10.project import Project
 from lucky.models.wp10.rating import Rating
@@ -31,17 +30,17 @@ def insert_or_update(wp10db, project):
 
 def update_category(wp10db, project, page, extra, kind, rating_to_category):
   replaces = None
-  extra_category = extra.get(page.title)
+  extra_category = extra.get(page.page_title)
   if extra_category is not None:
     rating = extra_category['title']
     ranking = extra_category['ranking']
     if kind == AssessmentKind.QUALITY:
       replaces = extra_category['replaces']
   else:
-    md = RE_INDICATOR.search(page.title)
+    md = RE_INDICATOR.search(page.page_title)
     if not md:
       logger.debug('Skipping page with no class match: %s',
-                   page.title.decode('utf-8'))
+                   page.page_title.decode('utf-8'))
       return
 
     rating = ('%s-%s' % (md.group(1).decode('utf-8'), CLASS))
@@ -52,30 +51,30 @@ def update_category(wp10db, project, page, extra, kind, rating_to_category):
 
     if rating not in rating_map:
       logger.debug('Skipping page with indicator not in mapping: %s | %s',
-                   page.title.decode('utf-8'), rating)
+                   page.page_title.decode('utf-8'), rating)
       return
     ranking = rating_map[rating]
 
-  rating_to_category[rating] = page.title
+  rating_to_category[rating] = page.page_title
   if replaces is None:
     replaces = rating
 
   category = Category(
-    project=project.project, type=kind.value.encode('utf-8'),
-    rating=rating.encode('utf-8'), category=page.title, ranking=ranking,
-    replacement=replaces.encode('utf-8'))
+    c_project=project.p_project, c_type=kind.value.encode('utf-8'),
+    c_rating=rating.encode('utf-8'), c_category=page.page_title, c_ranking=ranking,
+    c_replacement=replaces.encode('utf-8'))
   # If there is an existing category, merge in our changes.
   logic_category.insert_or_update(wp10db, category)
 
 
 def update_project_categories_by_kind(
     wikidb, wp10db, project, extra, kind):
-  logging.info('Updating project categories for %s', project.project)
+  logging.info('Updating project categories for %s', project.p_project)
   rating_to_category = {}
   category_name_main = logic_util.category_for_project_by_kind(
-    project.project, kind, category_prefix=False)
+    project.p_project, kind, category_prefix=False)
   category_name_alt = logic_util.category_for_project_by_kind(
-    project.project, kind, category_prefix=False, use_alt=True)
+    project.p_project, kind, category_prefix=False, use_alt=True)
 
   found_page = False
   for category_name in (category_name_main, category_name_alt):
@@ -97,10 +96,11 @@ def update_project_assessments(
   if kind not in (AssessmentKind.QUALITY, AssessmentKind.IMPORTANCE):
     raise ValueError('Parameter "kind" was not one of QUALITY or IMPORTANCE')
 
-  logging.info('Updating project %s assessments for %s', kind, project.project)
+  logging.info('Updating project %s assessments for %s', kind, project.p_project)
   old_ratings = {}
-  for rating in rating.get_project_ratings(wp10db, project.project):
-    rating_ref = str(rating.namespace).encode('utf-8') + b':' + rating.article
+  for rating in logic_rating.get_project_ratings(wp10db, project.p_project):
+    rating_ref = (
+      str(rating.r_namespace).encode('utf-8') + b':' + rating.r_article)
     old_ratings[rating_ref] = rating
 
   seen = set()
@@ -111,12 +111,13 @@ def update_project_assessments(
     logging.info('Fetching article list for %r' % category.decode('utf-8'))
     for page in logic_page.get_pages_by_category(wikidb, category):
       # Talk pages are tagged, we want the NS of the article itself.
-      namespace = page.namespace - 1
+      namespace = page.page_namespace - 1
       if not logic_util.is_namespace_acceptable(namespace):
-        logging.debug('Skipping %s with namespace=%s', page.title, namespace)
+        logging.debug('Skipping %s with namespace=%s',
+                      page.page_title, namespace)
         continue
 
-      article_ref = str(namespace).encode('utf-8') + b':' +  page.title
+      article_ref = str(namespace).encode('utf-8') + b':' +  page.page_title
       seen.add(article_ref)
       old_rating = old_ratings.get(article_ref)
       old_rating_value = None
@@ -124,27 +125,28 @@ def update_project_assessments(
       if old_rating:
         rating = old_rating
         if kind == AssessmentKind.QUALITY:
-          old_rating_value = rating.quality
+          old_rating_value = rating.r_quality
         elif kind == AssessmentKind.IMPORTANCE:
-          old_rating_value = rating.importance
+          old_rating_value = rating.r_importance
       else:
-        rating = Rating(project=project.project, namespace=namespace,
-                              article=page.title, score=0)
+        rating = Rating(r_project=project.p_project, r_namespace=namespace,
+                        r_article=page.page_title, r_score=0)
         old_rating_value = NOT_A_CLASS.encode('utf-8')
 
       if kind == AssessmentKind.QUALITY:
-        rating.quality = current_rating.encode('utf-8')
-        rating.set_quality_timestamp_dt(page.timestamp)
+        rating.r_quality = current_rating.encode('utf-8')
+        rating.set_quality_timestamp_dt(page.cl_timestamp)
       elif kind == AssessmentKind.IMPORTANCE:
-        rating.importance = current_rating.encode('utf-8')
-        rating.set_importance_timestamp_dt(page.timestamp)
+        rating.r_importance = current_rating.encode('utf-8')
+        rating.set_importance_timestamp_dt(page.cl_timestamp)
 
       if (article_ref in old_ratings and old_rating_value != rating):
         # If the article doesn't match its rating, update the logging table.
         logic_rating.add_log_for_rating(wp10db, rating, kind, old_rating_value)
+        logic_rating.update(wp10db, rating)
       else:
         # Add the newly created rating.
-        log_rating.insert(wp10db, rating)
+        logic_rating.insert(wp10db, rating)
 
   logging.debug('Looking for unseen articles')
   n = 0
@@ -153,11 +155,9 @@ def update_project_assessments(
       continue
 
     if ((kind == AssessmentKind.QUALITY and
-         old_rating.quality == NOT_A_CLASS) or
+         old_rating.r_quality == NOT_A_CLASS) or
         (kind == AssessmentKind.IMPORTANCE and
-         (old_rating.importance == NOT_A_CLASS
-          or old_rating.importance == ''
-          or old_rating.importance is None))):
+         old_rating.r_importance == NOT_A_CLASS)):
       continue
 
     logging.debug('Processing unseen article %s', ref.decode('utf-8'))
@@ -173,23 +173,25 @@ def update_project_assessments(
         move_data['dest_title'], move_data['timestamp_dt'])
 
     rating = Rating(
-      project=project.project, namespace=ns, article=title, score=0)
+      r_project=project.p_project, r_namespace=ns, r_article=title, r_score=0)
     if kind == AssessmentKind.QUALITY:
       rating.quality = NOT_A_CLASS.encode('utf-8')
-      old_rating_value = old_rating.quality
+      old_rating_value = old_rating.r_quality
       if move_data:
-        current_rating.set_quality_timestamp_dt(move_data['timestamp_dt'])
+        rating.set_quality_timestamp_dt(move_data['timestamp_dt'])
       else:
-        current_rating.quality_timestamp = GLOBAL_TIMESTAMP_WIKI
+        rating.r_quality_timestamp = GLOBAL_TIMESTAMP_WIKI
     elif kind == AssessmentKind.IMPORTANCE:
       rating.importance = NOT_A_CLASS.encode('utf-8')
-      old_rating_value = old_rating.importance
+      old_rating_value = old_rating.r_importance
       if move_data:
         rating.set_importance_timestamp_dt(move_data['timestamp_dt'])
       else:
-        rating.importance_timestamp = GLOBAL_TIMESTAMP_WIKI
+        rating.r_importance_timestamp = GLOBAL_TIMESTAMP_WIKI
 
-    logic_rating.insert_or_update(rating)
+    num_updated = logic_rating.update(wp10db, rating, allow_zero_results=True)
+    if num_updated == 0:
+      logic_rating.insert(wp10db, rating)
     logic_rating.add_log_for_rating(wp10db, rating, kind, old_rating_value)
 
 
@@ -197,64 +199,64 @@ def cleanup_project(wp10db, project):
   not_a_class_db = NOT_A_CLASS.encode('utf-8')
   # If both quality and importance are 'NotA-Class', that means the article
   # was once rated but isn't any more, so we delete the row
-  count = logic_rating.delete_empty_for_project(wp10db, project.project)
+  count = logic_rating.delete_empty_for_project(wp10db, project.p_project)
 
   # count = wp10_session.query(Rating).filter(
-  #   Rating.project == project.project).filter(
+  #   Rating.project == project.p_project).filter(
   #   or_(Rating.quality == not_a_class_db, Rating.quality == None)).filter(
   #   or_(Rating.importance == not_a_class_db,
   #       Rating.importance == None)).delete()
   logger.info('Deleted %s ratings that were empty from project: %s',
-              count, project.project.decode('utf-8'))
+              count, project.p_project.decode('utf-8'))
 
   # It's possible for the quality to be NULL if the article has a 
   # rated importance but no rated quality (not even Unassessed-Class).
   # This will always happen if the article has a quality rating that the 
   # bot doesn't recognize. Change the NULL to sentinel value.
   count = logic_rating.update_null_ratings_for_project(
-    wp10db, project.project, kind=AssessmentKind.QUALITY)
+    wp10db, project.p_project, kind=AssessmentKind.QUALITY)
 
   # count = wp10_session.query(Rating).filter(
-  #   Rating.project == project.project).filter(
+  #   Rating.project == project.p_project).filter(
   #   Rating.quality == None).update({
   #     Rating.quality: not_a_class_db,
   #     Rating.quality_timestamp: Rating.importance_timestamp
   #   })
   logger.info('Updated %s ratings, quality == NotAClass from project: %s',
-              count, project.project.decode('utf-8'))
+              count, project.p_project.decode('utf-8'))
 
   # Finally, if a quality is assigned but not an importance, it is
   # possible for the importance field to be null. Set it to 
   # $NotAClass in this case.
   count = logic_rating.update_null_ratings_for_project(
-    wp10db, project.project, kind=AssessmentKind.IMPORTANCE)
+    wp10db, project.p_project, kind=AssessmentKind.IMPORTANCE)
 
   # count = wp10_session.query(Rating).filter(
-  #   Rating.project == project.project).filter(
+  #   Rating.project == project.p_project).filter(
   #   Rating.importance == None).update({
   #     Rating.importance: not_a_class_db,
   #     Rating.importance_timestamp: Rating.quality_timestamp
   #   })
   logger.info('Updated %s ratings, importance == NotAClass from project: %s',
-        count, project.project.decode('utf-8'))
+        count, project.p_project.decode('utf-8'))
 
 
 def update_project_record(wp10db, project, metadata):
-  project_display = project.project.decode('utf-8')
+  project_display = project.p_project.decode('utf-8')
   logging.info('Updating project record: %r', project_display)
 
   not_a_class_db = NOT_A_CLASS.encode('utf-8')
   unassessed_db = UNASSESSED_CLASS.encode('utf-8')
   unknown_db = UNKNOWN_CLASS.encode('utf-8')
 
-  num_ratings = logic_rating.count_for_project(wp10db, project.project)
+  num_ratings = logic_rating.count_for_project(wp10db, project.p_project)
 
   num_unassessed_quality = logic_rating.count_unassessed_for_project(
-    wp10db, project.project, AssessmentKind.QUALITY)
+    wp10db, project.p_project, AssessmentKind.QUALITY)
   quality_count = num_ratings - num_unassessed_quality
 
   num_unassessed_importance = logic_rating.count_unassessed_for_project(
-    wp10db, project.project, AssessmentKind.IMPORTANCE)
+    wp10db, project.p_project, AssessmentKind.IMPORTANCE)
   importance_count = num_ratings - num_unassessed_importance
 
   # Okay, update the fields of the project, warning if we're setting NULLs.
@@ -319,16 +321,16 @@ def update_articles_table(wp10_session, project):
   #       WHERE r_namespace = 0 and r_project = :project )
   #   ) as tabletwo
   #   GROUP BY art
-  # ''', {'project': project.project})
+  # ''', {'project': project.p_project})
   pass
 
 def update_project(wikidb, wp10db, project):
-  extra_assessments = api_project.get_extra_assessments(project.project)
+  extra_assessments = api_project.get_extra_assessments(project.p_project)
   timestamp = project.timestamp
 
   for kind in (AssessmentKind.QUALITY, AssessmentKind.IMPORTANCE):
     logger.debug('Updating %s assessments by %s',
-                 project.project.decode('utf-8'), kind)
+                 project.p_project.decode('utf-8'), kind)
     update_project_assessments(
       wikidb, wp10db, project, extra_assessments['extra'], kind)
 

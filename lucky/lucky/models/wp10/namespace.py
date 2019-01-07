@@ -1,25 +1,18 @@
 import enum
 
-from sqlalchemy import Column, Enum
-from sqlalchemy.dialects.mysql import BINARY, INTEGER
-
-from lucky.wp10_db import Base
+import attr
 
 class NsType(enum.Enum):
   primary = 0
   canonical = 1
   alias = 2
 
-class Namespace(Base):
-  __tablename__ = 'namespacename'
+@attr.s
+class Namespace:
+  table_name = 'namespacename'
 
-  dbname = Column('dbname', BINARY(32))
-  domain = Column('domain', BINARY(48), primary_key=True)
-  id = Column('ns_id', INTEGER(8))
-  name = Column('ns_name', BINARY(255), primary_key=True)
-  type = Column('ns_type', Enum(NsType), primary_key=True)
-
-  def __repr__(self):
-    return ('<NamespaceName(dbname=%r, domain=%r, id=%r, '
-            'name=%r, type=%r)>' % (
-             self.dbname, self.domain, self.id, self.name, self.type))
+  domain = attr.ib()
+  ns_name = attr.ib()
+  ns_type = attr.ib()
+  ns_id = attr.ib(default=None)
+  dbname = attr.ib(default=None)

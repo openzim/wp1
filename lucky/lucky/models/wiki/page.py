@@ -1,46 +1,29 @@
-from sqlalchemy import Table, Column, TIMESTAMP, join, ForeignKey
-from sqlalchemy.dialects.mysql import BINARY, INTEGER
-from sqlalchemy.orm import column_property
+import attr
 
 from lucky.conf import get_conf
-from lucky.wiki_db import Base
 
 config = get_conf()
 ARTICLES_LABEL_STR = config['ARTICLES_LABEL']
 BY_QUALITY_STR = config['BY_QUALITY']
 
-page_table = Table(
-  'page', Base.metadata,
-  Column('page_id', INTEGER(8, unsigned=True), primary_key=True),
-  Column('page_namespace', INTEGER(11)),
-  Column('page_title', BINARY(255)))
+@attr.s
+class Page:
+  """An approximation of a wikipedia page, for use in this bot.
 
-category_links_table = Table(
-  'categorylinks', Base.metadata,
-  Column('cl_from', INTEGER(8, unsigned=True), ForeignKey('page.page_id')),
-  Column('cl_sortkey', BINARY(230)),
-  Column('cl_to', BINARY(255)),
-  Column('cl_timestamp', TIMESTAMP))
+  This class simultaneously is missing fields from the page table, and includes
+  other fields from the categorylinks table. It is produced primarily by the
+  lucky.logic.page method get_pages_by_category.
+  """
+  table_name = 'page'
 
-page_category_join = join(page_table, category_links_table)
-
-class Page(Base):
-  __table__ = page_category_join
-
-  id = column_property(page_table.c.page_id, category_links_table.c.cl_from)
-  title = page_table.c.page_title
-  namespace = page_table.c.page_namespace
-
-  category = category_links_table.c.cl_to
-  timestamp = category_links_table.c.cl_timestamp
-  sortkey = category_links_table.c.cl_sortkey
-
-  def __repr__(self):
-    return "<Page(page_id=%r, page_title=%r, page_namespace=%r)>" % (
-      self.id, self.title, self.namespace)
+  page_id = attr.ib()
+  page_namespace = attr.ib()
+  page_title = attr.ib()
+  cl_sortkey = attr.ib()
+  cl_timestamp = attr.ib()
 
   @property
   def base_title(self):
     bytes_to_replace = ('_%s_%s' %
                         (ARTICLES_LABEL_STR, BY_QUALITY_STR)).encode('utf-8')
-    return self.title.replace(bytes_to_replace, b'')
+    return self.page_title.replace(bytes_to_replace, b'')
