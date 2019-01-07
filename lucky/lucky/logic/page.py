@@ -5,25 +5,29 @@ from lucky.constants import TS_FORMAT, GLOBAL_TIMESTAMP
 from lucky.models.wiki.page import Page
 from lucky.models.wp10.log import Log
 from lucky.models.wp10.move import Move
+from lucky.logic import move as logic_move
 from lucky.logic.api import page as api_page
 import lucky.logic.util as logic_util
 
 logger = logging.getLogger(__name__)
 
-def get_pages_by_category(wiki_session, category, ns=None):
-  q = wiki_session.query(Page).prefix_with('/* SLOW_OK */').filter(
-    Page.category == category)
-  if ns is not None:
-    q = q.filter(Page.namespace == ns)
-  yield from q
+def get_pages_by_category(wikidb, category, ns=None):
+  # q = wiki_session.query(Page).prefix_with('/* SLOW_OK */').filter(
+  #   Page.category == category)
+  # if ns is not None:
+  #   q = q.filter(Page.namespace == ns)
+  # yield from q
+  pass
 
 def update_page_moved(
-    wp10_session, project, old_ns, old_title, new_ns, new_title,
+    wp10db, project, old_ns, old_title, new_ns, new_title,
     move_timestamp_dt):
   logger.info('Updating moves table for %s -> %s',
               old_title.decode('utf-8'), new_title.decode('utf-8'))
   db_timestamp = move_timestamp_dt.strftime(TS_FORMAT).encode('utf-8')
   logging.warning('db_timestamp: %r', db_timestamp)
+
+  raise NotImplementedError('Need to convert to db access')
   existing_move = wp10_session.query(Move).filter(
     Move.timestamp == db_timestamp).filter(
     Move.old_namespace == old_ns).filter(
@@ -35,26 +39,16 @@ def update_page_moved(
     new_move = Move(
       timestamp=db_timestamp, old_namespace=old_ns, old_article=old_title,
       new_namespace=new_ns, new_article=new_title)
-    wp10_session.add(new_move)
+    logic_move.insert(new_move)
 
-  existing_log = wp10_session.query(Log).filter(
-    Log.project == project.project).filter(
-    Log.namespace == old_ns).filter(
-    Log.article == old_title).filter(
-    Log.action == b'moved').filter(
-    Log.revision_timestamp == db_timestamp).first()
+  new_log = Log(
+    project=project.project, namespace=old_ns, article=old_title,
+    action=b'moved', timestamp=GLOBAL_TIMESTAMP, old=b'', new=b'',
+    revision_timestamp=db_timestamp)
+  logic_log.insert_or_update(new_log)
 
-  if existing_log is not None:
-    logger.warning('Move already recorded in logging table: %r', existing_log)
-  else:
-    new_log = Log(
-      project=project.project, namespace=old_ns, article=old_title,
-      action=b'moved', timestamp=GLOBAL_TIMESTAMP, old=b'', new=b'',
-      revision_timestamp=db_timestamp)
-    wp10_session.add(new_log)
-
-def _get_moves_from_api(wp10_session, namespace, title, timestamp_dt):
-  title_with_ns = logic_util.title_for_api(wp10_session, namespace, title)
+def _get_moves_from_api(wp10db, namespace, title, timestamp_dt):
+  title_with_ns = logic_util.title_for_api(wp10db, namespace, title)
   moves = api_page.get_moves(title_with_ns)
   if moves is not None:
     for move in moves:
@@ -66,8 +60,8 @@ def _get_moves_from_api(wp10_session, namespace, title, timestamp_dt):
         }
   return None
 
-def _get_redirects_from_api(wp10_session, namespace, title, timestamp_dt):
-  title_with_ns = logic_util.title_for_api(wp10_session, namespace, title)
+def _get_redirects_from_api(wp10db, namespace, title, timestamp_dt):
+  title_with_ns = logic_util.title_for_api(wp10db, namespace, title)
   redir = api_page.get_redirect(title_with_ns)
   if redir is not None and redir['timestamp_dt'] > timestamp_dt:
     return {
@@ -77,8 +71,8 @@ def _get_redirects_from_api(wp10_session, namespace, title, timestamp_dt):
     }
   return None
 
-def get_move_data(wp10_session, namespace, title, timestamp_dt):
-  moves = _get_redirects_from_api(wp10_session, namespace, title, timestamp_dt)
+def get_move_data(wp10db, namespace, title, timestamp_dt):
+  moves = _get_redirects_from_api(wp10db, namespace, title, timestamp_dt)
   if moves is None:
-    moves = _get_moves_from_api(wp10_session, namespace, title, timestamp_dt)
+    moves = _get_moves_from_api(wp10db, namespace, title, timestamp_dt)
   return moves

@@ -1,14 +1,12 @@
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+import os
 
-try:
-  from lucky.credentials import WP10_DB_STRING
-  _engine = create_engine(WP10_DB_STRING, pool_pre_ping=True)
-except ImportError:
-  # This won't actually work because the tables are not there
-  _engine = create_engine('sqlite:///:memory:')
+import pymysql
+import pymysql.cursors
 
-Base = declarative_base()
-Session = sessionmaker(bind=_engine)
-
+conn = pymysql.connect(
+  host='tools.db.svc.eqiad.wmflabs',
+  db='youruser_enwp10',
+  read_default_file=os.path.expanduser('~/replica.my.cnf'),
+  charset=None,
+  use_unicode=False,
+  cursorclass=pymysql.cursors.DictCursor)
