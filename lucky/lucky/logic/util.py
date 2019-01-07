@@ -58,11 +58,12 @@ def ns_to_int(wp10db):
     if _INT_TO_NS is not None:
       _NS_TO_INT = {v: k for k, v in _INT_TO_NS.items()}
       return _NS_TO_INT
-
-    raise NotImplementedError('Need to convert to db access')
-    _NS_TO_INT = dict((ns.name, ns.id) for ns in
-                      wp10_session.query(Namespace).filter(
-                        Namespace.dbname == DATABASE_WIKI_TS.encode('utf-8')))
+     
+    with wp10db.cursor() as cursor:
+      cursor.execute('SELECT * FROM ' + Namespace.table_name + '''
+        WHERE dbname=%(dbname)s
+      ''', {'dbname': DATABASE_WIKI_TS.encode('utf-8')})
+      _NS_TO_INT = dict((n['ns_name'], n['ns_id']) for n in cursor.fetchall())
     return _NS_TO_INT
 
 def int_to_ns(wp10db):

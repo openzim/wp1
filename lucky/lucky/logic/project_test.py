@@ -1,7 +1,9 @@
 from datetime import datetime
 from unittest.mock import patch
 
-from lucky.base_orm_test import BaseWpOneOrmTest, BaseCombinedOrmTest
+import attr
+
+from lucky.base_db_test import BaseWpOneDbTest, BaseCombinedDbTest
 from lucky.conf import get_conf
 from lucky.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP_WIKI, TS_FORMAT
 from lucky.logic import project as logic_project
@@ -15,92 +17,116 @@ QUALITY = config['QUALITY']
 IMPORTANCE = config['IMPORTANCE']
 NOT_A_CLASS = config['NOT_A_CLASS']
 
-class UpdateCategoryTest(BaseWpOneOrmTest):
+
+def _get_first_category(wp10db):
+  with wp10db.cursor() as cursor:
+    cursor.execute('SELECT * FROM ' + Category.table_name + ' LIMIT 1')
+    db_category = cursor.fetchone()
+    if db_category:
+      return Category(**db_category)
+    else:
+      return None
+
+
+def _get_all_categories(wp10db):
+  with wp10db.cursor() as cursor:
+    cursor.execute('SELECT * FROM ' + Category.table_name)
+    return [Category(**db_category) for db_category in cursor.fetchall()]
+
+
+def _get_all_ratings(wp10db):
+  with wp10db.cursor() as cursor:
+    cursor.execute('SELECT * FROM ' + Rating.table_name)
+    return [Rating(**db_rating) for db_rating in cursor.fetchall()]
+
+
+class UpdateCategoryTest(BaseWpOneDbTest):
   def setUp(self):
     super().setUp()
-    self.project = Project(project=b'Test Project')
-    self.page = Page(title=b'A-Class Test articles')
-    self.page_1 = Page(title=b'Mid-importance Test articles')
-    self.page_2 = Page(title=b'Draft-Class Test articles')
+    self.project = Project(p_project=b'Test Project', p_timestamp=None)
+    self.page = Page(page_title=b'A-Class Test articles',
+                     page_id=None, page_namespace=None)
+    self.page_1 = Page(page_title=b'Mid-importance Test articles',
+                       page_id=None, page_namespace=None)
+    self.page_2 = Page(page_title=b'Draft-Class Test articles',
+                       page_id=None, page_namespace=None)
 
   def test_quality_gets_updated(self):
     rating_to_category = {}
     logic_project.update_category(
-      self.session, self.project, self.page, {}, AssessmentKind.QUALITY,
+      self.wp10db, self.project, self.page, {}, AssessmentKind.QUALITY,
       rating_to_category)
-    self.session.commit()
 
-    category = self.session.query(Category).first()
-    self.assertEqual(self.page.title, rating_to_category['A-Class'])
-    self.assertEqual(self.project.project, category.project)
-    self.assertEqual(b'quality', category.type)
-    self.assertEqual(b'A-Class', category.rating)
-    self.assertEqual(self.page.title, category.category)
-    self.assertEqual(QUALITY['A-Class'], category.ranking)
-    self.assertEqual(b'A-Class', category.replacement)
+    category = _get_first_category(self.wp10db)
+    self.assertEqual(self.page.page_title, rating_to_category['A-Class'])
+    self.assertEqual(self.project.p_project, category.c_project)
+    self.assertEqual(b'quality', category.c_type)
+    self.assertEqual(b'A-Class', category.c_rating)
+    self.assertEqual(self.page.page_title, category.c_category)
+    self.assertEqual(QUALITY['A-Class'], category.c_ranking)
+    self.assertEqual(b'A-Class', category.c_replacement)
 
   def test_importance_gets_updated(self):
     rating_to_category = {}
     logic_project.update_category(
-      self.session, self.project, self.page_1, {}, AssessmentKind.IMPORTANCE,
+      self.wp10db, self.project, self.page_1, {}, AssessmentKind.IMPORTANCE,
       rating_to_category)
-    self.session.commit()
-
-    category = self.session.query(Category).first()
-    self.assertEqual(self.page_1.title, rating_to_category['Mid-Class'])
-    self.assertEqual(self.project.project, category.project)
-    self.assertEqual(b'importance', category.type)
-    self.assertEqual(b'Mid-Class', category.rating)
-    self.assertEqual(self.page_1.title, category.category)
-    self.assertEqual(IMPORTANCE['Mid-Class'], category.ranking)
-    self.assertEqual(b'Mid-Class', category.replacement)
+    
+    category = _get_first_category(self.wp10db)
+    self.assertEqual(self.page_1.page_title, rating_to_category['Mid-Class'])
+    self.assertEqual(self.project.p_project, category.c_project)
+    self.assertEqual(b'importance', category.c_type)
+    self.assertEqual(b'Mid-Class', category.c_rating)
+    self.assertEqual(self.page_1.page_title, category.c_category)
+    self.assertEqual(IMPORTANCE['Mid-Class'], category.c_ranking)
+    self.assertEqual(b'Mid-Class', category.c_replacement)
 
   def test_extra_category_gets_updated(self):
     rating_to_category = {}
     extra = {
-      self.page_2.title: {
+      self.page_2.page_title: {
         'title': 'Draft-Class',
         'ranking': 10,
         'replaces': 'Disambig-Class'
       }
     }
     logic_project.update_category(
-      self.session, self.project, self.page_2, extra, AssessmentKind.QUALITY,
+      self.wp10db, self.project, self.page_2, extra, AssessmentKind.QUALITY,
       rating_to_category)
-    self.session.commit()
-
-    category = self.session.query(Category).first()
-    self.assertEqual(self.page_2.title, rating_to_category['Draft-Class'])
-    self.assertEqual(self.project.project, category.project)
-    self.assertEqual(b'quality', category.type)
-    self.assertEqual(b'Draft-Class', category.rating)
-    self.assertEqual(self.page_2.title, category.category)
-    self.assertEqual(10, category.ranking)
-    self.assertEqual(b'Disambig-Class', category.replacement)
+    
+    category = _get_first_category(self.wp10db)
+    self.assertEqual(self.page_2.page_title, rating_to_category['Draft-Class'])
+    self.assertEqual(self.project.p_project, category.c_project)
+    self.assertEqual(b'quality', category.c_type)
+    self.assertEqual(b'Draft-Class', category.c_rating)
+    self.assertEqual(self.page_2.page_title, category.c_category)
+    self.assertEqual(10, category.c_ranking)
+    self.assertEqual(b'Disambig-Class', category.c_replacement)
 
   def test_skips_page_with_no_mapping_match(self):
     rating_to_category = {}
+    page = Page(page_title=b'123*go', page_id=None, page_namespace=None)
     logic_project.update_category(
-      self.session, self.project, Page(title=b'123*go'), {},
-      AssessmentKind.QUALITY, rating_to_category)
-    self.session.commit()
+      self.wp10db, self.project, page, {}, AssessmentKind.QUALITY,
+      rating_to_category)
 
-    category = self.session.query(Category).first()
+    category = _get_first_category(self.wp10db)
     self.assertIsNone(category)
     self.assertEqual(0, len(rating_to_category))
     
   def test_skips_page_with_no_class_match(self):
     rating_to_category = {}
+    page = Page(
+      page_title=b'Foo-Class Test articles', page_id=None, page_namespace=None)
     logic_project.update_category(
-      self.session, self.project, Page(title=b'Foo-Class Test articles'), {},
-      AssessmentKind.QUALITY, rating_to_category)
-    self.session.commit()
-
-    category = self.session.query(Category).first()
+      self.wp10db, self.project, page, {}, AssessmentKind.QUALITY,
+      rating_to_category)
+    
+    category = _get_first_category(self.wp10db)
     self.assertIsNone(category)
     self.assertEqual(0, len(rating_to_category))
 
-class UpdateProjectCategoriesByKindTest(BaseCombinedOrmTest):
+class UpdateProjectCategoriesByKindTest(BaseCombinedDbTest):
   quality_pages = (
     (101, b'FA-Class_Test_articles', b'Test_articles_by_quality', b'FA-Class'),
     (102, b'FL-Class_Test_articles', b'Test_articles_by_quality', b'FL-Class'),
@@ -142,53 +168,48 @@ class UpdateProjectCategoriesByKindTest(BaseCombinedOrmTest):
   )
 
   def _insert_pages(self, pages):
-    for p in pages:
-      self.wiki_session.execute('''
-        INSERT INTO page (page_id, page_namespace, page_title)
-        VALUES (:id, :ns, :title)
-      ''', [
-        {'id': p[0], 'ns': 14, 'title': p[1]},
-      ])
-      self.wiki_session.execute('''
-        INSERT INTO categorylinks (cl_from, cl_to)
-        VALUES (:from, :to)
-      ''', [
-        {'from': p[0], 'to': p[2]},
-      ])
+    with self.wikidb.cursor() as cursor:
+      for p in pages:
+        cursor.execute('''
+          INSERT INTO page (page_id, page_namespace, page_title)
+          VALUES (%(id)s, %(ns)s, %(title)s)
+        ''', {'id': p[0], 'ns': 14, 'title': p[1]})
+        cursor.execute('''
+          INSERT INTO categorylinks (cl_from, cl_to)
+          VALUES (%(from)s, %(to)s)
+        ''', {'from': p[0], 'to': p[2]})
 
   def setUp(self):
     super().setUp()
-    self.project = Project(project=b'Test')
+    self.project = Project(p_project=b'Test', p_timestamp=None)
     self._insert_pages(self.additional_junk_pages)
 
   def test_update_quality(self):
     self._insert_pages(self.quality_pages)
     logic_project.update_project_categories_by_kind(
-      self.wiki_session, self.wp10_session, self.project, {},
-      AssessmentKind.QUALITY)
+      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.QUALITY)
 
-    categories = self.wp10_session.query(Category).all()
+    categories = _get_all_categories(self.wp10db)
     self.assertNotEqual(0, len(categories))
     for category in categories:
-      self.assertEqual(self.project.project, category.project)
-      self.assertEqual(b'quality', category.type)
+      self.assertEqual(self.project.p_project, category.c_project)
+      self.assertEqual(b'quality', category.c_type)
 
-    category_titles = set(category.category for category in categories)
+    category_titles = set(category.c_category for category in categories)
     expected_titles = set(p[1] for p in self.quality_pages)
     self.assertEqual(expected_titles, category_titles)
 
-    category_ratings = set(category.rating for category in categories)
+    category_ratings = set(category.c_rating for category in categories)
     expected_ratings = set(p[3] for p in self.quality_pages)
     self.assertEqual(expected_ratings, category_ratings)
 
-    category_replaces = set(category.replacement for category in categories)
+    category_replaces = set(category.c_replacement for category in categories)
     self.assertEqual(expected_ratings, category_replaces)
 
   def test_update_quality_rating_to_category(self):
     self._insert_pages(self.quality_pages)
     rating_to_category = logic_project.update_project_categories_by_kind(
-      self.wiki_session, self.wp10_session, self.project, {},
-      AssessmentKind.QUALITY)
+      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.QUALITY)
 
     expected = dict((p[3].decode('utf-8'), p[1]) for p in self.quality_pages)
     self.assertEqual(expected, rating_to_category)
@@ -196,51 +217,49 @@ class UpdateProjectCategoriesByKindTest(BaseCombinedOrmTest):
   def test_update_importance(self):
     self._insert_pages(self.importance_pages)
     logic_project.update_project_categories_by_kind(
-      self.wiki_session, self.wp10_session, self.project, {},
-      AssessmentKind.IMPORTANCE)
+      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.IMPORTANCE)
 
-    categories = self.wp10_session.query(Category).all()
+    categories = _get_all_categories(self.wp10db)
     self.assertNotEqual(0, len(categories))
     print(repr(categories))
     for category in categories:
-      self.assertEqual(self.project.project, category.project)
-      self.assertEqual(b'importance', category.type)
+      self.assertEqual(self.project.p_project, category.c_project)
+      self.assertEqual(b'importance', category.c_type)
 
-    category_titles = set(category.category for category in categories)
+    category_titles = set(category.c_category for category in categories)
     expected_titles = set(p[1] for p in self.importance_pages)
     self.assertEqual(expected_titles, category_titles)
 
-    category_ratings = set(category.rating for category in categories)
+    category_ratings = set(category.c_rating for category in categories)
     expected_ratings = set(p[3] for p in self.importance_pages)
     self.assertEqual(expected_ratings, category_ratings)
 
-    category_replaces = set(category.replacement for category in categories)
+    category_replaces = set(category.c_replacement for category in categories)
     self.assertEqual(expected_ratings, category_replaces)
 
   def test_update_priority(self):
     self._insert_pages(self.priority_pages)
     logic_project.update_project_categories_by_kind(
-      self.wiki_session, self.wp10_session, self.project, {},
-      AssessmentKind.IMPORTANCE)
+      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.IMPORTANCE)
 
-    categories = self.wp10_session.query(Category).all()
+    categories = _get_all_categories(self.wp10db)
     self.assertNotEqual(0, len(categories))
     for category in categories:
-      self.assertEqual(self.project.project, category.project)
-      self.assertEqual(b'importance', category.type)
+      self.assertEqual(self.project.p_project, category.c_project)
+      self.assertEqual(b'importance', category.c_type)
 
-    category_titles = set(category.category for category in categories)
+    category_titles = set(category.c_category for category in categories)
     expected_titles = set(p[1] for p in self.priority_pages)
     self.assertEqual(expected_titles, category_titles)
 
-    category_ratings = set(category.rating for category in categories)
+    category_ratings = set(category.c_rating for category in categories)
     expected_ratings = set(p[3] for p in self.priority_pages)
     self.assertEqual(expected_ratings, category_ratings)
 
-    category_replaces = set(category.replacement for category in categories)
+    category_replaces = set(category.c_replacement for category in categories)
     self.assertEqual(expected_ratings, category_replaces)
 
-class UpdateProjectAssessmentsTest(BaseCombinedOrmTest):
+class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
   quality_pages = (
     (101, b'FA-Class_Test_articles', b'Test_articles_by_quality', None, 14),
     (102, b'FL-Class_Test_articles', b'Test_articles_by_quality', None, 14),
@@ -304,19 +323,16 @@ class UpdateProjectAssessmentsTest(BaseCombinedOrmTest):
 
   def _insert_pages(self, pages):
     ts = datetime.now()
-    for p in pages:
-      self.wiki_session.execute('''
-        INSERT INTO page (page_id, page_namespace, page_title)
-        VALUES (:id, :ns, :title)
-      ''', [
-        {'id': p[0], 'ns': p[4], 'title': p[1]},
-      ])
-      self.wiki_session.execute('''
-        INSERT INTO categorylinks (cl_from, cl_to, cl_timestamp)
-        VALUES (:from, :to, :ts)
-      ''', [
-        {'from': p[0], 'to': p[2], 'ts': ts},
-      ])  
+    with self.wikidb.cursor() as cursor:
+      for p in pages:
+        cursor.execute('''
+          INSERT INTO page (page_id, page_namespace, page_title)
+          VALUES (%(id)s, %(ns)s, %(title)s)
+        ''', {'id': p[0], 'ns': p[4], 'title': p[1]})
+        cursor.execute('''
+          INSERT INTO categorylinks (cl_from, cl_to, cl_timestamp)
+          VALUES (%(from)s, %(to)s, %(ts)s)
+        ''', {'from': p[0], 'to': p[2], 'ts': ts})  
 
   def _insert_ratings(self, pages, namespace, kind, override_rating=None):
     for p in pages:
@@ -324,19 +340,26 @@ class UpdateProjectAssessmentsTest(BaseCombinedOrmTest):
       if override_rating is not None:
         r = override_rating
       rating = Rating(
-        project=self.project.project, namespace=namespace, article=p[1])
+        r_project=self.project.p_project, r_namespace=namespace, r_article=p[1])
       if kind == AssessmentKind.QUALITY or kind == 'both':
         rating.quality = r
         rating.quality_timestamp = GLOBAL_TIMESTAMP_WIKI
       elif kind == AssessmentKind.IMPORTANCE or kind == 'both':
         rating.importance=r
         rating.importance_timestamp=GLOBAL_TIMESTAMP_WIKI
-      self.wp10_session.add(rating)
-    self.wp10_session.commit()
+      with self.wp10db.cursor() as cursor:
+        cursor.execute('INSERT INTO ' + Rating.table_name + '''
+          (r_project, r_namespace, r_article, r_score, r_quality,
+           r_quality_timestamp, r_importance, r_importance_timestamp)
+          VALUES (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
+                  %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
+                  %(r_importance_timestamp)s)
+        ''', attr.asdict(rating))
+      self.wp10db.commit()
 
   def setUp(self):
     super().setUp()
-    self.project = Project(project=b'Test', timestamp=b'20100101000000')
+    self.project = Project(p_project=b'Test', p_timestamp=b'20100101000000')
 
     self.timestamp_str = '2011-04-28T12:30:00Z'
     self.expected_ns = 0
@@ -354,26 +377,24 @@ class UpdateProjectAssessmentsTest(BaseCombinedOrmTest):
       },
     }
 
-
   def test_old_rating_same_quality(self):
     self._insert_pages(self.quality_pages)
     self._insert_ratings(self.quality_pages[6:], 0, AssessmentKind.QUALITY)
 
     logic_project.update_project_assessments(
-      self.WikiSession, self.wp10_session, self.project, {},
-      AssessmentKind.QUALITY)
+      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.QUALITY)
 
-    ratings = self.wp10_session.query(Rating).all()
+    ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
 
     pages = self.quality_pages[6:]
     expected_titles = set(p[1] for p in pages)
-    actual_titles = set(r.article for r in ratings)
+    actual_titles = set(r.r_article for r in ratings)
     self.assertEqual(expected_titles, actual_titles)
 
     page_to_rating = dict((p[1], p[3]) for p in pages)
     for r in ratings:
-      self.assertEqual(page_to_rating[r.article], r.quality)
+      self.assertEqual(page_to_rating[r.r_article], r.r_quality)
 
   def test_old_rating_same_importance(self):
     self._insert_pages(self.importance_pages)
@@ -381,20 +402,19 @@ class UpdateProjectAssessmentsTest(BaseCombinedOrmTest):
       self.importance_pages[4:], 0, AssessmentKind.IMPORTANCE)
 
     logic_project.update_project_assessments(
-      self.WikiSession, self.wp10_session, self.project, {},
-      AssessmentKind.IMPORTANCE)
+      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.IMPORTANCE)
 
-    ratings = self.wp10_session.query(Rating).all()
+    ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
 
     pages = self.importance_pages[4:]
     expected_titles = set(p[1] for p in pages)
-    actual_titles = set(r.article for r in ratings)
+    actual_titles = set(r.r_article for r in ratings)
     self.assertEqual(expected_titles, actual_titles)
 
     page_to_rating = dict((p[1], p[3]) for p in pages)
     for r in ratings:
-      self.assertEqual(page_to_rating[r.article], r.importance)
+      self.assertEqual(page_to_rating[r.r_article], r.r_importance)
 
   def test_old_rating_update_quality(self):
     self._insert_pages(self.quality_pages)
@@ -403,20 +423,19 @@ class UpdateProjectAssessmentsTest(BaseCombinedOrmTest):
       override_rating=NOT_A_CLASS.encode('utf-8'))
 
     logic_project.update_project_assessments(
-      self.WikiSession, self.wp10_session, self.project, {},
-      AssessmentKind.QUALITY)
+      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.QUALITY)
 
-    ratings = self.wp10_session.query(Rating).all()
+    ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
 
     pages = self.quality_pages[6:]
     expected_titles = set(p[1] for p in pages)
-    actual_titles = set(r.article for r in ratings)
+    actual_titles = set(r.r_article for r in ratings)
     self.assertEqual(expected_titles, actual_titles)
 
     page_to_rating = dict((p[1], p[3]) for p in pages)
     for r in ratings:
-      self.assertEqual(page_to_rating[r.article], r.quality)
+      self.assertEqual(page_to_rating[r.r_article], r.r_quality)
 
   def test_old_rating_update_importance(self):
     self._insert_pages(self.importance_pages)
@@ -425,20 +444,19 @@ class UpdateProjectAssessmentsTest(BaseCombinedOrmTest):
       override_rating=NOT_A_CLASS.encode('utf-8'))
 
     logic_project.update_project_assessments(
-      self.WikiSession, self.wp10_session, self.project, {},
-      AssessmentKind.IMPORTANCE)
+      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.IMPORTANCE)
 
-    ratings = self.wp10_session.query(Rating).all()
+    ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
 
     pages = self.importance_pages[4:]
     expected_titles = set(p[1] for p in pages)
-    actual_titles = set(r.article for r in ratings)
+    actual_titles = set(r.r_article for r in ratings)
     self.assertEqual(expected_titles, actual_titles)
 
     page_to_rating = dict((p[1], p[3]) for p in pages)
     for r in ratings:
-      self.assertEqual(page_to_rating[r.article], r.importance)
+      self.assertEqual(page_to_rating[r.r_article], r.r_importance)
 
   def test_old_rating_update_both(self):
     self._insert_pages(self.quality_pages)
@@ -448,26 +466,24 @@ class UpdateProjectAssessmentsTest(BaseCombinedOrmTest):
       override_rating=NOT_A_CLASS.encode('utf-8'))
 
     logic_project.update_project_assessments(
-      self.WikiSession, self.wp10_session, self.project, {},
-      AssessmentKind.QUALITY)
+      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.QUALITY)
     logic_project.update_project_assessments(
-      self.WikiSession, self.wp10_session, self.project, {},
-      AssessmentKind.IMPORTANCE)
+      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.IMPORTANCE)
 
-    ratings = self.wp10_session.query(Rating).all()
+    ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
 
     q_pages = self.quality_pages[6:]
     i_pages = self.importance_pages[4:]
     expected_titles = set(p[1] for p in q_pages)
-    actual_titles = set(r.article for r in ratings)
+    actual_titles = set(r.r_article for r in ratings)
     self.assertEqual(expected_titles, actual_titles)
 
     q_page_to_rating = dict((p[1], p[3]) for p in q_pages)
     i_page_to_rating = dict((p[1], p[3]) for p in i_pages)
     for r in ratings:
-      self.assertEqual(q_page_to_rating[r.article], r.quality)
-      self.assertEqual(i_page_to_rating[r.article], r.importance)
+      self.assertEqual(q_page_to_rating[r.r_article], r.r_quality)
+      self.assertEqual(i_page_to_rating[r.r_article], r.r_importance)
 
   @patch('lucky.logic.api.page.site')
   def test_not_seen_quality(self, patched_site):
@@ -481,23 +497,22 @@ class UpdateProjectAssessmentsTest(BaseCombinedOrmTest):
     patched_site.api.side_effect = fake_api
 
     logic_project.update_project_assessments(
-      self.WikiSession, self.wp10_session, self.project, {},
-      AssessmentKind.QUALITY)
+      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.QUALITY)
 
-    ratings = self.wp10_session.query(Rating).all()
+    ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
 
     pages = self.quality_pages[6:]
     expected_titles = set(p[1] for p in pages)
-    actual_titles = set(r.article for r in ratings)
+    actual_titles = set(r.r_article for r in ratings)
     self.assertEqual(expected_titles, actual_titles)
 
     page_to_rating = dict((p[1], p[3]) for p in pages)
     for r in ratings:
-      if r.article in (b'How to test', b'Failures of tests'):
-        self.assertEqual(NOT_A_CLASS.encode('utf-8'), r.quality)
+      if r.r_article in (b'How to test', b'Failures of tests'):
+        self.assertEqual(NOT_A_CLASS.encode('utf-8'), r.r_quality)
       else:
-        self.assertEqual(page_to_rating[r.article], r.quality)
+        self.assertEqual(page_to_rating[r.r_article], r.r_quality)
 
   @patch('lucky.logic.api.page.site')
   def test_not_seen_importance(self, patched_site):
@@ -512,25 +527,24 @@ class UpdateProjectAssessmentsTest(BaseCombinedOrmTest):
     patched_site.api.side_effect = fake_api
 
     logic_project.update_project_assessments(
-      self.WikiSession, self.wp10_session, self.project, {},
-      AssessmentKind.IMPORTANCE)
+      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.IMPORTANCE)
 
-    ratings = self.wp10_session.query(Rating).all()
+    ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
 
     pages = self.importance_pages[4:]
     expected_titles = set(p[1] for p in pages)
-    actual_titles = set(r.article for r in ratings)
+    actual_titles = set(r.r_article for r in ratings)
     self.assertEqual(expected_titles, actual_titles)
 
     page_to_rating = dict((p[1], p[3]) for p in pages)
     for r in ratings:
-      if r.article in (b'How to test', b'Failures of tests'):
-        self.assertEqual(NOT_A_CLASS.encode('utf-8'), r.importance)
+      if r.r_article in (b'How to test', b'Failures of tests'):
+        self.assertEqual(NOT_A_CLASS.encode('utf-8'), r.r_importance)
       else:
-        self.assertEqual(page_to_rating[r.article], r.importance, repr(r))
+        self.assertEqual(page_to_rating[r.r_article], r.r_importance, repr(r))
 
-class CleanupProjectTest(BaseWpOneOrmTest):
+class CleanupProjectTest(BaseWpOneDbTest):
   ratings = (
     (b'Art of testing', b'FA-Class', b'High-Class'),
     (b'Testing mechanics', b'FA-Class', b'Mid-Class'),
@@ -549,25 +563,25 @@ class CleanupProjectTest(BaseWpOneOrmTest):
 
   def setUp(self):
     super().setUp()
-    self.project = Project(project=b'Test')
+    self.project = Project(p_project=b'Test')
 
     qual_ts = b'2018-04-01T12:30:00Z'
     imp_ts = b'2018-05-01T13:45:10Z'
     for r in self.ratings:
-      rating = Rating(project=self.project.project, namespace=0, article=r[0],
+      rating = Rating(project=self.project.p_project, namespace=0, article=r[0],
                       quality=r[1], importance=r[2], quality_timestamp=qual_ts,
                       importance_timestamp=imp_ts)
       self.session.add(rating)
-    self.session.commit()
+    
       
     logic_project.cleanup_project(self.session, self.project)
-    self.session.commit()
+    
 
   def test_deletes_empty(self):
     ratings = self.session.query(Rating).all()
     self.assertEqual(8, len(ratings))
 
-    titles = set(r.article for r in ratings)
+    titles = set(r.r_article for r in ratings)
     self.assertTrue(b'Test results' not in titles, titles)
     self.assertTrue(b'Test main inheritance' not in titles, titles)
     self.assertTrue(b'Failures of tests' not in titles, titles)
@@ -585,7 +599,7 @@ class CleanupProjectTest(BaseWpOneOrmTest):
         Rating.article == article).first()
       self.assertEqual(self.not_a_class_db, rating.importance)
 
-class UpdateProjectRecordTest(BaseWpOneOrmTest):
+class UpdateProjectRecordTest(BaseWpOneDbTest):
   ratings = (
     (b'Art of testing', b'FA-Class', b'High-Class'),
     (b'Testing mechanics', b'FA-Class', b'Mid-Class'),
@@ -604,11 +618,11 @@ class UpdateProjectRecordTest(BaseWpOneOrmTest):
     qual_ts = b'2018-04-01T12:30:00Z'
     imp_ts = b'2018-05-01T13:45:10Z'
     for r in self.ratings:
-      rating = Rating(project=self.project.project, namespace=0, article=r[0],
+      rating = Rating(project=self.project.p_project, namespace=0, article=r[0],
                       quality=r[1], importance=r[2], quality_timestamp=qual_ts,
                       importance_timestamp=imp_ts)
       self.session.add(rating)
-    self.session.commit()
+    
 
     self.metadata = {
       'homepage': '/homepage',
@@ -617,7 +631,6 @@ class UpdateProjectRecordTest(BaseWpOneOrmTest):
     }
     logic_project.update_project_record(
       self.session, self.project, self.metadata)
-    self.session.commit()
     self.session.refresh(self.project)
 
   def test_metadata_correct(self):

@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS `page`;
+DROP TABLE IF EXISTS `categorylinks`;
