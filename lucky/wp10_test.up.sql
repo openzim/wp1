@@ -41,6 +41,20 @@ CREATE TABLE `lucky_moves` (
   PRIMARY KEY (`m_old_namespace`,`m_old_article`,`m_timestamp`)
 );
 
+CREATE TABLE `lucky_projects` (
+  `p_project` varbinary(63) NOT NULL,
+  `p_timestamp` binary(14) NOT NULL,
+  `p_wikipage` varbinary(255) DEFAULT NULL,
+  `p_parent` varbinary(63) DEFAULT NULL,
+  `p_shortname` varbinary(255) DEFAULT NULL,
+  `p_count` int(10) unsigned DEFAULT '0',
+  `p_qcount` int(10) unsigned DEFAULT '0',
+  `p_icount` int(10) unsigned DEFAULT '0',
+  `p_scope` int(10) unsigned NOT NULL DEFAULT '0',
+  `p_upload_timestamp` binary(14) DEFAULT NULL,
+  PRIMARY KEY (`p_project`)
+);
+
 CREATE TABLE `namespacename` (
   `dbname` varbinary(32) NOT NULL,
   `domain` varbinary(48) NOT NULL,

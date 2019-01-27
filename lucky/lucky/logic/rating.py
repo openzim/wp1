@@ -8,6 +8,7 @@ from lucky.models.wp10.rating import Rating
 
 config = get_conf()
 NOT_A_CLASS = config['NOT_A_CLASS']
+UNASSESSED_CLASS = config['UNASSESSED_CLASS']
 
 
 def get_project_ratings(wp10db, project_name):
@@ -84,15 +85,43 @@ def update_null_importance_for_project(wp10db, project):
 def count_for_project(wp10db, project):
   # wp10_session.query(Rating).filter(
   #   Rating.project == project.project).count()
-  raise NotImplementedError('Need to convert to db access')
+  with wp10db.cursor() as cursor:
+    cursor.execute('SELECT COUNT(*) as cnt FROM ' + Rating.table_name + '''
+      WHERE r_project=%(r_project)s
+    ''', {'r_project': project.p_project})
+    return cursor.fetchone()['cnt']
 
 
-def count_unassessed_for_project(wp10db, project, kind):
-  # wp10_session.query(Rating).filter(
-  #   or_(Rating.quality == not_a_class_db,
-  #       Rating.quality == unassessed_db)).filter(
-  #       Rating.project == project.project).count()
-  raise NotImplementedError('Need to convert to db access')
+def count_unassessed_quality_for_project(wp10db, project):
+  not_a_class_db = NOT_A_CLASS.encode('utf-8')
+  unassessed_db = UNASSESSED_CLASS.encode('utf-8')
+  with wp10db.cursor() as cursor:
+    cursor.execute('SELECT COUNT(*) as cnt FROM ' + Rating.table_name + '''
+      WHERE (r_quality = %(not_a_class)s OR r_quality = %(unassessed)s)
+        AND r_project = %(r_project)s
+    ''', {
+      'r_project': project.p_project,
+      'not_a_class': not_a_class_db,
+      'unassessed': unassessed_db
+    })
+    return cursor.fetchone()['cnt']
+
+def count_unassessed_importance_for_project(wp10db, project):
+  not_a_class_db = NOT_A_CLASS.encode('utf-8')
+  unassessed_db = UNASSESSED_CLASS.encode('utf-8')
+  with wp10db.cursor() as cursor:
+    cursor.execute('SELECT COUNT(*) as cnt FROM ' + Rating.table_name + '''
+      WHERE (r_importance = %(not_a_class)s OR r_importance = %(unassessed)s)
+        AND r_project = %(r_project)s
+    ''', {
+      'r_project': project.p_project,
+      'not_a_class': not_a_class_db,
+      'unassessed': unassessed_db
+    })
+    # return cursor.fetchone()['cnt']
+    count = cursor.fetchone()['cnt']
+    print(count)
+    return count
 
 
 def add_log_for_rating(wp10db, new_rating, kind, old_rating_value):
