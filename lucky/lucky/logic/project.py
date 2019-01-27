@@ -2,6 +2,8 @@ import logging
 import math
 import re
 
+import attr
+
 from lucky.conf import get_conf
 from lucky.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP, GLOBAL_TIMESTAMP_WIKI
 from lucky.logic import page as logic_page, util as logic_util, rating as logic_rating, category as logic_category
@@ -18,14 +20,20 @@ CLASS = config['CLASS']
 QUALITY = config['QUALITY']
 IMPORTANCE = config['IMPORTANCE']
 NOT_A_CLASS = config['NOT_A_CLASS']
-UNASSESSED_CLASS = config['UNASSESSED_CLASS']
-UNKNOWN_CLASS = config['UNKNOWN_CLASS']
 
 RE_INDICATOR = re.compile(b'([A-Za-z]+)[ _-]')
 
 
 def insert_or_update(wp10db, project):
-  raise NotImplementedError('Need to convert to db access')
+  with wp10db.cursor() as cursor:
+    cursor.execute('INSERT INTO ' + Project.table_name + '''
+      (p_project, p_timestamp, p_wikipage, p_parent, p_shortname, p_count,
+       p_qcount, p_icount, p_upload_timestamp, p_scope)
+      VALUES (%(p_project)s, %(p_timestamp)s, %(p_wikipage)s, %(p_parent)s,
+              %(p_shortname)s, %(p_count)s, %(p_qcount)s, %(p_icount)s,
+              %(p_upload_timestamp)s, %(p_scope)s)
+      ON DUPLICATE KEY update p_timestamp = %(p_timestamp)s
+    ''', attr.asdict(project))
 
 
 def update_category(wp10db, project, page, extra, kind, rating_to_category):
@@ -223,19 +231,15 @@ def update_project_record(wp10db, project, metadata):
   project_display = project.p_project.decode('utf-8')
   logging.info('Updating project record: %r', project_display)
 
-  not_a_class_db = NOT_A_CLASS.encode('utf-8')
-  unassessed_db = UNASSESSED_CLASS.encode('utf-8')
-  unknown_db = UNKNOWN_CLASS.encode('utf-8')
+  num_ratings = logic_rating.count_for_project(wp10db, project)
 
-  num_ratings = logic_rating.count_for_project(wp10db, project.p_project)
+  n_quality = logic_rating.count_unassessed_quality_for_project(
+    wp10db, project)
+  quality_count = num_ratings - n_quality
 
-  num_unassessed_quality = logic_rating.count_unassessed_for_project(
-    wp10db, project.p_project, AssessmentKind.QUALITY)
-  quality_count = num_ratings - num_unassessed_quality
-
-  num_unassessed_importance = logic_rating.count_unassessed_for_project(
-    wp10db, project.p_project, AssessmentKind.IMPORTANCE)
-  importance_count = num_ratings - num_unassessed_importance
+  n_importance = logic_rating.count_unassessed_importance_for_project(
+    wp10db, project)
+  importance_count = num_ratings - n_importance
 
   # Okay, update the fields of the project, warning if we're setting NULLs.
   project.timestamp = GLOBAL_TIMESTAMP

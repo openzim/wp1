@@ -614,7 +614,7 @@ class UpdateProjectRecordTest(BaseWpOneDbTest):
     (b'Testing mechanics', b'FA-Class', b'Mid-Class'),
     (b'Rules of testing',  b'FA-Class', b'NotA-Class'),
     (b'Test frameworks', b'NotA-Class', b'Mid-Class'),
-    (b'Test practices', b'FL-Class', b'Unassesed-Class'),
+    (b'Test practices', b'FL-Class', b'Unassessed-Class'),
     (b'Testing history', b'FL-Class', b'Unknown-Class'),
     (b'Testing figures', b'NotA-Class', b'Low-Class'),
     (b'Important tests', b'Unassessed-Class', b'Low-Class'),
@@ -622,16 +622,23 @@ class UpdateProjectRecordTest(BaseWpOneDbTest):
 
   def setUp(self):
     super().setUp()
-    self.project = Project(project=b'Test')
+    self.project = Project(p_project=b'Test', p_timestamp=b'20100101000000')
 
     qual_ts = b'2018-04-01T12:30:00Z'
     imp_ts = b'2018-05-01T13:45:10Z'
-    for r in self.ratings:
-      rating = Rating(project=self.project.p_project, namespace=0, article=r[0],
-                      quality=r[1], importance=r[2], quality_timestamp=qual_ts,
-                      importance_timestamp=imp_ts)
-      self.session.add(rating)
-    
+    with self.wp10db.cursor() as cursor:
+      for r in self.ratings:
+        rating = Rating(r_project=self.project.p_project, r_namespace=0,
+                        r_article=r[0], r_quality=r[1], r_importance=r[2],
+                        r_quality_timestamp=qual_ts,
+                        r_importance_timestamp=imp_ts)
+        cursor.execute('INSERT INTO ' + Rating.table_name + '''
+          (r_project, r_namespace, r_article, r_score, r_quality,
+           r_quality_timestamp, r_importance, r_importance_timestamp)
+          VALUES (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
+                  %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
+                  %(r_importance_timestamp)s)
+        ''', attr.asdict(rating))  
 
     self.metadata = {
       'homepage': '/homepage',
@@ -639,8 +646,7 @@ class UpdateProjectRecordTest(BaseWpOneDbTest):
       'parent': 'Nothing',
     }
     logic_project.update_project_record(
-      self.session, self.project, self.metadata)
-    self.session.refresh(self.project)
+      self.wp10db, self.project, self.metadata)
 
   def test_metadata_correct(self):
     self.assertEqual(self.metadata['homepage'],
