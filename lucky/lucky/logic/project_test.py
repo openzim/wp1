@@ -569,8 +569,9 @@ class CleanupProjectTest(BaseWpOneDbTest):
     imp_ts = b'2018-05-01T13:45:10Z'
     with self.wp10db.cursor() as cursor:
       for r in self.ratings:      
-        rating = Rating(r_project=self.project.p_project, r_namespace=0, r_article=r[0],
-                        r_quality=r[1], r_importance=r[2], r_quality_timestamp=qual_ts,
+        rating = Rating(r_project=self.project.p_project, r_namespace=0,
+                        r_article=r[0], r_quality=r[1], r_importance=r[2],
+                        r_quality_timestamp=qual_ts,
                         r_importance_timestamp=imp_ts)
         cursor.execute('INSERT INTO ' + Rating.table_name + '''
           (r_project, r_namespace, r_article, r_score, r_quality,
@@ -605,7 +606,7 @@ class CleanupProjectTest(BaseWpOneDbTest):
     for article in (b'Testing history', b'Test practices'):
       for rating in ratings:
         if rating.r_article == article:
-          self.assertEqual(self.not_a_class_db, rating.importance)
+          self.assertEqual(self.not_a_class_db, rating.r_importance)
 
 class UpdateProjectRecordTest(BaseWpOneDbTest):
   ratings = (

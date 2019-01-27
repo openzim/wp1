@@ -50,14 +50,35 @@ def delete_empty_for_project(wp10db, project):
   not_a_class_db = NOT_A_CLASS.encode('utf-8')
   with wp10db.cursor() as cursor:
     cursor.execute('DELETE FROM ' + Rating.table_name + '''
-      WHERE r_project=%(r_project)s AND (r_quality IS NULL OR r_quality=%(not_a_class)s)
+      WHERE r_project=%(r_project)s
+        AND (r_quality IS NULL OR r_quality=%(not_a_class)s)
         AND (r_importance IS NULL OR r_importance=%(not_a_class)s)
     ''', {'r_project': project.p_project, 'not_a_class': not_a_class_db})
     return cursor.rowcount
 
 
-def update_null_ratings_for_project(wp10db, project, kind):
-  raise NotImplementedError('Need to convert to db access')
+def update_null_quality_for_project(wp10db, project):
+  not_a_class_db = NOT_A_CLASS.encode('utf-8')
+  with wp10db.cursor() as cursor:
+    cursor.execute('UPDATE ' + Rating.table_name + '''
+      SET r_quality = %(not_a_class)s,
+          r_quality_timestamp=r_importance_timestamp
+      WHERE r_project=%(r_project)s
+        AND r_quality IS NULL
+    ''', {'r_project': project.p_project, 'not_a_class': not_a_class_db})
+    return cursor.rowcount
+
+
+def update_null_importance_for_project(wp10db, project):
+  not_a_class_db = NOT_A_CLASS.encode('utf-8')
+  with wp10db.cursor() as cursor:
+    cursor.execute('UPDATE ' + Rating.table_name + '''
+      SET r_importance = %(not_a_class)s,
+          r_importance_timestamp=r_quality_timestamp
+      WHERE r_project=%(r_project)s
+        AND r_importance IS NULL
+    ''', {'r_project': project.p_project, 'not_a_class': not_a_class_db})
+    return cursor.rowcount
 
 
 def count_for_project(wp10db, project):
