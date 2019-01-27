@@ -140,9 +140,10 @@ def update_project_assessments(
         rating.r_importance = current_rating.encode('utf-8')
         rating.set_importance_timestamp_dt(page.cl_timestamp)
 
-      if (article_ref in old_ratings and old_rating_value != rating):
+      if article_ref in old_ratings and old_rating_value != current_rating:
         # If the article doesn't match its rating, update the logging table.
         logic_rating.add_log_for_rating(wp10db, rating, kind, old_rating_value)
+        # And update the rating of course.
         logic_rating.update(wp10db, rating)
       else:
         # Add the newly created rating.
@@ -196,10 +197,9 @@ def update_project_assessments(
 
 
 def cleanup_project(wp10db, project):
-  not_a_class_db = NOT_A_CLASS.encode('utf-8')
   # If both quality and importance are 'NotA-Class', that means the article
   # was once rated but isn't any more, so we delete the row
-  count = logic_rating.delete_empty_for_project(wp10db, project.p_project)
+  count = logic_rating.delete_empty_for_project(wp10db, project)
 
   # count = wp10_session.query(Rating).filter(
   #   Rating.project == project.p_project).filter(

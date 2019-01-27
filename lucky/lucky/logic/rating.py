@@ -1,9 +1,14 @@
 import attr
 
+from lucky.conf import get_conf
 from lucky.constants import GLOBAL_TIMESTAMP, AssessmentKind
 from lucky.logic import log as logic_log
 from lucky.models.wp10.log import Log
 from lucky.models.wp10.rating import Rating
+
+config = get_conf()
+NOT_A_CLASS = config['NOT_A_CLASS']
+
 
 def get_project_ratings(wp10db, project_name):
   # yield from wp10_session.query(Rating).filter(Rating.project == project_name)
@@ -42,7 +47,13 @@ def update(wp10db, rating, allow_zero_results=False):
     return cursor.rowcount
 
 def delete_empty_for_project(wp10db, project):
-  raise NotImplementedError('Need to convert to db access')
+  not_a_class_db = NOT_A_CLASS.encode('utf-8')
+  with wp10db.cursor() as cursor:
+    cursor.execute('DELETE FROM ' + Rating.table_name + '''
+      WHERE r_project=%(r_project)s AND (r_quality IS NULL OR r_quality=%(not_a_class)s)
+        AND (r_importance IS NULL OR r_importance=%(not_a_class)s)
+    ''', {'r_project': project.p_project, 'not_a_class': not_a_class_db})
+    return cursor.rowcount
 
 
 def update_null_ratings_for_project(wp10db, project, kind):
