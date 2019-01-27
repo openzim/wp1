@@ -200,44 +200,22 @@ def cleanup_project(wp10db, project):
   # If both quality and importance are 'NotA-Class', that means the article
   # was once rated but isn't any more, so we delete the row
   count = logic_rating.delete_empty_for_project(wp10db, project)
-
-  # count = wp10_session.query(Rating).filter(
-  #   Rating.project == project.p_project).filter(
-  #   or_(Rating.quality == not_a_class_db, Rating.quality == None)).filter(
-  #   or_(Rating.importance == not_a_class_db,
-  #       Rating.importance == None)).delete()
-  logger.info('Deleted %s ratings that were empty from project: %s',
+  logger.info('Deleted %s ratings that were empty for project: %s',
               count, project.p_project.decode('utf-8'))
 
   # It's possible for the quality to be NULL if the article has a 
   # rated importance but no rated quality (not even Unassessed-Class).
   # This will always happen if the article has a quality rating that the 
   # bot doesn't recognize. Change the NULL to sentinel value.
-  count = logic_rating.update_null_ratings_for_project(
-    wp10db, project.p_project, kind=AssessmentKind.QUALITY)
-
-  # count = wp10_session.query(Rating).filter(
-  #   Rating.project == project.p_project).filter(
-  #   Rating.quality == None).update({
-  #     Rating.quality: not_a_class_db,
-  #     Rating.quality_timestamp: Rating.importance_timestamp
-  #   })
-  logger.info('Updated %s ratings, quality == NotAClass from project: %s',
+  count = logic_rating.update_null_quality_for_project(wp10db, project)
+  logger.info('Updated %s ratings, quality == NotAClass for project: %s',
               count, project.p_project.decode('utf-8'))
 
   # Finally, if a quality is assigned but not an importance, it is
   # possible for the importance field to be null. Set it to 
   # $NotAClass in this case.
-  count = logic_rating.update_null_ratings_for_project(
-    wp10db, project.p_project, kind=AssessmentKind.IMPORTANCE)
-
-  # count = wp10_session.query(Rating).filter(
-  #   Rating.project == project.p_project).filter(
-  #   Rating.importance == None).update({
-  #     Rating.importance: not_a_class_db,
-  #     Rating.importance_timestamp: Rating.quality_timestamp
-  #   })
-  logger.info('Updated %s ratings, importance == NotAClass from project: %s',
+  count = logic_rating.update_null_importance_for_project(wp10db, project)
+  logger.info('Updated %s ratings, importance == NotAClass for project: %s',
         count, project.p_project.decode('utf-8'))
 
 
