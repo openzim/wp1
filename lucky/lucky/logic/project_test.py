@@ -510,7 +510,7 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
     page_to_rating = dict((p[1], p[3]) for p in pages)
     for r in ratings:
       if r.r_article in (b'How to test', b'Failures of tests'):
-        self.assertEqual(NOT_A_CLASS.encode('utf-8'), r.r_quality)
+        self.assertIsNone(r.r_quality)
       else:
         self.assertEqual(page_to_rating[r.r_article], r.r_quality)
 
@@ -540,7 +540,7 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
     page_to_rating = dict((p[1], p[3]) for p in pages)
     for r in ratings:
       if r.r_article in (b'How to test', b'Failures of tests'):
-        self.assertEqual(NOT_A_CLASS.encode('utf-8'), r.r_importance)
+        self.assertIsNone(r.r_importance)
       else:
         self.assertEqual(page_to_rating[r.r_article], r.r_importance, repr(r))
 
@@ -563,22 +563,28 @@ class CleanupProjectTest(BaseWpOneDbTest):
 
   def setUp(self):
     super().setUp()
-    self.project = Project(p_project=b'Test')
+    self.project = Project(p_project=b'Test', p_timestamp=None)
 
     qual_ts = b'2018-04-01T12:30:00Z'
     imp_ts = b'2018-05-01T13:45:10Z'
-    for r in self.ratings:
-      rating = Rating(project=self.project.p_project, namespace=0, article=r[0],
-                      quality=r[1], importance=r[2], quality_timestamp=qual_ts,
-                      importance_timestamp=imp_ts)
-      self.session.add(rating)
-    
-      
-    logic_project.cleanup_project(self.session, self.project)
-    
+    with self.wp10db.cursor() as cursor:
+      for r in self.ratings:      
+        rating = Rating(r_project=self.project.p_project, r_namespace=0, r_article=r[0],
+                        r_quality=r[1], r_importance=r[2], r_quality_timestamp=qual_ts,
+                        r_importance_timestamp=imp_ts)
+        cursor.execute('INSERT INTO ' + Rating.table_name + '''
+          (r_project, r_namespace, r_article, r_score, r_quality,
+           r_quality_timestamp, r_importance, r_importance_timestamp)
+          VALUES (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
+                  %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
+                  %(r_importance_timestamp)s)
+        ''', attr.asdict(rating))
+    self.wp10db.commit()
+
+    logic_project.cleanup_project(self.wp10db, self.project)    
 
   def test_deletes_empty(self):
-    ratings = self.session.query(Rating).all()
+    ratings = _get_all_ratings(self.wp10db)
     self.assertEqual(8, len(ratings))
 
     titles = set(r.r_article for r in ratings)
@@ -588,16 +594,18 @@ class CleanupProjectTest(BaseWpOneDbTest):
     self.assertTrue(b'How to test' not in titles, titles)
     
   def test_updates_quality(self):
+    ratings = _get_all_ratings(self.wp10db)
     for article in (b'Testing figures', b'Important tests'):
-      rating = self.session.query(Rating).filter(
-        Rating.article == article).first()
-      self.assertEqual(self.not_a_class_db, rating.quality)
+      for rating in ratings:
+        if rating.r_article == article:
+          self.assertEqual(self.not_a_class_db, rating.r_quality)
 
   def test_updates_importance(self):
+    ratings = _get_all_ratings(self.wp10db)
     for article in (b'Testing history', b'Test practices'):
-      rating = self.session.query(Rating).filter(
-        Rating.article == article).first()
-      self.assertEqual(self.not_a_class_db, rating.importance)
+      for rating in ratings:
+        if rating.r_article == article:
+          self.assertEqual(self.not_a_class_db, rating.importance)
 
 class UpdateProjectRecordTest(BaseWpOneDbTest):
   ratings = (

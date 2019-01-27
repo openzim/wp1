@@ -19,8 +19,8 @@ class Page:
   page_id = attr.ib()
   page_namespace = attr.ib()
   page_title = attr.ib()
-  cl_sortkey = attr.ib()
-  cl_timestamp = attr.ib()
+  cl_sortkey = attr.ib(default=None)
+  cl_timestamp = attr.ib(default=None)
 
   @property
   def base_title(self):

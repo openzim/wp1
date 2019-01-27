@@ -5,6 +5,7 @@ from lucky.constants import TS_FORMAT, GLOBAL_TIMESTAMP
 from lucky.models.wiki.page import Page
 from lucky.models.wp10.log import Log
 from lucky.models.wp10.move import Move
+from lucky.logic import log as logic_log
 from lucky.logic import move as logic_move
 from lucky.logic.api import page as api_page
 import lucky.logic.util as logic_util
@@ -48,10 +49,10 @@ def update_page_moved(
     logic_move.insert(wp10db, new_move)
 
   new_log = Log(
-    l_project=project.project, l_namespace=old_ns, l_article=old_title,
+    l_project=project.p_project, l_namespace=old_ns, l_article=old_title,
     l_action=b'moved', l_timestamp=GLOBAL_TIMESTAMP, l_old=b'', l_new=b'',
     l_revision_timestamp=db_timestamp)
-  logic_log.insert_or_update(new_log)
+  logic_log.insert_or_update(wp10db, new_log)
 
 
 def _get_moves_from_api(wp10db, namespace, title, timestamp_dt):

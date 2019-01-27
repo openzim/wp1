@@ -1,3 +1,5 @@
+import attr
+
 from lucky.models.wp10.move import Move
 
 def get_move(wp10db, timestamp, old_namespace, old_article):
@@ -19,4 +21,9 @@ def get_move(wp10db, timestamp, old_namespace, old_article):
 
 
 def insert(wp10db, move):
-  raise NotImplementedError('Need to convert to db access')
+  with wp10db.cursor() as cursor:
+    cursor.execute('INSERT INTO ' + Move.table_name + '''
+      (m_timestamp, m_old_namespace, m_old_article, m_new_namespace, m_new_article)
+      VALUES (%(m_timestamp)s, %(m_old_namespace)s, %(m_old_article)s, %(m_new_namespace)s,
+              %(m_new_article)s)
+    ''', attr.asdict(move))

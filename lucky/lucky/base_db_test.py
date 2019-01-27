@@ -91,6 +91,7 @@ class BaseWikiDbTest(unittest.TestCase):
           cursor.execute(stmt)
         except pymysql.err.InternalError:
           self._clean_wiki_db()
+          raise
     self.wikidb.commit()
 
   def _teardown_wiki_db(self):
