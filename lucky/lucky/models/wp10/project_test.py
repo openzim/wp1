@@ -1,34 +1,15 @@
-from lucky.base_orm_test import BaseWpOneOrmTest
+from lucky.base_db_test import BaseWpOneDbTest
+from lucky.logic import project as logic_project
 from lucky.models.wp10.project import Project
 
-class ModelsProjectTest(BaseWpOneOrmTest):
+class ModelsProjectTest(BaseWpOneDbTest):
   def setUp(self):
     super().setUp()
     self.project_name = b'My test project'
     self.project = Project(
-      project=self.project_name, timestamp=b'20180930123000', count=100,
-      upload_timestamp=b'201800929120000')
-    self.session.add(self.project)
-    self.session.commit()
-
-  def tearDown(self):
-    self.session.delete(self.project)
-    self.session.commit()
-
-  def test_project_repr(self):
-    print(repr(self.project))
-
-  def test_project_retrieval(self):
-    actual = self.session.query(Project).get(self.project_name)
-    self.assertEqual(self.project, actual)
-
-  def test_project_fields(self):
-    actual = self.session.query(Project).get(self.project_name)
-    self.assertEqual(self.project.project, actual.project)
-    self.assertEqual(self.project.timestamp, actual.timestamp)
-    self.assertEqual(self.project.count, actual.count)
-    self.assertEqual(
-      self.project.upload_timestamp, actual.upload_timestamp)
+      p_project=self.project_name, p_timestamp=b'20180930123000', p_count=100,
+      p_upload_timestamp=b'20180929120000')
+    logic_project.insert_or_update(self.wp10db, self.project)
 
   def test_timestamp_dt(self):
     dt = self.project.timestamp_dt
