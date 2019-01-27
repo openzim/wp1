@@ -2,7 +2,7 @@ from datetime import datetime
 
 import attr
 
-from lucky.constants import TS_FORMAT
+from lucky.constants import TS_FORMAT_WP10
 
 @attr.s
 class Log:
@@ -20,4 +20,4 @@ class Log:
   @property
   def timestamp_dt(self):
     """The timestamp parsed into a datetime.datetime object."""
-    return datetime.strptime(self.l_timestamp.decode('utf-8'), TS_FORMAT)
+    return datetime.strptime(self.l_timestamp.decode('utf-8'), TS_FORMAT_WP10)
