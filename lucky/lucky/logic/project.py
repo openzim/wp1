@@ -201,9 +201,7 @@ def update_project_assessments(
       else:
         rating.r_importance_timestamp = GLOBAL_TIMESTAMP_WIKI
 
-    num_updated = logic_rating.update(wp10db, rating, allow_zero_results=True)
-    if num_updated == 0:
-      logic_rating.insert_or_update(wp10db, rating)
+    logic_rating.insert_or_update(wp10db, rating)
     logic_rating.add_log_for_rating(wp10db, rating, kind, old_rating_value)
 
 
