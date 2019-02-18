@@ -150,7 +150,6 @@ def update_project_assessments(
         rating.set_importance_timestamp_dt(page.cl_timestamp)
 
       if article_ref in old_ratings:
-        logger.info('Comparing ratings: %r %r', old_rating_value, current_rating)
         if old_rating_value != current_rating:
           # If the article doesn't match its rating, update the logging table.
           logic_rating.add_log_for_rating(
