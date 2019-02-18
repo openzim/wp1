@@ -1,3 +1,5 @@
+import logging
+
 import attr
 
 from lucky.conf import get_conf
@@ -10,9 +12,9 @@ config = get_conf()
 NOT_A_CLASS = config['NOT_A_CLASS']
 UNASSESSED_CLASS = config['UNASSESSED_CLASS']
 
+logger = logging.getLogger(__name__)
 
 def get_project_ratings(wp10db, project_name):
-  # yield from wp10_session.query(Rating).filter(Rating.project == project_name)
   with wp10db.cursor() as cursor:
     cursor.execute('SELECT * FROM ' + Rating.table_name + '''
       WHERE r_project = %(r_project)s
@@ -20,18 +22,7 @@ def get_project_ratings(wp10db, project_name):
     return [Rating(**db_rating) for db_rating in cursor.fetchall()]
 
 
-def insert(wp10db, rating):
-  with wp10db.cursor() as cursor:
-    cursor.execute('INSERT INTO ' + Rating.table_name + '''
-    (r_project, r_namespace, r_article, r_score, r_quality, r_quality_timestamp,
-     r_importance, r_importance_timestamp)
-    VALUES (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
-            %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
-            %(r_importance_timestamp)s)
-    ''', attr.asdict(rating))
-
-
-def update(wp10db, rating, allow_zero_results=False):
+def insert_or_update(wp10db, rating):
   with wp10db.cursor() as cursor:
     cursor.execute('UPDATE ' + Rating.table_name + ''' SET
         r_quality=%(r_quality)s, r_quality_timestamp=%(r_quality_timestamp)s,
@@ -40,12 +31,16 @@ def update(wp10db, rating, allow_zero_results=False):
       WHERE r_project=%(r_project)s AND r_namespace=%(r_namespace)s AND
             r_article=%(r_article)s
     ''', attr.asdict(rating))
-    if cursor.rowcount == 0 and allow_zero_results:
-      return 0
-    if cursor.rowcount != 1:
-      raise ValueError('Exactly 1 row should have been updated, actual: %s' %
-                       cursor.rowcount)
-    return cursor.rowcount
+    if cursor.rowcount == 0:
+      logging.debug('No update for rating row, inserting')
+      cursor.execute('INSERT INTO ' + Rating.table_name + '''
+      (r_project, r_namespace, r_article, r_score, r_quality,
+       r_quality_timestamp, r_importance, r_importance_timestamp)
+      VALUES (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
+              %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
+              %(r_importance_timestamp)s)
+      ''', attr.asdict(rating))
+
 
 def delete_empty_for_project(wp10db, project):
   not_a_class_db = NOT_A_CLASS.encode('utf-8')
@@ -105,6 +100,7 @@ def count_unassessed_quality_for_project(wp10db, project):
       'unassessed': unassessed_db
     })
     return cursor.fetchone()['cnt']
+
 
 def count_unassessed_importance_for_project(wp10db, project):
   not_a_class_db = NOT_A_CLASS.encode('utf-8')
