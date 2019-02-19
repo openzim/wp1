@@ -32,13 +32,14 @@ def insert_or_update(wp10db, rating):
             r_article=%(r_article)s
     ''', attr.asdict(rating))
     if cursor.rowcount == 0:
-      logging.debug('No update for rating row, inserting')
+      logger.debug('No update for rating row, inserting')
       cursor.execute('INSERT INTO ' + Rating.table_name + '''
-      (r_project, r_namespace, r_article, r_score, r_quality,
-       r_quality_timestamp, r_importance, r_importance_timestamp)
-      VALUES (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
-              %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
-              %(r_importance_timestamp)s)
+        (r_project, r_namespace, r_article, r_score, r_quality,
+         r_quality_timestamp, r_importance, r_importance_timestamp)
+        VALUES (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
+                %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
+                %(r_importance_timestamp)s)
+        ON DUPLICATE KEY UPDATE r_article = %(r_article)s
       ''', attr.asdict(rating))
 
 
