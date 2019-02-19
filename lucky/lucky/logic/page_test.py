@@ -4,7 +4,7 @@ import time
 
 import attr
 
-from lucky.base_db_test import BaseWikiDbTest, BaseWpOneDbTest
+from lucky.base_db_test import BaseWikiDbTest, BaseWpOneDbTest, BaseCombinedDbTest
 from lucky.constants import TS_FORMAT
 from lucky.logic import page as logic_page
 from lucky.logic import project as logic_project
@@ -79,7 +79,7 @@ class LogicPageCategoryTest(BaseWikiDbTest):
     self.assertTrue(b'Places Superman vacations' in titles)
 
 
-class LogicPageMovesTest(BaseWpOneDbTest):
+class LogicPageMovesTest(BaseCombinedDbTest):
   def setUp(self):
     super().setUp()
     self.timestamp_str = '2011-04-28T12:30:00Z'
@@ -129,14 +129,14 @@ class LogicPageMovesTest(BaseWpOneDbTest):
   @patch('lucky.logic.api.page.site')
   def test_no_redirect_no_move(self, unused_patched_site):
     move_data = logic_page.get_move_data(
-      self.wp10db, 0, b'Some Moved Article', datetime(1970, 1, 1))
+      self.wp10db, self.wikidb, 0, b'Some Moved Article', datetime(1970, 1, 1))
     self.assertIsNone(move_data)
 
   @patch('lucky.logic.api.page.site')
   def test_get_redirect_from_api(self, patched_site):
     patched_site.api.side_effect = lambda *args, **kwargs: self.api_return
     move_data = logic_page.get_move_data(
-      self.wp10db, 0, b'Some Moved Article', datetime(1970, 1, 1))
+      self.wp10db, self.wikidb, 0, b'Some Moved Article', datetime(1970, 1, 1))
 
     self.assertIsNotNone(move_data)
     self.assertEqual(self.expected_ns, move_data['dest_ns'])
@@ -148,7 +148,7 @@ class LogicPageMovesTest(BaseWpOneDbTest):
   def test_get_single_move_from_api(self, patched_site):
     patched_site.logevents.side_effect = lambda *args, **kwargs: self.le_return
     move_data = logic_page.get_move_data(
-      self.wp10db, 0, b'Some Moved Article', datetime(1970, 1, 1))
+      self.wp10db, self.wikidb, 0, b'Some Moved Article', datetime(1970, 1, 1))
 
     self.assertIsNotNone(move_data)
     self.assertEqual(self.expected_ns, move_data['dest_ns'])
@@ -160,7 +160,7 @@ class LogicPageMovesTest(BaseWpOneDbTest):
   def test_get_most_recent_move_from_api(self, patched_site):
     patched_site.logevents.side_effect = lambda *args, **kwargs: self.le_multi
     move_data = logic_page.get_move_data(
-      self.wp10db, 0, b'Some Moved Article', datetime(1970, 1, 1))
+      self.wp10db, self.wikidb, 0, b'Some Moved Article', datetime(1970, 1, 1))
 
     self.assertIsNotNone(move_data)
     self.assertEqual(self.expected_ns, move_data['dest_ns'])
@@ -172,14 +172,14 @@ class LogicPageMovesTest(BaseWpOneDbTest):
   def test_get_redirect_too_old_from_api(self, patched_site):
     patched_site.api.side_effect = lambda *args, **kwargs: self.api_return
     move_data = logic_page.get_move_data(
-      self.wp10db, 0, b'Some Moved Article', datetime(2014, 1, 1))
+      self.wp10db, self.wikidb, 0, b'Some Moved Article', datetime(2014, 1, 1))
     self.assertIsNone(move_data)
     
   @patch('lucky.logic.api.page.site')
   def test_get_single_move_too_old_from_api(self, patched_site):
     patched_site.logevents.side_effect = lambda *args, **kwargs: self.le_return
     move_data = logic_page.get_move_data(
-      self.wp10db, 0, b'Some Moved Article', datetime(2014, 1, 1))
+      self.wp10db, self.wikidb, 0, b'Some Moved Article', datetime(2014, 1, 1))
     self.assertIsNone(move_data)
 
 
