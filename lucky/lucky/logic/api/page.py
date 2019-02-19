@@ -9,7 +9,7 @@ import lucky.logic.util as logic_util
 logger = logging.getLogger(__name__)
 
 def get_redirect(title_with_ns):
-  logger.info('Querying api for redirects for %s', title_with_ns)
+  logger.debug('Querying api for redirects for %s', title_with_ns)
   res = site.api(
     'query', titles=title_with_ns, redirects=1, prop='revisions', rvlimit=1)
 
@@ -29,7 +29,7 @@ def get_redirect(title_with_ns):
   }
 
 def get_moves(title_with_ns):
-  logger.info('Querying api for moves of page %s', title_with_ns)
+  logger.debug('Querying api for moves of page %s', title_with_ns)
   res = site.logevents(title=title_with_ns, type='move')
 
   ans = []

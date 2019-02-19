@@ -34,14 +34,13 @@ def get_pages_by_category(wikidb, category, ns=None):
 def update_page_moved(
     wp10db, project, old_ns, old_title, new_ns, new_title,
     move_timestamp_dt):
-  logger.info('Updating moves table for %s -> %s',
-              old_title.decode('utf-8'), new_title.decode('utf-8'))
+  logger.debug('Updating moves table for %s -> %s',
+               old_title.decode('utf-8'), new_title.decode('utf-8'))
   db_timestamp = move_timestamp_dt.strftime(TS_FORMAT).encode('utf-8')
-  logging.warning('db_timestamp: %r', db_timestamp)
 
   existing_move = logic_move.get_move(wp10db, db_timestamp, old_ns, old_title)
   if existing_move is not None:
-    logger.warning('Move already recorded: %r', existing_move)
+    logger.debug('Move already recorded: %r', existing_move)
   else:
     new_move = Move(
       m_timestamp=db_timestamp, m_old_namespace=old_ns, m_old_article=old_title,
@@ -53,6 +52,25 @@ def update_page_moved(
     l_action=b'moved', l_timestamp=GLOBAL_TIMESTAMP, l_old=b'', l_new=b'',
     l_revision_timestamp=db_timestamp)
   logic_log.insert_or_update(wp10db, new_log)
+
+
+def _get_redirects_from_db(wikidb, namespace, title, timestamp_dt):
+  wiki_db_title = title.decode('utf-8').replace(' ', '_')
+  with wikidb.cursor() as cursor:
+    cursor.execute('''SELECT rd_namespace, rd_title, page_touched FROM page
+      JOIN redirect ON page_id = rd_from AND
+        page_title = %(title)s AND page_namespace = %(namespace)s
+    ''', {'title': wiki_db_title, 'namespace': namespace})
+    row = cursor.fetchone()
+    if row:
+      timestamp_dt = datetime.strptime(
+        row['page_touched'].decode('utf-8'), '%Y%m%d%H%M%S')
+      return {
+        'dest_ns': row['rd_namespace'],
+        'dest_title': row['rd_title'],
+        'timestamp_dt': timestamp_dt,
+      }
+    return None
 
 
 def _get_moves_from_api(wp10db, namespace, title, timestamp_dt):
@@ -81,8 +99,12 @@ def _get_redirects_from_api(wp10db, namespace, title, timestamp_dt):
   return None
 
 
-def get_move_data(wp10db, namespace, title, timestamp_dt):
+def get_move_data(wp10db, wikidb, namespace, title, timestamp_dt):
+  moves = _get_moves_from_api(wp10db, namespace, title, timestamp_dt)
+  if moves:
+    return moves
+  moves = _get_redirects_from_db(wikidb, namespace, title, timestamp_dt)
+  if moves:
+    return moves
   moves = _get_redirects_from_api(wp10db, namespace, title, timestamp_dt)
-  if moves is None:
-    moves = _get_moves_from_api(wp10db, namespace, title, timestamp_dt)
   return moves
