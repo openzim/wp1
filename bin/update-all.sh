@@ -20,8 +20,11 @@ time ./download.pl --releases
 echo "Reviews"
 time ./download.pl --reviews
 
-echo "Update all projects"
-time ./download.pl --all 
+echo "Update Catholicism project with new bot"
+../lucky/venv/bin/python3 ../lucky/update_catholicism.py
+
+echo "Update all projects, except Catholicism"
+time ./download.pl --all --exclude=Catholicism
 
 echo "Global table"
 time ./mktable.pl --purge --mode global
