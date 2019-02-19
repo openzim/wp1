@@ -26,3 +26,60 @@ The `wp10_test.*.sql` and `wiki_test.*.sql` files are rough approximations of th
 schemas of the two databases that the library interfaces with. They are used for unit
 testing.
 
+## Installation
+
+This code is targetted to and tested on Python 3, specifically Python 3.4.3 which is the
+version that was available on toolforge at the time it was written. It may work
+intermittently with Python 2.7, but that is not recommended.
+
+### Creating your virtualenv
+
+With Python 3, creating a virtualenv is a single easy command. It is recommmended that you
+run this command in this directory:
+
+`$ python3 -m venv venv`
+
+If you get the following message and you are on toolforge:
+
+`The virtual environment was not created successfully because ensurepip is not
+available.`
+
+Try running in a kubernetes session first:
+
+`$ webservice --backend=kubernetes python shell`
+
+### Activating your virtualenv
+
+To activate your virtualenv, run:
+
+`$ source venv/bin/activate`
+
+You should see your prompt change, with a `(venv)` appended to the front.
+
+### Installing requirements
+
+To install the requirements, make sure you are in your virtualenv as explained above, then
+use the following command:
+
+`$ pip3 install -r requirements.txt`
+
+### Populating the credentials module
+
+The script needs access to the enwiki_p replica database, as well as its own toolsdb
+application database. The credentials for these are on toolforge in the replica.my.cnf file
+in the home directory. They need to be formatted in a way that is consumable by the library
+and pymysql. Look at `lucky/credentials.py.example` and create a copy called
+`lucky/credentials.py` with the relevant information filled in. You will also need english
+wikipedia API credentials.
+
+## Running an application script
+
+To run a script, such as `update_catholicism.py`, you can simply run:
+
+`$ python3 update_catholicism.py`
+
+From the appropriate directory. However, this assumes that you have followed the steps above
+and are inside the appropriate virtualenv. For far-flung invocations of this script, you will
+need to reference the python3 wrapper script in the virtualenv:
+
+`$ wikimedia_wp1_bot/lucky/venv/bin/python3 wikimedia_wp1_bot/lucky/update_catholicism.py`
