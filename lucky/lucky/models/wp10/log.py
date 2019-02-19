@@ -6,7 +6,7 @@ from lucky.constants import TS_FORMAT_WP10
 
 @attr.s
 class Log:
-  table_name = 'lucky_logging'
+  table_name = 'logging'
 
   l_project = attr.ib()
   l_namespace = attr.ib()

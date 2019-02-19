@@ -268,14 +268,9 @@ def update_project_record(wp10db, project, metadata):
   insert_or_update(wp10db, project)
 
 def update_articles_table(wp10_session, project):
-  # This is a fairly complex query, but it performs relatively well. It would
-  # be complex to translate it to the ORM layer and perserve the nuance of what
-  # to do when certain values are NULL, etc. So we'll just copy it from the old
-  # codebase and execute it.
-
-  # Call to this method is currently commented out
+  # Call to this method is currently commented out.
   # wp10_session.execute('''
-  #   REPLACE INTO lucky_global_articles
+  #   REPLACE INTO global_articles
   #   SELECT art, max(qrating), max(irating), max(score)
   #   FROM
   #   ( SELECT art, qrating, irating, score

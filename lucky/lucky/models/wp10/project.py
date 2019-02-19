@@ -6,7 +6,7 @@ from lucky.constants import TS_FORMAT_WP10
 
 @attr.s
 class Project:
-  table_name = 'lucky_projects'
+  table_name = 'projects'
 
   p_project = attr.ib()
   p_timestamp = attr.ib()

@@ -4,7 +4,7 @@ from sqlalchemy.dialects.mysql import BINARY
 from lucky.wp10_db import Base
 
 class Release(Base):
-  __tablename__ = 'lucky_releases'
+  __tablename__ = 'releases'
 
   article = Column('rel_article', BINARY(255), primary_key=True)
   category = Column('rel_0p5_category', BINARY(63))

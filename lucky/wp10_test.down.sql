@@ -1,6 +1,6 @@
-DROP TABLE IF EXISTS `lucky_ratings`;
-DROP TABLE IF EXISTS `lucky_logging`;
-DROP TABLE IF EXISTS `lucky_categories`;
-DROP TABLE IF EXISTS `lucky_moves`;
-DROP TABLE IF EXISTS `lucky_projects`;
+DROP TABLE IF EXISTS `ratings`;
+DROP TABLE IF EXISTS `logging`;
+DROP TABLE IF EXISTS `categories`;
+DROP TABLE IF EXISTS `moves`;
+DROP TABLE IF EXISTS `projects`;
 DROP TABLE IF EXISTS `namespacename`;

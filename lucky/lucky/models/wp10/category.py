@@ -2,7 +2,7 @@ import attr
 
 @attr.s
 class Category:
-  table_name = 'lucky_categories'
+  table_name = 'categories'
 
   c_project = attr.ib()
   c_type = attr.ib()
