@@ -1,4 +1,4 @@
-CREATE TABLE `lucky_ratings` (
+CREATE TABLE `ratings` (
   `r_project` varbinary(63) NOT NULL,
   `r_namespace` int(10) unsigned NOT NULL,
   `r_article` varbinary(255) NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE `lucky_ratings` (
   PRIMARY KEY (`r_project`,`r_namespace`,`r_article`)
 );
 
-CREATE TABLE `lucky_logging` (
+CREATE TABLE `logging` (
   `l_project` varbinary(63) NOT NULL,
   `l_namespace` int(10) unsigned NOT NULL,
   `l_article` varbinary(255) NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE `lucky_logging` (
   PRIMARY KEY (`l_project`,`l_namespace`,`l_article`,`l_action`,`l_timestamp`)
 );
 
-CREATE TABLE `lucky_categories` (
+CREATE TABLE `categories` (
   `c_project` varbinary(63) NOT NULL,
   `c_type` varbinary(16) NOT NULL,
   `c_rating` varbinary(63) NOT NULL,
@@ -32,7 +32,7 @@ CREATE TABLE `lucky_categories` (
   PRIMARY KEY (`c_project`,`c_type`,`c_rating`)
 );
 
-CREATE TABLE `lucky_moves` (
+CREATE TABLE `moves` (
   `m_timestamp` binary(20) NOT NULL DEFAULT '\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0',
   `m_old_namespace` int(10) unsigned NOT NULL,
   `m_old_article` varbinary(255) NOT NULL,
@@ -41,7 +41,7 @@ CREATE TABLE `lucky_moves` (
   PRIMARY KEY (`m_old_namespace`,`m_old_article`,`m_timestamp`)
 );
 
-CREATE TABLE `lucky_projects` (
+CREATE TABLE `projects` (
   `p_project` varbinary(63) NOT NULL,
   `p_timestamp` binary(14) NOT NULL,
   `p_wikipage` varbinary(255) DEFAULT NULL,

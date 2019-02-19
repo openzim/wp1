@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 @attr.s
 class Rating:
-  table_name = 'lucky_ratings'
+  table_name = 'ratings'
 
   r_project = attr.ib()
   r_namespace = attr.ib()

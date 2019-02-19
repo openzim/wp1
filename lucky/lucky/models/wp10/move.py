@@ -6,7 +6,7 @@ from lucky.constants import TS_FORMAT
 
 @attr.s
 class Move:
-  table_name = 'lucky_moves'
+  table_name = 'moves'
 
   m_timestamp = attr.ib()
   m_old_namespace = attr.ib()

@@ -4,7 +4,7 @@ from sqlalchemy.dialects.mysql import BINARY
 from lucky.wp10_db import Base
 
 class Review(Base):
-  __tablename__ = 'lucky_reviews'
+  __tablename__ = 'reviews'
 
   value = Column('rev_value', BINARY(10))
   article = Column('rev_article', BINARY(255), primary_key=True)
