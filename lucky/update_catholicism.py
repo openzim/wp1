@@ -15,7 +15,9 @@ logging.getLogger('requests_oauthlib').setLevel(logging.CRITICAL)
 logging.getLogger('oauthlib').setLevel(logging.CRITICAL)
 
 try:
-  logic_project.update_project(wikidb, wp10db, Project(p_project=b'Catholicism', p_timestamp=None))
+  logic_project.update_project(
+    wikidb, wp10db, Project(p_project=b'Catholicism', p_timestamp=None))
+  wp10db.commit()
 finally:
   wikidb.close()
   wp10db.close()
