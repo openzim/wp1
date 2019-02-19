@@ -1,0 +1,45 @@
+from datetime import datetime
+import logging
+import time
+
+from lucky.api import site
+from lucky.constants import TS_FORMAT
+import lucky.logic.util as logic_util
+
+logger = logging.getLogger(__name__)
+
+def get_redirect(title_with_ns):
+  logger.debug('Querying api for redirects for %s', title_with_ns)
+  res = site.api(
+    'query', titles=title_with_ns, redirects=1, prop='revisions', rvlimit=1)
+
+  if 'query' not in res or 'redirects' not in res['query']:
+    return None
+  redir = res['query']['redirects'][0]['to']
+  if len(redir) == 0:
+    return None
+
+  key = next(iter(res['query']['pages']))
+  page = res['query']['pages'][key]
+  return {
+    'ns': page['ns'],
+    'title': page['title'].replace(' ', '_'),
+    'timestamp_dt': datetime.strptime(
+      page['revisions'][0]['timestamp'], TS_FORMAT),
+  }
+
+def get_moves(title_with_ns):
+  logger.debug('Querying api for moves of page %s', title_with_ns)
+  res = site.logevents(title=title_with_ns, type='move')
+
+  ans = []
+  for event in res:
+    if 'params' not in event:
+      continue
+    ans.append({
+      'ns': event['params']['target_ns'],
+      'title': event['params']['target_title'].replace(' ', '_'),
+      'timestamp_dt': datetime.fromtimestamp(time.mktime(event['timestamp'])),
+    })
+
+  return ans or None
