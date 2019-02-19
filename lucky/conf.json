@@ -1,0 +1,51 @@
+{
+  "ARTICLES_LABEL": "articles",
+  "BY_QUALITY": "by_quality",
+  "BY_IMPORTANCE": "by_importance",
+  "BY_IMPORTANCE_ALT": "by_priority",
+  "CATEGORY_NS": "Category",
+  "CLASS": "Class",
+  "DATABASE_WIKI_TS": "enwiki_p",
+  "IMPORTANCE": {
+    "Top-Class": 400,
+    "High-Class": 300,
+    "Mid-Class": 200,
+    "Low-Class": 100,
+    "NA-Class": 25,
+    "Unknown-Class": 0
+  },
+  "NOT_A_CLASS": "NotA-Class",
+  "QUALITY": {
+    "FA-Class": 500,
+    "FL-Class": 480,
+    "FM-Class": 460,
+    "A-Class": 425,
+    "GA-Class": 400,
+    "B-Class": 300,
+    "C-Class": 225,
+    "Start-Class": 150,
+    "Stub-Class": 100,
+    "List-Class":  80,
+    "Current-Class": 70,
+    "Future-Class": 60,
+    "Category-Class": 50,
+    "Disambig-Class": 48,
+    "Image-Class": 47,
+    "File-Class": 46,
+    "Portal-Class": 46,
+    "Project-Class": 44,
+    "Redirect-Class": 43,
+    "Template-Class": 40,
+    "NA-Class": 25,
+    "Assessed-Class": 20,
+    "Unassessed-Class": 0
+  },
+  "REVIEW": {
+    "GA": "Wikipedia_good_articles",
+    "FA": "Wikipedia_featured_articles",
+    "FL": "Wikipedia_featured_lists"
+  },
+  "ROOT_CATEGORY": "Wikipedia_1.0_assessments",
+  "UNASSESSED_CLASS": "Unassessed-Class",
+  "UNKNOWN_CLASS": "Unknown-Class"
+}

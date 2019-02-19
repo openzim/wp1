@@ -1,0 +1,54 @@
+import logging
+import re
+
+from lucky.conf import get_conf
+import lucky.constants as constants
+from lucky.logic import page as logic_page, project as logic_project
+from lucky.models.wp10.project import Project
+from lucky.wp10_db import Session as SessionWP10
+from lucky.wiki_db import Session as SessionWiki
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+logging.getLogger('mwclient').setLevel(logging.CRITICAL)
+logging.getLogger('urllib3').setLevel(logging.CRITICAL)
+logging.getLogger('requests_oauthlib').setLevel(logging.CRITICAL)
+logging.getLogger('oauthlib').setLevel(logging.CRITICAL)
+
+wp10_session = SessionWP10()
+
+config = get_conf()
+ROOT_CATEGORY = config['ROOT_CATEGORY'].encode('utf-8')
+CATEGORY_NS = config['CATEGORY_NS'].encode('utf-8')
+BY_QUALITY = config['BY_QUALITY'].encode('utf-8')
+ARTICLES_LABEL = config['ARTICLES_LABEL'].encode('utf-8')
+
+# %s formatting doesn't work for byes in Python 3.4
+RE_REJECT_GENERIC = re.compile(ARTICLES_LABEL + b'_' + BY_QUALITY, re.I)
+
+# Preload all projects
+projects = wp10_session.query(Project).all()
+
+def project_pages_to_update():
+  wiki_session = SessionWiki()
+  projects_in_root = logic_page.get_pages_by_category(
+    wiki_session, ROOT_CATEGORY, constants.CATEGORY_NS_INT)
+  for category_page in projects_in_root:
+    if BY_QUALITY not in category_page.title:
+      logging.debug('Skipping %r: it does not have %s in title',
+                    category_page, BY_QUALITY)
+      continue
+
+    if RE_REJECT_GENERIC.match(category_page.title):
+      logging.debug('Skipping %r: it is a generic "articles by quality"',
+                    category_page)
+      continue
+
+    project = wp10_session.query(Project).get(category_page.base_title)
+    if project is None:
+      project = Project(project=category_page.base_title)
+    yield project
+  wiki_session.close()
+
+for project in project_pages_to_update():
+  logic_project.update_project(SessionWiki, wp10_session, project)

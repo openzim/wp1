@@ -1,0 +1,11 @@
+language: python
+python:
+  - "3.4"
+before_install:
+  - mysql -e 'CREATE DATABASE enwp10_test; CREATE DATABASE enwikip_test;'
+install:
+  - pip install -r lucky/requirements.txt
+script:
+  - cd lucky && nosetests
+services:
+  - mysql
