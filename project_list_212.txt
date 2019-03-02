@@ -1,214 +1,212 @@
- Sweden                                         49334 
- Stations                                       49151 
- Ice_Hockey                                     48609 
- Visual_arts                                    47960 
- Road_transport                                 47654 
- History                                        47532 
- Computing                                      46912 
- Cricket                                        46564 
- Comics                                         45475 
- Medicine                                       44619 
- Basketball                                     44313 
- United_Kingdom                                 44103 
- Women's_History                                43489 
- Pennsylvania                                   43463 
- Law                                            43119 
- Brazil                                         41391 
- Catholicism                                    41063 
- College_basketball                             40993 
- Greek                                          40600 
- Tennis                                         40546 
- Food_and_drink                                 40190 
- Politics_of_the_United_Kingdom                 39899 
- Texas                                          39866 
- Chicago                                        39149 
- Caribbean                                      38242 
- British_military_history                       38227 
- Solar_System                                   37878 
- Astronomical_objects                           37664 
- River                                          37547 
- French_communes                                37486 
- Scotland                                       36286 
- Gastropods                                     36274 
- Beetle                                         36252 
- Turkey                                         35984 
- Netherlands                                    35315 
- Football_season                                35290 
- Radio_station                                  35075 
- Korea-related                                  34617 
- National_Football_League                       34590 
- Book                                           34329 
- Journalism                                     34143 
- WikiProject_Illinois                           33765 
- Fictional_character                            33539 
- International_relations                        33532 
- Pakistan                                       33459 
- Women_writers                                  33345 
- Universities                                   33305 
- Football_in_England                            32885 
- Philippine-related                             32389 
- Ohio                                           32121 
- Romania                                        31754 
- Mexico                                         31382 
- U.S._road_transport                            30884 
- Ontario                                        30747 
- Jazz                                           30655 
- MCB                                            30482 
- Academic_Journal                               29634 
- London-related                                 29434 
- Cycling                                        29350 
- Switzerland                                    29307 
- New_York_(state)                               29228 
- WikiProject_Business                           28112 
- South_Africa                                   27650 
- Animation                                      27059 
- UK_geography                                   26807 
- Wisconsin                                      26387 
- Biography_(royalty)                            26131 
- German_military_history                        26086 
- Czech_Republic                                 26053 
- Indian_cinema                                  25454 
- Fishes                                         25328 
- World_War_I                                    25269 
- Military_aviation                              25220 
- Virginia                                       24739 
- Indian_geography                               24665 
- Belgium-related                                24647 
- New_York                                       24620 
- Denmark                                        24434 
- Michigan                                       24129 
- Bird                                           23941 
- Indiana                                        23796 
- Massachusetts                                  23760 
- Organization                                   23731 
- Swimming                                       23388 
- Oregon                                         23334 
- Mountain                                       23162 
- Pop_music                                      23144 
- Television_episode                             23084 
- Sri_Lanka                                      23036 
- Australian_rules_football                      22646 
- Florida                                        22542 
- Wales                                          22412 
- Argentine                                      22308 
- Asian_military_history                         22239 
- Philosophy                                     22102 
- Hungary                                        21908 
- Israel-related                                 21678 
- Palaeontology                                  21648 
- New_York_City                                  21638 
- Death                                          21615 
- Energy                                         21610 
- Rugby_union                                    21582 
- LGBT                                           21576 
- Geography_of_Canada                            21412 
- Physics                                        21227 
- Indonesia                                      21208 
- Serbia                                         20959 
- Classical_Greece_and_Rome                      20916 
- Middle_Ages                                    20907 
- Austria                                        20849 
- Missouri                                       20718 
- Astronomical_Objects                           20678 
- Children_and_young_adult_literature            20555 
- Anatomy                                        20500 
- Croatia                                        20492 
- Brands                                         20280 
- Ukraine                                        20215 
- Kentucky                                       20173 
- New_Jersey                                     19905 
- Portugal                                       19767 
- Running                                        19542 
- Washington                                     19541 
- Theatre                                        19509 
- Aircraft                                       19471 
- Former_country                                 19438 
- Canadian_communities                           19432 
- College_baseball                               19359 
- Yorkshire                                      19137 
- Geology                                        18928 
- Anglicanism                                    18922 
- Crime-related                                  18897 
- Religion                                       18892 
- Rock_music                                     18824 
- Amphibian_and_reptile                          18807 
- Bulgaria                                       18785 
- Awards                                         18702 
- Georgia_(U.S._state)                           18662 
- Russia_(sports_and_games)                      18595 
- Chemicals                                      18502 
- Soccer_in_the_United_States_and_Canada         18474 
- Finland                                        18429 
- Education                                      18318 
- North_Carolina                                 18305 
- Minnesota                                      18291 
- Heavy_Metal                                    18236 
- Mathematics                                    18151 
- Airport                                        18136 
- Soviet_Union                                   18029 
- South_America                                  17922 
- Protected_areas                                17789 
- Northern_Ireland-related                       17749 
- UK_Railways                                    17623 
- Slovenia                                       17491 
- Thailand                                       17456 
- Australian_biota                               17358 
- Bangladesh                                     17082 
- Rugby_league                                   17022 
- Martial_arts                                   16986 
- U.S._Congress                                  16854 
- Antarctica                                     16787 
- United_States_Government                       16760 
- Australian_politics                            16618 
- Language                                       16378 
- Literature                                     16316 
- Software                                       16279 
- Magazine                                       16204 
- Estonia                                        15951 
- Quebec                                         15872 
- Lakes                                          15844 
- Central_Asia                                   15783 
- Malaysia                                       15724 
- Tamil_Nadu                                     15686 
- Queensland                                     15569 
- Hong_Kong                                      15564 
- Military_science,_technology,_and_theory       15338 
- Museums                                        15271 
- Canadian_sport                                 15243 
- British_Columbia                               15196 
- Multi-sport_events                             15170 
- Gaelic_games                                   15088 
- Iowa                                           14883 
- Biography_(peerage)                            14830 
- Maryland                                       14693 
- Fungi                                          14646 
- Comedy                                         14642 
- Alabama                                        14598 
- Australian_sports                              14570 
- Nigeria                                        14522 
- Women's_football                               14515 
- Volleyball                                     14482 
- Automobile                                     14474 
- Tennessee                                      14445 
- British_Overseas_Territories                   14416 
- Western_Australia                              14320 
- Boxing                                         14270 
- San_Francisco_Bay_Area                         14228 
- Anime_and_manga                                14028 
- Judaism                                        13757 
- Alberta                                        13675 
- Russia_(history)                               13662 
- Vietnam                                        13648 
- Taiwan-related                                 13602 
- Arkansas                                       13510 
- Peru                                           13497 
- Poetry                                         13478 
- Latin_music                                    13430 
- Political_parties_and_politicians_in_Canada    13349 
- Louisiana                                      13276 
- Opera                                          13228 
- British_cinema                                 13225 
- Connecticut                                    13222 
- Economics                                      13108 
- Russian,_Soviet_and_CIS_military_history       13060
- 
+Sweden
+Stations
+Ice_Hockey
+Visual_arts
+Road_transport
+History
+Computing
+Cricket
+Comics
+Medicine
+Basketball
+United_Kingdom
+Women's_History
+Pennsylvania
+Law
+Brazil
+Catholicism
+College_basketball
+Greek
+Tennis
+Food_and_drink
+Politics_of_the_United_Kingdom
+Texas
+Chicago
+Caribbean
+British_military_history
+Solar_System
+Astronomical_objects
+River
+French_communes
+Scotland
+Gastropods
+Beetle
+Turkey
+Netherlands
+Football_season
+Radio_station
+Korea-related
+National_Football_League
+Book
+Journalism
+WikiProject_Illinois
+Fictional_character
+International_relations
+Pakistan
+Women_writers
+Universities
+Football_in_England
+Philippine-related
+Ohio
+Romania
+Mexico
+U.S._road_transport
+Ontario
+Jazz
+MCB
+Academic_Journal
+London-related
+Cycling
+Switzerland
+New_York_(state)
+WikiProject_Business
+South_Africa
+Animation
+UK_geography
+Wisconsin
+Biography_(royalty)
+German_military_history
+Czech_Republic
+Indian_cinema
+Fishes
+World_War_I
+Military_aviation
+Virginia
+Indian_geography
+Belgium-related
+New_York
+Denmark
+Michigan
+Bird
+Indiana
+Massachusetts
+Organization
+Swimming
+Oregon
+Mountain
+Pop_music
+Television_episode
+Sri_Lanka
+Australian_rules_football
+Florida
+Wales
+Argentine
+Asian_military_history
+Philosophy
+Hungary
+Israel-related
+Palaeontology
+New_York_City
+Death
+Energy
+Rugby_union
+LGBT
+Geography_of_Canada
+Physics
+Indonesia
+Serbia
+Classical_Greece_and_Rome
+Middle_Ages
+Austria
+Missouri
+Astronomical_Objects
+Children_and_young_adult_literature
+Anatomy
+Croatia
+Brands
+Ukraine
+Kentucky
+New_Jersey
+Portugal
+Running
+Washington
+Theatre
+Aircraft
+Former_country
+Canadian_communities
+College_baseball
+Yorkshire
+Geology
+Anglicanism
+Crime-related
+Religion
+Rock_music
+Amphibian_and_reptile
+Bulgaria
+Awards
+Georgia_(U.S._state)
+Russia_(sports_and_games)
+Chemicals
+Soccer_in_the_United_States_and_Canada
+Finland
+Education
+North_Carolina
+Minnesota
+Heavy_Metal
+Mathematics
+Airport
+Soviet_Union
+South_America
+Protected_areas
+Northern_Ireland-related
+UK_Railways
+Slovenia
+Thailand
+Australian_biota
+Bangladesh
+Rugby_league
+Martial_arts
+U.S._Congress
+Antarctica
+United_States_Government
+Australian_politics
+Language
+Literature
+Software
+Magazine
+Estonia
+Quebec
+Lakes
+Central_Asia
+Malaysia
+Tamil_Nadu
+Queensland
+Hong_Kong
+Military_science,_technology,_and_theory
+Museums
+Canadian_sport
+British_Columbia
+Multi-sport_events
+Gaelic_games
+Iowa
+Biography_(peerage)
+Maryland
+Fungi
+Comedy
+Alabama
+Australian_sports
+Nigeria
+Women's_football
+Volleyball
+Automobile
+Tennessee
+British_Overseas_Territories
+Western_Australia
+Boxing
+San_Francisco_Bay_Area
+Anime_and_manga
+Judaism
+Alberta
+Russia_(history)
+Vietnam
+Taiwan-related
+Arkansas
+Peru
+Poetry
+Latin_music
+Political_parties_and_politicians_in_Canada
+Louisiana
+Opera
+British_cinema
+Connecticut
+Economics

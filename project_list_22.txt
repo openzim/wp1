@@ -1,22 +1,22 @@
- Sweden                                         49334 
- Medicine                                       44619 
- Tennis                                         40546 
- French_communes                                37486 
- Book                                           34329 
- Ohio                                           32121 
- Switzerland                                    29307 
- Indian_cinema                                  25454 
- Bird                                           23941 
- Australian_rules_football                      22646 
- Death                                          21615 
- Austria                                        20849 
- Portugal                                       19767 
- Anglicanism                                    18922 
- Soccer_in_the_United_States_and_Canada         18474 
- Protected_areas                                17789 
- Antarctica                                     16787 
- Central_Asia                                   15783 
- Gaelic_games                                   15088 
- Volleyball                                     14482 
- Russia_(history)                               13662 
- British_cinema                                 13225 
+Sweden
+Medicine
+Tennis
+French_communes
+Book
+Ohio
+Switzerland
+Indian_cinema
+Bird
+Australian_rules_football
+Death
+Austria
+Portugal
+Anglicanism
+Soccer_in_the_United_States_and_Canada
+Protected_areas
+Antarctica
+Central_Asia
+Gaelic_games
+Volleyball
+Russia_(history)
+British_cinema
