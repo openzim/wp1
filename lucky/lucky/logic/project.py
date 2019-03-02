@@ -36,6 +36,17 @@ def insert_or_update(wp10db, project):
     ''', attr.asdict(project))
 
 
+def get_project_by_name(wp10db, project_name):
+  with wp10db.cursor() as cursor:
+    cursor.execute('SELECT * FROM ' + Project.table_name + '''
+      WHERE p_project=%(p_project)s
+    ''', {'p_project': project_name})
+    db_project = cursor.fetchone()
+    if db_project is None:
+      return None
+    return Project(**db_project)
+
+
 def update_category(wp10db, project, page, extra, kind, rating_to_category):
   replaces = None
   extra_category = extra.get(page.page_title)
