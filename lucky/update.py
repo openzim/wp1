@@ -34,7 +34,6 @@ def get_include_set(args):
       for line in f:
         include_set.add(line.strip().encode('utf-8'))
 
-  print(repr(include_set))
 
 exclude_set = None
 def get_exclude_set(args):
@@ -44,6 +43,7 @@ def get_exclude_set(args):
     with open(args.excludefile) as f:
       for line in f:
         exclude_set.add(line.strip().encode('utf-8'))
+
 
 def include_filter(project_iter):
   if len(include_set) == 0:
@@ -55,6 +55,7 @@ def include_filter(project_iter):
     if project.p_project in include_set:
       yield project
 
+
 def exclude_filter(project_iter):
   if len(exclude_set) == 0:
     # Empty set means nothing to exclude
@@ -64,6 +65,7 @@ def exclude_filter(project_iter):
   for project in project_iter:
     if project.p_project not in exclude_set:
       yield project
+
 
 def project_pages_to_update():
   projects_in_root = logic_page.get_pages_by_category(
@@ -86,6 +88,7 @@ def project_pages_to_update():
                     category_page.base_title)
       project = Project(p_project=category_page.base_title, p_timestamp=None)
     yield project
+
 
 def main():
   parser = argparse.ArgumentParser()
@@ -111,6 +114,7 @@ def main():
     for project in project_iter:
       logger.info('Processing %s', project.p_project)
       logic_project.update_project(wikidb, wp10db, project)
+
 
 if __name__ == '__main__':
   main()

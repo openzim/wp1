@@ -105,9 +105,6 @@ sub parse_argv {
   if(open(my $fh, '<:encoding(UTF-8)', $filename)){
     while (my $exproj = <$fh>) {
       chomp $exproj;
-      print "Printing project: \n";
-      print $exproj;
-      print "\nDONE\n";
       $excludes->{$exproj} = 1;
     }
     close($fh);
