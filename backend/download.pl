@@ -82,7 +82,7 @@ sub parse_argv {
 
   if ( ! GetOptions($opts, 'all', 'existing', 'new', 'under=i', 
                     'over=i','all','releases','reviews',
-                    'exclude=s@' )) {
+                    'excludefile=s', 'exclude=s@' )) {
     usage();
     exit;
   }
@@ -99,6 +99,20 @@ sub parse_argv {
   my $excludes = {};
   while ( $project = shift @{$opts->{'exclude'}} ) {
     $excludes->{$project} = 1;
+  }
+
+  my $filename = $opts->{'excludefile'};
+  if(open(my $fh, '<:encoding(UTF-8)', $filename)){
+    while (my $exproj = <$fh>) {
+      chomp $exproj;
+      print "Printing project: \n";
+      print $exproj;
+      print "\nDONE\n";
+      $excludes->{$exproj} = 1;
+    }
+    close($fh);
+  } elsif ( exists $opts->{'excludefile'} ) {
+    die "Could not open --excludefile: '$filename'\n";
   }
 
   my $mode = "none";
@@ -227,14 +241,15 @@ Usage:
 $0 [--releases] [--review] [--all | --new | --existing] \
    [--over N] [--under N] [--exclude PROJECT] PROJECT 
 
-  --releases     : Update data on release versions
-  --reviews      : Update data on article review (e.g. FA)
+  --releases         : Update data on release versions
+  --reviews          : Update data on article review (e.g. FA)
 
-  --all          : Update ratings data for all projects
-  --existing     : Update data only for projects already in local database
-  --new          : Update data only for projects not in local database
+  --all              : Update ratings data for all projects
+  --existing         : Update data only for projects already in local database
+  --new              : Update data only for projects not in local database
 
-  --exclude PROJ : Don't update PROJ. Option can be repeated 
+  --excludefile FILE : Don't update projects listed one per line in FILE
+  --exclude PROJ     : Don't update PROJ. Option can be repeated 
 
 The following two options only work with --existing
  --under N       : Only update projects with <= N articles
