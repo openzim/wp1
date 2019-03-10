@@ -94,7 +94,7 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument('--all',
                       help='Attempt to process all projects. This is true by '
-                      'default', default=True)
+                      'default', action='store_true')
   parser.add_argument('--includefile',
                       help='A file with one project per line of projects that' 
                       'should be included and processed')
