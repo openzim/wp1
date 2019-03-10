@@ -26,15 +26,25 @@ RE_INDICATOR = re.compile(b'([A-Za-z]+)[ _-]')
 
 def insert_or_update(wp10db, project):
   with wp10db.cursor() as cursor:
-    cursor.execute('INSERT INTO ' + Project.table_name + '''
-      (p_project, p_timestamp, p_wikipage, p_parent, p_shortname, p_count,
-       p_qcount, p_icount, p_upload_timestamp, p_scope)
-      VALUES (%(p_project)s, %(p_timestamp)s, %(p_wikipage)s, %(p_parent)s,
-              %(p_shortname)s, %(p_count)s, %(p_qcount)s, %(p_icount)s,
-              %(p_upload_timestamp)s, %(p_scope)s)
-      ON DUPLICATE KEY update p_timestamp = %(p_timestamp)s
+    logger.debug('Updating project: %r', project)
+    cursor.execute('UPDATE ' + Project.table_name + '''
+      SET p_timestamp=%(p_timestamp)s, p_wikipage=%(p_wikipage)s,
+          p_parent=%(p_parent)s, p_shortname=%(p_shortname)s,
+          p_count=%(p_count)s, p_qcount=%(p_qcount)s, p_icount=%(p_icount)s,
+          p_upload_timestamp=%(p_upload_timestamp)s, p_scope=%(p_scope)s
+      WHERE p_project=%(p_project)s
     ''', attr.asdict(project))
-
+    if cursor.rowcount == 0:
+      logger.debug('No project to update, inserting')
+      cursor.execute('INSERT INTO ' + Project.table_name + '''
+        (p_project, p_timestamp, p_wikipage, p_parent, p_shortname, p_count,
+         p_qcount, p_icount, p_upload_timestamp, p_scope)
+        VALUES (%(p_project)s, %(p_timestamp)s, %(p_wikipage)s, %(p_parent)s,
+                %(p_shortname)s, %(p_count)s, %(p_qcount)s, %(p_icount)s,
+                %(p_upload_timestamp)s, %(p_scope)s)
+        ON DUPLICATE KEY UPDATE p_timestamp = %(p_timestamp)s
+      ''', attr.asdict(project))
+  wp10db.commit()
 
 def get_project_by_name(wp10db, project_name):
   with wp10db.cursor() as cursor:
@@ -315,7 +325,6 @@ def update_articles_table(wp10_session, project):
 
 def update_project(wikidb, wp10db, project):
   extra_assessments = api_project.get_extra_assessments(project.p_project)
-  timestamp = project.p_timestamp
 
   for kind in (AssessmentKind.QUALITY, AssessmentKind.IMPORTANCE):
     logger.debug('Updating %s assessments by %s',
