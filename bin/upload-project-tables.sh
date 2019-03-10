@@ -9,6 +9,8 @@ FILE=$PDIR/Logs/upload.`date +%Y-%m-%d.%H:%M.txt`
 
 cd $PDIR/backend
 
+export PERL5LIB=.
+
 pwd
 hostname
 export
