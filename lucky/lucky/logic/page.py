@@ -89,7 +89,12 @@ def _get_moves_from_api(wp10db, namespace, title, timestamp_dt):
 
 def _get_redirects_from_api(wp10db, namespace, title, timestamp_dt):
   title_with_ns = logic_util.title_for_api(wp10db, namespace, title)
-  redir = api_page.get_redirect(title_with_ns)
+  redir = None
+  try:
+    redir = api_page.get_redirect(title_with_ns)
+  except requests.exceptions.ReadTimeout as e:
+    logger.exception('Timeout while reading from API, skipping')
+
   if redir is not None and redir['timestamp_dt'] > timestamp_dt:
     return {
       'dest_ns': redir['ns'],

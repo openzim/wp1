@@ -22,11 +22,11 @@ time ./download.pl --releases
 echo "Reviews"
 time ./download.pl --reviews
 
-echo "Update 22 beta projects with new bot"
-../lucky/venv/bin/python3 ../lucky/update.py --all --includefile=../project_list_22.txt
+# echo "Update all projects with new bot"
+# ../lucky/venv/bin/python3 ../lucky/update.py --all
 
-echo "Update all projects, except 22 beta projects"
-time ./download.pl --all --excludefile ../project_list_22.txt
+echo "Update all projects with old bot"
+time ./download.pl --all
 
 echo "Global table"
 time ./mktable.pl --purge --mode global

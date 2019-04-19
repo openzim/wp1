@@ -1,6 +1,6 @@
 import mwclient
 
-_ua = 'WP1.0Bot/3.0. Run by User:Audiodude. Using mclient/0.9.1'
+_ua = 'WP1.0Bot/3.0. Run by User:Audiodude. Using mwclient/0.9.1'
 
 try:
   from lucky.credentials import API_CREDS
