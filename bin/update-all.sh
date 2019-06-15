@@ -25,8 +25,8 @@ time ./download.pl --reviews
 # echo "Update all projects with new bot"
 # ../lucky/venv/bin/python3 ../lucky/update.py --all
 
-echo "Update all projects with old bot"
-time ./download.pl --all
+echo "Update all projects with old bot, excluding Years"
+time ./download.pl --all --exclude Years
 
 echo "Global table"
 time ./mktable.pl --purge --mode global
