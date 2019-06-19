@@ -5,6 +5,9 @@ class AssessmentKind(enum.Enum):
   QUALITY = 'quality'
   IMPORTANCE = 'importance'
 
+PAGE_BY_CAT_ROWS = 200
+MAX_ARTICLES_BEFORE_COMMIT = 200
+
 CATEGORY_NS_INT = 14
 TALK_NS_INT = 1
 

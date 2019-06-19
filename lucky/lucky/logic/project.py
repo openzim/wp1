@@ -1,11 +1,12 @@
 import logging
 import math
 import re
+import time
 
 import attr
 
 from lucky.conf import get_conf
-from lucky.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP, GLOBAL_TIMESTAMP_WIKI
+from lucky.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP, GLOBAL_TIMESTAMP_WIKI, MAX_ARTICLES_BEFORE_COMMIT
 from lucky.logic import page as logic_page, util as logic_util, rating as logic_rating, category as logic_category
 from lucky.logic.api import project as api_project
 from lucky.models.wiki.page import Page
@@ -45,6 +46,7 @@ def insert_or_update(wp10db, project):
         ON DUPLICATE KEY UPDATE p_timestamp = %(p_timestamp)s
       ''', attr.asdict(project))
   wp10db.commit()
+
 
 def get_project_by_name(wp10db, project_name):
   with wp10db.cursor() as cursor:
@@ -136,9 +138,11 @@ def update_project_assessments(
   rating_to_category = update_project_categories_by_kind(
     wikidb, wp10db, project, extra_assessments, kind)
 
+  n = 0
   for current_rating, category in rating_to_category.items():
     logger.info('Fetching article list for %r' % category.decode('utf-8'))
     current_rating = current_rating.encode('utf-8')
+
     for page in logic_page.get_pages_by_category(wikidb, category):
       # Talk pages are tagged, we want the NS of the article itself.
       namespace = page.page_namespace - 1
@@ -174,12 +178,19 @@ def update_project_assessments(
         if old_rating_value != current_rating:
           # If the article doesn't match its rating, update the logging table.
           logic_rating.add_log_for_rating(
-            wp10db, rating, kind, old_rating_value)
+              wp10db, rating, kind, old_rating_value)
           # And update the rating of course.
           logic_rating.insert_or_update(wp10db, rating)
       else:
         # Add the newly created rating.
         logic_rating.insert_or_update(wp10db, rating)
+      n += 1
+      if n >= MAX_ARTICLES_BEFORE_COMMIT:
+        wp10db.ping()
+        wp10db.commit()
+  logger.info('End, committing db')
+  wp10db.ping()
+  wp10db.commit()
 
   logger.debug('Looking for unseen articles')
   n = 0
@@ -225,6 +236,13 @@ def update_project_assessments(
     logic_rating.insert_or_update(wp10db, rating)
     logic_rating.add_log_for_rating(wp10db, rating, kind, old_rating_value)
 
+    n += 1
+    if n >= MAX_ARTICLES_BEFORE_COMMIT:
+      wp10db.ping()
+      wp10db.commit()
+  logger.info('End, committing db')
+  wp10db.ping()
+  wp10db.commit()
 
 def cleanup_project(wp10db, project):
   # If both quality and importance are 'NotA-Class', that means the article

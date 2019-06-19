@@ -1,7 +1,7 @@
 from datetime import datetime
 import logging
 
-from lucky.constants import TS_FORMAT, GLOBAL_TIMESTAMP
+from lucky.constants import TS_FORMAT, GLOBAL_TIMESTAMP, PAGE_BY_CAT_ROWS
 from lucky.models.wiki.page import Page
 from lucky.models.wp10.log import Log
 from lucky.models.wp10.move import Move
@@ -28,7 +28,12 @@ def get_pages_by_category(wikidb, category, ns=None):
  
   with wikidb.cursor() as cursor:
     cursor.execute(query, params)
-    return [Page(**db_page) for db_page in cursor.fetchall()]
+    while True:
+      results = cursor.fetchmany(PAGE_BY_CAT_ROWS)
+      if not results:
+        break
+      for result in results:
+        yield Page(**result)
 
 
 def update_page_moved(
