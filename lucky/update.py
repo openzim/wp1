@@ -10,7 +10,7 @@ from lucky.wp10_db import conn as wp10db
 from lucky.wiki_db import conn as wikidb
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logging.getLogger('mwclient').setLevel(logging.CRITICAL)
 logging.getLogger('urllib3').setLevel(logging.CRITICAL)
 logging.getLogger('requests_oauthlib').setLevel(logging.CRITICAL)
@@ -72,8 +72,8 @@ def project_pages_to_update():
     wikidb, ROOT_CATEGORY, constants.CATEGORY_NS_INT)
   for category_page in projects_in_root:
     if BY_QUALITY not in category_page.page_title:
-      logger.debug('Skipping %r: it does not have %s in title',
-                    category_page, BY_QUALITY)
+      logger.debug('Skipping %s: it does not have %s in title',
+                    category_page.page_title.decode('utf-8'), BY_QUALITY)
       continue
 
     if RE_REJECT_GENERIC.match(category_page.page_title):

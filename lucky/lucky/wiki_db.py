@@ -9,4 +9,4 @@ conn = pymysql.connect(
   read_default_file=os.path.expanduser("~/replica.my.cnf"),
   charset=None,
   use_unicode=False,
-  cursorclass=pymysql.cursors.DictCursor)
+  cursorclass=pymysql.cursors.SSDictCursor)
