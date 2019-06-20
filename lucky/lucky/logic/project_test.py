@@ -515,6 +515,40 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
         self.assertEqual(page_to_rating[r.r_article], r.r_quality)
 
   @patch('lucky.logic.api.page.site')
+  def test_not_seen_null_quality(self, patched_site):
+    self._insert_pages(self.quality_pages)
+    self._insert_ratings(self.quality_pages[6:], 0, AssessmentKind.QUALITY,
+                         override_rating=None)
+
+    def fake_api(*args, **kwargs):
+      if kwargs['titles'] == ':How to test':
+        return self.api_return
+      return {}
+    patched_site.api.side_effect = fake_api
+
+    logic_project.update_project_assessments(
+      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.QUALITY)
+
+    patched_site.assert_not_called()
+
+  @patch('lucky.logic.api.page.site')
+  def test_not_seen_null_importance(self, patched_site):
+    self._insert_pages(self.importance_pages)
+    self._insert_ratings(self.importance_pages[6:], 0,
+                         AssessmentKind.IMPORTANCE, override_rating=None)
+
+    def fake_api(*args, **kwargs):
+      if kwargs['titles'] == ':How to test':
+        return self.api_return
+      return {}
+    patched_site.api.side_effect = fake_api
+
+    logic_project.update_project_assessments(
+      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.IMPORTANCE)
+
+    patched_site.assert_not_called()
+
+  @patch('lucky.logic.api.page.site')
   def test_not_seen_importance(self, patched_site):
     self._insert_pages(self.importance_pages[:-2])
     self._insert_ratings(

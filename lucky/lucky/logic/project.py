@@ -199,9 +199,12 @@ def update_project_assessments(
       continue
 
     if ((kind == AssessmentKind.QUALITY and
-         old_rating.r_quality == NOT_A_CLASS) or
+         (old_rating.r_quality == NOT_A_CLASS or
+          old_rating.r_quality is None))
+         or
         (kind == AssessmentKind.IMPORTANCE and
-         old_rating.r_importance == NOT_A_CLASS)):
+         (old_rating.r_importance == NOT_A_CLASS or
+          old_rating.r_importance is None))):
       continue
 
     logger.debug('Processing unseen article %s', ref.decode('utf-8'))
