@@ -53,7 +53,6 @@ def include_filter(project_name_iter):
     return
 
   for project_name in project_name_iter:
-    print(project_name)
     if project_name in include_set:
       yield project_name
 
