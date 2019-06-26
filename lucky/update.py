@@ -46,50 +46,45 @@ def get_exclude_set(args):
         exclude_set.add(line.strip().encode('utf-8'))
 
 
-def include_filter(project_iter):
+def include_filter(project_name_iter):
   if len(include_set) == 0:
     # Empty set means include everything
-    yield from project_iter
+    yield from project_name_iter
     return
 
-  for project in project_iter:
-    if project.p_project in include_set:
-      yield project
+  for project_name in project_name_iter:
+    print(project_name)
+    if project_name in include_set:
+      yield project_name
 
 
-def exclude_filter(project_iter):
+def exclude_filter(project_name_iter):
   if len(exclude_set) == 0:
     # Empty set means nothing to exclude
-    yield from project_iter
+    yield from project_name_iter
     return
 
-  for project in project_iter:
-    if project.p_project not in exclude_set:
-      yield project
+  for project_name in project_name_iter:
+    if project_name not in exclude_set:
+      yield project_name
 
 
-def project_pages_to_update():
+def project_names_to_update():
   projects_in_root = logic_page.get_pages_by_category(
     wikidb, ROOT_CATEGORY, constants.CATEGORY_NS_INT)
   for category_page in projects_in_root:
     if (BY_QUALITY not in category_page.page_title and
         BY_IMPORTANCE not in category_page.page_title):
-      logger.debug('Skipping %s: it does not have quality/importance in title',
+      logger.debug('Skipping %s -- it does not have quality/importance in title',
                     category_page.page_title.decode('utf-8'))
       continue
 
     if RE_REJECT_GENERIC.match(category_page.page_title):
-      logger.debug('Skipping %r: it is a generic "articles by quality"',
+      logger.debug('Skipping %r -- it is a generic "articles by quality"',
                     category_page)
       continue
 
-    project = logic_project.get_project_by_name(
-      wp10db, category_page.base_title)
-    if project is None:
-      logger.debug('No project found for %s, creating new one',
-                    category_page.base_title)
-      project = Project(p_project=category_page.base_title, p_timestamp=None)
-    yield project
+    yield category_page.base_title
 
 
 def main():
@@ -112,9 +107,16 @@ def main():
 
   if args.all:
     logger.info('Processing all projects, subject to inclusion/exclusion')
-    project_iter = exclude_filter(include_filter(project_pages_to_update()))
-    for project in project_iter:
-      logger.info('Processing %s', project.p_project)
+    project_names = exclude_filter(include_filter(
+      project_names_to_update()))
+    for project_name in project_names:
+      project = logic_project.get_project_by_name(wp10db, project_name)
+      if project is None:
+        logger.debug('No project found for %s, creating new one',
+                     project_name)
+        project = Project(p_project=project_name, p_timestamp=None)
+
+      logger.info('Processing %s', project.p_project.decode('utf-8'))
       logic_project.update_project(wikidb, wp10db, project)
 
 
