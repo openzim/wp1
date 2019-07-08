@@ -116,7 +116,7 @@ def update_project_categories_by_kind(
 
     # There might not be any pages listed "by importance" so we have to check
     # the alternate name ("by priority"), unless we already found pages.
-    if found_page or category_name_main == category_name_alt:
+    if found_page:
       break
 
   return rating_to_category
@@ -151,8 +151,10 @@ def update_project_assessments(
                       page.page_title, namespace)
         continue
 
-      article_ref = str(namespace).encode('utf-8') + b':' +  page.page_title
+      article_ref = str(namespace).encode('utf-8') + b':' + page.page_title
       seen.add(article_ref)
+      continue
+
       old_rating = old_ratings.get(article_ref)
       old_rating_value = None
 
@@ -192,10 +194,19 @@ def update_project_assessments(
   wp10db.ping()
   wp10db.commit()
 
-  logger.debug('Looking for unseen articles')
+  ratio = len(seen)/len(old_ratings.keys())
+  if ratio < SEEN_ARTICLE_THRESHOLD:
+    logger.debug('Skipping unseen article check, ratio was: %s', ratio)
+    return
+
+  logger.debug('Looking for unseen articles, ratio was: %s', ratio)
+  in_seen = 0
+  skipped = 0
+  processed = 0
   n = 0
   for ref, old_rating in old_ratings.items():
     if ref in seen:
+      in_seen += 1
       continue
 
     if ((kind == AssessmentKind.QUALITY and
@@ -205,7 +216,11 @@ def update_project_assessments(
         (kind == AssessmentKind.IMPORTANCE and
          (old_rating.r_importance == NOT_A_CLASS or
           old_rating.r_importance is None))):
+      skipped += 1
       continue
+
+    processed += 1
+    continue
 
     logger.debug('Processing unseen article %s', ref.decode('utf-8'))
     ns, title = ref.decode('utf-8').split(':', 1)
@@ -246,6 +261,9 @@ def update_project_assessments(
   logger.info('End, committing db')
   wp10db.ping()
   wp10db.commit()
+
+  logger.debug('SEEN REPORT:\nin seen: %s\nskipped: %s\nprocessed: %s',
+               in_seen, skipped, processed)
 
 def cleanup_project(wp10db, project):
   # If both quality and importance are 'NotA-Class', that means the article
