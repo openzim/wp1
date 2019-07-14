@@ -124,10 +124,6 @@ def update_project_categories_by_kind(
 
 def update_project_assessments(
     wikidb, wp10db, project, extra_assessments, kind):
-  if kind not in (AssessmentKind.QUALITY, AssessmentKind.IMPORTANCE):
-    raise ValueError('Parameter "kind" was not one of QUALITY or IMPORTANCE')
-
-  logger.info('Updating project %s assessments for %s', kind, project.p_project)
   old_ratings = {}
   for rating in logic_rating.get_project_ratings(wp10db, project.p_project):
     rating_ref = (
@@ -135,6 +131,20 @@ def update_project_assessments(
     old_ratings[rating_ref] = rating
 
   seen = set()
+  for kind in (AssessmentKind.QUALITY, AssessmentKind.IMPORTANCE):
+    logger.debug('Updating %s assessments by %s',
+                 project.p_project.decode('utf-8'), kind)
+    update_project_assessments_by_kind(
+      wikidb, wp10db, project, extra_assessments, kind, old_ratings, seen)
+
+  process_unseen_articles(wikidb, wp10db, project, old_ratings, seen)
+
+def update_project_assessments_by_kind(
+    wikidb, wp10db, project, extra_assessments, kind, old_ratings, seen):
+  if kind not in (AssessmentKind.QUALITY, AssessmentKind.IMPORTANCE):
+    raise ValueError('Parameter "kind" was not one of QUALITY or IMPORTANCE')
+
+  logger.info('Updating project %s assessments for %s', kind, project.p_project)
   rating_to_category = update_project_categories_by_kind(
     wikidb, wp10db, project, extra_assessments, kind)
 
@@ -193,7 +203,10 @@ def update_project_assessments(
   wp10db.ping()
   wp10db.commit()
 
+
+def process_unseen_articles(wikidb, wp10db, project, old_ratings, seen):
   ratio = len(seen)/len(old_ratings.keys())
+
   logger.debug('Looking for unseen articles, ratio was: %s', ratio)
   in_seen = 0
   skipped = 0
@@ -204,19 +217,19 @@ def update_project_assessments(
       in_seen += 1
       continue
 
-    if ((kind == AssessmentKind.QUALITY and
-         (old_rating.r_quality == NOT_A_CLASS or
-          old_rating.r_quality is None))
-         or
-        (kind == AssessmentKind.IMPORTANCE and
-         (old_rating.r_importance == NOT_A_CLASS or
-          old_rating.r_importance is None))):
-      skipped += 1
-      continue
-
-    processed += 1
+    # By default, we evaluate both assessment kinds.
+    kind = AssessmentKind.BOTH
+    if old_rating.r_quality == NOT_A_CLASS or old_rating.r_quality is None:
+      # The quality rating is not set, so just evaluate importance
+      kind = AssessmentKind.IMPORTANCE
+      if (old_rating.r_importance == NOT_A_CLASS or
+          old_rating.r_importance is None):
+        # The importance rating is also not set, so don't do anything.
+        skipped += 1
+        continue
 
     logger.debug('Processing unseen article %s', ref.decode('utf-8'))
+    processed += 1
     ns, title = ref.decode('utf-8').split(':', 1)
     ns = int(ns.encode('utf-8'))
     title = title.encode('utf-8')
@@ -235,23 +248,27 @@ def update_project_assessments(
     # tagged correctly.
     rating = Rating(
       r_project=project.p_project, r_namespace=ns, r_article=title, r_score=0)
-    if kind == AssessmentKind.QUALITY:
+    if kind in (AssessmentKind.QUALITY, AssessmentKind.BOTH):
       rating.quality = NOT_A_CLASS.encode('utf-8')
-      old_rating_value = old_rating.r_quality
       if move_data:
         rating.set_quality_timestamp_dt(move_data['timestamp_dt'])
       else:
         rating.r_quality_timestamp = GLOBAL_TIMESTAMP_WIKI
-    elif kind == AssessmentKind.IMPORTANCE:
+    if kind in (AssessmentKind.IMPORTANCE, AssessmentKind.BOTH):
       rating.importance = NOT_A_CLASS.encode('utf-8')
-      old_rating_value = old_rating.r_importance
       if move_data:
         rating.set_importance_timestamp_dt(move_data['timestamp_dt'])
       else:
         rating.r_importance_timestamp = GLOBAL_TIMESTAMP_WIKI
 
     logic_rating.insert_or_update(wp10db, rating)
-    logic_rating.add_log_for_rating(wp10db, rating, kind, old_rating_value)
+
+    if kind in (AssessmentKind.QUALITY, AssessmentKind.BOTH):
+      logic_rating.add_log_for_rating(
+        wp10db, rating, AssessmentKind.QUALITY, old_rating.r_quality)
+    if kind in (AssessmentKind.IMPORTANCE, AssessmentKind.BOTH):
+      logic_rating.add_log_for_rating(
+        wp10db, rating, AssessmentKind.IMPORTANCE, old_rating.r_importance)
 
     n += 1
     if n >= MAX_ARTICLES_BEFORE_COMMIT:
@@ -263,6 +280,7 @@ def update_project_assessments(
 
   logger.debug('SEEN REPORT:\nin seen: %s\nskipped: %s\nprocessed: %s',
                in_seen, skipped, processed)
+
 
 def cleanup_project(wp10db, project):
   # If both quality and importance are 'NotA-Class', that means the article
@@ -364,11 +382,8 @@ def update_articles_table(wp10_session, project):
 def update_project(wikidb, wp10db, project):
   extra_assessments = api_project.get_extra_assessments(project.p_project)
 
-  for kind in (AssessmentKind.QUALITY, AssessmentKind.IMPORTANCE):
-    logger.debug('Updating %s assessments by %s',
-                 project.p_project.decode('utf-8'), kind)
-    update_project_assessments(
-      wikidb, wp10db, project, extra_assessments['extra'], kind)
+  update_project_assessments(
+    wikidb, wp10db, project, extra_assessments['extra'])
 
   cleanup_project(wp10db, project)
 

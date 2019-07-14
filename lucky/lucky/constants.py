@@ -4,6 +4,7 @@ import time
 class AssessmentKind(enum.Enum):
   QUALITY = 'quality'
   IMPORTANCE = 'importance'
+  BOTH = 'both'
 
 MAX_ARTICLES_BEFORE_COMMIT = 200
 
