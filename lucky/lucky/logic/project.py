@@ -6,7 +6,7 @@ import time
 import attr
 
 from lucky.conf import get_conf
-from lucky.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP, GLOBAL_TIMESTAMP_WIKI, MAX_ARTICLES_BEFORE_COMMIT
+from lucky.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP, GLOBAL_TIMESTAMP_WIKI, MAX_ARTICLES_BEFORE_COMMIT, SEEN_ARTICLE_THRESHOLD
 from lucky.logic import page as logic_page, util as logic_util, rating as logic_rating, category as logic_category
 from lucky.logic.api import project as api_project
 from lucky.models.wiki.page import Page
