@@ -345,8 +345,8 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
         rating.quality = r
         rating.quality_timestamp = GLOBAL_TIMESTAMP_WIKI
       elif kind == AssessmentKind.IMPORTANCE or kind == 'both':
-        rating.importance=r
-        rating.importance_timestamp=GLOBAL_TIMESTAMP_WIKI
+        rating.importance = r
+        rating.importance_timestamp = GLOBAL_TIMESTAMP_WIKI
       with self.wp10db.cursor() as cursor:
         cursor.execute('INSERT INTO ' + Rating.table_name + '''
           (r_project, r_namespace, r_article, r_score, r_quality,
@@ -515,6 +515,39 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
         self.assertEqual(page_to_rating[r.r_article], r.r_quality)
 
   @patch('lucky.logic.api.page.site')
+  def test_not_seen_importance(self, patched_site):
+    self._insert_pages(self.importance_pages[:-2])
+    self._insert_ratings(
+      self.importance_pages[4:], 0, AssessmentKind.IMPORTANCE)
+
+    def fake_api(*args, **kwargs):
+      if kwargs['titles'] == ':How to test':
+        return self.api_return
+      return {}
+    patched_site.api.side_effect = fake_api
+
+    logic_project.update_project_assessments(
+      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.IMPORTANCE)
+
+    self.assertEqual(2, len(patched_site.api.call_args_list))
+
+    ratings = _get_all_ratings(self.wp10db)
+    self.assertNotEqual(0, len(ratings))
+
+    pages = self.importance_pages[4:]
+    expected_titles = set(p[1] for p in pages)
+    actual_titles = set(r.r_article for r in ratings)
+    self.assertEqual(expected_titles, actual_titles)
+
+    page_to_rating = dict((p[1], p[3]) for p in pages)
+    for r in ratings:
+      if r.r_article in (b'How to test', b'Failures of tests'):
+        self.assertIsNone(r.r_importance)
+      else:
+        self.assertEqual(page_to_rating[r.r_article], r.r_importance, repr(r))
+
+
+  @patch('lucky.logic.api.page.site')
   def test_not_seen_null_quality(self, patched_site):
     self._insert_pages(self.quality_pages)
     self._insert_ratings(self.quality_pages[6:], 0, AssessmentKind.QUALITY,
@@ -547,36 +580,6 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
       self.wikidb, self.wp10db, self.project, {}, AssessmentKind.IMPORTANCE)
 
     patched_site.assert_not_called()
-
-  @patch('lucky.logic.api.page.site')
-  def test_not_seen_importance(self, patched_site):
-    self._insert_pages(self.importance_pages[:-2])
-    self._insert_ratings(
-      self.importance_pages[4:], 0, AssessmentKind.IMPORTANCE)
-
-    def fake_api(*args, **kwargs):
-      if kwargs['titles'] == ':How to test':
-        return self.api_return
-      return {}
-    patched_site.api.side_effect = fake_api
-
-    logic_project.update_project_assessments(
-      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.IMPORTANCE)
-
-    ratings = _get_all_ratings(self.wp10db)
-    self.assertNotEqual(0, len(ratings))
-
-    pages = self.importance_pages[4:]
-    expected_titles = set(p[1] for p in pages)
-    actual_titles = set(r.r_article for r in ratings)
-    self.assertEqual(expected_titles, actual_titles)
-
-    page_to_rating = dict((p[1], p[3]) for p in pages)
-    for r in ratings:
-      if r.r_article in (b'How to test', b'Failures of tests'):
-        self.assertIsNone(r.r_importance)
-      else:
-        self.assertEqual(page_to_rating[r.r_article], r.r_importance, repr(r))
 
 class CleanupProjectTest(BaseWpOneDbTest):
   ratings = (
