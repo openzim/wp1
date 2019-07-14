@@ -112,8 +112,10 @@ def get_move_data(wp10db, wikidb, namespace, title, timestamp_dt):
   moves = _get_moves_from_api(wp10db, namespace, title, timestamp_dt)
   if moves:
     return moves
+
   moves = _get_redirects_from_db(wikidb, namespace, title, timestamp_dt)
   if moves:
     return moves
+
   moves = _get_redirects_from_api(wp10db, namespace, title, timestamp_dt)
   return moves
