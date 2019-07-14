@@ -384,7 +384,7 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
     self._insert_ratings(self.quality_pages[6:], 0, AssessmentKind.QUALITY)
 
     logic_project.update_project_assessments(
-      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.QUALITY)
+      self.wikidb, self.wp10db, self.project, {})
 
     ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
@@ -404,7 +404,7 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
       self.importance_pages[4:], 0, AssessmentKind.IMPORTANCE)
 
     logic_project.update_project_assessments(
-      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.IMPORTANCE)
+      self.wikidb, self.wp10db, self.project, {})
 
     ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
@@ -425,7 +425,7 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
       override_rating=NOT_A_CLASS.encode('utf-8'))
 
     logic_project.update_project_assessments(
-      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.QUALITY)
+      self.wikidb, self.wp10db, self.project, {})
 
     ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
@@ -446,7 +446,7 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
       override_rating=NOT_A_CLASS.encode('utf-8'))
 
     logic_project.update_project_assessments(
-      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.IMPORTANCE)
+      self.wikidb, self.wp10db, self.project, {})
 
     ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
@@ -468,9 +468,7 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
       override_rating=NOT_A_CLASS.encode('utf-8'))
 
     logic_project.update_project_assessments(
-      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.QUALITY)
-    logic_project.update_project_assessments(
-      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.IMPORTANCE)
+      self.wikidb, self.wp10db, self.project, {})
 
     ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
@@ -499,7 +497,7 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
     patched_site.api.side_effect = fake_api
 
     logic_project.update_project_assessments(
-      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.QUALITY)
+      self.wikidb, self.wp10db, self.project, {})
 
     self.assertEqual(2, len(patched_site.api.call_args_list))
 
@@ -531,7 +529,7 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
     patched_site.api.side_effect = fake_api
 
     logic_project.update_project_assessments(
-      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.IMPORTANCE)
+      self.wikidb, self.wp10db, self.project, {})
 
     self.assertEqual(2, len(patched_site.api.call_args_list))
 
@@ -564,7 +562,7 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
     patched_site.api.side_effect = fake_api
 
     logic_project.update_project_assessments(
-      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.QUALITY)
+      self.wikidb, self.wp10db, self.project, {})
 
     patched_site.assert_not_called()
 
@@ -581,7 +579,7 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
     patched_site.api.side_effect = fake_api
 
     logic_project.update_project_assessments(
-      self.wikidb, self.wp10db, self.project, {}, AssessmentKind.IMPORTANCE)
+      self.wikidb, self.wp10db, self.project, {})
 
     patched_site.assert_not_called()
 

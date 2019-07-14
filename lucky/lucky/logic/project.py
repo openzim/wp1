@@ -122,8 +122,7 @@ def update_project_categories_by_kind(
   return rating_to_category
 
 
-def update_project_assessments(
-    wikidb, wp10db, project, extra_assessments, kind):
+def update_project_assessments(wikidb, wp10db, project, extra_assessments):
   old_ratings = {}
   for rating in logic_rating.get_project_ratings(wp10db, project.p_project):
     rating_ref = (
