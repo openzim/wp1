@@ -6,7 +6,7 @@ import time
 import attr
 
 from lucky.conf import get_conf
-from lucky.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP, GLOBAL_TIMESTAMP_WIKI, MAX_ARTICLES_BEFORE_COMMIT, SEEN_ARTICLE_THRESHOLD
+from lucky.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP, GLOBAL_TIMESTAMP_WIKI, MAX_ARTICLES_BEFORE_COMMIT
 from lucky.logic import page as logic_page, util as logic_util, rating as logic_rating, category as logic_category
 from lucky.logic.api import project as api_project
 from lucky.models.wiki.page import Page
@@ -153,7 +153,6 @@ def update_project_assessments(
 
       article_ref = str(namespace).encode('utf-8') + b':' + page.page_title
       seen.add(article_ref)
-      continue
 
       old_rating = old_ratings.get(article_ref)
       old_rating_value = None
@@ -195,10 +194,6 @@ def update_project_assessments(
   wp10db.commit()
 
   ratio = len(seen)/len(old_ratings.keys())
-  if ratio < SEEN_ARTICLE_THRESHOLD:
-    logger.debug('Skipping unseen article check, ratio was: %s', ratio)
-    return
-
   logger.debug('Looking for unseen articles, ratio was: %s', ratio)
   in_seen = 0
   skipped = 0
@@ -220,7 +215,6 @@ def update_project_assessments(
       continue
 
     processed += 1
-    continue
 
     logger.debug('Processing unseen article %s', ref.decode('utf-8'))
     ns, title = ref.decode('utf-8').split(':', 1)
@@ -234,6 +228,11 @@ def update_project_assessments(
         wp10db, project, ns, title, move_data['dest_ns'],
         move_data['dest_title'], move_data['timestamp_dt'])
 
+    # Mark this article as having NOT_A_CLASS for it's quality or importance.
+    # This probably means the article was deleted, but could in fact mean that
+    # we just failed to find its move data. Either way, the new article would
+    # have already been picked up by the assessment updater, assuming it was
+    # tagged correctly.
     rating = Rating(
       r_project=project.p_project, r_namespace=ns, r_article=title, r_score=0)
     if kind == AssessmentKind.QUALITY:

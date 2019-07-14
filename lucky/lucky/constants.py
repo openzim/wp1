@@ -5,7 +5,6 @@ class AssessmentKind(enum.Enum):
   QUALITY = 'quality'
   IMPORTANCE = 'importance'
 
-SEEN_ARTICLE_THRESHOLD = .99
 MAX_ARTICLES_BEFORE_COMMIT = 200
 
 CATEGORY_NS_INT = 14

@@ -332,7 +332,8 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
         cursor.execute('''
           INSERT INTO categorylinks (cl_from, cl_to, cl_timestamp)
           VALUES (%(from)s, %(to)s, %(ts)s)
-        ''', {'from': p[0], 'to': p[2], 'ts': ts})  
+        ''', {'from': p[0], 'to': p[2], 'ts': ts})
+    self.wikidb.commit()
 
   def _insert_ratings(self, pages, namespace, kind, override_rating=None):
     for p in pages:
@@ -342,11 +343,12 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
       rating = Rating(
         r_project=self.project.p_project, r_namespace=namespace, r_article=p[1])
       if kind == AssessmentKind.QUALITY or kind == 'both':
-        rating.quality = r
-        rating.quality_timestamp = GLOBAL_TIMESTAMP_WIKI
+        rating.r_quality = r
+        rating.r_quality_timestamp = GLOBAL_TIMESTAMP_WIKI
       elif kind == AssessmentKind.IMPORTANCE or kind == 'both':
-        rating.importance = r
-        rating.importance_timestamp = GLOBAL_TIMESTAMP_WIKI
+        rating.r_importance = r
+        rating.r_importance_timestamp = GLOBAL_TIMESTAMP_WIKI
+
       with self.wp10db.cursor() as cursor:
         cursor.execute('INSERT INTO ' + Rating.table_name + '''
           (r_project, r_namespace, r_article, r_score, r_quality,
@@ -435,7 +437,7 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
 
     page_to_rating = dict((p[1], p[3]) for p in pages)
     for r in ratings:
-      self.assertEqual(page_to_rating[r.r_article], r.r_quality)
+      self.assertEqual(page_to_rating[r.r_article], r.r_quality, r)
 
   def test_old_rating_update_importance(self):
     self._insert_pages(self.importance_pages)
@@ -499,6 +501,8 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
     logic_project.update_project_assessments(
       self.wikidb, self.wp10db, self.project, {}, AssessmentKind.QUALITY)
 
+    self.assertEqual(2, len(patched_site.api.call_args_list))
+
     ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
 
@@ -542,7 +546,7 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
     page_to_rating = dict((p[1], p[3]) for p in pages)
     for r in ratings:
       if r.r_article in (b'How to test', b'Failures of tests'):
-        self.assertIsNone(r.r_importance)
+        self.assertIsNone(r.r_quality)
       else:
         self.assertEqual(page_to_rating[r.r_article], r.r_importance, repr(r))
 
