@@ -39,7 +39,7 @@ run this command in this directory:
 
 `$ python3 -m venv venv`
 
-If you get the following message and you are on toolforge:
+If you are on wikimedia toolforge and get the following message:
 
 `The virtual environment was not created successfully because ensurepip is not
 available.`
@@ -62,6 +62,16 @@ To install the requirements, make sure you are in your virtualenv as explained a
 use the following command:
 
 `$ pip3 install -r requirements.txt`
+
+### Running the tests
+
+The tests expect a localhost MySQL instance on the default port, with a user of 'root' and no password. You also need two databases: `enwp10_test` and `enwikip_test`. They can use default settings and be empty.
+
+If you have that, and you've already installed the requirements above, you should be able to simply run:
+
+`$ nosetests`
+
+From this directory, to run the tests. If you'd like to use a different MySQL user or non-default password for the tests, simply edit `_setup_wp_one_db` and `_setup_wp_one_db` in lucky/base_db_test.py
 
 ### Populating the credentials module
 
