@@ -74,9 +74,8 @@ def project_names_to_update():
   # List instead of iterate because the query will be reused in the processing
   # steps and if we don't exhaust it now, it will get truncated.
   for category_page in list(projects_in_root):
-    if (BY_QUALITY not in category_page.page_title and
-        BY_IMPORTANCE not in category_page.page_title):
-      logger.debug('Skipping %s -- it does not have quality/importance in title',
+    if BY_QUALITY not in category_page.page_title:
+      logger.debug('Skipping %s -- it does not have quality in title',
                     category_page.page_title.decode('utf-8'))
       continue
 

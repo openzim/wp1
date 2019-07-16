@@ -60,6 +60,7 @@ def update_page_moved(
 
 def _get_redirects_from_db(wikidb, namespace, title, timestamp_dt):
   wiki_db_title = title.decode('utf-8').replace(' ', '_')
+  wikidb.ping()
   with wikidb.cursor() as cursor:
     cursor.execute('''SELECT rd_namespace, rd_title, page_touched FROM page
       JOIN redirect ON page_id = rd_from AND
