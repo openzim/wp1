@@ -221,7 +221,6 @@ class UpdateProjectCategoriesByKindTest(BaseCombinedDbTest):
 
     categories = _get_all_categories(self.wp10db)
     self.assertNotEqual(0, len(categories))
-    print(repr(categories))
     for category in categories:
       self.assertEqual(self.project.p_project, category.c_project)
       self.assertEqual(b'importance', category.c_type)
