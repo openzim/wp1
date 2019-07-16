@@ -392,5 +392,4 @@ def update_project(wikidb, wp10db, project):
   ## we don't have reliable selection_data at the moment, and we're not sure if
   ## the score metrics will be changing, skip it for now.
   # update_project_scores(wp10_session, project)
-
-  update_articles_table(wp10db, project)
+  # update_articles_table(wp10db, project)

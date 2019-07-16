@@ -115,10 +115,7 @@ def count_unassessed_importance_for_project(wp10db, project):
       'not_a_class': not_a_class_db,
       'unassessed': unassessed_db
     })
-    # return cursor.fetchone()['cnt']
-    count = cursor.fetchone()['cnt']
-    print(count)
-    return count
+    return cursor.fetchone()['cnt']
 
 
 def add_log_for_rating(wp10db, new_rating, kind, old_rating_value):
