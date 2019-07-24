@@ -71,8 +71,10 @@ def exclude_filter(project_name_iter):
 def project_names_to_update():
   projects_in_root = logic_page.get_pages_by_category(
     wikidb, ROOT_CATEGORY, constants.CATEGORY_NS_INT)
+  # List instead of iterate because the query will be reused in the processing
+  # steps and if we don't exhaust it now, it will get truncated.
   for category_page in list(projects_in_root):
-    if (BY_QUALITY not in category_page.page_title):
+    if BY_QUALITY not in category_page.page_title:
       logger.debug('Skipping %s -- it does not have quality in title',
                     category_page.page_title.decode('utf-8'))
       continue
@@ -103,10 +105,12 @@ def main():
   get_exclude_set(args)
   get_include_set(args)
 
+  logger.debug('Include set: %r', include_set)
+  logger.debug('Exclude set: %r', exclude_set)
+
   if args.all:
     logger.info('Processing all projects, subject to inclusion/exclusion')
-    project_names = exclude_filter(include_filter(
-      project_names_to_update()))
+    project_names = exclude_filter(include_filter(project_names_to_update()))
     for project_name in project_names:
       project = logic_project.get_project_by_name(wp10db, project_name)
       if project is None:
