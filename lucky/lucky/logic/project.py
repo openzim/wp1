@@ -204,7 +204,8 @@ def update_project_assessments_by_kind(
 
 
 def process_unseen_articles(wikidb, wp10db, project, old_ratings, seen):
-  ratio = len(seen)/len(old_ratings.keys())
+  denom = len(old_ratings.keys())
+  ratio = len(seen)/denom if denom != 0 else 'NaN'
 
   logger.debug('Looking for unseen articles, ratio was: %s', ratio)
   in_seen = 0
