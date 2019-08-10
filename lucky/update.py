@@ -6,8 +6,8 @@ from lucky.conf import get_conf
 import lucky.constants as constants
 from lucky.logic import page as logic_page, project as logic_project
 from lucky.models.wp10.project import Project
-from lucky.wp10_db import conn as wp10db
-from lucky.wiki_db import conn as wikidb
+from lucky.wp10_db import connect as wp10_connect
+from lucky.wiki_db import connect as wiki_connect
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -68,7 +68,7 @@ def exclude_filter(project_name_iter):
       yield project_name
 
 
-def project_names_to_update():
+def project_names_to_update(wikidb):
   projects_in_root = logic_page.get_pages_by_category(
     wikidb, ROOT_CATEGORY, constants.CATEGORY_NS_INT)
   # List instead of iterate because the query will be reused in the processing
@@ -88,6 +88,9 @@ def project_names_to_update():
 
 
 def main():
+  wp10db = wp10_connect()
+  wikidb = wiki_connect()
+
   parser = argparse.ArgumentParser()
   parser.add_argument('--all',
                       help='Attempt to process all projects. This is true by '
@@ -110,7 +113,8 @@ def main():
 
   if args.all:
     logger.info('Processing all projects, subject to inclusion/exclusion')
-    project_names = exclude_filter(include_filter(project_names_to_update()))
+    project_names = exclude_filter(include_filter(
+      project_names_to_update(wikidb)))
     for project_name in project_names:
       project = logic_project.get_project_by_name(wp10db, project_name)
       if project is None:
