@@ -65,6 +65,13 @@ CREATE TABLE `namespacename` (
   PRIMARY KEY (`domain`,`ns_name`,`ns_type`)
 );
 
+CREATE TABLE `releases` (
+  `rel_article` varbinary(255) NOT NULL,
+  `rel_0p5_category` varbinary(63) NOT NULL,
+  `rel_0p5_timestamp` binary(20) DEFAULT NULL,
+  PRIMARY KEY (`rel_article`)
+);
+
 INSERT INTO `namespacename` (dbname, domain, ns_id, ns_name, ns_type, ns_is_favorite) VALUES ('enwiki_p', 'en.wikipedia.org', -2, 'Media'                 , 'canonical' , 1);
 INSERT INTO `namespacename` (dbname, domain, ns_id, ns_name, ns_type, ns_is_favorite) VALUES ('enwiki_p', 'en.wikipedia.org', -1, 'Special'               , 'canonical' , 1);
 INSERT INTO `namespacename` (dbname, domain, ns_id, ns_name, ns_type, ns_is_favorite) VALUES ('enwiki_p', 'en.wikipedia.org',  0, ''                      , 'primary' , 1);
