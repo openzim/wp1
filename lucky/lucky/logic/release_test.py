@@ -48,7 +48,6 @@ class ReleaseTest(BaseWpOneDbTest):
     self.assertEquals(4, len(actual))
     for expected_art in [b'Test Page %s' % str(i).encode('utf-8')
                          for i in range(4)]:
-      print(expected_art)
       self.assertTrue(expected_art in actual)
 
     self.assertEquals(b'Test Category', actual[b'Test Page 0'].rel_0p5_category)
