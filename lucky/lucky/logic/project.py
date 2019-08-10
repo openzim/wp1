@@ -13,6 +13,9 @@ from lucky.models.wiki.page import Page
 from lucky.models.wp10.category import Category
 from lucky.models.wp10.project import Project
 from lucky.models.wp10.rating import Rating
+from lucky.wp10_db import connect as wp10_connect
+from lucky.wiki_db import connect as wiki_connect
+
 
 logger = logging.getLogger(__name__)
 
@@ -26,8 +29,8 @@ RE_INDICATOR = re.compile(b'([A-Za-z]+)[ _-]')
 
 
 def update_project_by_name(project_name):
-  from lucky.wp10_db import conn as wp10db
-  from lucky.wiki_db import conn as wikidb
+  wp10db = wp10_connect()
+  wikidb = wiki_connect()
 
   project = logic_project.get_project_by_name(wp10db, project_name)
   if not project:
@@ -35,6 +38,7 @@ def update_project_by_name(project_name):
     return
 
   update_project(wikidb, wp10db, project)
+
 
 def insert_or_update(wp10db, project):
   with wp10db.cursor() as cursor:
