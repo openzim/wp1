@@ -25,6 +25,17 @@ NOT_A_CLASS = config['NOT_A_CLASS']
 RE_INDICATOR = re.compile(b'([A-Za-z]+)[ _-]')
 
 
+def update_project_by_name(project_name):
+  from lucky.wp10_db import conn as wp10db
+  from lucky.wiki_db import conn as wikidb
+
+  project = logic_project.get_project_by_name(wp10db, project_name)
+  if not project:
+    logger.error('No project with name: %s', project_name)
+    return
+
+  update_project(wikidb, wp10db, project)
+
 def insert_or_update(wp10db, project):
   with wp10db.cursor() as cursor:
     logger.debug('Updating project: %r', project)
