@@ -24,20 +24,21 @@ def extract_release_category(title):
 
 
 def main():
-  title_to_release = logic_release.get_title_to_release()
+  title_to_release = logic_release.get_title_to_release(wp10db)
 
   seen = set()
-  for category_page in logic_page.get_pages_by_category(
-      wiki_db, category_name):
+  # Materialize the pages_by_category list because the query is reused below.
+  for category_page in list(logic_page.get_pages_by_category(
+      wikidb, category_name)):
     logging.info(
-      'Processing category: %r', category_page.page_title.encode('utf-8'))
+      'Processing category: %s', category_page.page_title.decode('utf-8'))
     release_category = extract_release_category(category_page.page_title)
 
     for page in logic_page.get_pages_by_category(
-        wiki_db, category_page.page_title, ns=constants.CATEGORY_NS_INT):
+        wikidb, category_page.page_title, ns=constants.CATEGORY_NS_INT):
       seen.add(page.page_title)
       release = title_to_release.get(page.page_title)
-      if release is None or release.category != release_category:
+      if release is None or release.rel_0p5_category != release_category:
         logic_release.insert_or_update_release_data(
           wp10_session, page.page_title, release_category, page.cl_timestamp)
     wp10db.commit()
