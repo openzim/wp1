@@ -1,15 +1,9 @@
-from sqlalchemy import Column
-from sqlalchemy.dialects.mysql import BINARY
+import attr
 
-from lucky.wp10_db import Base
+@attr.s
+class Release:
+  table_name = 'releases'
 
-class Release(Base):
-  __tablename__ = 'releases'
-
-  article = Column('rel_article', BINARY(255), primary_key=True)
-  category = Column('rel_0p5_category', BINARY(63))
-  timestamp = Column('rel_0p5_timestamp', BINARY(20))
-
-  def __repr__(self):
-    return "<Release(value=%r, article=%r, timestamp=%r)>" % (
-      self.article, self.category, self.timestamp)
+  rel_article = attr.ib()
+  rel_0p5_category = attr.ib()
+  rel_0p5_timestamp = attr.ib()
