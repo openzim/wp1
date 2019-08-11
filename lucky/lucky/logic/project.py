@@ -16,7 +16,6 @@ from lucky.models.wp10.rating import Rating
 from lucky.wp10_db import connect as wp10_connect
 from lucky.wiki_db import connect as wiki_connect
 
-
 logger = logging.getLogger(__name__)
 
 config = get_conf()
@@ -32,12 +31,15 @@ def update_project_by_name(project_name):
   wp10db = wp10_connect()
   wikidb = wiki_connect()
 
-  project = logic_project.get_project_by_name(wp10db, project_name)
-  if not project:
-    logger.error('No project with name: %s', project_name)
-    return
-
-  update_project(wikidb, wp10db, project)
+  try:
+    project = logic_project.get_project_by_name(wp10db, project_name)
+    if not project:
+      logger.error('No project with name: %s', project_name)
+      return
+    update_project(wikidb, wp10db, project)
+  finally:
+    wp10db.close()
+    wikidb.close()
 
 
 def insert_or_update(wp10db, project):
