@@ -3,11 +3,18 @@ import os
 import pymysql
 import pymysql.cursors
 
+try:
+  from credentials import WP10_CREDS
+except ImportError:
+  raise ImportError('Could not find credentials module. Have you populated it '
+                    'based on credentials.py.example?')
+
 def connect():
-  return pymysql.connect(
-    host='tools.db.svc.eqiad.wmflabs',
-    db='s51114_enwp10',
-    read_default_file=os.path.expanduser('~/replica.my.cnf'),
-    charset=None,
-    use_unicode=False,
-    cursorclass=pymysql.cursors.DictCursor)
+  kwargs = {
+    'charset': None,
+    'use_unicode': False,
+    'cursorclass': pymysql.cursors.DictCursor,
+    **WP10_CREDS
+  }
+
+  return pymysql.connect(**kwargs)
