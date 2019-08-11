@@ -5,16 +5,18 @@ import pymysql.cursors
 
 try:
   from lucky.credentials import WIKI_CREDS
+
+  def connect():
+    kwargs = {
+      'charset': None,
+      'use_unicode': False,
+      'cursorclass': pymysql.cursors.SSDictCursor,
+      **WIKI_CREDS
+    }
+    return pymysql.connect(**kwargs)
+
 except ImportError:
-  raise ImportError('Could not find credentials module. Have you populated it '
-                    'based on credentials.py.example?')
-
-def connect():
-  kwargs = {
-    'charset': None,
-    'use_unicode': False,
-    'cursorclass': pymysql.cursors.SSDictCursor,
-    **WIKI_CREDS
-  }
-
-  return pymysql.connect(**kwargs)
+  # No creds, so return an empty connect method that will blow up. This is only
+  # to satisfy imports.
+  def connect():
+    pass
