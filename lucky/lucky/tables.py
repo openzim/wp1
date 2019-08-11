@@ -2,6 +2,7 @@ from collections import defaultdict
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
+from lucky.api import site
 from lucky.conf import get_conf
 from lucky.constants import LIST_URL
 from lucky.wp10_db import connect as wp10_connect
@@ -34,10 +35,10 @@ def get_global_categories():
     b'Start-Class':  150,
     b'Stub-Class':   100,
     b'List-Class':    80, 
-    assessed:        20,
-    NOT_A_CLASS:     11, 
+    assessed_class:   20,
+    NOT_A_CLASS:      11,
     b'Unknown-Class': 10,
-    unassessed_class: 0,
+    unassessed_class:  0,
   }
 
   sort_imp= {
@@ -45,9 +46,9 @@ def get_global_categories():
     b'High-Class':   300, 
     b'Mid-Class':    200,
     b'Low-Class':    100, 
-    NOT_A_CLASS:     11,
-    unknown_class:   10, 
-    unassessed_class: 0,
+    NOT_A_CLASS:      11,
+    unknown_class:    10,
+    unassessed_class:  0,
   };
   
   qual_labels = {};
@@ -56,7 +57,7 @@ def get_global_categories():
   for k in sort_qual.keys():
     qual_labels[k] = '{{%s}}' % k.decode('utf-8')
 
-  qual_labels[assessed] = "'''%s'''" % assessed
+  qual_labels[assessed_class] = "'''%s'''" % assessed.decode('utf-8')
 
   for k in sort_imp.keys():
     imp_labels[k] = '{{%s}}' % k.decode('utf-8')
@@ -87,7 +88,9 @@ def get_global_stats(wp10db):
 
 
 def generate_global_table_data(stats=None):
-  wp10db = wp10_connect()
+  wp10db = None
+  if stats is None:
+    wp10db = wp10_connect()
   try:
     if stats is None:
       stats = get_global_stats(wp10db)
@@ -114,6 +117,7 @@ def generate_global_table_data(stats=None):
     to_del = []
     for r in data.keys():
       if r not in cat['sort_qual']:
+        print(r)
         to_del.append(r)
     for r in to_del:
       del data[r]
@@ -122,19 +126,29 @@ def generate_global_table_data(stats=None):
                           reverse=True)
     ordered_rows = sorted(data.keys(), key=lambda x: cat['sort_qual'][x],
                           reverse=True)
+    idx = ordered_rows.index(b'Unassessed-Class')
+    ordered_rows = (ordered_rows[:idx] + [b'Assessed-Class'] +
+                    ordered_rows[idx:])
 
     col_totals = defaultdict(int)
     row_totals = defaultdict(int)
     total = 0
     for col in ordered_cols:
       for row in ordered_rows:
-        row_totals[row] += data[row][col]
-        col_totals[col] += data[row][col]
-        total += data[row][col]
+        d = data[row][col]
+        row_totals[row] += d
+        col_totals[col] += d
+        total += d
+
+    for col in ordered_cols:
+      d = col_totals[col] - data[b'Unassessed-Class'][col]
+      data[b'Assessed-Class'][col] = d
+      row_totals[b'Assessed-Class'] += d
 
     return {
-      'proj': None,
+      'project': None,
       'create_link': False, # Whether the values link to the web app.
+      'title': 'All rated articles by quality and importance',
       'data':  data,
       'ordered_cols': ordered_cols,
       'ordered_rows': ordered_rows,
@@ -145,20 +159,22 @@ def generate_global_table_data(stats=None):
       'row_labels': cat['qual_labels'],
     }
   finally:
-    wp10db.close()
+    if wp10db is not None:
+      wp10db.close()
 
 def upload_global_table(stats=None):
   table_data = generate_global_table_data(stats=stats)
   wikicode = create_wikicode(table_data)
-  print(wikicode)
-  
+  # return wikicode
+
+  page = site.pages['User:Audiodude/Test/WP_1.0_Global_Table']
+  page.save(wikicode, 'Next test table')
+  return wikicode
 
 def create_wikicode(table_data):
-  template = jinja_env.get_template('table.html.jinja2')
+  template = jinja_env.get_template('table.jinja2')
   display = {
     'LIST_URL': LIST_URL,
-    'title': 'Test Title Plz Ignore',
-    'project': table_data['proj'],
     # Number of columns plus one, plus a column for Total.
     'total_cols': len(table_data['ordered_cols']) + 2,
   }
