@@ -3,11 +3,20 @@ import os
 import pymysql
 import pymysql.cursors
 
-def connect():
-  return pymysql.connect(
-    host='tools.db.svc.eqiad.wmflabs',
-    db='s51114_enwp10',
-    read_default_file=os.path.expanduser('~/replica.my.cnf'),
-    charset=None,
-    use_unicode=False,
-    cursorclass=pymysql.cursors.DictCursor)
+try:
+  from lucky.credentials import WP10_CREDS
+
+  def connect():
+    kwargs = {
+      'charset': None,
+      'use_unicode': False,
+      'cursorclass': pymysql.cursors.DictCursor,
+      **WP10_CREDS
+    }
+    return pymysql.connect(**kwargs)
+except ImportError:
+  # No creds, so return an empty connect method that will blow up. This is only
+  # to satisfy imports.
+  def connect():
+    pass
+

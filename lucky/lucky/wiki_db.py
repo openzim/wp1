@@ -3,11 +3,20 @@ import os
 import pymysql
 import pymysql.cursors
 
-def connect():
-  return pymysql.connect(
-    db='enwiki_p',
-    host="enwiki.analytics.db.svc.eqiad.wmflabs",
-    read_default_file=os.path.expanduser("~/replica.my.cnf"),
-    charset=None,
-    use_unicode=False,
-    cursorclass=pymysql.cursors.SSDictCursor)
+try:
+  from lucky.credentials import WIKI_CREDS
+
+  def connect():
+    kwargs = {
+      'charset': None,
+      'use_unicode': False,
+      'cursorclass': pymysql.cursors.SSDictCursor,
+      **WIKI_CREDS
+    }
+    return pymysql.connect(**kwargs)
+
+except ImportError:
+  # No creds, so return an empty connect method that will blow up. This is only
+  # to satisfy imports.
+  def connect():
+    pass
