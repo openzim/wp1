@@ -19,6 +19,7 @@ jinja_env.filters['commas'] = commas
 config = get_conf()
 NOT_A_CLASS = config['NOT_A_CLASS'].encode('utf-8')
 
+
 def get_global_categories():
   assessed = b'Assessed';
   assessed_class = b'Assessed-Class';
@@ -162,14 +163,14 @@ def generate_global_table_data(stats=None):
     if wp10db is not None:
       wp10db.close()
 
+
 def upload_global_table(stats=None):
   table_data = generate_global_table_data(stats=stats)
   wikicode = create_wikicode(table_data)
-  # return wikicode
+  page_name = 'User:WP 1.0 bot/Tables/OverallArticles'
+  page = site.pages[page_name]
+  page.save(wikicode, 'Copying assessment table to wiki')
 
-  page = site.pages['User:Audiodude/Test/WP_1.0_Global_Table']
-  page.save(wikicode, 'Next test table')
-  return wikicode
 
 def create_wikicode(table_data):
   template = jinja_env.get_template('table.jinja2')
