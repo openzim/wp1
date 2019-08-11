@@ -1,5 +1,5 @@
 {% from 'format.jinja2' import format with context -%}
-{| class="ratingstable wikitable plainlinks"  style="text-align: right; margin-left: auto; margin-right: auto;"
+{| class="ratingstable wikitable plainlinks"  style="text-align: right;{%if center_table %} margin-left: auto; margin-right: auto;{% endif %}"
 |- 
 ! colspan="{{total_cols}}" class="ratingstabletitle" | {{title}}
 |-
@@ -20,12 +20,12 @@
 ||
 {% endif -%}
 {%- endfor -%}
-|| {{ format(row_totals[row], project, None, None) }}
+|| {{ format(row_totals[row], project, row, None) }}
 {% endfor -%}
 |-
 | style="text-align: center;" | '''Total'''
 {% for col in ordered_cols -%}
-|| {{ format(col_totals[col], project, None, None) }}
+|| {{ format(col_totals[col], project, None, col) }}
 {% endfor -%}
 || {{ format(total, project, None, None) }}
 |-
