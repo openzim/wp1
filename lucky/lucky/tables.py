@@ -258,7 +258,7 @@ def generate_global_table_data(stats=None):
   try:
     if stats is None:
       stats = get_global_stats(wp10db)
-    cat = get_global_categories()
+    categories = get_global_categories()
 
     return generate_table_data(stats, categories, {
       'project': None,
