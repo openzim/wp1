@@ -3,8 +3,9 @@ import re
 from redis import Redis
 from rq import Queue
 
+from lucky import constants
+from lucky import tables
 from lucky.conf import get_conf
-import lucky.constants as constants
 from lucky.logic import page as logic_page, project as logic_project
 from lucky.wiki_db import connect as wiki_connect
 
@@ -38,13 +39,17 @@ def project_names_to_update(wikidb):
 
 
 def main():
-  q = Queue(connection=Redis())
+  update_q = Queue('update', connection=Redis(host='redis'))
+  upload_q = Queue('upload', connection=Redis(host='redis')
 
   wikidb = wiki_connect()
   for project_name in project_names_to_update(wikidb):
-    print('Enqueuing %s' % project_name)
-    q.enqueue(logic_project.update_project_by_name, project_name)
-
+    print('Enqueuing update %s' % project_name)
+    update_job = update_q.enqueue(
+      logic_project.update_project_by_name, project_name)
+    print('Enqueuing upload (dependent) %s' % project_name)
+    upload_q.enqueue(
+      tables.upload_project_table, project_name, depends_on=update_job)
 
 if __name__ == '__main__':
   main()

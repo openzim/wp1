@@ -32,7 +32,7 @@ def update_project_by_name(project_name):
   wikidb = wiki_connect()
 
   try:
-    project = logic_project.get_project_by_name(wp10db, project_name)
+    project = get_project_by_name(wp10db, project_name)
     if not project:
       logger.error('No project with name: %s', project_name)
       return
