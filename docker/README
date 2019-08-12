@@ -1,0 +1,7 @@
+# Wikipedia 1.0 bot
+
+WP1 bot has been dockerized in a few images:
+- "update" image is responsible for gathering the WP1 evaluation data to the DB.
+- "upload" image is responsible for update Wikipedia pages to
+provides statistics and reports to Wikipedia projects participants.
+
