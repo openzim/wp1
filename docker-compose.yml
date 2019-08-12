@@ -2,7 +2,7 @@ version: '3.5'
 services:
 
   workers:
-    image: wp1bot-workers
+    image: openzim/wp1bot-workers
     container_name: wp1bot-workers
     volumes:
       - /data/wp1bot:/usr/src/app/lucky
