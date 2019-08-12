@@ -1,0 +1,20 @@
+version: '3.5'
+services:
+
+  workers:
+    image: openzim/wp1bot-workers
+    container_name: wp1bot-workers
+    volumes:
+      - /data/wp1bot:/usr/src/app/lucky
+    links:
+      - redis
+    restart: always
+    depends_on:
+      - redis
+
+  redis:
+    image: redis
+    container_name: wp1bot-redis
+    expose:
+      - 6379
+    restart: always
