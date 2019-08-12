@@ -5,7 +5,7 @@ services:
     image: openzim/wp1bot-workers
     container_name: wp1bot-workers
     volumes:
-      - /data/wp1bot:/usr/src/app/lucky
+      - /data/wp1bot/credentials.py:/usr/src/app/lucky/credentials.py
     links:
       - redis
     restart: always
