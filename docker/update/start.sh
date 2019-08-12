@@ -8,4 +8,5 @@ echo "Install Cron to daily schedule update jobs"
 } > /etc/cron.daily/schedule_updates && chmod +x /etc/cron.daily/schedule_updates
 
 # Run the workers
-# TODO
+echo "Starting supervisord in the foreground"
+supervisord -c /usr/src/app/supervisord.conf -n
