@@ -1,9 +1,9 @@
 version: '3.5'
 services:
 
-  update:
-    image: wp1bot-update
-    container_name: wp1bot-update
+  workers:
+    image: wp1bot-workers
+    container_name: wp1bot-workers
     volumes:
       - /data/wp1bot:/usr/src/app/lucky
     links:
