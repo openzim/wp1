@@ -1,0 +1,20 @@
+version: '3.5'
+services:
+
+  update:
+    image: wp1bot-update
+    container_name: wp1bot-update
+    volumes:
+      - /data/wp1bot:/usr/src/app/lucky
+    links:
+      - redis
+    restart: always
+    depends_on:
+      - redis
+
+  redis:
+    image: redis
+    container_name: wp1bot-redis
+    expose:
+      - 6379
+    restart: always
