@@ -1,7 +1,10 @@
 {% macro format(value, project=None, quality=None, importance=None) -%}
   {%- if create_link -%}
     {%- call bold(quality, importance) -%}
-      [{{LIST_URL}} {{ value|commas }}]
+      [{{LIST_URL}}?run=yes
+      {%- if project %}&projecta={{project|urlencode}}{% endif -%}
+      {%- if importance %}&importance={{importance.decode('utf-8')|urlencode}}{% endif -%}
+      {%- if quality %}&quality={{quality.decode('utf-8')|urlencode}}{% endif %} {{ value|commas }}]
     {%- endcall -%}
   {%- else -%}
     {%- call bold(quality, importance) %}{{ value|commas }}{% endcall -%}
@@ -9,7 +12,7 @@
 {%- endmacro %}
 
 {% macro bold(quality, importance) -%}
-  {% if not quality and not importance -%}
+  {% if not quality or not importance -%}
     '''{{ caller() }}'''
   {%- else -%}
     {{ caller() }}
