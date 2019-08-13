@@ -66,7 +66,7 @@ def get_global_categories():
     NOT_A_CLASS:      11,
     b'Unknown-Class': 10,
     UNASSESSED_CLASS:  0,
-  };
+  }
   
   qual_labels, imp_labels = labels_for_classes(sort_qual, sort_imp)
 
