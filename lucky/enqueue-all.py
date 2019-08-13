@@ -1,4 +1,5 @@
 import re
+import sys
 
 from redis import Redis
 from rq import Queue
@@ -39,6 +40,10 @@ def project_names_to_update(wikidb):
 
 
 def main():
+  upload_only = False
+  if len(sys.argv) > 1 and sys.argv[1] == '--upload-only':
+    upload_only = True
+
   update_q = Queue('update', connection=Redis(host='redis'))
   upload_q = Queue('upload', connection=Redis(host='redis'))
 
@@ -48,12 +53,17 @@ def main():
 
   wikidb = wiki_connect()
   for project_name in project_names_to_update(wikidb):
-    print('Enqueuing update %s' % project_name)
-    update_job = update_q.enqueue(
-      logic_project.update_project_by_name, project_name)
-    print('Enqueuing upload (dependent) %s' % project_name)
-    upload_q.enqueue(
-      tables.upload_project_table, project_name, depends_on=update_job)
+    if upload_only:
+      print('Enqueuing upload (dependent) %s' % project_name)
+      upload_q.enqueue(
+        tables.upload_project_table, project_name)
+    else:
+      print('Enqueuing update %s' % project_name)
+      update_job = update_q.enqueue(
+        logic_project.update_project_by_name, project_name)
+      print('Enqueuing upload (dependent) %s' % project_name)
+      upload_q.enqueue(
+        tables.upload_project_table, project_name, depends_on=update_job)
 
 if __name__ == '__main__':
   main()
