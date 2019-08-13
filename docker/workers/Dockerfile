@@ -10,5 +10,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends cron
 RUN pip3 install -r app/requirements.txt
 
 # Start
-COPY docker/update/start.sh /usr/local/bin/start.sh
+COPY docker/workers/start.sh /usr/local/bin/start.sh
 CMD start.sh
