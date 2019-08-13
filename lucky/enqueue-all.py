@@ -40,7 +40,11 @@ def project_names_to_update(wikidb):
 
 def main():
   update_q = Queue('update', connection=Redis(host='redis'))
-  upload_q = Queue('upload', connection=Redis(host='redis')
+  upload_q = Queue('upload', connection=Redis(host='redis'))
+
+  if len(update_q) != 0 or len(upload_q) != 0:
+    print('Queues are not empty. Refusing to add more work.')
+    return
 
   wikidb = wiki_connect()
   for project_name in project_names_to_update(wikidb):
