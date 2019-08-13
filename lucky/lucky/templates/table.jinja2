@@ -29,6 +29,6 @@
 {% endfor -%}
 || {{ format(total, project, None, None) }}
 |-
-{{'{{'}}User:WP 1.0 bot/WikiWork|project={{project}}|export=table{{'}}'}}
+{{'{{'}}User:WP 1.0 bot/WikiWork|project={{project.decode('utf-8')}}|export=table{{'}}'}}
 |-
 |}

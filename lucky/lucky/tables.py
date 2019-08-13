@@ -239,7 +239,7 @@ def generate_project_table_data(project_name, stats=None, categories=None):
       categories = get_project_categories(wp10db, project_name)
 
     title = ('%s articles by quality and importance' %
-             project_name.replace('_', ' '))
+             project_name.decode('utf-8').replace('_', ' '))
     return generate_table_data(stats, categories, {
       'project': project_name,
       'create_link': True,
