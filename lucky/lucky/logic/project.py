@@ -31,6 +31,12 @@ def update_project_by_name(project_name):
   wp10db = wp10_connect()
   wikidb = wiki_connect()
 
+  logging.basicConfig(level=logging.DEBUG)
+  logging.getLogger('mwclient').setLevel(logging.CRITICAL)
+  logging.getLogger('urllib3').setLevel(logging.CRITICAL)
+  logging.getLogger('requests_oauthlib').setLevel(logging.CRITICAL)
+  logging.getLogger('oauthlib').setLevel(logging.CRITICAL)
+
   try:
     project = get_project_by_name(wp10db, project_name)
     if not project:
