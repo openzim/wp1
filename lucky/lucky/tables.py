@@ -272,6 +272,8 @@ def generate_global_table_data(stats=None):
 
 
 def upload_project_table(project_name, stats=None, categories=None):
+  logging.basicConfig(level=logging.DEBUG)
+
   logger.info('Getting table data for project: %s', project_name)
   table_data = generate_project_table_data(
     project_name, stats=stats, categories=categories)
@@ -284,6 +286,8 @@ def upload_project_table(project_name, stats=None, categories=None):
 
 
 def upload_global_table(stats=None):
+  logging.basicConfig(level=logging.DEBUG)
+
   logger.info('Getting table data for: global table')
   table_data = generate_global_table_data(stats=stats)
   wikicode = create_wikicode(table_data)
