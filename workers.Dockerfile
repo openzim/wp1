@@ -1,1 +1,1 @@
-docker/update/Dockerfile
+docker/workers/Dockerfile
