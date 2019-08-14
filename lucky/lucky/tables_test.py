@@ -186,4 +186,6 @@ class TablesDbTest(BaseWpOneDbTest):
       {'n': 1, 'q': b'A-Class', 'i': b'Mid-Class', 'project': b'Test Project'}
     ]
     actual = tables.get_project_stats(self.wp10db, 'Test Project')
+    expected = [tuple(x.items()) for x in expected]
+    actual = [tuple(x.items()) for x in actual]
     self.assertEqual(sorted(expected), sorted(actual))
