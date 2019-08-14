@@ -274,13 +274,15 @@ def generate_global_table_data(stats=None):
 def upload_project_table(project_name, stats=None, categories=None):
   logging.basicConfig(level=logging.DEBUG)
 
-  logger.info('Getting table data for project: %s', project_name)
+  logger.info('Getting table data for project: %s',
+              project_name.decode('utf-8'))
   table_data = generate_project_table_data(
     project_name, stats=stats, categories=categories)
   wikicode = create_wikicode(table_data)
-  page_name = 'User:WP 1.0 bot/Tables/Project/%s' % project_name
+  page_name = 'User:WP 1.0 bot/Tables/Project/%s' % project_name.decode('utf-8')
   page = site.pages[page_name]
-  logger.info('Uploading wikicode to Wikipedia: %s', project_name)
+  logger.info('Uploading wikicode to Wikipedia: %s',
+              project_name.decode('utf-8'))
   page.save(wikicode, 'Copying assessment table to wiki.')
   return wikicode
 
