@@ -1,7 +1,8 @@
 import sys
 
 from redis import Redis
-from rq import Connection, Worker
+from rq import Connection, Queue
+from rq_retry import RetryWorker
 
 # Preload API so login is only done once
 import lucky.api
@@ -10,5 +11,8 @@ conn = Redis(host='redis')
 with Connection(conn):
     qs = sys.argv[1:] or ['default']
 
-    w = Worker(qs)
+    # Retry failed jobs after 30 seconds, then 180 seconds.
+    w = RetryWorker(qs, retry_config={'delays': [30,180]})
+    # Workaround for apparent bug in RetryWorker.
+    w.failed_queue = Queue('failed', connection=conn)
     w.work()
