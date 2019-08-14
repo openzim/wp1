@@ -4,12 +4,8 @@ from redis import Redis
 from rq import Connection, Queue
 from rq_retry import RetryWorker
 
-# Preload API so login is only done once.
+# Preload API so login is only done once
 import lucky.api
-
-# Preload connections to databases, prefork.
-import lucky.wp10_db
-import lucky.wiki_db
 
 conn = Redis(host='redis')
 with Connection(conn):
