@@ -10,7 +10,8 @@ def main():
   update_q = Queue('update', connection=Redis(host='redis'))
   upload_q = Queue('upload', connection=Redis(host='redis'))
 
-  project_names = sys.argv[1:]
+  # Job methods expect project names as bytes.
+  project_names = [n.encode('utf-8') for n in sys.argv[1:]]
   print(project_names)
 
   for project_name in project_names:
