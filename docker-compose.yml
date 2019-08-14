@@ -12,6 +12,15 @@ services:
     depends_on:
       - redis
 
+  web:
+    image: wp1bot-web
+    container_name: wp1bot-web
+    links:
+      - redis
+    restart: always
+    depends_on:
+      - redis
+
   redis:
     image: redis
     container_name: wp1bot-redis
