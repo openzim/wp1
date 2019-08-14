@@ -5,7 +5,7 @@ LABEL maintainer="kiwix"
 
 # Python app
 WORKDIR /usr/src
-COPY lucky app
+COPY . app
 RUN apt-get update && apt-get install -y --no-install-recommends cron
 RUN pip3 install -r app/requirements.txt
 
