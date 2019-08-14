@@ -8,7 +8,7 @@ from lucky.conf import get_conf
 from lucky.constants import LIST_URL
 from lucky.models.wp10.category import Category
 from lucky.models.wp10.rating import Rating
-from lucky.wp10_db import connection as wp10db
+from lucky.wp10_db import connect as wp10_connect
 
 def commas(n):
   return "{:,d}".format(n)
@@ -79,7 +79,6 @@ def get_global_categories():
 
 
 def get_global_stats(wp10db):
-  wp10db.ping()
   with wp10db.cursor() as cursor:
     cursor.execute('''
       SELECT count(distinct a_article) as n,
@@ -95,7 +94,6 @@ def get_global_stats(wp10db):
 
 
 def get_project_stats(wp10db, project_name):
-  wp10db.ping()
   with wp10db.cursor() as cursor:
     cursor.execute('''
       SELECT count(r_article) as n, r_quality as q, r_importance as i,
@@ -107,7 +105,6 @@ def get_project_stats(wp10db, project_name):
 
 
 def db_project_categories(wp10db, project_name):
-  wp10db.ping()
   with wp10db.cursor() as cursor:
     cursor.execute('SELECT c_type, c_rating, c_ranking, c_category FROM ' +
                    Category.table_name + ' WHERE c_project = %s', (project_name,))
@@ -229,34 +226,49 @@ def generate_table_data(stats, categories, table_overrides=None):
 
 
 def generate_project_table_data(project_name, stats=None, categories=None):
-  if stats is None:
-    stats = get_project_stats(wp10db, project_name)
-    print(repr(stats))
+  wp10db = None
+  if stats is None or categories is None:
+    wp10db = wp10_connect()
 
-  if categories is None:
-    categories = get_project_categories(wp10db, project_name)
+  try:
+    if stats is None:
+      stats = get_project_stats(wp10db, project_name)
+      print(repr(stats))
 
-  title = ('%s articles by quality and importance' %
-           project_name.decode('utf-8').replace('_', ' '))
-  return generate_table_data(stats, categories, {
-    'project': project_name,
-    'create_link': True,
-    'title': title,
-    'center_table': False,
-  })
+    if categories is None:
+      categories = get_project_categories(wp10db, project_name)
+
+    title = ('%s articles by quality and importance' %
+             project_name.decode('utf-8').replace('_', ' '))
+    return generate_table_data(stats, categories, {
+      'project': project_name,
+      'create_link': True,
+      'title': title,
+      'center_table': False,
+    })
+  finally:
+    if wp10db is not None:
+      wp10db.close()
 
 
 def generate_global_table_data(stats=None):
+  wp10db = None
   if stats is None:
-    stats = get_global_stats(wp10db)
-  categories = get_global_categories()
+    wp10db = wp10_connect()
+  try:
+    if stats is None:
+      stats = get_global_stats(wp10db)
+    categories = get_global_categories()
 
-  return generate_table_data(stats, categories, {
-    'project': None,
-    'create_link': False, # Whether the values link to the web app.
-    'title': 'All rated articles by quality and importance',
-    'center_table': True,
-  })
+    return generate_table_data(stats, categories, {
+      'project': None,
+      'create_link': False, # Whether the values link to the web app.
+      'title': 'All rated articles by quality and importance',
+      'center_table': True,
+    })
+  finally:
+    if wp10db is not None:
+      wp10db.close()
 
 
 def upload_project_table(project_name, stats=None, categories=None):
