@@ -9,6 +9,7 @@ from wp1.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP_WIKI
 from wp1.logic import project as logic_project
 from wp1.models.wiki.page import Page
 from wp1.models.wp10.category import Category
+from wp1.models.wp10.log import Log
 from wp1.models.wp10.project import Project
 from wp1.models.wp10.rating import Rating
 
@@ -36,6 +37,10 @@ def _get_all_ratings(wp10db):
     cursor.execute('SELECT * FROM ' + Rating.table_name)
     return [Rating(**db_rating) for db_rating in cursor.fetchall()]
 
+def _get_all_logs(wp10db):
+  with wp10db.cursor() as cursor:
+    cursor.execute('SELECT * FROM logging')
+    return [Log(**db_log) for db_log in cursor.fetchall()]
 
 class UpdateCategoryTest(BaseWpOneDbTest):
   def setUp(self):
@@ -480,6 +485,66 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
     for r in ratings:
       self.assertEqual(q_page_to_rating[r.r_article], r.r_quality)
       self.assertEqual(i_page_to_rating[r.r_article], r.r_importance)
+
+  def test_new_rating_quality(self):
+    self._insert_pages(self.quality_pages)
+
+    logic_project.update_project_assessments(
+      self.wikidb, self.wp10db, self.project, {})
+
+    ratings = _get_all_ratings(self.wp10db)
+    self.assertNotEqual(0, len(ratings))
+
+    q_pages = self.quality_pages[6:]
+    expected_titles = set(p[1] for p in q_pages)
+    actual_titles = set(r.r_article for r in ratings)
+    self.assertEqual(expected_titles, actual_titles)
+
+    q_page_to_rating = dict((p[1], p[3]) for p in q_pages)
+    for r in ratings:
+      self.assertEqual(q_page_to_rating[r.r_article], r.r_quality)
+
+    logs = _get_all_logs(self.wp10db)
+    self.assertEqual(len(q_pages), len(logs))
+
+    actual_log_titles = set(l.l_article for l in logs)
+    self.assertEqual(expected_titles, actual_log_titles)
+
+    for l in logs:
+      self.assertEqual(NOT_A_CLASS.encode('utf-8'), l.l_old)
+      self.assertEqual(q_page_to_rating[l.l_article], l.l_new)
+      self.assertEqual(b'Test', l.l_project)
+      self.assertEqual(0, l.l_namespace)
+
+  def test_new_rating_importance(self):
+    self._insert_pages(self.importance_pages)
+
+    logic_project.update_project_assessments(
+      self.wikidb, self.wp10db, self.project, {})
+
+    ratings = _get_all_ratings(self.wp10db)
+    self.assertNotEqual(0, len(ratings))
+
+    i_pages = self.importance_pages[4:]
+    expected_titles = set(p[1] for p in i_pages)
+    actual_titles = set(r.r_article for r in ratings)
+    self.assertEqual(expected_titles, actual_titles)
+
+    i_page_to_rating = dict((p[1], p[3]) for p in i_pages)
+    for r in ratings:
+      self.assertEqual(i_page_to_rating[r.r_article], r.r_importance)
+
+    logs = _get_all_logs(self.wp10db)
+    self.assertEqual(len(i_pages), len(logs))
+
+    actual_log_titles = set(l.l_article for l in logs)
+    self.assertEqual(expected_titles, actual_log_titles)
+
+    for l in logs:
+      self.assertEqual(NOT_A_CLASS.encode('utf-8'), l.l_old)
+      self.assertEqual(i_page_to_rating[l.l_article], l.l_new)
+      self.assertEqual(b'Test', l.l_project)
+      self.assertEqual(0, l.l_namespace)
 
   @patch('wp1.logic.api.page.site')
   def test_not_seen_quality(self, patched_site):

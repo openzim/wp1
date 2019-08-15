@@ -217,6 +217,9 @@ def update_project_assessments_by_kind(
       else:
         # Add the newly created rating.
         logic_rating.insert_or_update(wp10db, rating)
+        logic_rating.add_log_for_rating(
+          wp10db, rating, kind, NOT_A_CLASS)
+
       n += 1
       if n >= MAX_ARTICLES_BEFORE_COMMIT:
         wp10db.ping()

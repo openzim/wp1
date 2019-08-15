@@ -17,7 +17,7 @@
 {%- if data[row][col] and data[row][col] > 0 -%}
 || {{ format(data[row][col], project, row, col) }}
 {% else -%}
-||
+|| 
 {% endif -%}
 {%- endfor -%}
 || {{ format(row_totals[row], project, row, None) }}
