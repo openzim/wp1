@@ -17,5 +17,4 @@ CMD echo "0 0  * * * root /usr/bin/flock -w 0 /dev/shm/enqueue-all.cron.lock    
 CMD echo "0 23 * * * root /usr/bin/flock -w 0 /dev/shm/enqueue-global.cron.lock python /usr/src/app/enqueue-global.py > /dev/shm/enqueue-global.cron.log 2>&1" > /etc/cron.d/enqueue-global
 
 # Start
-COPY docker/workers/start.sh /usr/local/bin/start.sh
-CMD start.sh
+CMD cron && supervisord -c /usr/src/app/supervisord.conf -n
