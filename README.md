@@ -1,6 +1,14 @@
-# WP1 bot
+# Wikipedia 1.0 engine
 
-This directory contains the code of WP1 bot.
+This directory contains the code of Wikipedia 1.0 supporting
+software. More information about the Wikipedia 1.0 project can be
+found [on the Wikipedia in
+English](https://en.wikipedia.org/wiki/Wikipedia:Version_1.0_Editorial_Team).
+
+[![Build Status](https://travis-ci.org/openzim/wikimedia_wp1_bot.svg?branch=master)](https://travis-ci.org/openzim/wikimedia_wp1_bot)
+[![codecov](https://codecov.io/gh/openzim/wikimedia_wp1_bot/branch/master/graph/badge.svg)](https://codecov.io/gh/openzim/wikimedia_wp1_bot)
+[![CodeFactor](https://www.codefactor.io/repository/github/openzim/wikimedia_wp1_bot/badge)](https://www.codefactor.io/repository/github/openzim/wikimedia_wp1_bot)
+[![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 
 ## Contents
 
@@ -10,77 +18,85 @@ tables). The library code itself isn't directly runnable, but instead
 is loaded and run through scripts in the top level directory, such as
 `update.py`.
 
-`requirements.txt` is a list of python dependencies in pip format that need to be
-installed in a virtual env in order to run the code in this directory.
+`requirements.txt` is a list of python dependencies in pip format that
+need to be installed in a virtual env in order to run the code in this
+directory.
 
-The `wp10_test.*.sql` and `wiki_test.*.sql` files are rough approximations of the
-schemas of the two databases that the library interfaces with. They are used for unit
-testing.
+The `wp10_test.*.sql` and `wiki_test.*.sql` files are rough
+approximations of the schemas of the two databases that the library
+interfaces with. They are used for unit testing.
 
 ## Installation
 
-This code is targetted to and tested on Python 3, specifically Python 3.4.3 which is the
-version that was available on toolforge at the time it was written. It may work
+This code is targetted to and tested on Python 3. It may work
 intermittently with Python 2.7, but that is not recommended.
 
 ### Creating your virtualenv
 
-With Python 3, creating a virtualenv is a single easy command. It is recommmended that you
-run this command in this directory:
-
-`$ python3 -m venv venv`
-
-If you are on wikimedia toolforge and get the following message:
-
-`The virtual environment was not created successfully because ensurepip is not
-available.`
-
-Try running in a kubernetes session first:
-
-`$ webservice --backend=kubernetes python shell`
+With Python 3, creating a virtualenv is a single easy command. It is
+recommmended that you run this command in this directory:
+```bash
+python3 -m venv venv ```
 
 ### Activating your virtualenv
 
 To activate your virtualenv, run:
-
-`$ source venv/bin/activate`
+```bash
+source venv/bin/activate
+```
 
 You should see your prompt change, with a `(venv)` appended to the front.
 
 ### Installing requirements
 
-To install the requirements, make sure you are in your virtualenv as explained above, then
-use the following command:
-
-`$ pip3 install -r requirements.txt`
+To install the requirements, make sure you are in your virtualenv as
+explained above, then use the following command:
+```bash
+pip3 install -r requirements.txt
+```
 
 ### Running the tests
 
-The tests expect a localhost MySQL instance on the default port, with a user of 'root' and no password. You also need two databases: `enwp10_test` and `enwikip_test`. They can use default settings and be empty.
+The tests expect a localhost MySQL instance on the default port, with
+a user of 'root' and no password. You also need two databases:
+`enwp10_test` and `enwikip_test`. They can use default settings and be
+empty.
 
 If you have that, and you've already installed the requirements above, you should be able to simply run:
+```bash
+nosetests
+```
 
-`$ nosetests`
-
-From this directory, to run the tests. If you'd like to use a different MySQL user or non-default password for the tests, simply edit `_setup_wp_one_db` and `_setup_wp_one_db` in `base_db_test.py`
+From this directory, to run the tests. If you'd like to use a
+different MySQL user or non-default password for the tests, simply
+edit `_setup_wp_one_db` and `_setup_wp_one_db` in `base_db_test.py`
 
 ### Populating the credentials module
 
-The script needs access to the enwiki_p replica database, as well as its own toolsdb
-application database. The credentials for these are on toolforge in the replica.my.cnf file
-in the home directory. They need to be formatted in a way that is consumable by the library
-and pymysql. Look at `credentials.py.example` and create a copy called
-`credentials.py` with the relevant information filled in. You will also need english
-wikipedia API credentials.
+The script needs access to the enwiki_p replica database, as well as
+its own toolsdb application database. The credentials for these are on
+toolforge in the replica.my.cnf file in the home directory. They need
+to be formatted in a way that is consumable by the library and
+pymysql. Look at `credentials.py.example` and create a copy called
+`credentials.py` with the relevant information filled in. You will
+also need english wikipedia API credentials.
 
 ## Running an application script
 
 To run a script, you can simply run:
+```bash
+python3 update.py
+```
 
-`$ python3 update.py`
+From the appropriate directory. However, this assumes that you have
+followed the steps above and are inside the appropriate
+virtualenv. For far-flung invocations of this script, you will need to
+reference the python3 wrapper script in the virtualenv:
+```bash
+wikimedia_wp1_bot/venv/bin/python3 wikimedia_wp1_bot/update.py
+```
 
-From the appropriate directory. However, this assumes that you have followed the steps above
-and are inside the appropriate virtualenv. For far-flung invocations of this script, you will
-need to reference the python3 wrapper script in the virtualenv:
+License
+-------
 
-`$ wikimedia_wp1_bot/venv/bin/python3 wikimedia_wp1_bot/update.py`
+GPLv2 or later, see [LICENSE](LICENSE) for more details.
