@@ -9,4 +9,3 @@ try:
   site.login(API_CREDS['user'], API_CREDS['pass'])
 except ImportError:
   site = None
-

@@ -3,6 +3,7 @@ import sys
 from redis import Redis
 from rq import Queue
 
+from wp1 import constants
 import wp1.logic.project as logic_project
 from wp1 import tables
 
@@ -20,7 +21,8 @@ def main():
       logic_project.update_project_by_name, project_name)
     print('Enqueuing upload (dependent) %s' % project_name)
     upload_q.enqueue(
-      tables.upload_project_table, project_name, depends_on=update_job)
+      tables.upload_project_table, project_name, depends_on=update_job,
+      timeout=constants.JOB_TIMEOUT)
 
 
 if __name__ == '__main__':

@@ -56,14 +56,16 @@ def main():
     if upload_only:
       print('Enqueuing upload (dependent) %s' % project_name)
       upload_q.enqueue(
-        tables.upload_project_table, project_name)
+        tables.upload_project_table, project_name,
+        timeout=constants.JOB_TIMEOUT)
     else:
       print('Enqueuing update %s' % project_name)
       update_job = update_q.enqueue(
         logic_project.update_project_by_name, project_name)
       print('Enqueuing upload (dependent) %s' % project_name)
       upload_q.enqueue(
-        tables.upload_project_table, project_name, depends_on=update_job)
+        tables.upload_project_table, project_name, depends_on=update_job,
+        timeout=constants.JOB_TIMEOUT)
 
 if __name__ == '__main__':
   main()
