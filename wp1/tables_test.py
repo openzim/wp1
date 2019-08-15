@@ -4,6 +4,7 @@ from unittest.mock import patch
 import attr
 
 from wp1 import tables
+from wp1 import templates
 from wp1.base_db_test import BaseWpOneDbTest
 from wp1.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP_WIKI, TS_FORMAT
 from wp1.models.wp10.category import Category
@@ -37,11 +38,11 @@ class TablesCategoryTest(unittest.TestCase):
   }
 
   def test_commas(self):
-    actual = tables.commas(1200300)
+    actual = templates.commas(1200300)
     self.assertEqual('1,200,300', actual)
 
   def test_commas_small_number(self):
-    actual = tables.commas(123)
+    actual = templates.commas(123)
     self.assertEqual('123', actual)
 
   def test_labels_for_classes(self):
