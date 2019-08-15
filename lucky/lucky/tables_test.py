@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 import attr
 
@@ -241,6 +242,52 @@ class TablesDbTest(BaseWpOneDbTest):
         'c_type': b'quality'},
     ]
 
+  stats = [
+    {'n': 2, 'q': b'C-Class', 'i': b'Low-Class'},
+    {'n': 1, 'q': b'C-Class', 'i': b'Unknown-Class'},
+    {'n': 3, 'q': b'Start-Class', 'i': b'High-Class'},
+    {'n': 6, 'q': b'Start-Class', 'i': b'Low-Class'},
+      {'n': 1, 'q': b'Start-Class', 'i': b'Mid-Class'},
+    {'n': 1, 'q': b'Start-Class', 'i': b'Unknown-Class'},
+    {'n': 3, 'q': b'Stub-Class', 'i': b'Low-Class'},
+    {'n': 1, 'q': b'Stub-Class', 'i': b'Unknown-Class'},
+      {'n': 2, 'q': b'Unassessed-Class', 'i': b'Unknown-Class'}
+  ]
+
+  sort_imp = {
+    b'High-Class': 300,
+    b'Low-Class': 100,
+    b'Mid-Class': 200,
+    b'NA-Class': 25,
+    b'NotA-Class': 21,
+    b'Top-Class': 400,
+    b'Unknown-Class': 0
+  }
+
+  sort_qual = {
+    b'A-Class': 425,
+    b'B-Class': 300,
+    b'Book-Class': 55,
+    b'C-Class': 225,
+    b'Category-Class': 50,
+    b'Disambig-Class': 48,
+    b'FA-Class': 500,
+    b'FL-Class': 480,
+    b'FM-Class': 460,
+    b'File-Class': 46,
+    b'GA-Class': 400,
+    b'Image-Class': 47,
+    b'List-Class': 80,
+    b'NA-Class': 25,
+    b'NotA-Class': 21,
+    b'Portal-Class': 45,
+    b'Project-Class': 44,
+    b'Redirect-Class': 43,
+    b'Start-Class': 150,
+    b'Stub-Class': 100,
+    b'Template-Class': 40,
+    b'Unassessed-Class': 0
+  }
 
   def _insert_ratings(self):
     for r in self.ratings:
@@ -288,19 +335,8 @@ class TablesDbTest(BaseWpOneDbTest):
     self._setup_project_categories()
 
   def test_get_global_stats(self):
-    expected = [
-      {'n': 2, 'q': b'C-Class', 'i': b'Low-Class'},
-      {'n': 1, 'q': b'C-Class', 'i': b'Unknown-Class'},
-      {'n': 3, 'q': b'Start-Class', 'i': b'High-Class'},
-      {'n': 6, 'q': b'Start-Class', 'i': b'Low-Class'},
-      {'n': 1, 'q': b'Start-Class', 'i': b'Mid-Class'},
-      {'n': 1, 'q': b'Start-Class', 'i': b'Unknown-Class'},
-      {'n': 3, 'q': b'Stub-Class', 'i': b'Low-Class'},
-      {'n': 1, 'q': b'Stub-Class', 'i': b'Unknown-Class'},
-      {'n': 2, 'q': b'Unassessed-Class', 'i': b'Unknown-Class'}
-    ]
     actual = tables.get_global_stats(self.wp10db)
-    expected = [tuple(x.items()) for x in expected]
+    expected = [tuple(x.items()) for x in self.stats]
     actual = [tuple(x.items()) for x in actual]
     self.assertEqual(expected, actual)
 
@@ -392,52 +428,14 @@ class TablesDbTest(BaseWpOneDbTest):
           '{{Unassessed-Class|category=Category:Unassessed_Catholicism_articles}}',
         b'Unknown-Class':
           '{{Unknown-Class|category=Category:Unknown-importance_Catholicism_articles}}'},
-      'sort_imp': {b'High-Class': 300,
-                   b'Low-Class': 100,
-                   b'Mid-Class': 200,
-                   b'NA-Class': 25,
-                   b'NotA-Class': 21,
-                   b'Top-Class': 400,
-                   b'Unknown-Class': 0},
-      'sort_qual': {b'A-Class': 425,
-                    b'B-Class': 300,
-                    b'Book-Class': 55,
-                    b'C-Class': 225,
-                    b'Category-Class': 50,
-                    b'Disambig-Class': 48,
-                    b'FA-Class': 500,
-                    b'FL-Class': 480,
-                    b'FM-Class': 460,
-                    b'File-Class': 46,
-                    b'GA-Class': 400,
-                    b'Image-Class': 47,
-                    b'List-Class': 80,
-                    b'NA-Class': 25,
-                    b'NotA-Class': 21,
-                    b'Portal-Class': 45,
-                    b'Project-Class': 44,
-                    b'Redirect-Class': 43,
-                    b'Start-Class': 150,
-                    b'Stub-Class': 100,
-                    b'Template-Class': 40,
-                    b'Unassessed-Class': 0}
+      'sort_imp': self.sort_imp,
+      'sort_qual': self.sort_qual,
     }
     actual = tables.get_project_categories(self.wp10db, b'Catholicism')
 
     self.assertEqual(expected, actual)
 
   def test_data_for_stats(self):
-    stats = [
-      {'n': 2, 'q': b'C-Class', 'i': b'Low-Class'},
-      {'n': 1, 'q': b'C-Class', 'i': b'Unknown-Class'},
-      {'n': 3, 'q': b'Start-Class', 'i': b'High-Class'},
-      {'n': 6, 'q': b'Start-Class', 'i': b'Low-Class'},
-      {'n': 1, 'q': b'Start-Class', 'i': b'Mid-Class'},
-      {'n': 1, 'q': b'Start-Class', 'i': b'Unknown-Class'},
-      {'n': 3, 'q': b'Stub-Class', 'i': b'Low-Class'},
-      {'n': 1, 'q': b'Stub-Class', 'i': b'Unknown-Class'},
-      {'n': 2, 'q': b'Unassessed-Class', 'i': b'Unknown-Class'}
-    ]
     expected_cols = {
       b'High-Class': 1, b'Low-Class': 1, b'Mid-Class': 1, b'Unknown-Class': 1
     }
@@ -449,8 +447,153 @@ class TablesDbTest(BaseWpOneDbTest):
                      b'Stub-Class': {b'Low-Class': 3, b'Unknown-Class': 1},
                      b'Unassessed-Class': {b'Unknown-Class': 2}}
 
-    actual_data, actual_cols = tables.data_for_stats(stats)
+    actual_data, actual_cols = tables.data_for_stats(self.stats)
     actual_data_dict = dict((k, dict(v)) for k, v in actual_data.items())
 
     self.assertEqual(expected_cols, actual_cols)
     self.assertEqual(expected_data, actual_data_dict)
+
+  def test_generate_table_data_removes_cols(self):
+    missing_mid = dict(self.sort_imp)
+    del missing_mid[b'Mid-Class']
+    actual = tables.generate_table_data(self.stats, {
+      'sort_imp': missing_mid, 'sort_qual': {},
+      'imp_labels': {}, 'qual_labels': {}
+    })
+
+    self.assertTrue(b'Mid-Class' not in actual['ordered_cols'])
+
+  def test_generate_table_data_removes_rows(self):
+    missing_portal = dict(self.sort_qual)
+    del missing_portal[b'Portal-Class']
+    actual = tables.generate_table_data(self.stats, {
+      'sort_imp': missing_portal, 'sort_qual': {},
+      'imp_labels': {}, 'qual_labels': {}
+    })
+
+    self.assertTrue(b'Portal-Class' not in actual['ordered_rows'])
+
+  def test_generate_table_data_adds_assessed_when_unassessed(self):
+    actual = tables.generate_table_data(self.stats, {
+      'sort_imp': self.sort_imp, 'sort_qual': self.sort_qual,
+      'imp_labels': {}, 'qual_labels': {}
+    })
+
+    self.assertTrue(b'Unassessed-Class' in actual['ordered_rows'])
+    self.assertTrue(b'Assessed-Class' in actual['ordered_rows'])
+    unassessed_idx = actual['ordered_rows'].index(b'Unassessed-Class')
+    actual_idx = actual['ordered_rows'].index(b'Assessed-Class')
+
+    self.assertEqual(1, unassessed_idx - actual_idx)
+
+  def test_generate_table_data_adds_assessed_when_no_unassessed(self):
+    missing_unassessed = dict(self.sort_qual)
+    del missing_unassessed[b'Unassessed-Class']
+    actual = tables.generate_table_data(self.stats, {
+      'sort_imp': self.sort_imp, 'sort_qual': missing_unassessed,
+      'imp_labels': {}, 'qual_labels': {}
+    })
+
+    self.assertFalse(b'Unassessed-Class' in actual['ordered_rows'])
+    self.assertTrue(b'Assessed-Class' in actual['ordered_rows'])
+    self.assertEqual(
+      len(actual['ordered_rows']) - 1,
+      actual['ordered_rows'].index(b'Assessed-Class'))
+
+  def test_generate_table_data_totals(self):
+    expected_col_totals = {
+      b'High-Class': 3,
+      b'Low-Class': 11,
+      b'Mid-Class': 1,
+      b'Unknown-Class': 5
+    }
+    expected_row_totals = {
+      b'Assessed-Class': 18,
+      b'C-Class': 3,
+      b'Start-Class': 11,
+      b'Stub-Class': 4,
+      b'Unassessed-Class': 2
+    }
+
+    actual = tables.generate_table_data(self.stats, {
+      'sort_imp': self.sort_imp, 'sort_qual': self.sort_qual,
+      'imp_labels': {}, 'qual_labels': {}
+    })
+
+    self.assertEqual(20, actual['total'])
+    self.assertEqual(expected_col_totals, actual['col_totals'])
+    self.assertEqual(expected_row_totals, actual['row_totals'])
+
+  def test_generate_table_data_ordered_cols(self):
+    expected = [b'High-Class', b'Mid-Class', b'Low-Class', b'Unknown-Class']
+    actual = tables.generate_table_data(self.stats, {
+      'sort_imp': self.sort_imp, 'sort_qual': self.sort_qual,
+      'imp_labels': {}, 'qual_labels': {}
+    })
+    self.assertEqual(expected, actual['ordered_cols'])
+
+  def test_generate_table_data_ordered_rows(self):
+    expected = [
+      b'C-Class',
+      b'Start-Class',
+      b'Stub-Class',
+      b'Assessed-Class',
+      b'Unassessed-Class'
+    ]
+    actual = tables.generate_table_data(self.stats, {
+      'sort_imp': self.sort_imp, 'sort_qual': self.sort_qual,
+      'imp_labels': {}, 'qual_labels': {}
+    })
+    self.assertEqual(expected, actual['ordered_rows'])
+
+  def test_generate_table_data_labels(self):
+    expected_imp_labels = {'foo': 'bar'}
+    expected_qual_labels = {'baz': 'bang'}
+    actual = tables.generate_table_data(self.stats, {
+      'sort_imp': self.sort_imp, 'sort_qual': self.sort_qual,
+      'imp_labels': expected_imp_labels, 'qual_labels': expected_qual_labels
+    })
+
+    self.assertEqual(expected_imp_labels, actual['col_labels'])
+    self.assertEqual(expected_qual_labels, actual['row_labels'])
+
+  def test_generate_table_data_table_overrides(self):
+    expected_overrides = {'foo': 'bar', 42: 'answer', 'baz': 'bang'}
+    actual = tables.generate_table_data(self.stats, {
+      'sort_imp': self.sort_imp, 'sort_qual': self.sort_qual,
+      'imp_labels': {}, 'qual_labels': {}
+    }, table_overrides=expected_overrides)
+    for k, v in expected_overrides.items():
+      self.assertEqual(v, actual[k])
+
+  def test_generate_project_table_data(self):
+    actual = tables.generate_project_table_data(self.wp10db, b'Catholicism')
+    self.assertEqual(
+      'Catholicism articles by quality and importance', actual['title'])
+
+  def test_generate_global_table_data(self):
+    actual = tables.generate_global_table_data(self.wp10db)
+    self.assertEqual(
+      'All rated articles by quality and importance', actual['title'])
+
+  @patch('lucky.tables.site')
+  @patch('lucky.tables.wp10_connect')
+  def test_upload_project_table(self, patched_connect, patched_site):
+    try:
+      orig_close = self.wp10db.close
+      self.wp10db.close = lambda: True
+      patched_connect.return_value = self.wp10db
+      tables.upload_project_table(b'Catholicism')
+    finally:
+      self.wp10db.close = orig_close
+
+  @patch('lucky.tables.site')
+  @patch('lucky.tables.wp10_connect')
+  def test_upload_global_table(self, patched_connect, patched_site):
+    try:
+      orig_close = self.wp10db.close
+      self.wp10db.close = lambda: True
+      patched_connect.return_value = self.wp10db
+      tables.upload_global_table()
+    finally:
+      self.wp10db.close = orig_close
