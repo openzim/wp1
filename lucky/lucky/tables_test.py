@@ -122,79 +122,7 @@ class TablesDbTest(BaseWpOneDbTest):
     (b'How to test', b'C-Class', b'Low-Class')
   ]
 
-  def _insert_ratings(self):
-    for r in self.ratings:
-      rating = Rating(
-        r_project=b'Test Project', r_namespace=0, r_article=r[0])
-      rating.r_quality = r[1]
-      rating.r_quality_timestamp = GLOBAL_TIMESTAMP_WIKI
-      rating.r_importance = r[2]
-      rating.r_importance_timestamp = GLOBAL_TIMESTAMP_WIKI
-
-      with self.wp10db.cursor() as cursor:
-        cursor.execute('INSERT INTO ' + Rating.table_name + '''
-          (r_project, r_namespace, r_article, r_score, r_quality,
-           r_quality_timestamp, r_importance, r_importance_timestamp)
-          VALUES (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
-                  %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
-                  %(r_importance_timestamp)s)
-        ''', attr.asdict(rating))
-      self.wp10db.commit()
-
-  def _setup_global_articles(self):
-    with self.wp10db.cursor() as cursor:
-      for i, scores in enumerate(self.global_articles):
-        cursor.execute('''
-          INSERT INTO global_articles
-            (a_article, a_quality, a_importance, a_score)
-          VALUES (%s, %s, %s, %s)
-        ''', ('Test Article %s' % i,) + scores)
-    self.wp10db.commit()
-
-  def _setup_project_categories(self):
-    pass
-
-  def setUp(self):
-    super().setUp()
-    self._setup_global_articles()
-    self._insert_ratings()
-    self._setup_project_categories()
-
-  def test_get_global_stats(self):
-    expected = [
-      {'n': 2, 'q': b'C-Class', 'i': b'Low-Class'},
-      {'n': 1, 'q': b'C-Class', 'i': b'Unknown-Class'},
-      {'n': 3, 'q': b'Start-Class', 'i': b'High-Class'},
-      {'n': 6, 'q': b'Start-Class', 'i': b'Low-Class'},
-      {'n': 1, 'q': b'Start-Class', 'i': b'Mid-Class'},
-      {'n': 1, 'q': b'Start-Class', 'i': b'Unknown-Class'},
-      {'n': 3, 'q': b'Stub-Class', 'i': b'Low-Class'},
-      {'n': 1, 'q': b'Stub-Class', 'i': b'Unknown-Class'},
-      {'n': 2, 'q': b'Unassessed-Class', 'i': b'Unknown-Class'}
-    ]
-    actual = tables.get_global_stats(self.wp10db)
-    expected = [tuple(x.items()) for x in expected]
-    actual = [tuple(x.items()) for x in actual]
-    self.assertEqual(expected, actual)
-
-  def test_get_project_stats(self):
-    expected = [
-      {'n': 3, 'q': b'FA-Class', 'i': b'Top-Class', 'project': b'Test Project'},
-      {'n': 3, 'q': b'C-Class', 'i': b'Low-Class', 'project': b'Test Project'},
-      {'n': 2, 'q': b'A-Class', 'i': b'High-Class', 'project': b'Test Project'},
-      {'n': 3, 'q': b'B-Class', 'i': b'Low-Class', 'project': b'Test Project'},
-      {'n': 2, 'q': b'FL-Class', 'i': b'High-Class', 'project': b'Test Project'},
-      {'n': 3, 'q': b'GA-Class', 'i': b'Mid-Class', 'project': b'Test Project'},
-      {'n': 1, 'q': b'FL-Class', 'i': b'Top-Class', 'project': b'Test Project'},
-      {'n': 1, 'q': b'A-Class', 'i': b'Mid-Class', 'project': b'Test Project'}
-    ]
-    actual = tables.get_project_stats(self.wp10db, 'Test Project')
-    expected = [tuple(x.items()) for x in expected]
-    actual = [tuple(x.items()) for x in actual]
-    self.assertEqual(sorted(expected), sorted(actual))
-
-  def test_db_project_categories(self):
-    categories = [
+  project_categories = [
       {'c_category': b'High-importance_Catholicism_articles',
        'c_ranking': 300,
        'c_rating': b'High-Class',
@@ -313,17 +241,187 @@ class TablesDbTest(BaseWpOneDbTest):
         'c_type': b'quality'},
     ]
 
+
+  def _insert_ratings(self):
+    for r in self.ratings:
+      rating = Rating(
+        r_project=b'Test Project', r_namespace=0, r_article=r[0])
+      rating.r_quality = r[1]
+      rating.r_quality_timestamp = GLOBAL_TIMESTAMP_WIKI
+      rating.r_importance = r[2]
+      rating.r_importance_timestamp = GLOBAL_TIMESTAMP_WIKI
+
+      with self.wp10db.cursor() as cursor:
+        cursor.execute('INSERT INTO ' + Rating.table_name + '''
+          (r_project, r_namespace, r_article, r_score, r_quality,
+           r_quality_timestamp, r_importance, r_importance_timestamp)
+          VALUES (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
+                  %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
+                  %(r_importance_timestamp)s)
+        ''', attr.asdict(rating))
+      self.wp10db.commit()
+
+  def _setup_global_articles(self):
+    with self.wp10db.cursor() as cursor:
+      for i, scores in enumerate(self.global_articles):
+        cursor.execute('''
+          INSERT INTO global_articles
+            (a_article, a_quality, a_importance, a_score)
+          VALUES (%s, %s, %s, %s)
+        ''', ('Test Article %s' % i,) + scores)
+    self.wp10db.commit()
+
+  def _setup_project_categories(self):
     with self.wp10db.cursor() as cursor:
       cursor.executemany('INSERT INTO ' + Category.table_name + '''
           (c_project, c_type, c_rating, c_ranking, c_category, c_replacement)
         VALUES
           ('Catholicism', %(c_type)s, %(c_rating)s, %(c_ranking)s,
            %(c_category)s, %(c_rating)s)
-      ''', categories)
+      ''', self.project_categories)
     self.wp10db.commit()
 
-    actual = tables.db_project_categories(self.wp10db, b'Catholicism')
+  def setUp(self):
+    super().setUp()
+    self._setup_global_articles()
+    self._insert_ratings()
+    self._setup_project_categories()
 
-    expected = sorted(categories, key=lambda x: x['c_ranking'])
+  def test_get_global_stats(self):
+    expected = [
+      {'n': 2, 'q': b'C-Class', 'i': b'Low-Class'},
+      {'n': 1, 'q': b'C-Class', 'i': b'Unknown-Class'},
+      {'n': 3, 'q': b'Start-Class', 'i': b'High-Class'},
+      {'n': 6, 'q': b'Start-Class', 'i': b'Low-Class'},
+      {'n': 1, 'q': b'Start-Class', 'i': b'Mid-Class'},
+      {'n': 1, 'q': b'Start-Class', 'i': b'Unknown-Class'},
+      {'n': 3, 'q': b'Stub-Class', 'i': b'Low-Class'},
+      {'n': 1, 'q': b'Stub-Class', 'i': b'Unknown-Class'},
+      {'n': 2, 'q': b'Unassessed-Class', 'i': b'Unknown-Class'}
+    ]
+    actual = tables.get_global_stats(self.wp10db)
+    expected = [tuple(x.items()) for x in expected]
+    actual = [tuple(x.items()) for x in actual]
+    self.assertEqual(expected, actual)
+
+  def test_get_project_stats(self):
+    expected = [
+      {'n': 3, 'q': b'FA-Class', 'i': b'Top-Class', 'project': b'Test Project'},
+      {'n': 3, 'q': b'C-Class', 'i': b'Low-Class', 'project': b'Test Project'},
+      {'n': 2, 'q': b'A-Class', 'i': b'High-Class', 'project': b'Test Project'},
+      {'n': 3, 'q': b'B-Class', 'i': b'Low-Class', 'project': b'Test Project'},
+      {'n': 2, 'q': b'FL-Class', 'i': b'High-Class', 'project': b'Test Project'},
+      {'n': 3, 'q': b'GA-Class', 'i': b'Mid-Class', 'project': b'Test Project'},
+      {'n': 1, 'q': b'FL-Class', 'i': b'Top-Class', 'project': b'Test Project'},
+      {'n': 1, 'q': b'A-Class', 'i': b'Mid-Class', 'project': b'Test Project'}
+    ]
+    actual = tables.get_project_stats(self.wp10db, 'Test Project')
+    expected = [tuple(x.items()) for x in expected]
+    actual = [tuple(x.items()) for x in actual]
+    self.assertEqual(sorted(expected), sorted(actual))
+
+  def test_db_project_categories(self):
+    actual = tables.db_project_categories(self.wp10db, b'Catholicism')
+    expected = sorted(self.project_categories, key=lambda x: x['c_ranking'])
     actual = sorted(actual, key=lambda x: x['c_ranking'])
+    self.assertEqual(expected, actual)
+
+  def test_get_project_categories(self):
+    expected = {
+      'imp_labels': {b'High-Class': '{{High-Class}}',
+                     b'Low-Class': '{{Low-Class}}',
+                     b'Mid-Class': '{{Mid-Class}}',
+                     b'NA-Class': '{{NA-Class}}',
+                     b'NotA-Class': '{{NotA-Class}}',
+                     b'Top-Class': '{{Top-Class}}',
+                     b'Unassessed-Class': 'No-Class',
+                     b'Unknown-Class': '{{Unknown-Class}}'},
+      'qual_labels': {
+        b'A-Class':
+          '{{A-Class|category=Category:A-Class_Catholicism_articles}}',
+        b'Assessed-Class':
+          '{{Assessed-Class}}',
+        b'B-Class':
+          '{{B-Class|category=Category:B-Class_Catholicism_articles}}',
+        b'Book-Class':
+          '{{Book-Class|category=Category:Book-Class_Catholicism_articles}}',
+        b'C-Class':
+          '{{C-Class|category=Category:C-Class_Catholicism_articles}}',
+        b'Category-Class':
+          '{{Category-Class|category=Category:Category-Class_Catholicism_articles}}',
+        b'Disambig-Class':
+          '{{Disambig-Class|category=Category:Disambig-Class_Catholicism_articles}}',
+        b'FA-Class':
+          '{{FA-Class|category=Category:FA-Class_Catholicism_articles}}',
+        b'FL-Class':
+          '{{FL-Class|category=Category:FL-Class_Catholicism_articles}}',
+        b'FM-Class':
+          '{{FM-Class|category=Category:FM-Class_Catholicism_articles}}',
+        b'File-Class':
+          '{{File-Class|category=Category:File-Class_Catholicism_articles}}',
+        b'GA-Class':
+          '{{GA-Class|category=Category:GA-Class_Catholicism_articles}}',
+        b'High-Class':
+          '{{High-Class|category=Category:High-importance_Catholicism_articles}}',
+        b'Image-Class':
+          '{{Image-Class|category=Category:Category:Image-Class Catholicism articles}}',
+        b'List-Class':
+          '{{List-Class|category=Category:List-Class_Catholicism_articles}}',
+        b'Low-Class':
+          '{{Low-Class|category=Category:Low-importance_Catholicism_articles}}',
+        b'Mid-Class':
+          '{{Mid-Class|category=Category:Mid-importance_Catholicism_articles}}',
+        b'NA-Class':
+          '{{NA-Class|category=Category:NA-Class_Catholicism_articles}}',
+        b'NotA-Class': ' style="text-align: center;" | ' "'''Other'''",
+        b'Portal-Class':
+          '{{Portal-Class|category=Category:Portal-Class_Catholicism_articles}}',
+        b'Project-Class':
+          '{{Project-Class|category=Category:Project-Class_Catholicism_articles}}',
+        b'Redirect-Class':
+          '{{Redirect-Class|category=Category:Redirect-Class_Catholicism_articles}}',
+        b'Start-Class':
+          '{{Start-Class|category=Category:Start-Class_Catholicism_articles}}',
+        b'Stub-Class':
+          '{{Stub-Class|category=Category:Stub-Class_Catholicism_articles}}',
+        b'Template-Class':
+          '{{Template-Class|category=Category:Template-Class_Catholicism_articles}}',
+        b'Top-Class':
+          '{{Top-Class|category=Category:Top-importance_Catholicism_articles}}',
+        b'Unassessed-Class':
+          '{{Unassessed-Class|category=Category:Unassessed_Catholicism_articles}}',
+        b'Unknown-Class':
+          '{{Unknown-Class|category=Category:Unknown-importance_Catholicism_articles}}'},
+      'sort_imp': {b'High-Class': 300,
+                   b'Low-Class': 100,
+                   b'Mid-Class': 200,
+                   b'NA-Class': 25,
+                   b'NotA-Class': 21,
+                   b'Top-Class': 400,
+                   b'Unknown-Class': 0},
+      'sort_qual': {b'A-Class': 425,
+                    b'B-Class': 300,
+                    b'Book-Class': 55,
+                    b'C-Class': 225,
+                    b'Category-Class': 50,
+                    b'Disambig-Class': 48,
+                    b'FA-Class': 500,
+                    b'FL-Class': 480,
+                    b'FM-Class': 460,
+                    b'File-Class': 46,
+                    b'GA-Class': 400,
+                    b'Image-Class': 47,
+                    b'List-Class': 80,
+                    b'NA-Class': 25,
+                    b'NotA-Class': 21,
+                    b'Portal-Class': 45,
+                    b'Project-Class': 44,
+                    b'Redirect-Class': 43,
+                    b'Start-Class': 150,
+                    b'Stub-Class': 100,
+                    b'Template-Class': 40,
+                    b'Unassessed-Class': 0}
+    }
+    actual = tables.get_project_categories(self.wp10db, b'Catholicism')
+
     self.assertEqual(expected, actual)
