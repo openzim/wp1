@@ -3,11 +3,11 @@ from unittest.mock import patch
 
 import attr
 
-from lucky import tables
-from lucky.base_db_test import BaseWpOneDbTest
-from lucky.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP_WIKI, TS_FORMAT
-from lucky.models.wp10.category import Category
-from lucky.models.wp10.rating import Rating
+from wp1 import tables
+from wp1.base_db_test import BaseWpOneDbTest
+from wp1.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP_WIKI, TS_FORMAT
+from wp1.models.wp10.category import Category
+from wp1.models.wp10.rating import Rating
 
 class TablesCategoryTest(unittest.TestCase):
   GLOBAL_SORT_QUAL = {
@@ -576,8 +576,8 @@ class TablesDbTest(BaseWpOneDbTest):
     self.assertEqual(
       'All rated articles by quality and importance', actual['title'])
 
-  @patch('lucky.tables.site')
-  @patch('lucky.tables.wp10_connect')
+  @patch('wp1.tables.site')
+  @patch('wp1.tables.wp10_connect')
   def test_upload_project_table(self, patched_connect, patched_site):
     try:
       orig_close = self.wp10db.close
@@ -587,8 +587,8 @@ class TablesDbTest(BaseWpOneDbTest):
     finally:
       self.wp10db.close = orig_close
 
-  @patch('lucky.tables.site')
-  @patch('lucky.tables.wp10_connect')
+  @patch('wp1.tables.site')
+  @patch('wp1.tables.wp10_connect')
   def test_upload_global_table(self, patched_connect, patched_site):
     try:
       orig_close = self.wp10db.close
