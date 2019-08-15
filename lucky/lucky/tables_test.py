@@ -5,6 +5,7 @@ import attr
 from lucky import tables
 from lucky.base_db_test import BaseWpOneDbTest
 from lucky.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP_WIKI, TS_FORMAT
+from lucky.models.wp10.category import Category
 from lucky.models.wp10.rating import Rating
 
 class TablesCategoryTest(unittest.TestCase):
@@ -172,6 +173,8 @@ class TablesDbTest(BaseWpOneDbTest):
       {'n': 2, 'q': b'Unassessed-Class', 'i': b'Unknown-Class'}
     ]
     actual = tables.get_global_stats(self.wp10db)
+    expected = [tuple(x.items()) for x in expected]
+    actual = [tuple(x.items()) for x in actual]
     self.assertEqual(expected, actual)
 
   def test_get_project_stats(self):
@@ -189,3 +192,138 @@ class TablesDbTest(BaseWpOneDbTest):
     expected = [tuple(x.items()) for x in expected]
     actual = [tuple(x.items()) for x in actual]
     self.assertEqual(sorted(expected), sorted(actual))
+
+  def test_db_project_categories(self):
+    categories = [
+      {'c_category': b'High-importance_Catholicism_articles',
+       'c_ranking': 300,
+       'c_rating': b'High-Class',
+       'c_type': b'importance'},
+       {'c_category': b'Low-importance_Catholicism_articles',
+        'c_ranking': 100,
+        'c_rating': b'Low-Class',
+        'c_type': b'importance'},
+       {'c_category': b'Mid-importance_Catholicism_articles',
+        'c_ranking': 200,
+        'c_rating': b'Mid-Class',
+        'c_type': b'importance'},
+       {'c_category': b'NA-importance_Catholicism_articles',
+        'c_ranking': 25,
+        'c_rating': b'NA-Class',
+        'c_type': b'importance'},
+       {'c_category': b'',
+        'c_ranking': 21,
+        'c_rating': b'NotA-Class',
+        'c_type': b'importance'},
+       {'c_category': b'Top-importance_Catholicism_articles',
+        'c_ranking': 400,
+        'c_rating': b'Top-Class',
+        'c_type': b'importance'},
+       {'c_category': b'Unknown-importance_Catholicism_articles',
+        'c_ranking': 0,
+        'c_rating': b'Unknown-Class',
+        'c_type': b'importance'},
+       {'c_category': b'A-Class_Catholicism_articles',
+        'c_ranking': 425,
+        'c_rating': b'A-Class',
+        'c_type': b'quality'},
+       {'c_category': b'B-Class_Catholicism_articles',
+        'c_ranking': 300,
+        'c_rating': b'B-Class',
+        'c_type': b'quality'},
+       {'c_category': b'Book-Class_Catholicism_articles',
+        'c_ranking': 55,
+        'c_rating': b'Book-Class',
+        'c_type': b'quality'},
+       {'c_category': b'C-Class_Catholicism_articles',
+        'c_ranking': 225,
+        'c_rating': b'C-Class',
+        'c_type': b'quality'},
+       {'c_category': b'Category-Class_Catholicism_articles',
+        'c_ranking': 50,
+        'c_rating': b'Category-Class',
+        'c_type': b'quality'},
+       {'c_category': b'Disambig-Class_Catholicism_articles',
+        'c_ranking': 48,
+        'c_rating': b'Disambig-Class',
+        'c_type': b'quality'},
+       {'c_category': b'FA-Class_Catholicism_articles',
+        'c_ranking': 500,
+        'c_rating': b'FA-Class',
+        'c_type': b'quality'},
+       {'c_category': b'FL-Class_Catholicism_articles',
+        'c_ranking': 480,
+        'c_rating': b'FL-Class',
+        'c_type': b'quality'},
+       {'c_category': b'FM-Class_Catholicism_articles',
+        'c_ranking': 460,
+        'c_rating': b'FM-Class',
+        'c_type': b'quality'},
+       {'c_category': b'File-Class_Catholicism_articles',
+        'c_ranking': 46,
+        'c_rating': b'File-Class',
+        'c_type': b'quality'},
+       {'c_category': b'GA-Class_Catholicism_articles',
+        'c_ranking': 400,
+        'c_rating': b'GA-Class',
+        'c_type': b'quality'},
+       {'c_category': b'Category:Image-Class Catholicism articles',
+        'c_ranking': 47,
+        'c_rating': b'Image-Class',
+        'c_type': b'quality'},
+       {'c_category': b'List-Class_Catholicism_articles',
+        'c_ranking': 80,
+        'c_rating': b'List-Class',
+        'c_type': b'quality'},
+       {'c_category': b'NA-Class_Catholicism_articles',
+        'c_ranking': 25,
+        'c_rating': b'NA-Class',
+        'c_type': b'quality'},
+       {'c_category': b'',
+        'c_ranking': 21,
+        'c_rating': b'NotA-Class',
+        'c_type': b'quality'},
+       {'c_category': b'Portal-Class_Catholicism_articles',
+        'c_ranking': 45,
+        'c_rating': b'Portal-Class',
+        'c_type': b'quality'},
+       {'c_category': b'Project-Class_Catholicism_articles',
+        'c_ranking': 44,
+        'c_rating': b'Project-Class',
+        'c_type': b'quality'},
+       {'c_category': b'Redirect-Class_Catholicism_articles',
+        'c_ranking': 43,
+        'c_rating': b'Redirect-Class',
+        'c_type': b'quality'},
+       {'c_category': b'Start-Class_Catholicism_articles',
+        'c_ranking': 150,
+        'c_rating': b'Start-Class',
+        'c_type': b'quality'},
+       {'c_category': b'Stub-Class_Catholicism_articles',
+        'c_ranking': 100,
+        'c_rating': b'Stub-Class',
+        'c_type': b'quality'},
+       {'c_category': b'Template-Class_Catholicism_articles',
+        'c_ranking': 40,
+        'c_rating': b'Template-Class',
+        'c_type': b'quality'},
+       {'c_category': b'Unassessed_Catholicism_articles',
+        'c_ranking': 0,
+        'c_rating': b'Unassessed-Class',
+        'c_type': b'quality'},
+    ]
+
+    with self.wp10db.cursor() as cursor:
+      cursor.executemany('INSERT INTO ' + Category.table_name + '''
+          (c_project, c_type, c_rating, c_ranking, c_category, c_replacement)
+        VALUES
+          ('Catholicism', %(c_type)s, %(c_rating)s, %(c_ranking)s,
+           %(c_category)s, %(c_rating)s)
+      ''', categories)
+    self.wp10db.commit()
+
+    actual = tables.db_project_categories(self.wp10db, b'Catholicism')
+
+    expected = sorted(categories, key=lambda x: x['c_ranking'])
+    actual = sorted(actual, key=lambda x: x['c_ranking'])
+    self.assertEqual(expected, actual)
