@@ -72,6 +72,39 @@ CREATE TABLE `releases` (
   PRIMARY KEY (`rel_article`)
 );
 
+CREATE TABLE `global_articles` (
+  `a_article` varbinary(255) NOT NULL,
+  `a_quality` varbinary(63) NOT NULL,
+  `a_importance` varbinary(63) NOT NULL,
+  `a_score` int(8) unsigned NOT NULL,
+  PRIMARY KEY (`a_article`)
+);
+
+CREATE TABLE `global_rankings` (
+  `gr_type` varbinary(16) NOT NULL,
+  `gr_rating` varbinary(63) NOT NULL,
+  `gr_ranking` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`gr_type`,`gr_rating`)
+);
+
+INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'Unknown-Class', 0);
+INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'NA-Class', 50);
+INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'Low-Class', 100);
+INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'Mid-Class', 200);
+INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'High-Class', 300);
+INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'Top-Class', 400);
+INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('quality', 'Unassessed-Class', 0);
+INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('quality', 'Assessed-Class', 20);
+INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('quality', 'List-Class', 80);
+INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('quality', 'Stub-Class', 100);
+INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('quality', 'Start-Class', 150);
+INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('quality', 'C-Class', 225);
+INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('quality', 'B-Class', 300);
+INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('quality', 'GA-Class', 400);
+INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('quality', 'A-Class', 425);
+INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('quality', 'FL-Class', 480);
+INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('quality', 'FA-Class', 500);
+
 INSERT INTO `namespacename` (dbname, domain, ns_id, ns_name, ns_type, ns_is_favorite) VALUES ('enwiki_p', 'en.wikipedia.org', -2, 'Media'                 , 'canonical' , 1);
 INSERT INTO `namespacename` (dbname, domain, ns_id, ns_name, ns_type, ns_is_favorite) VALUES ('enwiki_p', 'en.wikipedia.org', -1, 'Special'               , 'canonical' , 1);
 INSERT INTO `namespacename` (dbname, domain, ns_id, ns_name, ns_type, ns_is_favorite) VALUES ('enwiki_p', 'en.wikipedia.org',  0, ''                      , 'primary' , 1);

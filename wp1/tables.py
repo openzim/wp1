@@ -66,7 +66,7 @@ def get_global_categories():
     NOT_A_CLASS:      11,
     b'Unknown-Class': 10,
     UNASSESSED_CLASS:  0,
-  };
+  }
   
   qual_labels, imp_labels = labels_for_classes(sort_qual, sort_imp)
 
@@ -225,79 +225,67 @@ def generate_table_data(stats, categories, table_overrides=None):
   }
 
 
-def generate_project_table_data(project_name, stats=None, categories=None):
-  wp10db = None
-  if stats is None or categories is None:
-    wp10db = wp10_connect()
-
-  try:
-    if stats is None:
-      stats = get_project_stats(wp10db, project_name)
-      print(repr(stats))
-
-    if categories is None:
-      categories = get_project_categories(wp10db, project_name)
-
+def generate_project_table_data(wp10db, project_name):
+    stats = get_project_stats(wp10db, project_name)
+    categories = get_project_categories(wp10db, project_name)
     title = ('%s articles by quality and importance' %
              project_name.decode('utf-8').replace('_', ' '))
+
     return generate_table_data(stats, categories, {
       'project': project_name,
       'create_link': True,
       'title': title,
       'center_table': False,
     })
-  finally:
-    if wp10db is not None:
-      wp10db.close()
 
 
-def generate_global_table_data(stats=None):
-  wp10db = None
-  if stats is None:
-    wp10db = wp10_connect()
+def generate_global_table_data(wp10db):
+  stats = get_global_stats(wp10db)
+  categories = get_global_categories()
+
+  return generate_table_data(stats, categories, {
+    'project': None,
+    'create_link': False, # Whether the values link to the web app.
+    'title': 'All rated articles by quality and importance',
+    'center_table': True,
+  })
+
+
+def upload_project_table(project_name):
+  logging.basicConfig(level=logging.DEBUG)
+  wp10db = wp10_connect()
+
   try:
-    if stats is None:
-      stats = get_global_stats(wp10db)
-    categories = get_global_categories()
-
-    return generate_table_data(stats, categories, {
-      'project': None,
-      'create_link': False, # Whether the values link to the web app.
-      'title': 'All rated articles by quality and importance',
-      'center_table': True,
-    })
+    logger.info('Getting table data for project: %s',
+                project_name.decode('utf-8'))
+    table_data = generate_project_table_data(wp10db, project_name)
+    wikicode = create_wikicode(table_data)
+    page_name = ('User:WP 1.0 bot/Tables/Project/%s' %
+                 project_name.decode('utf-8'))
+    page = site.pages[page_name]
+    logger.info('Uploading wikicode to Wikipedia: %s',
+                project_name.decode('utf-8'))
+    page.save(wikicode, 'Copying assessment table to wiki.')
   finally:
     if wp10db is not None:
       wp10db.close()
 
 
-def upload_project_table(project_name, stats=None, categories=None):
+def upload_global_table():
   logging.basicConfig(level=logging.DEBUG)
+  wp10db = wp10_connect()
 
-  logger.info('Getting table data for project: %s',
-              project_name.decode('utf-8'))
-  table_data = generate_project_table_data(
-    project_name, stats=stats, categories=categories)
-  wikicode = create_wikicode(table_data)
-  page_name = 'User:WP 1.0 bot/Tables/Project/%s' % project_name.decode('utf-8')
-  page = site.pages[page_name]
-  logger.info('Uploading wikicode to Wikipedia: %s',
-              project_name.decode('utf-8'))
-  page.save(wikicode, 'Copying assessment table to wiki.')
-  return wikicode
-
-
-def upload_global_table(stats=None):
-  logging.basicConfig(level=logging.DEBUG)
-
-  logger.info('Getting table data for: global table')
-  table_data = generate_global_table_data(stats=stats)
-  wikicode = create_wikicode(table_data)
-  page_name = 'User:WP 1.0 bot/Tables/OverallArticles'
-  logger.info('Uploading wikicode to Wikipedia: global table')
-  page = site.pages[page_name]
-  page.save(wikicode, 'Copying assessment table to wiki.')
-
+  try:
+    logger.info('Getting table data for: global table')
+    table_data = generate_global_table_data(wp10db)
+    wikicode = create_wikicode(table_data)
+    page_name = 'User:WP 1.0 bot/Tables/OverallArticles'
+    logger.info('Uploading wikicode to Wikipedia: global table')
+    page = site.pages[page_name]
+    page.save(wikicode, 'Copying assessment table to wiki.')
+  finally:
+    if wp10db is not None:
+      wp10db.close()
 
 def create_wikicode(table_data):
   template = jinja_env.get_template('table.jinja2')
