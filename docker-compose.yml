@@ -1,6 +1,13 @@
 version: '3.5'
 services:
 
+  redis:
+    image: redis
+    container_name: wp1bot-redis
+    expose:
+      - 6379
+    restart: always
+
   workers:
     image: openzim/wp1bot-workers
     container_name: wp1bot-workers
@@ -13,10 +20,15 @@ services:
       - redis
 
   web:
-    image: wp1bot-web
+    image: openzim/wp1bot-web
     container_name: wp1bot-web
-    ports:
-      - 9181:9181
+    environment:
+      - VIRTUAL_HOST=wp1.openzim.org
+      - LETSENCRYPT_HOST=wp1.openzim.org
+      - LETSENCRYPT_EMAIL=contact@openzim.org
+      - HTTPS_METHOD=noredirect
+    expose:
+      - 9181
     volumes:
       - /data/wp1bot/rq-credentials.txt:/usr/src/app/rq-credentials.txt
     links:
@@ -25,9 +37,39 @@ services:
     depends_on:
       - redis
 
-  redis:
-    image: redis
-    container_name: wp1bot-redis
-    expose:
-      - 6379
+  reverse-proxy:
+    image: jwilder/nginx-proxy
+    container_name: reverse-proxy
+    depends_on:
+      - web
+    volumes:
+      - "/var/run/docker.sock:/tmp/docker.sock:ro"
+      - "/data/certs:/etc/nginx/certs:ro"
+      - "/var/local/vhost.d:/etc/nginx/vhost.d"
+      - "/data/html:/usr/share/nginx/html"
+    labels:
+      - com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy
+    ports:
+      - 80:80
+      - 443:443
+    logging:
+      driver: "none"
+      options:
+        max-size: 10k
     restart: always
+
+  letsencrypt:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    container_name: letsencrypt
+    depends_on:
+      - reverse-proxy
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "/data/certs:/etc/nginx/certs:rw"
+      - "/var/local/vhost.d:/etc/nginx/vhost.d"
+      - "/data/html:/usr/share/nginx/html"
+    restart: always
+
+networks:
+  default:
+    name: openzim.org
