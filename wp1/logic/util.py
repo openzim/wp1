@@ -33,10 +33,7 @@ def category_for_project_by_kind(
   if category_prefix:
     category = CATEGORY_NS_STR + ':' + category
 
-  if return_bytes:
-    return category.encode('utf-8')
-  else:
-    return category
+  return category.encode('utf-8') if return_bytes else category
 
 def is_namespace_acceptable(ns):
   if ns < 0 or ns == 2 or ns % 2 == 1:
@@ -68,8 +65,6 @@ def ns_to_int(wp10db):
 
 def int_to_ns(wp10db):
   global _INT_TO_NS
-  if _INT_TO_NS is not None:
-    return _INT_TO_NS
-  else:
+  if _INT_TO_NS is None
     _INT_TO_NS = {v: k for k, v in ns_to_int(wp10db).items()}
-    return _INT_TO_NS
+  return _INT_TO_NS
