@@ -11,4 +11,3 @@ def insert_or_update(wp10db, log):
               %(l_timestamp)s, %(l_old)s, %(l_new)s, %(l_revision_timestamp)s)
       ON DUPLICATE KEY UPDATE l_article = l_article
     ''', attr.asdict(log))
-
