@@ -25,10 +25,9 @@ def get_redirect(title_with_ns):
     logger.warn('Error contacting API, returning None')
     return None
 
-  if 'query' not in res or 'redirects' not in res['query']:
-    return None
-  redir = res['query']['redirects'][0]['to']
-  if len(redir) == 0:
+  if ('query' not in res or
+      'redirects' not in res['query'] or
+      len(res['query']['redirects'][0]['to']) == 0):
     return None
 
   key = next(iter(res['query']['pages']))

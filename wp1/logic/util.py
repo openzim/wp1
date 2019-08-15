@@ -65,6 +65,6 @@ def ns_to_int(wp10db):
 
 def int_to_ns(wp10db):
   global _INT_TO_NS
-  if _INT_TO_NS is None
+  if _INT_TO_NS is None:
     _INT_TO_NS = {v: k for k, v in ns_to_int(wp10db).items()}
   return _INT_TO_NS
