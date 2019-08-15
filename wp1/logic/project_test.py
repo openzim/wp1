@@ -22,10 +22,7 @@ def _get_first_category(wp10db):
   with wp10db.cursor() as cursor:
     cursor.execute('SELECT * FROM ' + Category.table_name + ' LIMIT 1')
     db_category = cursor.fetchone()
-    if db_category:
-      return Category(**db_category)
-    else:
-      return None
+    return Category(**db_category) if db_category else None
 
 
 def _get_all_categories(wp10db):
