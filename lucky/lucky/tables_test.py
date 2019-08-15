@@ -425,3 +425,32 @@ class TablesDbTest(BaseWpOneDbTest):
     actual = tables.get_project_categories(self.wp10db, b'Catholicism')
 
     self.assertEqual(expected, actual)
+
+  def test_data_for_stats(self):
+    stats = [
+      {'n': 2, 'q': b'C-Class', 'i': b'Low-Class'},
+      {'n': 1, 'q': b'C-Class', 'i': b'Unknown-Class'},
+      {'n': 3, 'q': b'Start-Class', 'i': b'High-Class'},
+      {'n': 6, 'q': b'Start-Class', 'i': b'Low-Class'},
+      {'n': 1, 'q': b'Start-Class', 'i': b'Mid-Class'},
+      {'n': 1, 'q': b'Start-Class', 'i': b'Unknown-Class'},
+      {'n': 3, 'q': b'Stub-Class', 'i': b'Low-Class'},
+      {'n': 1, 'q': b'Stub-Class', 'i': b'Unknown-Class'},
+      {'n': 2, 'q': b'Unassessed-Class', 'i': b'Unknown-Class'}
+    ]
+    expected_cols = {
+      b'High-Class': 1, b'Low-Class': 1, b'Mid-Class': 1, b'Unknown-Class': 1
+    }
+    expected_data = {b'C-Class': {b'Low-Class': 2, b'Unknown-Class': 1},
+                     b'Start-Class': {b'High-Class': 3,
+                                      b'Low-Class': 6,
+                                      b'Mid-Class': 1,
+                                      b'Unknown-Class': 1},
+                     b'Stub-Class': {b'Low-Class': 3, b'Unknown-Class': 1},
+                     b'Unassessed-Class': {b'Unknown-Class': 2}}
+
+    actual_data, actual_cols = tables.data_for_stats(stats)
+    actual_data_dict = dict((k, dict(v)) for k, v in actual_data.items())
+
+    self.assertEqual(expected_cols, actual_cols)
+    self.assertEqual(expected_data, actual_data_dict)
