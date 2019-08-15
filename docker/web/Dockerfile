@@ -5,7 +5,7 @@ LABEL maintainer="kiwix"
 
 # Python app
 WORKDIR /usr/src
-COPY lucky app
+COPY . app
 RUN pip3 install -r app/requirements.txt
 
 # Start
