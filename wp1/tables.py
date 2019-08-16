@@ -132,7 +132,7 @@ def get_project_categories(wp10db, project_name):
         qual_labels[row['c_rating']] = (' style="text-align: center;" '
                                         "| '''Other'''")
       elif row['c_type'] == b'importance':
-        qual_labels[row['c_rating']] = 'Other'
+        imp_labels[row['c_rating']] = 'Other'
     else:
       qual_labels[row['c_rating']] = ('{{%s|category=Category:%s}}' %
                                       (row['c_rating'].decode('utf-8'),
@@ -212,7 +212,7 @@ def generate_table_data(stats, categories, table_overrides=None):
     data[b'Assessed-Class'][col] = d
     row_totals[b'Assessed-Class'] += d
 
-  return {
+  ans = {
     **table_overrides,
     'data':  data,
     'ordered_cols': ordered_cols,
@@ -224,15 +224,25 @@ def generate_table_data(stats, categories, table_overrides=None):
     'row_labels': categories['qual_labels'],
   }
 
+  # If we have only one column, don't display it because it is identical to the
+  # total anyways.
+  if len(ordered_cols) < 2:
+    ans['is_single_col'] = True
+    ans['ordered_cols'] = []
+    ans['title'] = '%s pages by quality' % ans['project_display']
+
+  return ans
+
 
 def generate_project_table_data(wp10db, project_name):
     stats = get_project_stats(wp10db, project_name)
     categories = get_project_categories(wp10db, project_name)
-    title = ('%s articles by quality and importance' %
-             project_name.decode('utf-8').replace('_', ' '))
+    project_display = project_name.decode('utf-8').replace('_', ' ')
+    title = ('%s articles by quality and importance' % project_display)
 
     return generate_table_data(stats, categories, {
       'project': project_name,
+      'project_display': project_display,
       'create_link': True,
       'title': title,
       'center_table': False,
@@ -245,6 +255,7 @@ def generate_global_table_data(wp10db):
 
   return generate_table_data(stats, categories, {
     'project': None,
+    'project_display': 'All articles',
     'create_link': False, # Whether the values link to the web app.
     'title': 'All rated articles by quality and importance',
     'center_table': True,
