@@ -1,5 +1,6 @@
 from datetime import datetime
 from unittest.mock import patch
+import time
 
 import attr
 
@@ -9,6 +10,7 @@ from wp1.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP_WIKI
 from wp1.logic import project as logic_project
 from wp1.models.wiki.page import Page
 from wp1.models.wp10.category import Category
+from wp1.models.wp10.log import Log
 from wp1.models.wp10.project import Project
 from wp1.models.wp10.rating import Rating
 
@@ -36,6 +38,10 @@ def _get_all_ratings(wp10db):
     cursor.execute('SELECT * FROM ' + Rating.table_name)
     return [Rating(**db_rating) for db_rating in cursor.fetchall()]
 
+def _get_all_logs(wp10db):
+  with wp10db.cursor() as cursor:
+    cursor.execute('SELECT * FROM logging')
+    return [Log(**db_log) for db_log in cursor.fetchall()]
 
 class UpdateCategoryTest(BaseWpOneDbTest):
   def setUp(self):
@@ -256,6 +262,9 @@ class UpdateProjectCategoriesByKindTest(BaseCombinedDbTest):
     self.assertEqual(expected_ratings, category_replaces)
 
 class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
+  old_ts_wiki = b'2018-07-04T05:05:05Z'
+  expected_ts_wiki = b'2018-12-25T11:22:33Z'
+
   quality_pages = (
     (101, b'FA-Class_Test_articles', b'Test_articles_by_quality', None, 14),
     (102, b'FL-Class_Test_articles', b'Test_articles_by_quality', None, 14),
@@ -318,7 +327,7 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
   )
 
   def _insert_pages(self, pages):
-    ts = datetime.now()
+    ts = datetime(2018, 12, 25, 11, 22, 33)
     with self.wikidb.cursor() as cursor:
       for p in pages:
         cursor.execute('''
@@ -340,10 +349,10 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
         r_project=self.project.p_project, r_namespace=namespace, r_article=p[1])
       if kind == AssessmentKind.QUALITY or kind == 'both':
         rating.r_quality = r
-        rating.r_quality_timestamp = GLOBAL_TIMESTAMP_WIKI
+        rating.r_quality_timestamp = self.old_ts_wiki
       elif kind == AssessmentKind.IMPORTANCE or kind == 'both':
         rating.r_importance = r
-        rating.r_importance_timestamp = GLOBAL_TIMESTAMP_WIKI
+        rating.r_importance_timestamp = self.old_ts_wiki
 
       with self.wp10db.cursor() as cursor:
         cursor.execute('INSERT INTO ' + Rating.table_name + '''
@@ -480,6 +489,75 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
     for r in ratings:
       self.assertEqual(q_page_to_rating[r.r_article], r.r_quality)
       self.assertEqual(i_page_to_rating[r.r_article], r.r_importance)
+
+  def test_new_rating_quality(self):
+    self._insert_pages(self.quality_pages)
+
+    expected_global_ts = b'20190113000000'
+    with patch('wp1.logic.rating.GLOBAL_TIMESTAMP', expected_global_ts):
+      logic_project.update_project_assessments(
+        self.wikidb, self.wp10db, self.project, {})
+
+    ratings = _get_all_ratings(self.wp10db)
+    self.assertNotEqual(0, len(ratings))
+
+    q_pages = self.quality_pages[6:]
+    expected_titles = set(p[1] for p in q_pages)
+    actual_titles = set(r.r_article for r in ratings)
+    self.assertEqual(expected_titles, actual_titles)
+
+    q_page_to_rating = dict((p[1], p[3]) for p in q_pages)
+    for r in ratings:
+      self.assertEqual(q_page_to_rating[r.r_article], r.r_quality)
+
+    logs = _get_all_logs(self.wp10db)
+    self.assertEqual(len(q_pages), len(logs))
+
+    actual_log_titles = set(l.l_article for l in logs)
+    self.assertEqual(expected_titles, actual_log_titles)
+
+    for l in logs:
+      self.assertEqual(NOT_A_CLASS.encode('utf-8'), l.l_old)
+      self.assertEqual(q_page_to_rating[l.l_article], l.l_new)
+      self.assertEqual(b'Test', l.l_project)
+      self.assertEqual(0, l.l_namespace)
+      self.assertEqual(self.expected_ts_wiki, l.l_revision_timestamp)
+      self.assertEqual(expected_global_ts, l.l_timestamp)
+
+  def test_new_rating_importance(self):
+    self._insert_pages(self.importance_pages)
+
+    expected_global_ts = b'20190113000000'
+    with patch('wp1.logic.rating.GLOBAL_TIMESTAMP', expected_global_ts):
+      logic_project.update_project_assessments(
+        self.wikidb, self.wp10db, self.project, {})
+
+    ratings = _get_all_ratings(self.wp10db)
+    self.assertNotEqual(0, len(ratings))
+
+    i_pages = self.importance_pages[4:]
+    expected_titles = set(p[1] for p in i_pages)
+    actual_titles = set(r.r_article for r in ratings)
+    self.assertEqual(expected_titles, actual_titles)
+
+    i_page_to_rating = dict((p[1], p[3]) for p in i_pages)
+    for r in ratings:
+      self.assertEqual(i_page_to_rating[r.r_article], r.r_importance)
+
+    logs = _get_all_logs(self.wp10db)
+    self.assertEqual(len(i_pages), len(logs))
+
+    actual_log_titles = set(l.l_article for l in logs)
+    self.assertEqual(expected_titles, actual_log_titles)
+
+    for l in logs:
+      self.assertEqual(NOT_A_CLASS.encode('utf-8'), l.l_old)
+      self.assertEqual(i_page_to_rating[l.l_article], l.l_new)
+      self.assertEqual(b'Test', l.l_project)
+      self.assertEqual(0, l.l_namespace)
+      self.assertEqual(self.expected_ts_wiki, l.l_revision_timestamp)
+      self.assertEqual(expected_global_ts, l.l_timestamp)
+
 
   @patch('wp1.logic.api.page.site')
   def test_not_seen_quality(self, patched_site):
