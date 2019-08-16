@@ -368,7 +368,7 @@ class TablesDbTest(BaseWpOneDbTest):
                      b'Low-Class': '{{Low-Class}}',
                      b'Mid-Class': '{{Mid-Class}}',
                      b'NA-Class': '{{NA-Class}}',
-                     b'NotA-Class': '{{NotA-Class}}',
+                     b'NotA-Class': 'Other',
                      b'Top-Class': '{{Top-Class}}',
                      b'Unassessed-Class': 'No-Class',
                      b'Unknown-Class': '{{Unknown-Class}}'},
@@ -469,7 +469,7 @@ class TablesDbTest(BaseWpOneDbTest):
     actual = tables.generate_table_data(self.stats, {
       'sort_imp': missing_portal, 'sort_qual': {},
       'imp_labels': {}, 'qual_labels': {}
-    })
+    }, {'project_display': 'Test Project'})
 
     self.assertTrue(b'Portal-Class' not in actual['ordered_rows'])
 
@@ -569,7 +569,7 @@ class TablesDbTest(BaseWpOneDbTest):
   def test_generate_project_table_data(self):
     actual = tables.generate_project_table_data(self.wp10db, b'Catholicism')
     self.assertEqual(
-      'Catholicism articles by quality and importance', actual['title'])
+      'Catholicism pages by quality', actual['title'])
 
   def test_generate_global_table_data(self):
     actual = tables.generate_global_table_data(self.wp10db)
