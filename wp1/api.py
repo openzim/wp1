@@ -7,7 +7,6 @@ _ua = 'WP1.0Bot/3.0. Run by User:Audiodude. Using mwclient/0.9.1'
 
 site = mwclient.Site('en.wikipedia.org', clients_useragent=_ua)
 def login():
-  global site
   try:
     from wp1.credentials import API_CREDS
     site.login(API_CREDS['user'], API_CREDS['pass'])
