@@ -9,7 +9,6 @@ class ApiTest(unittest.TestCase):
   @patch('wp1.api.site', new_callable=PropertyMock)
   def setUp(self, patched_site):
     self.page = MagicMock()
-    pass
 
   def test_save_page(self):
     api.save_page(self.page, '<code>', 'edit summary')
