@@ -24,7 +24,7 @@ login()
 def save_page(page, wikicode, msg):
   if not site:
     logger.error('Could not save page %s because api site is not defined', page)
-    return
+    return False
 
   try:
     page.save(wikicode, msg)
@@ -32,3 +32,4 @@ def save_page(page, wikicode, msg):
     logger.warn('Got login exception, retrying login')
     login()
     page.save(wikicode, msg)
+  return True
