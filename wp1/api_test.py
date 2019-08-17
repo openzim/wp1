@@ -16,6 +16,7 @@ class ApiTest(unittest.TestCase):
 
   @patch('wp1.api.login')
   def test_save_page_tries_login_on_exception(self, patched_login):
+    api.site = MagicMock()
     self.page.save.side_effect = mwclient.errors.AssertUserFailedError()
     with self.assertRaises(mwclient.errors.AssertUserFailedError):
       actual = api.save_page(self.page, '<code>', 'edit summary')
