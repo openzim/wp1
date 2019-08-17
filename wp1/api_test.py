@@ -21,7 +21,7 @@ class ApiTest(unittest.TestCase):
     with self.assertRaises(mwclient.errors.AssertUserFailedError):
       actual = api.save_page(self.page, '<code>', 'edit summary')
       self.assertTrue(actual)
-      self.assertEqual(1, len(patched_login.call_args_listx))
+      self.assertEqual(1, len(patched_login.call_args_list))
 
   def test_save_page_skips_login_on_none_site(self):
     api.site = None
