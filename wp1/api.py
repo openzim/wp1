@@ -11,7 +11,7 @@ def login():
   try:
     from wp1.credentials import API_CREDS
     site.login(API_CREDS['user'], API_CREDS['pass'])
-  except LoginError as e:
+  except mwclient.errors.LoginError as e:
     logger.exception(e[1]['result'])
   except ImportError:
     # No credentials, probably in development environment.
