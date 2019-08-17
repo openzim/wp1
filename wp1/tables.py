@@ -33,6 +33,7 @@ def labels_for_classes(sort_qual, sort_imp):
   for k in sort_qual.keys():
     qual_labels[k] = '{{%s}}' % k.decode('utf-8')
   qual_labels[ASSESSED_CLASS] = "{{Assessed-Class}}"
+  qual_labels[UNASSESSED_CLASS] = "'''Unassessed'''"
 
   for k in sort_imp.keys():
     imp_labels[k] = '{{%s}}' % k.decode('utf-8')
@@ -134,10 +135,16 @@ def get_project_categories(wp10db, project_name):
       elif row['c_type'] == b'importance':
         imp_labels[row['c_rating']] = 'Other'
     else:
-      qual_labels[row['c_rating']] = ('{{%s|category=Category:%s}}' %
-                                      (row['c_rating'].decode('utf-8'),
-                                       row['c_category'].decode('utf-8')))
-
+      if row['c_type'] == b'quality':
+        labels = qual_labels
+      elif row['c_type'] == b'importance':
+        labels = imp_labels
+        
+      labels[row['c_rating']] = (
+        '{{%s|category=Category:%s}}' % (row['c_rating'].decode('utf-8'),
+                                         row['c_category'].decode('utf-8'))
+      )
+                       
   return {
     'sort_qual': sort_qual,
     'sort_imp': sort_imp,
