@@ -576,7 +576,7 @@ class TablesDbTest(BaseWpOneDbTest):
     self.assertEqual(
       'All rated articles by quality and importance', actual['title'])
 
-  @patch('wp1.tables.site')
+  @patch('wp1.tables.api')
   @patch('wp1.tables.wp10_connect')
   def test_upload_project_table(self, patched_connect, patched_site):
     try:
@@ -587,7 +587,7 @@ class TablesDbTest(BaseWpOneDbTest):
     finally:
       self.wp10db.close = orig_close
 
-  @patch('wp1.tables.site')
+  @patch('wp1.tables.api')
   @patch('wp1.tables.wp10_connect')
   def test_upload_global_table(self, patched_connect, patched_site):
     try:
