@@ -3,7 +3,7 @@ import logging
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 
-from wp1.api import site
+from wp1 import api
 from wp1.conf import get_conf
 from wp1.constants import LIST_URL
 from wp1.models.wp10.category import Category
@@ -271,12 +271,12 @@ def upload_project_table(project_name):
                 project_name.decode('utf-8'))
     table_data = generate_project_table_data(wp10db, project_name)
     wikicode = create_wikicode(table_data)
-    page_name = ('User:WP 1.0 bot/Tables/Project/%s' %
+    page_name = ('User:Audiodude/Tables/Project/%s' %
                  project_name.decode('utf-8'))
-    page = site.pages[page_name]
+    page = api.site.pages[page_name]
     logger.info('Uploading wikicode to Wikipedia: %s',
                 project_name.decode('utf-8'))
-    page.save(wikicode, 'Copying assessment table to wiki.')
+    api.save_page(page, wikicode, 'Copying assessment table to wiki.')
   finally:
     if wp10db is not None:
       wp10db.close()
@@ -292,8 +292,8 @@ def upload_global_table():
     wikicode = create_wikicode(table_data)
     page_name = 'User:WP 1.0 bot/Tables/OverallArticles'
     logger.info('Uploading wikicode to Wikipedia: global table')
-    page = site.pages[page_name]
-    page.save(wikicode, 'Copying assessment table to wiki.')
+    page = api.site.pages[page_name]
+    api.save_page(wikicode, 'Copying assessment table to wiki.')
   finally:
     if wp10db is not None:
       wp10db.close()
