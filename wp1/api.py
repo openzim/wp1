@@ -5,10 +5,12 @@ import mwclient
 logger = logging.getLogger(__name__)
 _ua = 'WP1.0Bot/3.0. Run by User:Audiodude. Using mwclient/0.9.1'
 
-site = mwclient.Site('en.wikipedia.org', clients_useragent=_ua)
+site = None
 def login():
+  global site
   try:
     from wp1.credentials import API_CREDS
+    site = mwclient.Site('en.wikipedia.org', clients_useragent=_ua)
     site.login(API_CREDS['user'], API_CREDS['pass'])
   except mwclient.errors.LoginError as e:
     logger.exception(e[1]['result'])
