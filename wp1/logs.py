@@ -7,6 +7,8 @@ from wp1.constants import LOG_NS, TS_FORMAT, TS_FORMAT_WP10, MAX_LOGS_PER_DAY
 from wp1.logic.util import int_to_ns
 from wp1.models.wp10.log import Log
 from wp1.templates import env as jinja_env
+from wp1.time import get_current_datetime
+from wp1.wiki_db import connect as wiki_connect
 from wp1.wp10_db import connect as wp10_connect
 
 config = get_conf()
@@ -15,13 +17,8 @@ NOT_A_CLASS = config['NOT_A_CLASS'].encode('utf-8')
 RE_EXTRACT_TIME = re.compile(r'Log for ([^(]+)')
 
 def log_page_name(project_name):
-  return ('Wikipedia:Version 1.0 Editorial Team/%s articles by quality log' %
-          project_name)
-
-
-def db_page_name(project_name):
-  return (b'Version_1.0_Editorial_Team/%s_articles_by_quality_log' %
-          project_name)
+  return ('Wikipedia:Version_1.0_Editorial_Team/%s_articles_by_quality_log' %
+          project_name.decode('utf-8'))
 
 
 def get_logs(wp10db, project_name, start_dt):
@@ -73,8 +70,8 @@ def calculate_logs_to_update(wikidb, wp10db, project_name, from_dt=None):
   those that are newer than that date. Otherwise, the date of the most recently
   uploaded log, as determined by querying the wiki replica, is used.
   """
-  if from_dt is None:
-    from_dt = get_log_timestamp(wikidb, project_name)
+  from_dt = get_current_datetime() - timedelta(days=7)
+  from_dt.replace(hour=23, minute=59, second=59)
   
   dt_to_log = defaultdict(list)
   for log in get_logs(wp10db, project_name, from_dt):
@@ -145,8 +142,13 @@ def get_section_data(wikidb, wp10db, project_name, dt, logs):
     talk_revid[art][action] = get_revid(
       wikidb, log.l_article, log.l_namespace + 1, log.rev_timestamp_dt)
 
+  categories =  get_section_categories(l)
+  # Sort the articles so that the output is idempotent.
+  for k, set_ in categories.items():
+    categories[k] = sorted(list(set_))
+
   return {
-    **get_section_categories(l),
+    **categories,
     'log_date': dt.strftime('%b %d, %Y'),
     'l': l,
     'name': name,
@@ -190,9 +192,7 @@ def update_log_page_for_project(project_name):
     log_map = calculate_logs_to_update(wikidb, wp10db, project_name)
     edits = generate_log_edits(wikidb, wp10db, project_name, log_map)
 
-    log_name = ('Wikipedia:Version_1.0_Editorial_Team/'
-                '%s_articles_by_quality_log' % project_name.decode('utf-8'))
-    p = api.site.pages[log_name]
+    p = api.get_pages(log_page_name(project_name))
 
     header = ('{{Log}}\n'
               '<noinclude>[[Category:%s articles by quality]]</noinclude>\n' %
