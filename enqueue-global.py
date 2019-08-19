@@ -9,7 +9,8 @@ def main():
   upload_q = Queue('upload', connection=Redis(host='redis'))
 
   print('Enqueuing global table upload')
-  upload_q.enqueue(tables.upload_global_table, timeout=constants.JOB_TIMEOUT)
+  upload_q.enqueue(tables.upload_global_table,
+                   job_timeout=constants.JOB_TIMEOUT)
 
 
 if __name__ == '__main__':
