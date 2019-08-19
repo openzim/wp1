@@ -10,6 +10,7 @@ class ApiTest(unittest.TestCase):
     self.page = MagicMock()
 
   def test_save_page(self):
+    api.site = MagicMock()
     api.save_page(self.page, '<code>', 'edit summary')
     self.assertEqual(1, len(self.page.save.call_args_list))
     self.assertEqual(('<code>', 'edit summary'), self.page.save.call_args[0])
