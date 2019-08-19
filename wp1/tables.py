@@ -278,7 +278,7 @@ def upload_project_table(project_name):
                 project_name.decode('utf-8'))
     table_data = generate_project_table_data(wp10db, project_name)
     wikicode = create_wikicode(table_data)
-    page_name = ('User:Audiodude/Tables/Project/%s' %
+    page_name = ('User:WP 1.0 bot/Tables/Project/%s' %
                  project_name.decode('utf-8'))
     page = api.site.pages[page_name]
     logger.info('Uploading wikicode to Wikipedia: %s',
