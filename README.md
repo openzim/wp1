@@ -34,13 +34,16 @@ intermittently with Python 2.7, but that is not recommended.
 ### Creating your virtualenv
 
 With Python 3, creating a virtualenv is a single easy command. It is
-recommmended that you run this command in this directory:
+recommmended that you run this command in the top level directory:
+
 ```bash
-python3 -m venv venv ```
+python3 -m venv venv
+```
 
 ### Activating your virtualenv
 
 To activate your virtualenv, run:
+
 ```bash
 source venv/bin/activate
 ```
@@ -51,6 +54,7 @@ You should see your prompt change, with a `(venv)` appended to the front.
 
 To install the requirements, make sure you are in your virtualenv as
 explained above, then use the following command:
+
 ```bash
 pip3 install -r requirements.txt
 ```
@@ -63,6 +67,7 @@ a user of 'root' and no password. You also need two databases:
 empty.
 
 If you have that, and you've already installed the requirements above, you should be able to simply run:
+
 ```bash
 nosetests
 ```
@@ -84,6 +89,7 @@ also need english wikipedia API credentials.
 ## Running an application script
 
 To run a script, you can simply run:
+
 ```bash
 python3 update.py
 ```
@@ -92,6 +98,7 @@ From the appropriate directory. However, this assumes that you have
 followed the steps above and are inside the appropriate
 virtualenv. For far-flung invocations of this script, you will need to
 reference the python3 wrapper script in the virtualenv:
+
 ```bash
 wikimedia_wp1_bot/venv/bin/python3 wikimedia_wp1_bot/update.py
 ```
