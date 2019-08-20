@@ -12,8 +12,8 @@ def login():
     from wp1.credentials import API_CREDS
     site = mwclient.Site('en.wikipedia.org', clients_useragent=_ua)
     site.login(API_CREDS['user'], API_CREDS['pass'])
-  except mwclient.errors.LoginError as e:
-    logger.exception(e[1]['result'])
+  except mwclient.errors.LoginError:
+    logger.exception('Exception logging into wikipedia')
   except ImportError:
     # No credentials, probably in development environment.
     pass
@@ -31,7 +31,7 @@ def save_page(page, wikicode, msg):
   try:
     page.save(wikicode, msg)
   except mwclient.errors.AssertUserFailedError as e:
-    logger.warn('Got login exception, retrying login')
+    logger.warning('Got login exception, retrying login')
     login()
     page.save(wikicode, msg)
   return True
