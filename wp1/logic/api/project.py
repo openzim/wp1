@@ -14,13 +14,13 @@ logger = logging.getLogger(__name__)
 config = get_conf()
 CATEGORY_NS_STR = config['CATEGORY_NS']
 
-RE_EXTRA = re.compile('extra(\d)-(.+)')
+RE_EXTRA = re.compile(r'extra(\d)-(.+)')
 
 def get_extra_assessments(project_name):
   ans = {'extra': {}}
   page_name = logic_util.category_for_project_by_kind(
     project_name, AssessmentKind.QUALITY).decode('utf-8')
-  logging.info('Retrieving page %s from API', page_name)
+  logging.debug('Retrieving page %s from API', page_name)
   page = api.get_page(page_name)
   if page is None:
     return ans
@@ -37,7 +37,6 @@ def get_extra_assessments(project_name):
   if template is None:
     return ans
 
-
   for key in ('parent', 'shortname', 'homepage'):
     if template.has(key):
       ans[key] = template.get(key).value.strip()
@@ -45,13 +44,14 @@ def get_extra_assessments(project_name):
   extra = defaultdict(dict)
   for param in template.params:
     md = RE_EXTRA.match(param.name.strip())
+    print(md)
     if md:
       extra[md.group(1)][md.group(2)] = (
         template.get(param.name).value.strip())
 
   for num_str, params in extra.items():
-    if ('title' not in params or 'type' not in params or
-        'category' not in params or 'ranking' not in params):
+    if not ('title' in params or 'type' in params or
+            'category' in params or 'ranking' in params):
       continue
 
     category = params['category'].replace('%s:' % CATEGORY_NS_STR, '').replace(

@@ -18,12 +18,10 @@ def login():
   global site
   try:
     api_creds = get_credentials()
-    print(repr(api_creds))
     if api_creds is None:
       logger.warning('Not creating site, no credentials')
       return
     site = mwclient.Site('en.wikipedia.org', clients_useragent=_ua)
-    print(repr(site))
     site.login(api_creds['user'], api_creds['pass'])
   except mwclient.errors.LoginError:
     logger.exception('Exception logging into wikipedia')
