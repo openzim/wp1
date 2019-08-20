@@ -1,3 +1,4 @@
+import sys
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -8,6 +9,21 @@ from wp1 import api
 class ApiTest(unittest.TestCase):
   def setUp(self):
     self.page = MagicMock()
+
+  def test_login_called_when_import_creds(self):
+    api.site = MagicMock()
+    mock_credentials = MagicMock()
+    sys.modules['wp1.credentials'] = mock_credentials
+    api.login()
+    self.assertEqual(1, api.site.login.call_count)
+
+  def test_login_exception_when_import_creds(self):
+    api.logger = MagicMock()
+    api.site = MagicMock()
+    mock_credentials = MagicMock()
+    api.site.login.side_effect = mwclient.errors.LoginError()
+    api.login()
+    self.assertEqual(1, api.logger.exception.call_count)
 
   def test_save_page(self):
     api.site = MagicMock()
