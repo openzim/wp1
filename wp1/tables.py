@@ -280,7 +280,7 @@ def upload_project_table(project_name):
     wikicode = create_wikicode(table_data)
     page_name = ('User:WP 1.0 bot/Tables/Project/%s' %
                  project_name.decode('utf-8'))
-    page = api.site.pages[page_name]
+    page = api.get_page(page_name)
     logger.info('Uploading wikicode to Wikipedia: %s',
                 project_name.decode('utf-8'))
     api.save_page(page, wikicode, 'Copying assessment table to wiki.')
@@ -299,7 +299,7 @@ def upload_global_table():
     wikicode = create_wikicode(table_data)
     page_name = 'User:WP 1.0 bot/Tables/OverallArticles'
     logger.info('Uploading wikicode to Wikipedia: global table')
-    page = api.site.pages[page_name]
+    page = api.get_page(page_name)
     api.save_page(page, wikicode, 'Copying assessment table to wiki.')
   finally:
     if wp10db is not None:

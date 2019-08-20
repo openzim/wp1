@@ -20,7 +20,7 @@ def get_extra_assessments(project_name):
   page_name = logic_util.category_for_project_by_kind(
     project_name, AssessmentKind.QUALITY).decode('utf-8')
   logging.info('Retrieving page %s from API', page_name)
-  page = site.pages[page_name]
+  page = api.get_page(page_name)
   text = page.text(section=0)
   wikicode = mwparserfromhell.parse(text)
 
