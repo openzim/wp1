@@ -14,11 +14,7 @@ def get_move(wp10db, timestamp, old_namespace, old_article):
       'm_old_article': old_article,
     })
     db_move = cursor.fetchone()
-    if db_move:
-      return Move(**db_move)
-    else:
-      return None
-
+    return Move(**db_move) if db_move else None
 
 def insert(wp10db, move):
   with wp10db.cursor() as cursor:
