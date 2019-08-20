@@ -5,7 +5,7 @@ software. More information about the Wikipedia 1.0 project can be
 found [on the Wikipedia in
 English](https://en.wikipedia.org/wiki/Wikipedia:Version_1.0_Editorial_Team).
 
-[![Build Status](https://travis-ci.org/openzim/wikimedia_wp1_bot.svg?branch=master)](https://travis-ci.org/openzim/wikimedia_wp1_bot)
+[![Build Status](https://travis-ci.com/openzim/wikimedia_wp1_bot.svg?branch=master)](https://travis-ci.com/openzim/wikimedia_wp1_bot)
 [![codecov](https://codecov.io/gh/openzim/wikimedia_wp1_bot/branch/master/graph/badge.svg)](https://codecov.io/gh/openzim/wikimedia_wp1_bot)
 [![CodeFactor](https://www.codefactor.io/repository/github/openzim/wikimedia_wp1_bot/badge)](https://www.codefactor.io/repository/github/openzim/wikimedia_wp1_bot)
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
