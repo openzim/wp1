@@ -403,29 +403,6 @@ def update_global_articles_table(wp10db, project):
       GROUP BY art
     ''', {'project': project.p_project})
 
-# ( SELECT art, qrating, irating, score
-#   FROM
-#     (SELECT a_article as art, a_quality as qrating, a_importance as irating, 
-#             a_score as score
-#        FROM " . db_table_prefix() . "global_articles
-#        JOIN " . db_table_prefix() . "ratings 
-#            ON r_namespace = 0 AND r_project = ? AND a_article = r_article
-#     ) AS tableone
-#   UNION
-#     (SELECT r_article as art, qual.gr_ranking as qrating, imp.gr_ranking as irating, 
-#             r_score as score
-#       FROM  " . db_table_prefix() . "ratings
-#       JOIN  " . db_table_prefix() . "categories as ci ON r_project = ci.c_project
-#         AND ci.c_type = 'importance' AND r_importance = ci.c_rating
-#       JOIN  " . db_table_prefix() . "categories as cq ON r_project = cq.c_project
-#         AND cq.c_type = 'quality' AND r_quality = cq.c_rating
-#       JOIN  " . db_table_prefix() . "global_rankings AS qual ON qual.gr_type = 'quality' 
-#                               AND qual.gr_rating = cq.c_replacement
-#       JOIN  " . db_table_prefix() . "global_rankings AS imp  ON imp.gr_type = 'importance' 
-#                                  AND imp.gr_rating = ci.c_replacement
-#     WHERE r_namespace = 0 and r_project = ? )
-# ) as tabletwo
-# GROUP BY art
 
 def update_project(wikidb, wp10db, project):
   extra_assessments = api_project.get_extra_assessments(project.p_project)
