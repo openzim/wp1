@@ -300,7 +300,7 @@ def upload_global_table():
     page_name = 'User:WP 1.0 bot/Tables/OverallArticles'
     logger.info('Uploading wikicode to Wikipedia: global table')
     page = api.site.pages[page_name]
-    api.save_page(wikicode, 'Copying assessment table to wiki.')
+    api.save_page(page, wikicode, 'Copying assessment table to wiki.')
   finally:
     if wp10db is not None:
       wp10db.close()
