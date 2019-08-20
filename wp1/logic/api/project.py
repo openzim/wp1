@@ -4,7 +4,7 @@ import re
 
 import mwparserfromhell
 
-from wp1.api import site
+from wp1 import api
 from wp1.conf import get_conf
 from wp1.constants import AssessmentKind
 from wp1.logic import util as logic_util
@@ -17,10 +17,14 @@ CATEGORY_NS_STR = config['CATEGORY_NS']
 RE_EXTRA = re.compile('extra(\d)-(.+)')
 
 def get_extra_assessments(project_name):
+  ans = {'extra': {}}
   page_name = logic_util.category_for_project_by_kind(
     project_name, AssessmentKind.QUALITY).decode('utf-8')
   logging.info('Retrieving page %s from API', page_name)
   page = api.get_page(page_name)
+  if page is None:
+    return ans
+
   text = page.text(section=0)
   wikicode = mwparserfromhell.parse(text)
 
@@ -30,7 +34,6 @@ def get_extra_assessments(project_name):
       template = candidate_template
       break
 
-  ans = {'extra': {}}
   if template is None:
     return ans
 
