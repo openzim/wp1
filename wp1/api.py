@@ -32,6 +32,12 @@ def login():
 # Global login on startup.
 login()
 
+def get_page(name):
+  if not site:
+    logger.error('Could not get page %s because api site is not defined', name)
+    return None
+
+  return site.pages[name]
 
 def save_page(page, wikicode, msg):
   if not site:
