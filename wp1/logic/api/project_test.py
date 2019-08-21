@@ -53,5 +53,4 @@ class TestApiProject(unittest.TestCase):
     patched_api.get_page.return_value = page
 
     actual = api_project.get_extra_assessments(b'Catholicism')
-    print(actual)
     self.assertEqual(expected, actual)
