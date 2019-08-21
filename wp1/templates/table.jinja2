@@ -4,7 +4,7 @@
 ! colspan="{{total_cols}}" class="ratingstabletitle" | {{title}}
 |-
 ! rowspan="2" style="vertical-align: bottom" | '''Quality'''
-! colspan="{{total_cols - 1}}" | '''Importance'''
+{% if not is_single_col %}! colspan="{{total_cols - 1}}" | '''Importance'''{% endif %}
 |-
 {% for col in ordered_cols -%}
 ! {{col_labels[col]}}
