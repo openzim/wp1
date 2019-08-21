@@ -44,14 +44,14 @@ def get_extra_assessments(project_name):
   extra = defaultdict(dict)
   for param in template.params:
     md = RE_EXTRA.match(param.name.strip())
-    print(md)
     if md:
       extra[md.group(1)][md.group(2)] = (
         template.get(param.name).value.strip())
 
   for num_str, params in extra.items():
-    if not ('title' in params or 'type' in params or
-            'category' in params or 'ranking' in params):
+    print(params)
+    if ('title' not in params or 'type' not in params or
+        'category' not in params or 'ranking' not in params):
       continue
 
     category = params['category'].replace('%s:' % CATEGORY_NS_STR, '').replace(
