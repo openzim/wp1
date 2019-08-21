@@ -14,7 +14,8 @@ class TestApiProject(unittest.TestCase):
 
   page_text_extra = ("{{ReleaseVersionParameters\n |hidden=yes\n |homepage="
                "Wikipedia:WikiProject Catholicism\n|extra1-title="
-               "Foo Bar Baz}}\n[[File:Juan de Juanes "
+               "Foo Bar Baz\n|extra1-type=quality\n|extra1-category="
+               "Category:Foo\n|extra1-ranking=300}}\n[[File:Juan de Juanes "
                "003.jpg|thumb|right|300px]]\nThis category contains "
                "subcategories of articles according to their currently "
                "assessed quality rating in the '''[[Wikipedia:WikiProject "
@@ -37,7 +38,14 @@ class TestApiProject(unittest.TestCase):
   @patch('wp1.logic.api.project.api')
   def test_get_extra_assessments_extra(self, patched_api):
     expected = {
-      'extra': {'title': 'Foo Bar Baz'},
+      'extra': {
+        'Foo': {
+          'title': 'Foo Bar Baz',
+          'category': 'Foo',
+          'ranking': '300',
+          'type': 'quality',
+        },
+      },
       'homepage': 'Wikipedia:WikiProject Catholicism'
     }
     page = MagicMock()
@@ -45,4 +53,5 @@ class TestApiProject(unittest.TestCase):
     patched_api.get_page.return_value = page
 
     actual = api_project.get_extra_assessments(b'Catholicism')
+    print(actual)
     self.assertEqual(expected, actual)
