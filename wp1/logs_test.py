@@ -410,7 +410,6 @@ class LogsTest(BaseCombinedDbTest):
     actual = logs.generate_log_edits(
       self.wikidb, self.wp10db, b'Catholicism', log_map)
 
-    from pprint import pprint; pprint(actual)
     self.assertEqual(3, len(actual))
     self.assertTrue(actual[0].startswith('=== Dec 27, 2018 ==='))
     self.assertTrue(actual[1].startswith('=== Dec 26, 2018 ==='))
