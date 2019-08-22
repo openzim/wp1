@@ -39,7 +39,8 @@ class ApiTest(unittest.TestCase):
 
   @patch('wp1.api.site')
   @patch('wp1.api.login')
-  def test_save_page_tries_login_on_exception(self, patched_login, patched_site):
+  def test_save_page_tries_login_on_exception(
+      self, patched_login, patched_site):
     self.page.save.side_effect = mwclient.errors.AssertUserFailedError()
     with self.assertRaises(mwclient.errors.AssertUserFailedError):
       actual = wp1.api.save_page(self.page, '<code>', 'edit summary')

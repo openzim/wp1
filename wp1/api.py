@@ -38,6 +38,7 @@ def get_page(name):
   return site.pages[name]
 
 def save_page(page, wikicode, msg):
+  print(site)
   if not site:
     logger.error('Could not save page %s because api site is not defined', page)
     return False
