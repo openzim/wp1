@@ -370,38 +370,38 @@ def update_project_record(wp10db, project, metadata):
 
   insert_or_update(wp10db, project)
 
-def update_global_articles_table(wp10db, project):
-  with wp10db.cursor() as cursor:
-    cursor.execute('''
-      REPLACE INTO global_articles
-      SELECT art, max(qrating), max(irating), max(score)
-      FROM (
-        SELECT art, qrating, irating, score FROM
-          (SELECT a_article AS art, a_quality AS qrating,
-                  a_importance AS irating, a_score AS score
-           FROM global_articles
-           JOIN ratings 
-             ON r_namespace = 0 AND r_project = 'Catholicism' AND
-                a_article = r_article
-          ) as t1
-          UNION
-          (SELECT r_article AS art, qual.gr_ranking AS qrating,
-                  imp.gr_ranking AS irating, r_score AS score
-           FROM ratings
-           JOIN categories AS ci
-             ON r_project = ci.c_project AND ci.c_type = 'importance' AND
-                r_importance = ci.c_rating
-           JOIN categories AS cq
-             ON r_project = cq.c_project AND
-                cq.c_type = 'quality' AND r_quality = cq.c_rating
-           JOIN global_rankings AS qual
-             ON qual.gr_type = 'quality' AND qual.gr_rating = cq.c_replacement
-           JOIN global_rankings AS imp
-             ON imp.gr_type = 'importance' AND imp.gr_rating = ci.c_replacement
-           WHERE r_namespace = 0 AND r_project = 'Catholicism')
-      ) as t2
-      GROUP BY art
-    ''', {'project': project.p_project})
+# def update_global_articles_table(wp10db, project):
+#   with wp10db.cursor() as cursor:
+#     cursor.execute('''
+#       REPLACE INTO global_articles
+#       SELECT art, max(qrating), max(irating), max(score)
+#       FROM (
+#         SELECT art, qrating, irating, score FROM
+#           (SELECT a_article AS art, a_quality AS qrating,
+#                   a_importance AS irating, a_score AS score
+#            FROM global_articles
+#            JOIN ratings 
+#              ON r_namespace = 0 AND r_project = 'Catholicism' AND
+#                 a_article = r_article
+#           ) as t1
+#           UNION
+#           (SELECT r_article AS art, qual.gr_ranking AS qrating,
+#                   imp.gr_ranking AS irating, r_score AS score
+#            FROM ratings
+#            JOIN categories AS ci
+#              ON r_project = ci.c_project AND ci.c_type = 'importance' AND
+#                 r_importance = ci.c_rating
+#            JOIN categories AS cq
+#              ON r_project = cq.c_project AND
+#                 cq.c_type = 'quality' AND r_quality = cq.c_rating
+#            JOIN global_rankings AS qual
+#              ON qual.gr_type = 'quality' AND qual.gr_rating = cq.c_replacement
+#            JOIN global_rankings AS imp
+#              ON imp.gr_type = 'importance' AND imp.gr_rating = ci.c_replacement
+#            WHERE r_namespace = 0 AND r_project = 'Catholicism')
+#       ) as t2
+#       GROUP BY art
+#     ''', {'project': project.p_project})
 
 
 def update_project(wikidb, wp10db, project):
