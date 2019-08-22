@@ -419,4 +419,6 @@ def update_project(wikidb, wp10db, project):
   ## the score metrics will be changing, skip it for now.
   # update_project_scores(wp10_session, project)
 
-  update_global_articles_table(wp10db, project)
+  # This is commented out because it can't be done in parallel with other
+  # project updates. See https://github.com/openzim/wikimedia_wp1_bot/issues/71
+  # update_global_articles_table(wp10db, project)
