@@ -13,8 +13,8 @@ RUN apt-get update && \
 RUN pip3 install -r app/requirements.txt
 
 # Schedule tasks through cron
-RUN echo "0 0  * * * root /usr/bin/flock -w 0 /dev/shm/enqueue-all.cron.lock    python /usr/src/app/enqueue-all.py    > /dev/shm/enqueue-all.cron.log    2>&1" > /etc/cron.d/enqueue-all
-RUN echo "0 23 * * * root /usr/bin/flock -w 0 /dev/shm/enqueue-global.cron.lock python /usr/src/app/enqueue-global.py > /dev/shm/enqueue-global.cron.log 2>&1" > /etc/cron.d/enqueue-global
+RUN echo "0 0 * * * root /usr/src/app/cron/enqueue-all.sh > /var/log/enqueue-all.cron.log 2>&1" > /etc/cron.d/enqueue-all
+RUN echo "0 5 * * * root /usr/src/app/cron/enqueue-global.sh > /var/log/enqueue-global.cron.log 2>&1" > /etc/cron.d/enqueue-global
 
 # Start
 CMD cron && supervisord -c /usr/src/app/supervisord.conf -n

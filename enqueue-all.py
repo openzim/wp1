@@ -61,7 +61,7 @@ def main():
     else:
       print('Enqueuing update %s' % project_name)
       update_job = update_q.enqueue(
-        logic_project.update_project_by_name, project_name
+        logic_project.update_project_by_name, project_name,
         job_timeout=constants.JOB_TIMEOUT)
       print('Enqueuing upload (dependent) %s' % project_name)
       upload_q.enqueue(
