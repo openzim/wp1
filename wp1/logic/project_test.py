@@ -1,5 +1,6 @@
 from datetime import datetime
 from unittest.mock import patch
+import time
 
 import attr
 
@@ -41,6 +42,11 @@ def _get_all_logs(wp10db):
   with wp10db.cursor() as cursor:
     cursor.execute('SELECT * FROM logging')
     return [Log(**db_log) for db_log in cursor.fetchall()]
+
+def _get_all_global_article_scores(wp10db):
+  with wp10db.cursor() as cursor:
+    cursor.execute('SELECT * FROM global_articles')
+    return cursor.fetchall()
 
 class UpdateCategoryTest(BaseWpOneDbTest):
   def setUp(self):
@@ -261,6 +267,9 @@ class UpdateProjectCategoriesByKindTest(BaseCombinedDbTest):
     self.assertEqual(expected_ratings, category_replaces)
 
 class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
+  old_ts_wiki = b'2018-07-04T05:05:05Z'
+  expected_ts_wiki = b'2018-12-25T11:22:33Z'
+
   quality_pages = (
     (101, b'FA-Class_Test_articles', b'Test_articles_by_quality', None, 14),
     (102, b'FL-Class_Test_articles', b'Test_articles_by_quality', None, 14),
@@ -322,8 +331,32 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
     (2520, b'How to test', b'Low-Class_Test_articles', b'Low-Class', 1),
   )
 
+  global_article_scores = [
+    (225, 100, 475),
+    (150, 0, 625),
+    (100, 100, 229),
+    (150, 100, 589),
+    (150, 200, 596),
+    (150, 100, 398),
+    (0, 0, 109),
+    (225, 100, 434),
+    (150, 300, 629),
+    (150, 300, 629),
+    (150, 300, 629),
+    (100, 100, 461),
+    (225, 0, 288),
+    (0, 0, 35),
+    (150, 100, 665),
+    (150, 100, 527),
+    (100,0, 176),
+    (150, 100, 37),
+    (15, 100, 279),
+    (150, 100, 279),
+    (100, 100, 415),
+  ]
+
   def _insert_pages(self, pages):
-    ts = datetime.now()
+    ts = datetime(2018, 12, 25, 11, 22, 33)
     with self.wikidb.cursor() as cursor:
       for p in pages:
         cursor.execute('''
@@ -338,17 +371,28 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
 
   def _insert_ratings(self, pages, namespace, kind, override_rating=None):
     for p in pages:
-      r = p[3]
+      if kind == 'both' and override_rating is None:
+        r = (p[0][3], p[1][3])
+        art = p[0][1]
+      else:
+        r = p[3]
+        art = p[1]
       if override_rating is not None:
         r = override_rating
       rating = Rating(
-        r_project=self.project.p_project, r_namespace=namespace, r_article=p[1])
+        r_project=self.project.p_project, r_namespace=namespace, r_article=art)
       if kind == AssessmentKind.QUALITY or kind == 'both':
-        rating.r_quality = r
-        rating.r_quality_timestamp = GLOBAL_TIMESTAMP_WIKI
+        if isinstance(r, tuple):
+          rating.r_quality = r[0]
+        else:
+          rating.r_quality = r
+        rating.r_quality_timestamp = self.old_ts_wiki
       elif kind == AssessmentKind.IMPORTANCE or kind == 'both':
-        rating.r_importance = r
-        rating.r_importance_timestamp = GLOBAL_TIMESTAMP_WIKI
+        if isinstance(r, tuple):
+          rating.r_importance = r[1]
+        else:
+          rating.r_importance = r
+        rating.r_importance_timestamp = self.old_ts_wiki
 
       with self.wp10db.cursor() as cursor:
         cursor.execute('INSERT INTO ' + Rating.table_name + '''
@@ -359,6 +403,17 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
                   %(r_importance_timestamp)s)
         ''', attr.asdict(rating))
       self.wp10db.commit()
+
+  def _insert_global_scores(self):
+    article_scores = [(art[1],) + score
+    for score, art in zip(self.global_article_scores, self.quality_pages[6:])]
+    with self.wp10db.cursor() as cursor:
+      cursor.executemany('''
+        INSERT INTO global_articles
+          (a_article, a_quality, a_importance, a_score)
+        VALUES (%s, %s, %s, %s)
+      ''', article_scores)
+    self.wp10db.commit()
 
   def setUp(self):
     super().setUp()
@@ -489,8 +544,10 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
   def test_new_rating_quality(self):
     self._insert_pages(self.quality_pages)
 
-    logic_project.update_project_assessments(
-      self.wikidb, self.wp10db, self.project, {})
+    expected_global_ts = b'20190113000000'
+    with patch('wp1.logic.rating.GLOBAL_TIMESTAMP', expected_global_ts):
+      logic_project.update_project_assessments(
+        self.wikidb, self.wp10db, self.project, {})
 
     ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
@@ -515,12 +572,16 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
       self.assertEqual(q_page_to_rating[l.l_article], l.l_new)
       self.assertEqual(b'Test', l.l_project)
       self.assertEqual(0, l.l_namespace)
+      self.assertEqual(self.expected_ts_wiki, l.l_revision_timestamp)
+      self.assertEqual(expected_global_ts, l.l_timestamp)
 
   def test_new_rating_importance(self):
     self._insert_pages(self.importance_pages)
 
-    logic_project.update_project_assessments(
-      self.wikidb, self.wp10db, self.project, {})
+    expected_global_ts = b'20190113000000'
+    with patch('wp1.logic.rating.GLOBAL_TIMESTAMP', expected_global_ts):
+      logic_project.update_project_assessments(
+        self.wikidb, self.wp10db, self.project, {})
 
     ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
@@ -545,6 +606,9 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
       self.assertEqual(i_page_to_rating[l.l_article], l.l_new)
       self.assertEqual(b'Test', l.l_project)
       self.assertEqual(0, l.l_namespace)
+      self.assertEqual(self.expected_ts_wiki, l.l_revision_timestamp)
+      self.assertEqual(expected_global_ts, l.l_timestamp)
+
 
   @patch('wp1.logic.api.page.site')
   def test_not_seen_quality(self, patched_site):
@@ -643,6 +707,44 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
       self.wikidb, self.wp10db, self.project, {})
 
     patched_site.assert_not_called()
+
+  def test_update_global_articles_table(self):
+    expected = [
+      {'a_article': b'Art of testing', 'a_importance': b'100', 'a_quality': b'225', 'a_score': 475},
+      {'a_article': b'Failures of tests', 'a_importance': b'0', 'a_quality': b'100', 'a_score': 176},
+      {'a_article': b'How to test', 'a_importance': b'100', 'a_quality': b'150', 'a_score': 37},
+      {'a_article': b'Important tests', 'a_importance': b'100', 'a_quality': b'225', 'a_score': 434},
+      {'a_article': b'Lesser-known tests', 'a_importance': b'100', 'a_quality': b'150', 'a_score': 527},
+      {'a_article': b'Operation of tests', 'a_importance': b'100', 'a_quality': b'150', 'a_score': 665},
+      {'a_article': b'Rules of testing', 'a_importance': b'100', 'a_quality': b'100', 'a_score': 229},
+      {'a_article': b'Test frameworks', 'a_importance': b'100', 'a_quality': b'150', 'a_score': 398},
+      {'a_article': b'Test main inheritance', 'a_importance': b'300', 'a_quality': b'150', 'a_score': 629},
+      {'a_article': b'Test other inheritance', 'a_importance': b'100', 'a_quality': b'100', 'a_score': 461},
+      {'a_article': b'Test practices', 'a_importance': b'100', 'a_quality': b'150', 'a_score': 589},
+      {'a_article': b'Test results', 'a_importance': b'300', 'a_quality': b'150', 'a_score': 629},
+      {'a_article': b'Test sub inheritance', 'a_importance': b'300', 'a_quality': b'150', 'a_score': 629},
+      {'a_article': b'Testing best practices', 'a_importance': b'0', 'a_quality': b'225', 'a_score': 288},
+      {'a_article': b'Testing figures', 'a_importance': b'0', 'a_quality': b'0', 'a_score': 109},
+      {'a_article': b'Testing history', 'a_importance': b'200', 'a_quality': b'150', 'a_score': 596},
+      {'a_article': b'Testing mechanics', 'a_importance': b'0', 'a_quality': b'150', 'a_score': 625},
+      {'a_article': b'Testing tools', 'a_importance': b'0', 'a_quality': b'0', 'a_score': 35}
+    ]
+
+    self._insert_pages(self.quality_pages)
+    self._insert_pages(self.importance_pages)
+    self._insert_ratings(zip(self.quality_pages[6:], self.importance_pages[4:]),
+                         0, 'both')
+
+    self._insert_global_scores()
+
+    logic_project.update_project(
+      self.wikidb, self.wp10db, self.project)
+
+    self.maxDiff = None
+    actual = _get_all_global_article_scores(self.wp10db)
+    actual = sorted(sorted(list(a.items())) for a in actual)
+    expected = sorted(sorted(list(e.items())) for e in expected)
+    self.assertEqual(expected, actual)
 
 class CleanupProjectTest(BaseWpOneDbTest):
   ratings = (

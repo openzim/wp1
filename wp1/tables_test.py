@@ -55,6 +55,8 @@ class TablesCategoryTest(unittest.TestCase):
     for k, actual in actual_qual.items():
       if k == tables.ASSESSED_CLASS:
         expected = '{{Assessed-Class}}'
+      elif k == tables.UNASSESSED_CLASS:
+        expected = "'''Unassessed'''"
       else:
         expected = '{{%s}}' % k.decode('utf-8')
       self.assertEqual(expected, actual)
@@ -365,14 +367,22 @@ class TablesDbTest(BaseWpOneDbTest):
 
   def test_get_project_categories(self):
     expected = {
-      'imp_labels': {b'High-Class': '{{High-Class}}',
-                     b'Low-Class': '{{Low-Class}}',
-                     b'Mid-Class': '{{Mid-Class}}',
-                     b'NA-Class': '{{NA-Class}}',
-                     b'NotA-Class': '{{NotA-Class}}',
-                     b'Top-Class': '{{Top-Class}}',
-                     b'Unassessed-Class': 'No-Class',
-                     b'Unknown-Class': '{{Unknown-Class}}'},
+      'imp_labels': {
+        b'High-Class':
+          '{{High-Class|category=Category:High-importance_Catholicism_articles}}',
+        b'Low-Class':
+          '{{Low-Class|category=Category:Low-importance_Catholicism_articles}}',
+        b'Mid-Class':
+          '{{Mid-Class|category=Category:Mid-importance_Catholicism_articles}}',
+        b'NA-Class':
+          '{{NA-Class|category=Category:NA-importance_Catholicism_articles}}',
+        b'NotA-Class': 'Other',
+        b'Top-Class':
+          '{{Top-Class|category=Category:Top-importance_Catholicism_articles}}',
+        b'Unassessed-Class': 'No-Class',
+        b'Unknown-Class':
+          '{{Unknown-Class|category=Category:Unknown-importance_Catholicism_articles}}'
+      },
       'qual_labels': {
         b'A-Class':
           '{{A-Class|category=Category:A-Class_Catholicism_articles}}',
@@ -398,16 +408,10 @@ class TablesDbTest(BaseWpOneDbTest):
           '{{File-Class|category=Category:File-Class_Catholicism_articles}}',
         b'GA-Class':
           '{{GA-Class|category=Category:GA-Class_Catholicism_articles}}',
-        b'High-Class':
-          '{{High-Class|category=Category:High-importance_Catholicism_articles}}',
         b'Image-Class':
           '{{Image-Class|category=Category:Category:Image-Class Catholicism articles}}',
         b'List-Class':
           '{{List-Class|category=Category:List-Class_Catholicism_articles}}',
-        b'Low-Class':
-          '{{Low-Class|category=Category:Low-importance_Catholicism_articles}}',
-        b'Mid-Class':
-          '{{Mid-Class|category=Category:Mid-importance_Catholicism_articles}}',
         b'NA-Class':
           '{{NA-Class|category=Category:NA-Class_Catholicism_articles}}',
         b'NotA-Class': ' style="text-align: center;" | ' "'''Other'''",
@@ -423,17 +427,13 @@ class TablesDbTest(BaseWpOneDbTest):
           '{{Stub-Class|category=Category:Stub-Class_Catholicism_articles}}',
         b'Template-Class':
           '{{Template-Class|category=Category:Template-Class_Catholicism_articles}}',
-        b'Top-Class':
-          '{{Top-Class|category=Category:Top-importance_Catholicism_articles}}',
-        b'Unassessed-Class':
-          '{{Unassessed-Class|category=Category:Unassessed_Catholicism_articles}}',
-        b'Unknown-Class':
-          '{{Unknown-Class|category=Category:Unknown-importance_Catholicism_articles}}'},
+        b'Unassessed-Class': '{{Unassessed-Class|category=Category:Unassessed_Catholicism_articles}}',
+      },
       'sort_imp': self.sort_imp,
       'sort_qual': self.sort_qual,
     }
     actual = tables.get_project_categories(self.wp10db, b'Catholicism')
-
+    self.maxDiff = None
     self.assertEqual(expected, actual)
 
   def test_data_for_stats(self):
@@ -470,7 +470,7 @@ class TablesDbTest(BaseWpOneDbTest):
     actual = tables.generate_table_data(self.stats, {
       'sort_imp': missing_portal, 'sort_qual': {},
       'imp_labels': {}, 'qual_labels': {}
-    })
+    }, {'project_display': 'Test Project'})
 
     self.assertTrue(b'Portal-Class' not in actual['ordered_rows'])
 
@@ -570,14 +570,14 @@ class TablesDbTest(BaseWpOneDbTest):
   def test_generate_project_table_data(self):
     actual = tables.generate_project_table_data(self.wp10db, b'Catholicism')
     self.assertEqual(
-      'Catholicism articles by quality and importance', actual['title'])
+      'Catholicism pages by quality', actual['title'])
 
   def test_generate_global_table_data(self):
     actual = tables.generate_global_table_data(self.wp10db)
     self.assertEqual(
       'All rated articles by quality and importance', actual['title'])
 
-  @patch('wp1.tables.site')
+  @patch('wp1.tables.api')
   @patch('wp1.tables.wp10_connect')
   def test_upload_project_table(self, patched_connect, patched_site):
     try:
@@ -588,7 +588,7 @@ class TablesDbTest(BaseWpOneDbTest):
     finally:
       self.wp10db.close = orig_close
 
-  @patch('wp1.tables.site')
+  @patch('wp1.tables.api')
   @patch('wp1.tables.wp10_connect')
   def test_upload_global_table(self, patched_connect, patched_site):
     try:
