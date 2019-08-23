@@ -193,7 +193,7 @@ def update_log_page_for_project(project_name):
     log_map = calculate_logs_to_update(wikidb, wp10db, project_name)
     edits = generate_log_edits(wikidb, wp10db, project_name, log_map)
 
-    p = api.get_pages(log_page_name(project_name))
+    p = api.get_page(log_page_name(project_name))
 
     header = ('{{Log}}\n'
               '<noinclude>[[Category:%s articles by quality]]</noinclude>\n' %
