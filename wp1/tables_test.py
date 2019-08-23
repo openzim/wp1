@@ -579,8 +579,8 @@ class TablesDbTest(BaseWpOneDbTest):
   @patch('wp1.tables.api')
   @patch('wp1.tables.wp10_connect')
   def test_upload_project_table(self, patched_connect, patched_site):
+    orig_close = self.wp10db.close
     try:
-      orig_close = self.wp10db.close
       self.wp10db.close = lambda: True
       patched_connect.return_value = self.wp10db
       tables.upload_project_table(b'Catholicism')
@@ -590,8 +590,8 @@ class TablesDbTest(BaseWpOneDbTest):
   @patch('wp1.tables.api')
   @patch('wp1.tables.wp10_connect')
   def test_upload_global_table(self, patched_connect, patched_site):
+    orig_close = self.wp10db.close
     try:
-      orig_close = self.wp10db.close
       self.wp10db.close = lambda: True
       patched_connect.return_value = self.wp10db
       tables.upload_global_table()

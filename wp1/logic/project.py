@@ -5,6 +5,7 @@ import time
 
 import attr
 
+from wp1 import api
 from wp1.conf import get_conf
 from wp1.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP, GLOBAL_TIMESTAMP_WIKI, MAX_ARTICLES_BEFORE_COMMIT
 from wp1.logic import page as logic_page, util as logic_util, rating as logic_rating, category as logic_category
@@ -31,6 +32,23 @@ ROOT_CATEGORY = config['ROOT_CATEGORY'].encode('utf-8')
 
 RE_INDICATOR = re.compile(b'([A-Za-z]+)[ _-]')
 RE_REJECT_GENERIC = re.compile(ARTICLES_LABEL + b'_' + BY_QUALITY, re.I)
+
+
+def update_global_project_count():
+  wp10db = wp10_connect()
+  try:
+    logger.info('Querying for number of projects')
+    with wp10db.cursor() as cursor:
+      cursor.execute('SELECT COUNT(*) AS count FROM projects')
+      res = cursor.fetchone()
+
+    count = res['count']
+    logger.info('Found %s projects, updating wiki', count)
+    page = api.get_page('User:WP 1.0 bot/Data/Count')
+    api.save_page(page, '%s\n' % count, 'Updating count: %s projects' % count)
+  finally:
+    wp10db.close()
+
 
 def update_project_by_name(project_name):
   wp10db = wp10_connect()
