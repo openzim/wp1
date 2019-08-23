@@ -142,7 +142,7 @@ def get_project_by_name(wp10db, project_name):
 
 def update_category(wp10db, project, page, extra, kind, rating_to_category):
   replaces = None
-  extra_category = extra.get(page.page_title)
+  extra_category = extra.get('extra', {}).get(page.page_title.decode('utf-8'))
   if extra_category is not None:
     rating = extra_category['title']
     ranking = extra_category['ranking']
