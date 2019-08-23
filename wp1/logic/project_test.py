@@ -960,3 +960,30 @@ class ProjectNamesTest(ArticlesTest):
   def test_project_names_to_update(self):
     name_list = list(logic_project.project_names_to_update(self.wikidb))
     self.assertEqual(30, len(name_list))
+
+
+class GlobalCountTest(BaseWpOneDbTest):
+  def _insert_projects(self):
+    with self.wp10db.cursor() as cursor:
+      cursor.executemany('''
+        INSERT INTO projects (p_project, p_timestamp)
+          VALUES (%s, '20181225001122')
+      ''', [('Test Project %s' % i,) for i in range(50)])
+
+  def setUp(self):
+    super().setUp()
+    self._insert_projects()
+
+  @patch('wp1.logic.project.wp10_connect')
+  @patch('wp1.logic.project.api')
+  def test_global_count(self, patched_api, patched_connect):
+    orig_close = self.wp10db.close
+    try:
+      self.wp10db.close = lambda: True
+      patched_connect.return_value = self.wp10db
+      logic_project.update_global_project_count()
+      self.assertEqual(
+        ('Count: 50\n', 'Updating count: 50 projects'),
+        patched_api.save_page.call_args_list[0][0][1:])
+    finally:
+      self.wp10db.close = orig_close
