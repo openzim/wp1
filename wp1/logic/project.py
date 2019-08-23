@@ -19,13 +19,18 @@ from wp1.wiki_db import connect as wiki_connect
 logger = logging.getLogger(__name__)
 
 config = get_conf()
+ARTICLES_LABEL = config['ARTICLES_LABEL'].encode('utf-8')
+BY_QUALITY = config['BY_QUALITY'].encode('utf-8')
+BY_IMPORTANCE = config['BY_IMPORTANCE'].encode('utf-8')
+CATEGORY_NS = config['CATEGORY_NS'].encode('utf-8')
 CLASS = config['CLASS']
-QUALITY = config['QUALITY']
 IMPORTANCE = config['IMPORTANCE']
 NOT_A_CLASS = config['NOT_A_CLASS']
+QUALITY = config['QUALITY']
+ROOT_CATEGORY = config['ROOT_CATEGORY'].encode('utf-8')
 
 RE_INDICATOR = re.compile(b'([A-Za-z]+)[ _-]')
-
+RE_REJECT_GENERIC = re.compile(ARTICLES_LABEL + b'_' + BY_QUALITY, re.I)
 
 def update_project_by_name(project_name):
   wp10db = wp10_connect()
@@ -46,6 +51,59 @@ def update_project_by_name(project_name):
   finally:
     wp10db.close()
     wikidb.close()
+
+
+def update_global_articles_for_project_name(wp10db, project_name):
+  with wp10db.cursor() as cursor:
+    cursor.execute('''
+      REPLACE INTO global_articles
+      SELECT art, max(qrating), max(irating), max(score)
+      FROM (
+        SELECT art, qrating, irating, score FROM
+          (SELECT a_article AS art, a_quality AS qrating,
+                  a_importance AS irating, a_score AS score
+           FROM global_articles
+           JOIN ratings
+             ON r_namespace = 0 AND r_project = %(project)s AND
+                a_article = r_article
+          ) as t1
+          UNION
+          (SELECT r_article AS art, qual.gr_ranking AS qrating,
+                  imp.gr_ranking AS irating, r_score AS score
+           FROM ratings
+           JOIN categories AS ci
+             ON r_project = ci.c_project AND ci.c_type = 'importance' AND
+                r_importance = ci.c_rating
+           JOIN categories AS cq
+             ON r_project = cq.c_project AND
+                cq.c_type = 'quality' AND r_quality = cq.c_rating
+           JOIN global_rankings AS qual
+             ON qual.gr_type = 'quality' AND qual.gr_rating = cq.c_replacement
+           JOIN global_rankings AS imp
+             ON imp.gr_type = 'importance' AND imp.gr_rating = ci.c_replacement
+           WHERE r_namespace = 0 AND r_project = %(project)s)
+      ) as t2
+      GROUP BY art
+    ''', {'project': project_name})
+
+
+def project_names_to_update(wikidb):
+  projects_in_root = logic_page.get_pages_by_category(
+    wikidb, ROOT_CATEGORY, CATEGORY_NS_INT)
+  # List instead of iterate because the query will be reused in the processing
+  # steps and if we don't exhaust it now, it will get truncated.
+  for category_page in list(projects_in_root):
+    if BY_QUALITY not in category_page.page_title:
+      print('Skipping %s -- it does not have quality in title' %
+                    category_page.page_title.decode('utf-8'))
+      continue
+
+    if RE_REJECT_GENERIC.match(category_page.page_title):
+      print('Skipping %r -- it is a generic "articles by quality"' %
+                    category_page)
+      continue
+
+    yield category_page.base_title
 
 
 def insert_or_update(wp10db, project):
@@ -369,39 +427,6 @@ def update_project_record(wp10db, project, metadata):
   project.upload_timestamp = b'00000000000000'
 
   insert_or_update(wp10db, project)
-
-# def update_global_articles_table(wp10db, project):
-#   with wp10db.cursor() as cursor:
-#     cursor.execute('''
-#       REPLACE INTO global_articles
-#       SELECT art, max(qrating), max(irating), max(score)
-#       FROM (
-#         SELECT art, qrating, irating, score FROM
-#           (SELECT a_article AS art, a_quality AS qrating,
-#                   a_importance AS irating, a_score AS score
-#            FROM global_articles
-#            JOIN ratings 
-#              ON r_namespace = 0 AND r_project = 'Catholicism' AND
-#                 a_article = r_article
-#           ) as t1
-#           UNION
-#           (SELECT r_article AS art, qual.gr_ranking AS qrating,
-#                   imp.gr_ranking AS irating, r_score AS score
-#            FROM ratings
-#            JOIN categories AS ci
-#              ON r_project = ci.c_project AND ci.c_type = 'importance' AND
-#                 r_importance = ci.c_rating
-#            JOIN categories AS cq
-#              ON r_project = cq.c_project AND
-#                 cq.c_type = 'quality' AND r_quality = cq.c_rating
-#            JOIN global_rankings AS qual
-#              ON qual.gr_type = 'quality' AND qual.gr_rating = cq.c_replacement
-#            JOIN global_rankings AS imp
-#              ON imp.gr_type = 'importance' AND imp.gr_rating = ci.c_replacement
-#            WHERE r_namespace = 0 AND r_project = 'Catholicism')
-#       ) as t2
-#       GROUP BY art
-#     ''', {'project': project.p_project})
 
 
 def update_project(wikidb, wp10db, project):
