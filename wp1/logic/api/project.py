@@ -49,7 +49,6 @@ def get_extra_assessments(project_name):
         template.get(param.name).value.strip())
 
   for num_str, params in extra.items():
-    print(params)
     if ('title' not in params or 'type' not in params or
         'category' not in params or 'ranking' not in params):
       continue
