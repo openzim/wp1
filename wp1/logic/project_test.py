@@ -983,7 +983,7 @@ class GlobalCountTest(BaseWpOneDbTest):
       patched_connect.return_value = self.wp10db
       logic_project.update_global_project_count()
       self.assertEqual(
-        ('Count: 50\n', 'Updating count: 50 projects'),
+        ('50\n', 'Updating count: 50 projects'),
         patched_api.save_page.call_args_list[0][0][1:])
     finally:
       self.wp10db.close = orig_close
