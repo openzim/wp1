@@ -47,5 +47,9 @@ def save_page(page, wikicode, msg):
   except mwclient.errors.AssertUserFailedError as e:
     logger.warning('Got login exception, retrying login')
     login()
+    # Retrieve a token from the api, which will cause the userinfo to refresh and site.logged_in
+    # to have the correct value. This is a necessary workaround for this bug:
+    # https://github.com/mwclient/mwclient/issues/231
+    page.get_token('edit', force=True)
     page.save(wikicode, msg)
   return True
