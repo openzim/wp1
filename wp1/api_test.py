@@ -44,7 +44,7 @@ class ApiTest(unittest.TestCase):
     with self.assertRaises(mwclient.errors.AssertUserFailedError):
       actual = wp1.api.save_page(self.page, '<code>', 'edit summary')
       self.assertTrue(actual)
-      self.assertEqual(1, len(patched_login.call_args_list))
+      self.assertEqual(1, patched_login.call_count)
 
   @patch('wp1.api')
   def test_save_page_skips_login_on_none_site(self, patched_api):
