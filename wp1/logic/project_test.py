@@ -4,7 +4,7 @@ import time
 
 import attr
 
-from wp1.base_db_test import BaseWpOneDbTest, BaseCombinedDbTest
+from wp1.base_db_test import BaseWpOneDbTest, BaseWikiDbTest, BaseCombinedDbTest
 from wp1.conf import get_conf
 from wp1.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP_WIKI, TS_FORMAT
 from wp1.logic import project as logic_project
@@ -18,7 +18,7 @@ config = get_conf()
 QUALITY = config['QUALITY']
 IMPORTANCE = config['IMPORTANCE']
 NOT_A_CLASS = config['NOT_A_CLASS']
-
+ROOT_CATEGORY = config['ROOT_CATEGORY']
 
 def _get_first_category(wp10db):
   with wp10db.cursor() as cursor:
@@ -38,15 +38,18 @@ def _get_all_ratings(wp10db):
     cursor.execute('SELECT * FROM ' + Rating.table_name)
     return [Rating(**db_rating) for db_rating in cursor.fetchall()]
 
+
 def _get_all_logs(wp10db):
   with wp10db.cursor() as cursor:
     cursor.execute('SELECT * FROM logging')
     return [Log(**db_log) for db_log in cursor.fetchall()]
 
+
 def _get_all_global_article_scores(wp10db):
   with wp10db.cursor() as cursor:
     cursor.execute('SELECT * FROM global_articles')
     return cursor.fetchall()
+
 
 class UpdateCategoryTest(BaseWpOneDbTest):
   def setUp(self):
@@ -266,9 +269,33 @@ class UpdateProjectCategoriesByKindTest(BaseCombinedDbTest):
     category_replaces = set(category.c_replacement for category in categories)
     self.assertEqual(expected_ratings, category_replaces)
 
-class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
+class ArticlesTest(BaseCombinedDbTest):
   old_ts_wiki = b'2018-07-04T05:05:05Z'
   expected_ts_wiki = b'2018-12-25T11:22:33Z'
+
+  global_article_scores = [
+    (225, 100, 475),
+    (150, 0, 625),
+    (100, 100, 229),
+    (150, 100, 589),
+    (150, 200, 596),
+    (150, 100, 398),
+    (0, 0, 109),
+    (225, 100, 434),
+    (150, 300, 629),
+    (150, 300, 629),
+    (150, 300, 629),
+    (100, 100, 461),
+    (225, 0, 288),
+    (0, 0, 35),
+    (150, 100, 665),
+    (150, 100, 527),
+    (100,0, 176),
+    (150, 100, 37),
+    (15, 100, 279),
+    (150, 100, 279),
+    (100, 100, 415),
+  ]
 
   quality_pages = (
     (101, b'FA-Class_Test_articles', b'Test_articles_by_quality', None, 14),
@@ -330,30 +357,6 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
     (2510, b'Failures of tests', b'Low-Class_Test_articles', b'Low-Class', 1),
     (2520, b'How to test', b'Low-Class_Test_articles', b'Low-Class', 1),
   )
-
-  global_article_scores = [
-    (225, 100, 475),
-    (150, 0, 625),
-    (100, 100, 229),
-    (150, 100, 589),
-    (150, 200, 596),
-    (150, 100, 398),
-    (0, 0, 109),
-    (225, 100, 434),
-    (150, 300, 629),
-    (150, 300, 629),
-    (150, 300, 629),
-    (100, 100, 461),
-    (225, 0, 288),
-    (0, 0, 35),
-    (150, 100, 665),
-    (150, 100, 527),
-    (100,0, 176),
-    (150, 100, 37),
-    (15, 100, 279),
-    (150, 100, 279),
-    (100, 100, 415),
-  ]
 
   def _insert_pages(self, pages):
     ts = datetime(2018, 12, 25, 11, 22, 33)
@@ -418,6 +421,10 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
   def setUp(self):
     super().setUp()
     self.project = Project(p_project=b'Test', p_timestamp=b'20100101000000')
+
+class UpdateProjectAssessmentsTest(ArticlesTest):
+  def setUp(self):
+    super().setUp()
 
     self.timestamp_str = '2011-04-28T12:30:00Z'
     self.expected_ns = 0
@@ -708,28 +715,10 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
 
     patched_site.assert_not_called()
 
-  def test_update_global_articles_table(self):
-    expected = [
-      {'a_article': b'Art of testing', 'a_importance': b'100', 'a_quality': b'225', 'a_score': 475},
-      {'a_article': b'Failures of tests', 'a_importance': b'0', 'a_quality': b'100', 'a_score': 176},
-      {'a_article': b'How to test', 'a_importance': b'100', 'a_quality': b'150', 'a_score': 37},
-      {'a_article': b'Important tests', 'a_importance': b'100', 'a_quality': b'225', 'a_score': 434},
-      {'a_article': b'Lesser-known tests', 'a_importance': b'100', 'a_quality': b'150', 'a_score': 527},
-      {'a_article': b'Operation of tests', 'a_importance': b'100', 'a_quality': b'150', 'a_score': 665},
-      {'a_article': b'Rules of testing', 'a_importance': b'100', 'a_quality': b'100', 'a_score': 229},
-      {'a_article': b'Test frameworks', 'a_importance': b'100', 'a_quality': b'150', 'a_score': 398},
-      {'a_article': b'Test main inheritance', 'a_importance': b'300', 'a_quality': b'150', 'a_score': 629},
-      {'a_article': b'Test other inheritance', 'a_importance': b'100', 'a_quality': b'100', 'a_score': 461},
-      {'a_article': b'Test practices', 'a_importance': b'100', 'a_quality': b'150', 'a_score': 589},
-      {'a_article': b'Test results', 'a_importance': b'300', 'a_quality': b'150', 'a_score': 629},
-      {'a_article': b'Test sub inheritance', 'a_importance': b'300', 'a_quality': b'150', 'a_score': 629},
-      {'a_article': b'Testing best practices', 'a_importance': b'0', 'a_quality': b'225', 'a_score': 288},
-      {'a_article': b'Testing figures', 'a_importance': b'0', 'a_quality': b'0', 'a_score': 109},
-      {'a_article': b'Testing history', 'a_importance': b'200', 'a_quality': b'150', 'a_score': 596},
-      {'a_article': b'Testing mechanics', 'a_importance': b'0', 'a_quality': b'150', 'a_score': 625},
-      {'a_article': b'Testing tools', 'a_importance': b'0', 'a_quality': b'0', 'a_score': 35}
-    ]
+class GlobalArticlesTest(ArticlesTest):
 
+  def setUp(self):
+    super().setUp()
     self._insert_pages(self.quality_pages)
     self._insert_pages(self.importance_pages)
     self._insert_ratings(zip(self.quality_pages[6:], self.importance_pages[4:]),
@@ -737,11 +726,90 @@ class UpdateProjectAssessmentsTest(BaseCombinedDbTest):
 
     self._insert_global_scores()
 
+  def test_update_global_articles_table(self):
+    expected = [
+      {'a_article': b'Art of testing',
+       'a_importance': b'400',
+       'a_quality': b'500',
+       'a_score': 475},
+      {'a_article': b'Failures of tests',
+       'a_importance': b'100',
+       'a_quality': b'225',
+       'a_score': 176},
+      {'a_article': b'How to test',
+       'a_importance': b'100',
+       'a_quality': b'225',
+       'a_score': 37},
+      {'a_article': b'Important tests',
+       'a_importance': b'300',
+       'a_quality': b'425',
+       'a_score': 434},
+      {'a_article': b'Lesser-known tests',
+       'a_importance': b'100',
+       'a_quality': b'225',
+       'a_score': 527},
+      {'a_article': b'Operation of tests',
+       'a_importance': b'100',
+       'a_quality': b'300',
+       'a_score': 665},
+      {'a_article': b'Rules of testing',
+       'a_importance': b'400',
+       'a_quality': b'500',
+       'a_score': 229},
+      {'a_article': b'Test frameworks',
+       'a_importance': b'300',
+       'a_quality': b'480',
+       'a_score': 398},
+      {'a_article': b'Test main inheritance',
+       'a_importance': b'300',
+       'a_quality': b'400',
+       'a_score': 629},
+      {'a_article': b'Test other inheritance',
+       'a_importance': b'200',
+       'a_quality': b'400',
+       'a_score': 461},
+      {'a_article': b'Test practices',
+       'a_importance': b'400',
+       'a_quality': b'480',
+       'a_score': 589},
+      {'a_article': b'Test results',
+       'a_importance': b'300',
+       'a_quality': b'425',
+       'a_score': 629},
+      {'a_article': b'Test sub inheritance',
+       'a_importance': b'300',
+       'a_quality': b'400',
+       'a_score': 629},
+      {'a_article': b'Testing best practices',
+       'a_importance': b'100',
+       'a_quality': b'300',
+       'a_score': 288},
+      {'a_article': b'Testing figures',
+       'a_importance': b'300',
+       'a_quality': b'425',
+       'a_score': 109},
+      {'a_article': b'Testing history',
+       'a_importance': b'300',
+       'a_quality': b'480',
+       'a_score': 596},
+      {'a_article': b'Testing mechanics',
+       'a_importance': b'400',
+       'a_quality': b'500',
+       'a_score': 625},
+      {'a_article': b'Testing tools',
+       'a_importance': b'100',
+       'a_quality': b'300',
+       'a_score': 35}
+    ]
+
     logic_project.update_project(
       self.wikidb, self.wp10db, self.project)
+    logic_project.update_global_articles_for_project_name(
+      self.wp10db, self.project.p_project)
 
     self.maxDiff = None
     actual = _get_all_global_article_scores(self.wp10db)
+    from pprint import pprint; pprint(actual)
     actual = sorted(sorted(list(a.items())) for a in actual)
     expected = sorted(sorted(list(e.items())) for e in expected)
     self.assertEqual(expected, actual)
@@ -866,3 +934,29 @@ class UpdateProjectRecordTest(BaseWpOneDbTest):
 
   def test_importance_count(self):
     self.assertEqual(6, self.project.icount)
+
+
+class ProjectNamesTest(ArticlesTest):
+  def _insert_categories(self):
+    ts = datetime(2018, 12, 25, 11, 22, 33)
+    root = ROOT_CATEGORY.encode('utf-8')
+    pages = [(i, 'Test_%s_articles_by_quality' % i, root) for i in range(30)]
+    with self.wikidb.cursor() as cursor:
+      for p in pages:
+        cursor.execute('''
+          INSERT INTO page (page_id, page_namespace, page_title)
+          VALUES (%(id)s, %(ns)s, %(title)s)
+        ''', {'id': p[0], 'ns': CATEGORY_NS_INT, 'title': p[1]})
+        cursor.execute('''
+          INSERT INTO categorylinks (cl_from, cl_to, cl_timestamp)
+          VALUES (%(from)s, %(to)s, %(ts)s)
+        ''', {'from': p[0], 'to': p[2], 'ts': ts})
+    self.wikidb.commit()
+
+  def setUp(self):
+    super().setUp()
+    self._insert_categories()
+
+  def test_project_names_to_update(self):
+    name_list = list(logic_project.project_names_to_update(self.wikidb))
+    self.assertEqual(30, len(name_list))
