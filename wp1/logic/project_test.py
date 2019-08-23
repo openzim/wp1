@@ -807,9 +807,7 @@ class GlobalArticlesTest(ArticlesTest):
     logic_project.update_global_articles_for_project_name(
       self.wp10db, self.project.p_project)
 
-    self.maxDiff = None
     actual = _get_all_global_article_scores(self.wp10db)
-    from pprint import pprint; pprint(actual)
     actual = sorted(sorted(list(a.items())) for a in actual)
     expected = sorted(sorted(list(e.items())) for e in expected)
     self.assertEqual(expected, actual)
