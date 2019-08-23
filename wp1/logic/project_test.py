@@ -95,10 +95,12 @@ class UpdateCategoryTest(BaseWpOneDbTest):
   def test_extra_category_gets_updated(self):
     rating_to_category = {}
     extra = {
-      self.page_2.page_title: {
-        'title': 'Draft-Class',
-        'ranking': 10,
-        'replaces': 'Disambig-Class'
+      'extra': {
+        self.page_2.page_title.decode('utf-8'): {
+          'title': 'Draft-Class',
+          'ranking': 10,
+          'replaces': 'Disambig-Class',
+        }
       }
     }
     logic_project.update_category(
