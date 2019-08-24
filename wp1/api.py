@@ -45,11 +45,12 @@ def save_page(page, wikicode, msg):
   try:
     page.save(wikicode, msg)
   except mwclient.errors.AssertUserFailedError as e:
-    logger.warning('Got login exception, retrying login')
+    logger.warning('Got login exception, creating new site object')
     login()
-    # Retrieve a token from the api, which will cause the userinfo to refresh and site.logged_in
-    # to have the correct value. This is a necessary workaround for this bug:
+
+    # Get a new copy of the page, since page.save is tied to page.site and that refers to the old
+    # site from before we did the re-login. All of this is a workaround for:
     # https://github.com/mwclient/mwclient/issues/231
-    page.get_token('edit', force=True)
+    page = get_page(page.name)
     page.save(wikicode, msg)
   return True
