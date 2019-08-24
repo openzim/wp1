@@ -22,25 +22,38 @@ def get_project_ratings(wp10db, project_name):
     return [Rating(**db_rating) for db_rating in cursor.fetchall()]
 
 
-def insert_or_update(wp10db, rating):
+def insert_or_update(wp10db, rating, kind):
+  duplicate_clause = ''
+  if kind == AssessmentKind.QUALITY:
+    duplicate_clause = '''
+      ON DUPLICATE KEY UPDATE r_quality=%(r_quality)s,
+                              r_quality_timestamp=%(r_quality_timestamp)s
+    '''
+  elif kind == AssessmentKind.IMPORTANCE:
+    duplicate_clause = '''
+      ON DUPLICATE KEY UPDATE r_importance=%(r_importance)s,
+                              r_importance_timestamp=%(r_importance_timestamp)s
+    '''
+  elif kind == AssessmentKind.BOTH:
+    duplicate_clause = '''
+      ON DUPLICATE KEY UPDATE r_quality=%(r_quality)s,
+                              r_quality_timestamp=%(r_quality_timestamp)s,
+                              r_importance=%(r_importance)s,
+                              r_importance_timestamp=%(r_importance_timestamp)s
+    '''
+  else:
+    raise ValueError('AssessmentKind was not QUALITY or IMPORTANCE: %s',
+                     kind)
+
   with wp10db.cursor() as cursor:
-    cursor.execute('UPDATE ' + Rating.table_name + ''' SET
-        r_quality=%(r_quality)s, r_quality_timestamp=%(r_quality_timestamp)s,
-        r_importance=%(r_importance)s,
-        r_importance_timestamp=%(r_importance_timestamp)s
-      WHERE r_project=%(r_project)s AND r_namespace=%(r_namespace)s AND
-            r_article=%(r_article)s
-    ''', attr.asdict(rating))
-    if cursor.rowcount == 0:
-      logger.debug('No update for rating row, inserting')
-      cursor.execute('INSERT INTO ' + Rating.table_name + '''
-        (r_project, r_namespace, r_article, r_score, r_quality,
-         r_quality_timestamp, r_importance, r_importance_timestamp)
-        VALUES (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
-                %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
-                %(r_importance_timestamp)s)
-        ON DUPLICATE KEY UPDATE r_article = %(r_article)s
-      ''', attr.asdict(rating))
+    cursor.execute('INSERT INTO ' + Rating.table_name + '''
+      (r_project, r_namespace, r_article, r_score, r_quality,
+       r_quality_timestamp, r_importance, r_importance_timestamp)
+    VALUES
+      (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
+       %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
+       %(r_importance_timestamp)s)
+    ''' + duplicate_clause, attr.asdict(rating))
 
 
 def delete_empty_for_project(wp10db, project):

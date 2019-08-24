@@ -289,10 +289,10 @@ def update_project_assessments_by_kind(
           logic_rating.add_log_for_rating(
               wp10db, rating, kind, old_rating_value)
           # And update the rating of course.
-          logic_rating.insert_or_update(wp10db, rating)
+          logic_rating.insert_or_update(wp10db, rating, kind)
       else:
         # Add the newly created rating.
-        logic_rating.insert_or_update(wp10db, rating)
+        logic_rating.insert_or_update(wp10db, rating, kind)
         logic_rating.add_log_for_rating(
           wp10db, rating, kind, NOT_A_CLASS)
 
@@ -363,7 +363,7 @@ def process_unseen_articles(wikidb, wp10db, project, old_ratings, seen):
       else:
         rating.r_importance_timestamp = GLOBAL_TIMESTAMP_WIKI
 
-    logic_rating.insert_or_update(wp10db, rating)
+    logic_rating.insert_or_update(wp10db, rating, kind)
 
     if kind in (AssessmentKind.QUALITY, AssessmentKind.BOTH):
       logic_rating.add_log_for_rating(
