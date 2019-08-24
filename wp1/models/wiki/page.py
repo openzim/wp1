@@ -6,6 +6,7 @@ config = get_conf()
 ARTICLES_LABEL_STR = config['ARTICLES_LABEL']
 BY_QUALITY_STR = config['BY_QUALITY']
 
+
 @attr.s
 class Page:
   """An approximation of a wikipedia page, for use in this bot.

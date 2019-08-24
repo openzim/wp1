@@ -3,6 +3,7 @@ from sqlalchemy.dialects.mysql import BINARY
 
 from wp1.wp10_db import Base
 
+
 class Review(Base):
   __tablename__ = 'reviews'
 
@@ -12,4 +13,4 @@ class Review(Base):
 
   def __repr__(self):
     return "<Review(value=%r, article=%r, timestamp=%r)>" % (
-      self.value, self.article, self.timestamp)
+        self.value, self.article, self.timestamp)

@@ -8,6 +8,7 @@ import wp1.logic.util as logic_util
 
 logger = logging.getLogger(__name__)
 
+
 def get_redirect(title_with_ns):
   logger.debug('Querying api for redirects for %s', title_with_ns)
 
@@ -15,8 +16,11 @@ def get_redirect(title_with_ns):
   retries = 3
   while retries:
     try:
-      res = site.api('query', titles=title_with_ns, redirects=1,
-                     prop='revisions', rvlimit=1)
+      res = site.api('query',
+                     titles=title_with_ns,
+                     redirects=1,
+                     prop='revisions',
+                     rvlimit=1)
       break
     except:
       retries -= 1
@@ -25,19 +29,21 @@ def get_redirect(title_with_ns):
     logger.warn('Error contacting API, returning None')
     return None
 
-  if ('query' not in res or
-      'redirects' not in res['query'] or
+  if ('query' not in res or 'redirects' not in res['query'] or
       len(res['query']['redirects'][0]['to']) == 0):
     return None
 
   key = next(iter(res['query']['pages']))
   page = res['query']['pages'][key]
   return {
-    'ns': page['ns'],
-    'title': page['title'].replace(' ', '_'),
-    'timestamp_dt': datetime.strptime(
-      page['revisions'][0]['timestamp'], TS_FORMAT),
+      'ns':
+          page['ns'],
+      'title':
+          page['title'].replace(' ', '_'),
+      'timestamp_dt':
+          datetime.strptime(page['revisions'][0]['timestamp'], TS_FORMAT),
   }
+
 
 def get_moves(title_with_ns):
   logger.debug('Querying api for moves of page %s', title_with_ns)
@@ -63,9 +69,12 @@ def get_moves(title_with_ns):
         if 'params' not in event:
           continue
         ans.append({
-          'ns': event['params']['target_ns'],
-          'title': event['params']['target_title'].replace(' ', '_'),
-          'timestamp_dt': datetime.fromtimestamp(time.mktime(event['timestamp'])),
+            'ns':
+                event['params']['target_ns'],
+            'title':
+                event['params']['target_title'].replace(' ', '_'),
+            'timestamp_dt':
+                datetime.fromtimestamp(time.mktime(event['timestamp'])),
         })
       break
     except:
