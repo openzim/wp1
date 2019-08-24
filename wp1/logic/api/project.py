@@ -16,10 +16,11 @@ CATEGORY_NS_STR = config['CATEGORY_NS']
 
 RE_EXTRA = re.compile(r'extra(\d)-(.+)')
 
+
 def get_extra_assessments(project_name):
   ans = {'extra': {}}
   page_name = logic_util.category_for_project_by_kind(
-    project_name, AssessmentKind.QUALITY).decode('utf-8')
+      project_name, AssessmentKind.QUALITY).decode('utf-8')
   logging.debug('Retrieving page %s from API', page_name)
   page = api.get_page(page_name)
   if page is None:
@@ -45,16 +46,15 @@ def get_extra_assessments(project_name):
   for param in template.params:
     md = RE_EXTRA.match(param.name.strip())
     if md:
-      extra[md.group(1)][md.group(2)] = (
-        template.get(param.name).value.strip())
+      extra[md.group(1)][md.group(2)] = (template.get(param.name).value.strip())
 
   for num_str, params in extra.items():
     if ('title' not in params or 'type' not in params or
         'category' not in params or 'ranking' not in params):
       continue
 
-    category = params['category'].replace('%s:' % CATEGORY_NS_STR, '').replace(
-      ' ', '_')
+    category = params['category'].replace('%s:' % CATEGORY_NS_STR,
+                                          '').replace(' ', '_')
     params['category'] = category
     ans['extra'][category] = params
 

@@ -8,10 +8,10 @@ try:
 
   def connect():
     kwargs = {
-      'charset': None,
-      'use_unicode': False,
-      'cursorclass': pymysql.cursors.DictCursor,
-      **WP10_CREDS
+        'charset': None,
+        'use_unicode': False,
+        'cursorclass': pymysql.cursors.DictCursor,
+        **WP10_CREDS
     }
     return pymysql.connect(**kwargs)
 except ImportError:
@@ -19,4 +19,3 @@ except ImportError:
   # to satisfy imports.
   def connect():
     pass
-

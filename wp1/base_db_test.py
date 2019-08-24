@@ -32,6 +32,7 @@ def parse_sql(filename):
 
 
 class BaseWpOneDbTest(unittest.TestCase):
+
   def _cleanup_wp_one_db(self):
     stmts = parse_sql('wp10_test.down.sql')
     with self.wp10db.cursor() as cursor:
@@ -41,13 +42,12 @@ class BaseWpOneDbTest(unittest.TestCase):
     self.wp10db.close()
 
   def _setup_wp_one_db(self):
-    self.wp10db = pymysql.connect(
-      host='localhost',
-      db='enwp10_test',
-      user='root',
-      charset=None,
-      use_unicode=False,
-      cursorclass=pymysql.cursors.DictCursor)
+    self.wp10db = pymysql.connect(host='localhost',
+                                  db='enwp10_test',
+                                  user='root',
+                                  charset=None,
+                                  use_unicode=False,
+                                  cursorclass=pymysql.cursors.DictCursor)
     stmts = parse_sql('wp10_test.up.sql')
     with self.wp10db.cursor() as cursor:
       for stmt in stmts:
@@ -58,7 +58,9 @@ class BaseWpOneDbTest(unittest.TestCase):
     self.addCleanup(self._cleanup_wp_one_db)
     self._setup_wp_one_db()
 
+
 class BaseWikiDbTest(unittest.TestCase):
+
   def _cleanup_wiki_db(self):
     stmts = parse_sql('wiki_test.down.sql')
     with self.wikidb.cursor() as cursor:
@@ -68,13 +70,12 @@ class BaseWikiDbTest(unittest.TestCase):
     self.wikidb.close()
 
   def _setup_wiki_db(self):
-    self.wikidb = pymysql.connect(
-      host='localhost',
-      db='enwikip_test',
-      user='root',
-      charset=None,
-      use_unicode=False,
-      cursorclass=pymysql.cursors.DictCursor)
+    self.wikidb = pymysql.connect(host='localhost',
+                                  db='enwikip_test',
+                                  user='root',
+                                  charset=None,
+                                  use_unicode=False,
+                                  cursorclass=pymysql.cursors.DictCursor)
     stmts = parse_sql('wiki_test.up.sql')
     with self.wikidb.cursor() as cursor:
       for stmt in stmts:
@@ -87,6 +88,7 @@ class BaseWikiDbTest(unittest.TestCase):
 
 
 class BaseCombinedDbTest(BaseWikiDbTest, BaseWpOneDbTest):
+
   def setUp(self):
     self.addCleanup(self._cleanup_wiki_db)
     self._setup_wiki_db()
