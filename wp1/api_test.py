@@ -39,12 +39,13 @@ class ApiTest(unittest.TestCase):
 
   @patch('wp1.api.site')
   @patch('wp1.api.login')
-  def test_save_page_tries_login_on_exception(self, patched_login, patched_site):
+  @patch('wp1.api.get_page')
+  def test_save_page_retries_on_exception(
+      self, patched_get_page, patched_login, patched_site):
     self.page.save.side_effect = mwclient.errors.AssertUserFailedError()
-    with self.assertRaises(mwclient.errors.AssertUserFailedError):
-      wp1.api.save_page(self.page, '<code>', 'edit summary')
-
+    wp1.api.save_page(self.page, '<code>', 'edit summary')
     self.assertEqual(1, patched_login.call_count)
+    self.assertEqual(1, patched_get_page.call_count)
 
   @patch('wp1.api')
   def test_save_page_skips_login_on_none_site(self, patched_api):
