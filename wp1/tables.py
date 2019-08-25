@@ -16,10 +16,6 @@ def commas(n):
 
 logger = logging.getLogger(__name__)
 
-jinja_env = Environment(loader=PackageLoader('wp1', 'templates'),
-                        autoescape=select_autoescape(['html', 'xml']))
-jinja_env.filters['commas'] = commas
-
 config = get_conf()
 NOT_A_CLASS = config['NOT_A_CLASS'].encode('utf-8')
 ASSESSED_CLASS = b'Assessed-Class'
