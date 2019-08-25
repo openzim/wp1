@@ -1,5 +1,6 @@
 import attr
 
+
 @attr.s
 class Release:
   table_name = 'releases'

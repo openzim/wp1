@@ -7,7 +7,9 @@ import mwclient
 
 import wp1.api
 
+
 class ApiWithCredsTest(unittest.TestCase):
+
   @patch('wp1.api.get_credentials')
   @patch('wp1.api.mwclient.Site')
   def test_login(self, patched_mwsite, patched_credentials):
@@ -18,7 +20,8 @@ class ApiWithCredsTest(unittest.TestCase):
   @patch('wp1.api.get_credentials')
   @patch('wp1.api.mwclient.Site')
   @patch('wp1.api.logger')
-  def test_login_exception(self, patched_logger, patched_mwsite, patched_credentials):
+  def test_login_exception(self, patched_logger, patched_mwsite,
+                           patched_credentials):
     site = patched_mwsite()
     print('in test', site)
     site.login.side_effect = mwclient.errors.LoginError()
@@ -27,6 +30,7 @@ class ApiWithCredsTest(unittest.TestCase):
 
 
 class ApiTest(unittest.TestCase):
+
   def setUp(self):
     self.page = MagicMock()
     self.original_save_page = wp1.api.save_page
@@ -40,8 +44,8 @@ class ApiTest(unittest.TestCase):
   @patch('wp1.api.site')
   @patch('wp1.api.login')
   @patch('wp1.api.get_page')
-  def test_save_page_retries_on_exception(
-      self, patched_get_page, patched_login, patched_site):
+  def test_save_page_retries_on_exception(self, patched_get_page, patched_login,
+                                          patched_site):
     self.page.save.side_effect = mwclient.errors.AssertUserFailedError()
     wp1.api.save_page(self.page, '<code>', 'edit summary')
     self.assertEqual(1, patched_login.call_count)

@@ -5,6 +5,7 @@ import mwclient
 logger = logging.getLogger(__name__)
 _ua = 'WP1.0Bot/3.0. Run by User:Audiodude. Using mwclient/0.9.1'
 
+
 def get_credentials():
   try:
     from wp1.credentials import API_CREDS
@@ -13,7 +14,10 @@ def get_credentials():
     # No credentials, probably in development environment.
     pass
 
+
 site = None
+
+
 def login():
   global site
   try:
@@ -30,12 +34,14 @@ def login():
 # Global login on startup.
 login()
 
+
 def get_page(name):
   if not site:
     logger.error('Could not get page %s because api site is not defined', name)
     return None
 
   return site.pages[name]
+
 
 def save_page(page, wikicode, msg):
   if not site:

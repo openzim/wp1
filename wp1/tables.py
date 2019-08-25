@@ -10,21 +10,22 @@ from wp1.models.wp10.category import Category
 from wp1.models.wp10.rating import Rating
 from wp1.wp10_db import connect as wp10_connect
 
+
 def commas(n):
   return "{:,d}".format(n)
 
+
 logger = logging.getLogger(__name__)
 
-jinja_env = Environment(
-    loader=PackageLoader('wp1', 'templates'),
-    autoescape=select_autoescape(['html', 'xml'])
-)
+jinja_env = Environment(loader=PackageLoader('wp1', 'templates'),
+                        autoescape=select_autoescape(['html', 'xml']))
 jinja_env.filters['commas'] = commas
 
 config = get_conf()
 NOT_A_CLASS = config['NOT_A_CLASS'].encode('utf-8')
 ASSESSED_CLASS = b'Assessed-Class'
 UNASSESSED_CLASS = b'Unassessed-Class'
+
 
 def labels_for_classes(sort_qual, sort_imp):
   qual_labels = {}
@@ -44,38 +45,38 @@ def labels_for_classes(sort_qual, sort_imp):
 
 def get_global_categories():
   sort_qual = {
-    b'FA-Class':     500,
-    b'FL-Class':     480,
-    b'A-Class':      425, 
-    b'GA-Class':     400,
-    b'B-Class':      300,
-    b'C-Class':      225, 
-    b'Start-Class':  150,
-    b'Stub-Class':   100,
-    b'List-Class':    80, 
-    ASSESSED_CLASS:   20,
-    NOT_A_CLASS:      11,
-    b'Unknown-Class': 10,
-    UNASSESSED_CLASS:  0,
+      b'FA-Class': 500,
+      b'FL-Class': 480,
+      b'A-Class': 425,
+      b'GA-Class': 400,
+      b'B-Class': 300,
+      b'C-Class': 225,
+      b'Start-Class': 150,
+      b'Stub-Class': 100,
+      b'List-Class': 80,
+      ASSESSED_CLASS: 20,
+      NOT_A_CLASS: 11,
+      b'Unknown-Class': 10,
+      UNASSESSED_CLASS: 0,
   }
 
-  sort_imp= {
-    b'Top-Class':    400,
-    b'High-Class':   300, 
-    b'Mid-Class':    200,
-    b'Low-Class':    100, 
-    NOT_A_CLASS:      11,
-    b'Unknown-Class': 10,
-    UNASSESSED_CLASS:  0,
+  sort_imp = {
+      b'Top-Class': 400,
+      b'High-Class': 300,
+      b'Mid-Class': 200,
+      b'Low-Class': 100,
+      NOT_A_CLASS: 11,
+      b'Unknown-Class': 10,
+      UNASSESSED_CLASS: 0,
   }
-  
+
   qual_labels, imp_labels = labels_for_classes(sort_qual, sort_imp)
 
   return {
-    'sort_qual': sort_qual,
-    'sort_imp': sort_imp,
-    'qual_labels': qual_labels,
-    'imp_labels': imp_labels,
+      'sort_qual': sort_qual,
+      'sort_imp': sort_imp,
+      'qual_labels': qual_labels,
+      'imp_labels': imp_labels,
   }
 
 
@@ -96,7 +97,8 @@ def get_global_stats(wp10db):
 
 def get_project_stats(wp10db, project_name):
   with wp10db.cursor() as cursor:
-    cursor.execute('''
+    cursor.execute(
+        '''
       SELECT count(r_article) as n, r_quality as q, r_importance as i,
              r_project as project
       FROM ''' + Rating.table_name + '''
@@ -107,8 +109,9 @@ def get_project_stats(wp10db, project_name):
 
 def db_project_categories(wp10db, project_name):
   with wp10db.cursor() as cursor:
-    cursor.execute('SELECT c_type, c_rating, c_ranking, c_category FROM ' +
-                   Category.table_name + ' WHERE c_project = %s', (project_name,))
+    cursor.execute(
+        'SELECT c_type, c_rating, c_ranking, c_category FROM ' +
+        Category.table_name + ' WHERE c_project = %s', (project_name,))
 
     return cursor.fetchall()
 
@@ -139,17 +142,16 @@ def get_project_categories(wp10db, project_name):
         labels = qual_labels
       elif row['c_type'] == b'importance':
         labels = imp_labels
-        
+
       labels[row['c_rating']] = (
-        '{{%s|category=Category:%s}}' % (row['c_rating'].decode('utf-8'),
-                                         row['c_category'].decode('utf-8'))
-      )
-                       
+          '{{%s|category=Category:%s}}' %
+          (row['c_rating'].decode('utf-8'), row['c_category'].decode('utf-8')))
+
   return {
-    'sort_qual': sort_qual,
-    'sort_imp': sort_imp,
-    'qual_labels': qual_labels,
-    'imp_labels': imp_labels,
+      'sort_qual': sort_qual,
+      'sort_imp': sort_imp,
+      'qual_labels': qual_labels,
+      'imp_labels': imp_labels,
   }
 
 
@@ -191,9 +193,11 @@ def generate_table_data(stats, categories, table_overrides=None):
     del data[r]
 
   # Step 3 - Sort the rows and columns by their ranking value
-  ordered_cols = sorted(cols.keys(), key=lambda x: categories['sort_imp'][x],
+  ordered_cols = sorted(cols.keys(),
+                        key=lambda x: categories['sort_imp'][x],
                         reverse=True)
-  ordered_rows = sorted(data.keys(), key=lambda x: categories['sort_qual'][x],
+  ordered_rows = sorted(data.keys(),
+                        key=lambda x: categories['sort_qual'][x],
                         reverse=True)
   if UNASSESSED_CLASS in ordered_rows:
     idx = ordered_rows.index(UNASSESSED_CLASS)
@@ -220,15 +224,15 @@ def generate_table_data(stats, categories, table_overrides=None):
     row_totals[b'Assessed-Class'] += d
 
   ans = {
-    **table_overrides,
-    'data':  data,
-    'ordered_cols': ordered_cols,
-    'ordered_rows': ordered_rows,
-    'row_totals': row_totals,
-    'col_totals': col_totals,
-    'total': total,
-    'col_labels': categories['imp_labels'],
-    'row_labels': categories['qual_labels'],
+      **table_overrides,
+      'data': data,
+      'ordered_cols': ordered_cols,
+      'ordered_rows': ordered_rows,
+      'row_totals': row_totals,
+      'col_totals': col_totals,
+      'total': total,
+      'col_labels': categories['imp_labels'],
+      'row_labels': categories['qual_labels'],
   }
 
   # If we have only one column, don't display it because it is identical to the
@@ -242,31 +246,35 @@ def generate_table_data(stats, categories, table_overrides=None):
 
 
 def generate_project_table_data(wp10db, project_name):
-    stats = get_project_stats(wp10db, project_name)
-    categories = get_project_categories(wp10db, project_name)
-    project_display = project_name.decode('utf-8').replace('_', ' ')
-    title = ('%s articles by quality and importance' % project_display)
+  stats = get_project_stats(wp10db, project_name)
+  categories = get_project_categories(wp10db, project_name)
+  project_display = project_name.decode('utf-8').replace('_', ' ')
+  title = ('%s articles by quality and importance' % project_display)
 
-    return generate_table_data(stats, categories, {
-      'project': project_name,
-      'project_display': project_display,
-      'create_link': True,
-      'title': title,
-      'center_table': False,
-    })
+  return generate_table_data(
+      stats, categories, {
+          'project': project_name,
+          'project_display': project_display,
+          'create_link': True,
+          'title': title,
+          'center_table': False,
+      })
 
 
 def generate_global_table_data(wp10db):
   stats = get_global_stats(wp10db)
   categories = get_global_categories()
 
-  return generate_table_data(stats, categories, {
-    'project': None,
-    'project_display': 'All articles',
-    'create_link': False, # Whether the values link to the web app.
-    'title': 'All rated articles by quality and importance',
-    'center_table': True,
-  })
+  return generate_table_data(
+      stats,
+      categories,
+      {
+          'project': None,
+          'project_display': 'All articles',
+          'create_link': False,  # Whether the values link to the web app.
+          'title': 'All rated articles by quality and importance',
+          'center_table': True,
+      })
 
 
 def upload_project_table(project_name):
@@ -305,11 +313,12 @@ def upload_global_table():
     if wp10db is not None:
       wp10db.close()
 
+
 def create_wikicode(table_data):
   template = jinja_env.get_template('table.jinja2')
   display = {
-    'LIST_URL': LIST_URL,
-    # Number of columns plus one, plus a column for Total.
-    'total_cols': len(table_data['ordered_cols']) + 2,
+      'LIST_URL': LIST_URL,
+      # Number of columns plus one, plus a column for Total.
+      'total_cols': len(table_data['ordered_cols']) + 2,
   }
   return template.render({**table_data, **display})
