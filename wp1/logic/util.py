@@ -65,8 +65,9 @@ def ns_to_int(wp10db):
 
     with wp10db.cursor() as cursor:
       cursor.execute(
-          'SELECT * FROM ' + Namespace.table_name + '''
-        WHERE dbname=%(dbname)s
+          '''
+          SELECT * FROM namespacename
+          WHERE dbname=%(dbname)s
       ''', {'dbname': DATABASE_WIKI_TS.encode('utf-8')})
       _NS_TO_INT = dict((n['ns_name'], n['ns_id']) for n in cursor.fetchall())
     return _NS_TO_INT

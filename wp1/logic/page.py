@@ -15,11 +15,10 @@ logger = logging.getLogger(__name__)
 
 def get_pages_by_category(wikidb, category, ns=None):
   query = '''
-    SELECT page_namespace, page_title, page_id, cl_sortkey, cl_timestamp 
-  ''' + '''
-    FROM ''' + Page.table_name + '''  /* SLOW_OK */
-    JOIN categorylinks ON page_id = cl_from
-    WHERE cl_to = %(category)s
+      SELECT page_namespace, page_title, page_id, cl_sortkey, cl_timestamp 
+      FROM page
+      JOIN categorylinks ON page_id = cl_from
+      WHERE cl_to = %(category)s
   '''
 
   params = {'category': category}
@@ -67,15 +66,14 @@ def update_page_moved(wp10db, project, old_ns, old_title, new_ns, new_title,
 def _get_redirects_from_db(wikidb, namespace, title, timestamp_dt):
   wiki_db_title = title.decode('utf-8').replace(' ', '_')
   wikidb.ping()
+  args_dict = {'title': wiki_db_title, 'namespace': namespace}
   with wikidb.cursor() as cursor:
     cursor.execute(
-        '''SELECT rd_namespace, rd_title, page_touched FROM page
-      JOIN redirect ON page_id = rd_from AND
-        page_title = %(title)s AND page_namespace = %(namespace)s
-    ''', {
-            'title': wiki_db_title,
-            'namespace': namespace
-        })
+        '''
+        SELECT rd_namespace, rd_title, page_touched FROM page
+        JOIN redirect ON page_id = rd_from AND
+             page_title = %(title)s AND page_namespace = %(namespace)s
+    ''', args_dict)
     row = cursor.fetchone()
     if row:
       timestamp_dt = datetime.strptime(row['page_touched'].decode('utf-8'),

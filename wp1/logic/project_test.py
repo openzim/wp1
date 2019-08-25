@@ -188,23 +188,22 @@ class UpdateProjectCategoriesByKindTest(BaseCombinedDbTest):
   def _insert_pages(self, pages):
     with self.wikidb.cursor() as cursor:
       for p in pages:
+        page_args = {'id': p[0], 'ns': 14, 'title': p[1]}
+        cl_args = {'from': p[0], 'to': p[2]}
         cursor.execute(
             '''
-          INSERT INTO page (page_id, page_namespace, page_title)
-          VALUES (%(id)s, %(ns)s, %(title)s)
-        ''', {
-                'id': p[0],
-                'ns': 14,
-                'title': p[1]
-            })
+            INSERT INTO page
+              (page_id, page_namespace, page_title)
+            VALUES
+              (%(id)s, %(ns)s, %(title)s)
+        ''', page_args)
         cursor.execute(
             '''
-          INSERT INTO categorylinks (cl_from, cl_to)
-          VALUES (%(from)s, %(to)s)
-        ''', {
-                'from': p[0],
-                'to': p[2]
-            })
+            INSERT INTO categorylinks
+              (cl_from, cl_to)
+            VALUES
+              (%(from)s, %(to)s)
+        ''', cl_args)
 
   def setUp(self):
     super().setUp()
@@ -385,24 +384,22 @@ class ArticlesTest(BaseCombinedDbTest):
     ts = datetime(2018, 12, 25, 11, 22, 33)
     with self.wikidb.cursor() as cursor:
       for p in pages:
+        page_args = {'id': p[0], 'ns': p[4], 'title': p[1]}
+        cl_args = {'from': p[0], 'to': p[2], 'ts': ts}
         cursor.execute(
             '''
-          INSERT INTO page (page_id, page_namespace, page_title)
-          VALUES (%(id)s, %(ns)s, %(title)s)
-        ''', {
-                'id': p[0],
-                'ns': p[4],
-                'title': p[1]
-            })
+            INSERT INTO page
+              (page_id, page_namespace, page_title)
+            VALUES
+              (%(id)s, %(ns)s, %(title)s)
+        ''', page_args)
         cursor.execute(
             '''
-          INSERT INTO categorylinks (cl_from, cl_to, cl_timestamp)
-          VALUES (%(from)s, %(to)s, %(ts)s)
-        ''', {
-                'from': p[0],
-                'to': p[2],
-                'ts': ts
-            })
+            INSERT INTO categorylinks
+              (cl_from, cl_to, cl_timestamp)
+            VALUES
+              (%(from)s, %(to)s, %(ts)s)
+        ''', cl_args)
     self.wikidb.commit()
 
   def _insert_ratings(self, pages, namespace, kind, override_rating=None):
@@ -433,12 +430,14 @@ class ArticlesTest(BaseCombinedDbTest):
 
       with self.wp10db.cursor() as cursor:
         cursor.execute(
-            'INSERT INTO ' + Rating.table_name + '''
-          (r_project, r_namespace, r_article, r_score, r_quality,
-           r_quality_timestamp, r_importance, r_importance_timestamp)
-          VALUES (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
-                  %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
-                  %(r_importance_timestamp)s)
+            '''
+            INSERT INTO ratings
+              (r_project, r_namespace, r_article, r_score, r_quality,
+               r_quality_timestamp, r_importance, r_importance_timestamp)
+            VALUES
+              (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
+               %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
+               %(r_importance_timestamp)s)
         ''', attr.asdict(rating))
       self.wp10db.commit()
 
@@ -448,9 +447,9 @@ class ArticlesTest(BaseCombinedDbTest):
     with self.wp10db.cursor() as cursor:
       cursor.executemany(
           '''
-        INSERT INTO global_articles
-          (a_article, a_quality, a_importance, a_score)
-        VALUES (%s, %s, %s, %s)
+          INSERT INTO global_articles
+            (a_article, a_quality, a_importance, a_score)
+          VALUES (%s, %s, %s, %s)
       ''', article_scores)
     self.wp10db.commit()
 
@@ -947,12 +946,14 @@ class CleanupProjectTest(BaseWpOneDbTest):
                         r_quality_timestamp=qual_ts,
                         r_importance_timestamp=imp_ts)
         cursor.execute(
-            'INSERT INTO ' + Rating.table_name + '''
-          (r_project, r_namespace, r_article, r_score, r_quality,
-           r_quality_timestamp, r_importance, r_importance_timestamp)
-          VALUES (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
-                  %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
-                  %(r_importance_timestamp)s)
+            '''
+            INSERT INTO ratings
+              (r_project, r_namespace, r_article, r_score, r_quality,
+               r_quality_timestamp, r_importance, r_importance_timestamp)
+            VALUES
+              (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
+               %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
+               %(r_importance_timestamp)s)
         ''', attr.asdict(rating))
     self.wp10db.commit()
 
@@ -1011,12 +1012,14 @@ class UpdateProjectRecordTest(BaseWpOneDbTest):
                         r_quality_timestamp=qual_ts,
                         r_importance_timestamp=imp_ts)
         cursor.execute(
-            'INSERT INTO ' + Rating.table_name + '''
-          (r_project, r_namespace, r_article, r_score, r_quality,
-           r_quality_timestamp, r_importance, r_importance_timestamp)
-          VALUES (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
-                  %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
-                  %(r_importance_timestamp)s)
+            '''
+            INSERT INTO ratings
+              (r_project, r_namespace, r_article, r_score, r_quality,
+               r_quality_timestamp, r_importance, r_importance_timestamp)
+            VALUES
+              (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
+               %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
+               %(r_importance_timestamp)s)
         ''', attr.asdict(rating))
 
     self.metadata = {
@@ -1053,24 +1056,22 @@ class ProjectNamesTest(ArticlesTest):
     pages = [(i, 'Test_%s_articles_by_quality' % i, root) for i in range(30)]
     with self.wikidb.cursor() as cursor:
       for p in pages:
+        page_args = {'id': p[0], 'ns': CATEGORY_NS_INT, 'title': p[1]}
+        cl_args = {'from': p[0], 'to': p[2], 'ts': ts}
         cursor.execute(
             '''
-          INSERT INTO page (page_id, page_namespace, page_title)
-          VALUES (%(id)s, %(ns)s, %(title)s)
-        ''', {
-                'id': p[0],
-                'ns': CATEGORY_NS_INT,
-                'title': p[1]
-            })
+            INSERT INTO page
+              (page_id, page_namespace, page_title)
+            VALUES
+              (%(id)s, %(ns)s, %(title)s)
+        ''', page_args)
         cursor.execute(
             '''
-          INSERT INTO categorylinks (cl_from, cl_to, cl_timestamp)
-          VALUES (%(from)s, %(to)s, %(ts)s)
-        ''', {
-                'from': p[0],
-                'to': p[2],
-                'ts': ts
-            })
+            INSERT INTO categorylinks
+              (cl_from, cl_to, cl_timestamp)
+            VALUES
+              (%(from)s, %(to)s, %(ts)s)
+        ''', cl_args)
     self.wikidb.commit()
 
   def setUp(self):
@@ -1088,8 +1089,10 @@ class GlobalCountTest(BaseWpOneDbTest):
     with self.wp10db.cursor() as cursor:
       cursor.executemany(
           '''
-        INSERT INTO projects (p_project, p_timestamp)
-          VALUES (%s, '20181225001122')
+          INSERT INTO projects
+            (p_project, p_timestamp)
+          VALUES
+            (%s, '20181225001122')
       ''', [('Test Project %s' % i,) for i in range(50)])
 
   def setUp(self):

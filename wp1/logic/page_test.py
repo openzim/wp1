@@ -58,8 +58,10 @@ class LogicPageCategoryTest(BaseWikiDbTest):
       for page in pages:
         cursor.execute(
             '''
-          INSERT INTO page (page_id, page_namespace, page_title)
-          VALUES (%(id)s, %(ns)s, %(title)s)
+            INSERT INTO page
+              (page_id, page_namespace, page_title)
+            VALUES
+              (%(id)s, %(ns)s, %(title)s)
         ''', page)
       cls = [
           {
@@ -86,8 +88,10 @@ class LogicPageCategoryTest(BaseWikiDbTest):
       for cl in cls:
         cursor.execute(
             '''
-          INSERT INTO categorylinks (cl_from, cl_to, cl_timestamp)
-          VALUES (%(from)s, %(to)s, %(timestamp)s)
+            INSERT INTO categorylinks
+              (cl_from, cl_to, cl_timestamp)
+            VALUES
+              (%(from)s, %(to)s, %(timestamp)s)
         ''', cl)
     self.wikidb.commit()
 
@@ -253,8 +257,9 @@ class LogicPageMoveDbTest(BaseWpOneDbTest):
 
     with self.wp10db.cursor() as cursor:
       cursor.execute(
-          'SELECT * FROM ' + Move.table_name + '''
-        WHERE m_old_article = %(old_article)s
+          '''
+          SELECT * FROM moves
+          WHERE m_old_article = %(old_article)s
       ''', {'old_article': self.old_article})
       move = Move(**cursor.fetchone())
 
@@ -272,8 +277,9 @@ class LogicPageMoveDbTest(BaseWpOneDbTest):
 
     with self.wp10db.cursor() as cursor:
       cursor.execute(
-          'SELECT * FROM ' + Log.table_name + '''
-        WHERE l_article = %(old_article)s
+          '''
+          SELECT * FROM logging
+          WHERE l_article = %(old_article)s
       ''', {'old_article': self.old_article})
       log = Log(**cursor.fetchone())
 
