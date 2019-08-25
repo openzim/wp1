@@ -385,12 +385,14 @@ class TablesDbTest(BaseWpOneDbTest):
 
       with self.wp10db.cursor() as cursor:
         cursor.execute(
-            'INSERT INTO ' + Rating.table_name + '''
-          (r_project, r_namespace, r_article, r_score, r_quality,
-           r_quality_timestamp, r_importance, r_importance_timestamp)
-          VALUES (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
-                  %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
-                  %(r_importance_timestamp)s)
+            '''
+            INSERT INTO ratings
+              (r_project, r_namespace, r_article, r_score, r_quality,
+               r_quality_timestamp, r_importance, r_importance_timestamp)
+            VALUES
+              (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
+               %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
+               %(r_importance_timestamp)s)
         ''', attr.asdict(rating))
       self.wp10db.commit()
 
@@ -399,20 +401,22 @@ class TablesDbTest(BaseWpOneDbTest):
       for i, scores in enumerate(self.global_articles):
         cursor.execute(
             '''
-          INSERT INTO global_articles
-            (a_article, a_quality, a_importance, a_score)
-          VALUES (%s, %s, %s, %s)
+            INSERT INTO global_articles
+              (a_article, a_quality, a_importance, a_score)
+            VALUES
+              (%s, %s, %s, %s)
         ''', ('Test Article %s' % i,) + scores)
     self.wp10db.commit()
 
   def _setup_project_categories(self):
     with self.wp10db.cursor() as cursor:
       cursor.executemany(
-          'INSERT INTO ' + Category.table_name + '''
-          (c_project, c_type, c_rating, c_ranking, c_category, c_replacement)
-        VALUES
-          ('Catholicism', %(c_type)s, %(c_rating)s, %(c_ranking)s,
-           %(c_category)s, %(c_rating)s)
+          '''
+          INSERT INTO categories
+            (c_project, c_type, c_rating, c_ranking, c_category, c_replacement)
+          VALUES
+            ('Catholicism', %(c_type)s, %(c_rating)s, %(c_ranking)s,
+             %(c_category)s, %(c_rating)s)
       ''', self.project_categories)
     self.wp10db.commit()
 
