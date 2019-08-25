@@ -17,7 +17,6 @@
 {%- if data[row][col] and data[row][col] > 0 -%}
 || {{ format(data[row][col], project, row, col) }}
 {% else -%}
-
 || ## Keep trailing whitespace here to reduce diff.
 {% endif -%}
 {%- endfor -%}
