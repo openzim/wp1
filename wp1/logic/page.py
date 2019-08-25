@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 def get_pages_by_category(wikidb, category, ns=None):
   query = '''
-      SELECT page_namespace, page_title, page_id, cl_sortkey, cl_timestamp 
+      SELECT page_namespace, page_title, page_id, cl_sortkey, cl_timestamp
       FROM page
       JOIN categorylinks ON page_id = cl_from
       WHERE cl_to = %(category)s
