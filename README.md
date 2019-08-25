@@ -91,7 +91,7 @@ also need english wikipedia API credentials.
 To run a script, you can simply run:
 
 ```bash
-python3 update.py
+python3 enqueue-all.py
 ```
 
 From the appropriate directory. However, this assumes that you have
@@ -103,7 +103,34 @@ reference the python3 wrapper script in the virtualenv:
 wikimedia_wp1_bot/venv/bin/python3 wikimedia_wp1_bot/update.py
 ```
 
-License
--------
+# Pre-commit hooks
+
+This project is configured to use git pre-commit hooks managed by the
+Python program `pre-commit` ([website](https://pre-commit.com/)). Pre-
+commit checks let us ensure that the code is properly formatted with
+[yapf](https://github.com/google/yapf) amongst other things.
+
+If you've installed the requirements for this repository, the pre-commit
+binary should be available to you. To install the hooks, use:
+
+```bash
+pre-commit install
+```
+
+Then, when you try to commit a change that would fail pre-commit, you get:
+
+```
+(venv) host:wikimedia_wp1_bot audiodude$ git commit -am 'Test commit'
+Trim Trailing Whitespace.................................................Passed
+Fix End of Files.........................................................Passed
+yapf.....................................................................Failed
+hookid: yapf
+```
+
+From there, the pre-commit hook will have modified and thus unstaged some or all
+of the files you were trying to commit. Look through the changes to make sure
+they are sane, then re-add them with git add, before trying your commit again.
+
+# License
 
 GPLv2 or later, see [LICENSE](LICENSE) for more details.
