@@ -19,3 +19,19 @@ CREATE TABLE `redirect` (
   `rd_interwiki` varbinarY(32) DEFAULT NULL,
   `rd_fragment` varbinary(255) DEFAULT NULL
 );
+
+CREATE TABLE `revision` (
+  `rev_id` int(8) unsigned NOT NULL DEFAULT 0,
+  `rev_page` int(8) unsigned NOT NULL DEFAULT 0,
+  `rev_text_id` bigint(10) unsigned DEFAULT NULL,
+  `rev_comment_id` decimal(20,0) DEFAULT NULL,
+  `rev_actor` decimal(20,0) DEFAULT NULL,
+  `rev_timestamp` varbinary(14) NOT NULL DEFAULT '',
+  `rev_minor_edit` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `rev_deleted` tinyint(1) unsigned NOT NULL DEFAULT 0,
+  `rev_len` int(8) unsigned DEFAULT NULL,
+  `rev_parent_id` int(8) unsigned DEFAULT NULL,
+  `rev_sha1` varbinary(32) DEFAULT NULL,
+  `rev_content_model`  varbinary(32) DEFAULT NULL,
+  `rev_content_format` varbinary(64) DEFAULT NULL
+);

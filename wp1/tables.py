@@ -1,13 +1,12 @@
 from collections import defaultdict
 import logging
 
-from jinja2 import Environment, PackageLoader, select_autoescape
-
 from wp1 import api
 from wp1.conf import get_conf
 from wp1.constants import LIST_URL
 from wp1.models.wp10.category import Category
 from wp1.models.wp10.rating import Rating
+from wp1.templates import env as jinja_env
 from wp1.wp10_db import connect as wp10_connect
 
 
@@ -16,10 +15,6 @@ def commas(n):
 
 
 logger = logging.getLogger(__name__)
-
-jinja_env = Environment(loader=PackageLoader('wp1', 'templates'),
-                        autoescape=select_autoescape(['html', 'xml']))
-jinja_env.filters['commas'] = commas
 
 config = get_conf()
 NOT_A_CLASS = config['NOT_A_CLASS'].encode('utf-8')
