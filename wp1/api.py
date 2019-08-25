@@ -54,8 +54,9 @@ def save_page(page, wikicode, msg):
     logger.warning('Got login exception, creating new site object')
     login()
 
-    # Get a new copy of the page, since page.save is tied to page.site and that refers to the old
-    # site from before we did the re-login. All of this is a workaround for:
+    # Get a new copy of the page, since page.save is tied to page.site and
+    # that refers to the old site from before we did the re-login. All of this
+    # is a workaround for:
     # https://github.com/mwclient/mwclient/issues/231
     page = get_page(page.name)
     page.save(wikicode, msg)
