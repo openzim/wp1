@@ -2,10 +2,12 @@ import enum
 
 import attr
 
+
 class NsType(enum.Enum):
   primary = 0
   canonical = 1
   alias = 2
+
 
 @attr.s
 class Namespace:

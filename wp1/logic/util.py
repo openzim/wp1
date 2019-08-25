@@ -10,8 +10,11 @@ BY_IMPORTANCE_ALT_STR = config['BY_IMPORTANCE_ALT']
 ARTICLES_LABEL_STR = config['ARTICLES_LABEL']
 DATABASE_WIKI_TS = config['DATABASE_WIKI_TS']
 
-def category_for_project_by_kind(
-    project_name, kind, category_prefix=True, use_alt=False):
+
+def category_for_project_by_kind(project_name,
+                                 kind,
+                                 category_prefix=True,
+                                 use_alt=False):
   if kind == AssessmentKind.QUALITY:
     kind_tag = BY_QUALITY_STR
   elif kind == AssessmentKind.IMPORTANCE:
@@ -27,26 +30,30 @@ def category_for_project_by_kind(
     return_bytes = True
     project_name = project_name.decode('utf-8')
 
-  category = '%s_%s_%s' % (
-    project_name, ARTICLES_LABEL_STR, kind_tag)
+  category = '%s_%s_%s' % (project_name, ARTICLES_LABEL_STR, kind_tag)
 
   if category_prefix:
     category = CATEGORY_NS_STR + ':' + category
 
   return category.encode('utf-8') if return_bytes else category
 
+
 def is_namespace_acceptable(ns):
   if ns < 0 or ns == 2 or ns % 2 == 1:
     return False
   return True
+
 
 def title_for_api(wp10db, namespace, title):
   title = title.decode('utf-8')
   ns_str = int_to_ns(wp10db)[namespace].decode('utf-8')
   return '%s:%s' % (ns_str, title)
 
+
 _NS_TO_INT = None
 _INT_TO_NS = None
+
+
 def ns_to_int(wp10db):
   global _NS_TO_INT
   if _NS_TO_INT is not None:
@@ -55,13 +62,16 @@ def ns_to_int(wp10db):
     if _INT_TO_NS is not None:
       _NS_TO_INT = {v: k for k, v in _INT_TO_NS.items()}
       return _NS_TO_INT
-     
+
     with wp10db.cursor() as cursor:
-      cursor.execute('SELECT * FROM ' + Namespace.table_name + '''
-        WHERE dbname=%(dbname)s
+      cursor.execute(
+          '''
+          SELECT * FROM namespacename
+          WHERE dbname=%(dbname)s
       ''', {'dbname': DATABASE_WIKI_TS.encode('utf-8')})
       _NS_TO_INT = dict((n['ns_name'], n['ns_id']) for n in cursor.fetchall())
     return _NS_TO_INT
+
 
 def int_to_ns(wp10db):
   global _INT_TO_NS

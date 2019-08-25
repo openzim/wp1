@@ -5,6 +5,7 @@ from sqlalchemy.dialects.mysql import BIGINT, BINARY, BLOB, INTEGER
 
 from wp1.wiki_db import Base
 
+
 class Log(Base):
   __tablename__ = 'logging'
 
@@ -17,9 +18,9 @@ class Log(Base):
 
   def __repr__(self):
     return "<Log(namespace=%r, title=%r, timestamp=%r, type=%r)>" % (
-      self.namespace, self.title, self.timestamp, self.type)
+        self.namespace, self.title, self.timestamp, self.type)
 
   @property
   def timestamp_dt(self):
-    return datetime.strptime(
-      self.quality_timestamp.decode('utf-8'), '%Y%m%dT%H%M%S')
+    return datetime.strptime(self.quality_timestamp.decode('utf-8'),
+                             '%Y%m%dT%H%M%S')

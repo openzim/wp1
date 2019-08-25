@@ -6,15 +6,19 @@ from wp1.models.wp10.rating import Rating
 
 
 class LogicRatingTest(BaseWpOneDbTest):
+
   def test_add_log_for_quality_rating(self):
-    rating = Rating(
-      r_project=b'Test Project', r_namespace=0, r_article=b'Testing Stuff',
-      r_quality=b'GA-Class', r_quality_timestamp=b'2018-04-01T12:30:00Z')
-    logic_rating.add_log_for_rating(
-      self.wp10db, rating, AssessmentKind.QUALITY, b'NotA-Class')
+    rating = Rating(r_project=b'Test Project',
+                    r_namespace=0,
+                    r_article=b'Testing Stuff',
+                    r_quality=b'GA-Class',
+                    r_quality_timestamp=b'2018-04-01T12:30:00Z')
+    logic_rating.add_log_for_rating(self.wp10db, rating, AssessmentKind.QUALITY,
+                                    b'NotA-Class')
 
     with self.wp10db.cursor() as cursor:
-      cursor.execute('''
+      cursor.execute(
+          '''
         SELECT * FROM ''' + Log.table_name + '''
         WHERE l_article = %s
       ''', (b'Testing Stuff',))
@@ -29,15 +33,17 @@ class LogicRatingTest(BaseWpOneDbTest):
     self.assertEqual(b'quality', log.l_action)
 
   def test_add_log_for_importance_rating(self):
-    rating = Rating(
-      r_project=b'Test Project', r_namespace=0, r_article=b'Testing Stuff',
-      r_importance=b'Mid-Class',
-      r_importance_timestamp=b'2018-04-01T12:30:00Z')
-    logic_rating.add_log_for_rating(
-      self.wp10db, rating, AssessmentKind.IMPORTANCE, b'NotA-Class')
+    rating = Rating(r_project=b'Test Project',
+                    r_namespace=0,
+                    r_article=b'Testing Stuff',
+                    r_importance=b'Mid-Class',
+                    r_importance_timestamp=b'2018-04-01T12:30:00Z')
+    logic_rating.add_log_for_rating(self.wp10db, rating,
+                                    AssessmentKind.IMPORTANCE, b'NotA-Class')
 
     with self.wp10db.cursor() as cursor:
-      cursor.execute('''
+      cursor.execute(
+          '''
         SELECT * FROM ''' + Log.table_name + '''
         WHERE l_article = %s
       ''', (b'Testing Stuff',))
