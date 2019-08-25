@@ -1,10 +1,12 @@
 import enum
 import time
 
+
 class AssessmentKind(enum.Enum):
   QUALITY = 'quality'
   IMPORTANCE = 'importance'
   BOTH = 'both'
+
 
 MAX_ARTICLES_BEFORE_COMMIT = 200
 
@@ -20,7 +22,7 @@ GLOBAL_TIMESTAMP_WIKI = time.strftime(TS_FORMAT, time.gmtime()).encode('utf-8')
 LIST_URL = 'https://tools.wmflabs.org/enwp10/cgi-bin/list2.fcgi'
 
 # Timeout for the rq worker jobs, in seconds
-JOB_TIMEOUT=60 * 60 * 2  # 2 hours
+JOB_TIMEOUT = 60 * 60 * 2  # 2 hours
 
 LOG_NS = 4
 MAX_LOGS_PER_DAY = 100000

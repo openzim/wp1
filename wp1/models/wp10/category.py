@@ -1,5 +1,6 @@
 import attr
 
+
 @attr.s
 class Category:
   table_name = 'categories'

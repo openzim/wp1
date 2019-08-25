@@ -4,6 +4,7 @@ import attr
 
 from wp1.constants import TS_FORMAT, TS_FORMAT_WP10
 
+
 @attr.s
 class Log:
   table_name = 'logging'
@@ -25,5 +26,5 @@ class Log:
   @property
   def rev_timestamp_dt(self):
     """The revision timestamp parsed into a datetime.datetime object."""
-    return datetime.strptime(
-      self.l_revision_timestamp.decode('utf-8'), TS_FORMAT)
+    return datetime.strptime(self.l_revision_timestamp.decode('utf-8'),
+                             TS_FORMAT)
