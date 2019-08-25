@@ -83,14 +83,14 @@ def get_global_categories():
 def get_global_stats(wp10db):
   with wp10db.cursor() as cursor:
     cursor.execute('''
-      SELECT count(distinct a_article) as n,
-             grq.gr_rating as q, gri.gr_rating as i
-      FROM global_articles
-        JOIN global_rankings as grq
-          ON grq.gr_type = 'quality' AND grq.gr_ranking = a_quality
-        JOIN global_rankings as gri 
-          ON gri.gr_type = 'importance' AND gri.gr_ranking = a_importance
-      GROUP BY grq.gr_rating, gri.gr_rating
+        SELECT count(distinct a_article) AS n,
+               grq.gr_rating AS q, gri.gr_rating AS i
+        FROM global_articles
+          JOIN global_rankings AS grq
+            ON grq.gr_type = 'quality' AND grq.gr_ranking = a_quality
+          JOIN global_rankings AS gri 
+            ON gri.gr_type = 'importance' AND gri.gr_ranking = a_importance
+        GROUP BY grq.gr_rating, gri.gr_rating
     ''')
     return cursor.fetchall()
 
@@ -99,10 +99,10 @@ def get_project_stats(wp10db, project_name):
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''
-      SELECT count(r_article) as n, r_quality as q, r_importance as i,
-             r_project as project
-      FROM ''' + Rating.table_name + '''
-      WHERE r_project = %s group by r_quality, r_importance, r_project
+        SELECT count(r_article) AS n, r_quality AS q, r_importance AS i,
+               r_project AS project
+        FROM ratings
+        WHERE r_project = %s GROUP BY r_quality, r_importance, r_project
     ''', (project_name,))
     return cursor.fetchall()
 
@@ -110,8 +110,11 @@ def get_project_stats(wp10db, project_name):
 def db_project_categories(wp10db, project_name):
   with wp10db.cursor() as cursor:
     cursor.execute(
-        'SELECT c_type, c_rating, c_ranking, c_category FROM ' +
-        Category.table_name + ' WHERE c_project = %s', (project_name,))
+        '''
+        SELECT c_type, c_rating, c_ranking, c_category
+        FROM categories
+        WHERE c_project = %s
+    ''', (project_name,))
 
     return cursor.fetchall()
 

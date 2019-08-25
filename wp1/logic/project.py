@@ -75,34 +75,35 @@ def update_global_articles_for_project_name(wp10db, project_name):
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''
-      REPLACE INTO global_articles
-      SELECT art, max(qrating), max(irating), max(score)
-      FROM (
-        SELECT art, qrating, irating, score FROM
-          (SELECT a_article AS art, a_quality AS qrating,
-                  a_importance AS irating, a_score AS score
-           FROM global_articles
-           JOIN ratings
-             ON r_namespace = 0 AND r_project = %(project)s AND
-                a_article = r_article
-          ) as t1
-          UNION
-          (SELECT r_article AS art, qual.gr_ranking AS qrating,
-                  imp.gr_ranking AS irating, r_score AS score
-           FROM ratings
-           JOIN categories AS ci
-             ON r_project = ci.c_project AND ci.c_type = 'importance' AND
-                r_importance = ci.c_rating
-           JOIN categories AS cq
-             ON r_project = cq.c_project AND
-                cq.c_type = 'quality' AND r_quality = cq.c_rating
-           JOIN global_rankings AS qual
-             ON qual.gr_type = 'quality' AND qual.gr_rating = cq.c_replacement
-           JOIN global_rankings AS imp
-             ON imp.gr_type = 'importance' AND imp.gr_rating = ci.c_replacement
-           WHERE r_namespace = 0 AND r_project = %(project)s)
-      ) as t2
-      GROUP BY art
+        REPLACE INTO global_articles
+        SELECT art, max(qrating), max(irating), max(score)
+        FROM (
+          SELECT art, qrating, irating, score FROM
+            (SELECT a_article AS art, a_quality AS qrating,
+                    a_importance AS irating, a_score AS score
+             FROM global_articles
+             JOIN ratings
+               ON r_namespace = 0 AND r_project = %(project)s AND
+                  a_article = r_article
+            ) as t1
+            UNION
+            (SELECT r_article AS art, qual.gr_ranking AS qrating,
+                    imp.gr_ranking AS irating, r_score AS score
+             FROM ratings
+             JOIN categories AS ci
+               ON r_project = ci.c_project AND ci.c_type = 'importance' AND
+                  r_importance = ci.c_rating
+             JOIN categories AS cq
+               ON r_project = cq.c_project AND
+                  cq.c_type = 'quality' AND r_quality = cq.c_rating
+             JOIN global_rankings AS qual
+               ON qual.gr_type = 'quality' AND qual.gr_rating = cq.c_replacement
+             JOIN global_rankings AS imp
+               ON imp.gr_type = 'importance' AND
+                  imp.gr_rating = ci.c_replacement
+             WHERE r_namespace = 0 AND r_project = %(project)s)
+        ) as t2
+        GROUP BY art
     ''', {'project': project_name})
 
 
@@ -129,33 +130,34 @@ def insert_or_update(wp10db, project):
   with wp10db.cursor() as cursor:
     logger.debug('Updating project: %r', project)
     cursor.execute(
-        'UPDATE ' + Project.table_name + '''
-      SET p_timestamp=%(p_timestamp)s, p_wikipage=%(p_wikipage)s,
-          p_parent=%(p_parent)s, p_shortname=%(p_shortname)s,
-          p_count=%(p_count)s, p_qcount=%(p_qcount)s, p_icount=%(p_icount)s,
-          p_upload_timestamp=%(p_upload_timestamp)s, p_scope=%(p_scope)s
-      WHERE p_project=%(p_project)s
+        '''
+        UPDATE projects
+        SET p_timestamp=%(p_timestamp)s, p_wikipage=%(p_wikipage)s,
+            p_parent=%(p_parent)s, p_shortname=%(p_shortname)s,
+            p_count=%(p_count)s, p_qcount=%(p_qcount)s, p_icount=%(p_icount)s,
+            p_upload_timestamp=%(p_upload_timestamp)s, p_scope=%(p_scope)s
+        WHERE p_project=%(p_project)s
     ''', attr.asdict(project))
     if cursor.rowcount == 0:
       logger.debug('No project to update, inserting')
       cursor.execute(
-          'INSERT INTO ' + Project.table_name + '''
-        (p_project, p_timestamp, p_wikipage, p_parent, p_shortname, p_count,
-         p_qcount, p_icount, p_upload_timestamp, p_scope)
-        VALUES (%(p_project)s, %(p_timestamp)s, %(p_wikipage)s, %(p_parent)s,
-                %(p_shortname)s, %(p_count)s, %(p_qcount)s, %(p_icount)s,
-                %(p_upload_timestamp)s, %(p_scope)s)
-        ON DUPLICATE KEY UPDATE p_timestamp = %(p_timestamp)s
+          '''
+          INSERT INTO projects
+            (p_project, p_timestamp, p_wikipage, p_parent, p_shortname, p_count,
+             p_qcount, p_icount, p_upload_timestamp, p_scope)
+          VALUES
+            (%(p_project)s, %(p_timestamp)s, %(p_wikipage)s, %(p_parent)s,
+             %(p_shortname)s, %(p_count)s, %(p_qcount)s, %(p_icount)s,
+             %(p_upload_timestamp)s, %(p_scope)s)
+          ON DUPLICATE KEY UPDATE p_timestamp = %(p_timestamp)s
       ''', attr.asdict(project))
   wp10db.commit()
 
 
 def get_project_by_name(wp10db, project_name):
   with wp10db.cursor() as cursor:
-    cursor.execute(
-        'SELECT * FROM ' + Project.table_name + '''
-      WHERE p_project=%(p_project)s
-    ''', {'p_project': project_name})
+    cursor.execute('SELECT * FROM projects WHERE p_project=%(p_project)s',
+                   {'p_project': project_name})
     db_project = cursor.fetchone()
     if db_project is None:
       return None
