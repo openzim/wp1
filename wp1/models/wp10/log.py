@@ -4,6 +4,7 @@ import attr
 
 from wp1.constants import TS_FORMAT_WP10
 
+
 @attr.s
 class Log:
   table_name = 'logging'

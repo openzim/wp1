@@ -4,6 +4,7 @@ import attr
 
 from wp1.constants import TS_FORMAT
 
+
 @attr.s
 class Move:
   table_name = 'moves'
