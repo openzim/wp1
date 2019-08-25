@@ -83,7 +83,7 @@ def get_global_stats(wp10db):
         FROM global_articles
           JOIN global_rankings AS grq
             ON grq.gr_type = 'quality' AND grq.gr_ranking = a_quality
-          JOIN global_rankings AS gri 
+          JOIN global_rankings AS gri
             ON gri.gr_type = 'importance' AND gri.gr_ranking = a_importance
         GROUP BY grq.gr_rating, gri.gr_rating
     ''')
