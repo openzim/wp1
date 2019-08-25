@@ -141,4 +141,3 @@ INSERT INTO `namespacename` (dbname, domain, ns_id, ns_name, ns_type, ns_is_favo
 INSERT INTO `namespacename` (dbname, domain, ns_id, ns_name, ns_type, ns_is_favorite) VALUES ('enwiki_p', 'en.wikipedia.org',711, 'TimedText talk'        , 'canonical' , 1);
 INSERT INTO `namespacename` (dbname, domain, ns_id, ns_name, ns_type, ns_is_favorite) VALUES ('enwiki_p', 'en.wikipedia.org',828, 'Module'                , 'canonical' , 1);
 INSERT INTO `namespacename` (dbname, domain, ns_id, ns_name, ns_type, ns_is_favorite) VALUES ('enwiki_p', 'en.wikipedia.org',829, 'Module talk'           , 'canonical' , 1);
-
