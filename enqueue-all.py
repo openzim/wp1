@@ -25,18 +25,19 @@ def main():
   for project_name in logic_project.project_names_to_update(wikidb):
     if upload_only:
       print('Enqueuing upload (dependent) %s' % project_name)
-      upload_q.enqueue(
-        tables.upload_project_table, project_name,
-        job_timeout=constants.JOB_TIMEOUT)
+      upload_q.enqueue(tables.upload_project_table,
+                       project_name,
+                       job_timeout=constants.JOB_TIMEOUT)
     else:
       print('Enqueuing update %s' % project_name)
-      update_job = update_q.enqueue(
-        logic_project.update_project_by_name, project_name,
-        job_timeout=constants.JOB_TIMEOUT)
+      update_job = update_q.enqueue(logic_project.update_project_by_name,
+                                    project_name,
+                                    job_timeout=constants.JOB_TIMEOUT)
       print('Enqueuing upload (dependent) %s' % project_name)
-      upload_q.enqueue(
-        tables.upload_project_table, project_name,
-        depends_on=update_job, job_timeout=constants.JOB_TIMEOUT)
+      upload_q.enqueue(tables.upload_project_table,
+                       project_name,
+                       depends_on=update_job,
+                       job_timeout=constants.JOB_TIMEOUT)
 
 
 if __name__ == '__main__':
