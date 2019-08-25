@@ -119,9 +119,6 @@ pre-commit install
 
 Then, when you try to commit a change that would fail pre-commit, you get:
 
-When you try to commit with changes that would be modified by the
-pre-commit hook you get:
-
 ```
 (venv) host:wikimedia_wp1_bot audiodude$ git commit -am 'Test commit'
 Trim Trailing Whitespace.................................................Passed
