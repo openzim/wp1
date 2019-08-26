@@ -4,6 +4,7 @@ from redis import Redis
 from rq import Queue
 
 from wp1 import constants
+from wp1 import logs
 from wp1 import tables
 from wp1.logic import project as logic_project
 from wp1.wiki_db import connect as wiki_connect
