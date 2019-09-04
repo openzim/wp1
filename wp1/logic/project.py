@@ -1,3 +1,4 @@
+from collections import defaultdict
 import logging
 import math
 import re
@@ -240,9 +241,10 @@ def update_project_assessments(wikidb, wp10db, project, extra_assessments):
   for kind in (AssessmentKind.QUALITY, AssessmentKind.IMPORTANCE):
     logger.debug('Updating %s assessments by %s',
                  project.p_project.decode('utf-8'), kind)
-    update_project_assessments_by_kind(wikidb, wp10db, project,
-                                       extra_assessments, kind, old_ratings,
-                                       seen)
+    new_ratings = update_project_assessments_by_kind(wikidb, wp10db, project,
+                                                     extra_assessments, kind,
+                                                     old_ratings, seen)
+    store_new_ratings(wp10db, new_ratings)
 
   process_unseen_articles(wikidb, wp10db, project, old_ratings, seen)
 
@@ -258,6 +260,7 @@ def update_project_assessments_by_kind(wikidb, wp10db, project,
       wikidb, wp10db, project, extra_assessments, kind)
 
   n = 0
+  new_ratings = defaultdict(list)
   for current_rating, category in rating_to_category.items():
     logger.info('Fetching article list for %r' % category.decode('utf-8'))
     current_rating = current_rating.encode('utf-8')
@@ -298,15 +301,17 @@ def update_project_assessments_by_kind(wikidb, wp10db, project,
 
       if article_ref in old_ratings:
         if old_rating_value != current_rating:
-          # If the article doesn't match its rating, update the logging table.
-          logic_rating.add_log_for_rating(wp10db, rating, kind,
-                                          old_rating_value)
-          # And update the rating of course.
-          logic_rating.insert_or_update(wp10db, rating, kind)
+          new_ratings[article_ref].append((rating, kind, old_rating_value))
+          # # If the article doesn't match its rating, update the logging table.
+          # logic_rating.add_log_for_rating(wp10db, rating, kind,
+          #                                 old_rating_value)
+          # # And update the rating of course.
+          # logic_rating.insert_or_update(wp10db, rating, kind)
       else:
+        new_ratings[article_ref].append((rating, kind, NOT_A_CLASS))
         # Add the newly created rating.
-        logic_rating.insert_or_update(wp10db, rating, kind)
-        logic_rating.add_log_for_rating(wp10db, rating, kind, NOT_A_CLASS)
+        # logic_rating.insert_or_update(wp10db, rating, kind)
+        # logic_rating.add_log_for_rating(wp10db, rating, kind, NOT_A_CLASS)
 
       n += 1
       if n >= MAX_ARTICLES_BEFORE_COMMIT:
@@ -315,6 +320,15 @@ def update_project_assessments_by_kind(wikidb, wp10db, project,
   logger.info('End, committing db')
   wp10db.ping()
   wp10db.commit()
+
+  return new_ratings
+
+
+def store_new_ratings(wp10db, new_ratings):
+  for _, ratings_list in new_ratings.items():
+    for (rating, kind, old_rating_value) in ratings_list:
+      logic_rating.add_log_for_rating(wp10db, rating, kind, old_rating_value)
+      logic_rating.insert_or_update(wp10db, rating, kind)
 
 
 def process_unseen_articles(wikidb, wp10db, project, old_ratings, seen):
