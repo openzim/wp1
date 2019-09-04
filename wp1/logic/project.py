@@ -325,10 +325,18 @@ def update_project_assessments_by_kind(wikidb, wp10db, project,
 
 
 def store_new_ratings(wp10db, new_ratings):
+
+  def sort_rating_tuples(rating_tuple):
+    if rating_tuple[1] == AssessmentKind.QUALITY:
+      return QUALITY[rating_tuple[0].r_quality.decode('utf-8')]
+    elif rating_tuple[1] == AssessmentKind.IMPORTANCE:
+      return IMPORTANCE[rating_tuple[0].r_importance.decode('utf-8')]
+
   for _, ratings_list in new_ratings.items():
-    for (rating, kind, old_rating_value) in ratings_list:
-      logic_rating.add_log_for_rating(wp10db, rating, kind, old_rating_value)
-      logic_rating.insert_or_update(wp10db, rating, kind)
+    sorted_ratings = sorted(ratings_list, key=sort_rating_tuples, reverse=True)
+    rating, kind, old_rating_value = sorted_ratings[0]
+    logic_rating.add_log_for_rating(wp10db, rating, kind, old_rating_value)
+    logic_rating.insert_or_update(wp10db, rating, kind)
 
 
 def process_unseen_articles(wikidb, wp10db, project, old_ratings, seen):
