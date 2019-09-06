@@ -711,15 +711,13 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
     logs = _get_all_logs(self.wp10db)
     self.assertEqual(len(q_pages) + len(i_pages), len(logs))
 
-  def test_multiple_quality(self):
-    self._insert_pages(self.quality_pages)
-    self._insert_pages(self.multiple_quality_pages)
-
+  def _do_assessment(self):
     expected_global_ts = b'20190113000000'
     with patch('wp1.logic.rating.GLOBAL_TIMESTAMP', expected_global_ts):
       logic_project.update_project_assessments(self.wikidb, self.wp10db,
                                                self.project, {})
 
+  def _assert_updated_quality_ratings(self, assert_log_len=True):
     ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
 
@@ -734,18 +732,11 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
     for r in ratings:
       self.assertEqual(q_page_to_rating[r.r_article], r.r_quality)
 
-    logs = _get_all_logs(self.wp10db)
-    self.assertEqual(len(q_pages), len(logs))
+    if assert_log_len:
+      logs = _get_all_logs(self.wp10db)
+      self.assertEqual(len(q_pages), len(logs))
 
-  def test_multiple_importance(self):
-    self._insert_pages(self.importance_pages)
-    self._insert_pages(self.multiple_importance_pages)
-
-    expected_global_ts = b'20190113000000'
-    with patch('wp1.logic.rating.GLOBAL_TIMESTAMP', expected_global_ts):
-      logic_project.update_project_assessments(self.wikidb, self.wp10db,
-                                               self.project, {})
-
+  def _assert_updated_importance_ratings(self, assert_log_len=True):
     ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
 
@@ -760,45 +751,50 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
     for r in ratings:
       self.assertEqual(i_page_to_rating[r.r_article], r.r_importance)
 
-    logs = _get_all_logs(self.wp10db)
-    self.assertEqual(len(i_pages), len(logs))
+    if assert_log_len:
+      logs = _get_all_logs(self.wp10db)
+      self.assertEqual(len(i_pages), len(logs))
 
-  def test_multiple_both(self):
+  def test_multiple_new_quality(self):
+    self._insert_pages(self.quality_pages)
+    self._insert_pages(self.multiple_quality_pages)
+
+    self._do_assessment()
+    self._assert_updated_quality_ratings()
+
+  def test_multiple_existing_quality(self):
+    self._insert_pages(self.quality_pages)
+    self._insert_pages(self.multiple_quality_pages)
+    self._insert_ratings(self.multiple_quality_pages, 0, AssessmentKind.QUALITY)
+
+    self._do_assessment()
+    self._assert_updated_quality_ratings(assert_log_len=False)
+
+  def test_multiple_new_importance(self):
+    self._insert_pages(self.importance_pages)
+    self._insert_pages(self.multiple_importance_pages)
+
+    self._do_assessment()
+    self._assert_updated_importance_ratings()
+
+  def test_multiple_existing_importance(self):
+    self._insert_pages(self.importance_pages)
+    self._insert_pages(self.multiple_importance_pages)
+    self._insert_ratings(self.multiple_importance_pages, 0,
+                         AssessmentKind.IMPORTANCE)
+
+    self._do_assessment()
+    self._assert_updated_importance_ratings(assert_log_len=False)
+
+  def test_multiple_new_both(self):
     self._insert_pages(self.importance_pages)
     self._insert_pages(self.multiple_importance_pages)
     self._insert_pages(self.quality_pages)
     self._insert_pages(self.multiple_quality_pages)
 
-    expected_global_ts = b'20190113000000'
-    with patch('wp1.logic.rating.GLOBAL_TIMESTAMP', expected_global_ts):
-      logic_project.update_project_assessments(self.wikidb, self.wp10db,
-                                               self.project, {})
-
-    ratings = _get_all_ratings(self.wp10db)
-    self.assertNotEqual(0, len(ratings))
-
-    q_pages = self.quality_pages[6:]
-    i_pages = self.importance_pages[4:]
-    expected_q_titles = set(p[1] for p in q_pages)
-    expected_i_titles = set(p[1] for p in i_pages)
-    self.assertEqual(expected_q_titles, expected_i_titles)
-    actual_titles = set(r.r_article for r in ratings)
-    self.assertEqual(expected_q_titles, actual_titles)
-
-    q_page_to_rating = dict((p[1], p[3]) for p in q_pages)
-    q_page_to_rating.update(
-        dict((p[1], p[3]) for p in self.multiple_quality_pages))
-    for r in ratings:
-      self.assertEqual(q_page_to_rating[r.r_article], r.r_quality)
-
-    i_page_to_rating = dict((p[1], p[3]) for p in i_pages)
-    i_page_to_rating.update(
-        dict((p[1], p[3]) for p in self.multiple_importance_pages))
-    for r in ratings:
-      self.assertEqual(i_page_to_rating[r.r_article], r.r_importance)
-
-    logs = _get_all_logs(self.wp10db)
-    self.assertEqual(len(q_pages) + len(i_pages), len(logs))
+    self._do_assessment()
+    self._assert_updated_quality_ratings(assert_log_len=False)
+    self._assert_updated_importance_ratings(assert_log_len=False)
 
   @patch('wp1.logic.api.page.site')
   def test_not_seen_quality(self, patched_site):
