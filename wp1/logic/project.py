@@ -464,8 +464,7 @@ def update_project_record(wp10db, project, metadata):
 def update_project(wikidb, wp10db, project):
   extra_assessments = api_project.get_extra_assessments(project.p_project)
 
-  update_project_assessments(wikidb, wp10db, project,
-                             extra_assessments['extra'])
+  update_project_assessments(wikidb, wp10db, project, extra_assessments)
 
   cleanup_project(wp10db, project)
 
