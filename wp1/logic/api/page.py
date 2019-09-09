@@ -1,5 +1,6 @@
 from datetime import datetime
 import logging
+import re
 import time
 
 from wp1.api import site
@@ -7,6 +8,7 @@ from wp1.constants import TS_FORMAT
 import wp1.logic.util as logic_util
 
 logger = logging.getLogger(__name__)
+RE_NAMESPACE = re.compile(r'^([^:]+:)')
 
 
 def get_redirect(title_with_ns):
@@ -68,14 +70,17 @@ def get_moves(title_with_ns):
       for event in res:
         if 'params' not in event:
           continue
-        ans.append({
+        datapoint = {
             'ns':
                 event['params']['target_ns'],
             'title':
                 event['params']['target_title'].replace(' ', '_'),
             'timestamp_dt':
                 datetime.fromtimestamp(time.mktime(event['timestamp'])),
-        })
+        }
+        if datapoint['ns'] != 0:
+          datapoint['title'] = RE_NAMESPACE.sub('', datapoint['title'])
+        ans.append(datapoint)
       break
     except:
       retries -= 1
