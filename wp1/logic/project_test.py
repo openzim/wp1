@@ -345,6 +345,12 @@ class ArticlesTest(BaseCombinedDbTest):
       (252, b'How to test', b'C-Class_Test_articles', b'C-Class', 1),
   )
 
+  multiple_quality_pages = (
+      (250, b'Lesser-known tests', b'A-Class_Test_articles', b'A-Class', 1),
+      (251, b'Failures of tests', b'A-Class_Test_articles', b'A-Class', 1),
+      (252, b'How to test', b'A-Class_Test_articles', b'A-Class', 1),
+  )
+
   importance_pages = (
       (1010, b'Top-Class_Test_articles', b'Test_articles_by_importance', None,
        14),
@@ -380,19 +386,31 @@ class ArticlesTest(BaseCombinedDbTest):
       (2520, b'How to test', b'Low-Class_Test_articles', b'Low-Class', 1),
   )
 
+  multiple_importance_pages = (
+      (2420, b'Operation of tests', b'Mid-Class_Test_articles', b'Mid-Class',
+       1),
+      (2500, b'Lesser-known tests', b'Mid-Class_Test_articles', b'Mid-Class',
+       1),
+      (2510, b'Failures of tests', b'Mid-Class_Test_articles', b'Mid-Class', 1),
+      (2520, b'How to test', b'Mid-Class_Test_articles', b'Mid-Class', 1),
+  )
+
   def _insert_pages(self, pages):
     ts = datetime(2018, 12, 25, 11, 22, 33)
     with self.wikidb.cursor() as cursor:
       for p in pages:
         page_args = {'id': p[0], 'ns': p[4], 'title': p[1]}
         cl_args = {'from': p[0], 'to': p[2], 'ts': ts}
-        cursor.execute(
-            '''
-            INSERT INTO page
-              (page_id, page_namespace, page_title)
-            VALUES
-              (%(id)s, %(ns)s, %(title)s)
-        ''', page_args)
+        cursor.execute('SELECT * FROM page WHERE page_id = %s', (p[0],))
+        if cursor.fetchone() is None:
+          cursor.execute(
+              '''
+              INSERT INTO page
+                (page_id, page_namespace, page_title)
+              VALUES
+                (%(id)s, %(ns)s, %(title)s)
+          ''', page_args)
+
         cursor.execute(
             '''
             INSERT INTO categorylinks
@@ -692,6 +710,91 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
 
     logs = _get_all_logs(self.wp10db)
     self.assertEqual(len(q_pages) + len(i_pages), len(logs))
+
+  def _do_assessment(self):
+    expected_global_ts = b'20190113000000'
+    with patch('wp1.logic.rating.GLOBAL_TIMESTAMP', expected_global_ts):
+      logic_project.update_project_assessments(self.wikidb, self.wp10db,
+                                               self.project, {})
+
+  def _assert_updated_quality_ratings(self, assert_log_len=True):
+    ratings = _get_all_ratings(self.wp10db)
+    self.assertNotEqual(0, len(ratings))
+
+    q_pages = self.quality_pages[6:]
+    expected_titles = set(p[1] for p in q_pages)
+    actual_titles = set(r.r_article for r in ratings)
+    self.assertEqual(expected_titles, actual_titles)
+
+    q_page_to_rating = dict((p[1], p[3]) for p in q_pages)
+    q_page_to_rating.update(
+        dict((p[1], p[3]) for p in self.multiple_quality_pages))
+    for r in ratings:
+      self.assertEqual(q_page_to_rating[r.r_article], r.r_quality)
+
+    if assert_log_len:
+      logs = _get_all_logs(self.wp10db)
+      self.assertEqual(len(q_pages), len(logs))
+
+  def _assert_updated_importance_ratings(self, assert_log_len=True):
+    ratings = _get_all_ratings(self.wp10db)
+    self.assertNotEqual(0, len(ratings))
+
+    i_pages = self.importance_pages[4:]
+    expected_titles = set(p[1] for p in i_pages)
+    actual_titles = set(r.r_article for r in ratings)
+    self.assertEqual(expected_titles, actual_titles)
+
+    i_page_to_rating = dict((p[1], p[3]) for p in i_pages)
+    i_page_to_rating.update(
+        dict((p[1], p[3]) for p in self.multiple_importance_pages))
+    for r in ratings:
+      self.assertEqual(i_page_to_rating[r.r_article], r.r_importance)
+
+    if assert_log_len:
+      logs = _get_all_logs(self.wp10db)
+      self.assertEqual(len(i_pages), len(logs))
+
+  def test_multiple_new_quality(self):
+    self._insert_pages(self.quality_pages)
+    self._insert_pages(self.multiple_quality_pages)
+
+    self._do_assessment()
+    self._assert_updated_quality_ratings()
+
+  def test_multiple_existing_quality(self):
+    self._insert_pages(self.quality_pages)
+    self._insert_pages(self.multiple_quality_pages)
+    self._insert_ratings(self.multiple_quality_pages, 0, AssessmentKind.QUALITY)
+
+    self._do_assessment()
+    self._assert_updated_quality_ratings(assert_log_len=False)
+
+  def test_multiple_new_importance(self):
+    self._insert_pages(self.importance_pages)
+    self._insert_pages(self.multiple_importance_pages)
+
+    self._do_assessment()
+    self._assert_updated_importance_ratings()
+
+  def test_multiple_existing_importance(self):
+    self._insert_pages(self.importance_pages)
+    self._insert_pages(self.multiple_importance_pages)
+    self._insert_ratings(self.multiple_importance_pages, 0,
+                         AssessmentKind.IMPORTANCE)
+
+    self._do_assessment()
+    self._assert_updated_importance_ratings(assert_log_len=False)
+
+  def test_multiple_new_both(self):
+    self._insert_pages(self.importance_pages)
+    self._insert_pages(self.multiple_importance_pages)
+    self._insert_pages(self.quality_pages)
+    self._insert_pages(self.multiple_quality_pages)
+
+    self._do_assessment()
+    self._assert_updated_quality_ratings(assert_log_len=False)
+    self._assert_updated_importance_ratings(assert_log_len=False)
 
   @patch('wp1.logic.api.page.site')
   def test_not_seen_quality(self, patched_site):
