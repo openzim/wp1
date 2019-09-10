@@ -3,15 +3,15 @@
 {%- endmacro %}
 
 {% macro revlink(art, action) -%}
-   [https://en.wikipedia.org/w/index.php??title={{name[art]|urlencode}}&oldid={{revid[art][action]|urlencode}} rev]
+   [https://en.wikipedia.org/w/index.php?title={{name[art]|urlencode}}&oldid={{revid[art][action]|urlencode}} rev]
 {%- endmacro %}
 
 {% macro talklink(art, action) -%}
-   [https://en.wikipedia.org/w/index.php??title={{talk[art]|urlencode}}&oldid={{talk_revid[art][action]|urlencode}} t]
+   [https://en.wikipedia.org/w/index.php?title={{talk[art]|urlencode}}&oldid={{talk_revid[art][action]|urlencode}} t]
 {%- endmacro %}
 
 {% macro quality(art) -%}
-   {% if l[art]['quality'].l_old.decode('utf-8') == 'NotA-Class' -%}
+   {% if not l[art]['quality'].l_old or l[art]['quality'].l_old.decode('utf-8') == 'NotA-Class' -%}
      Quality assessed as '''{{l[art]['quality'].l_new.decode('utf-8')}}'''.
    {%- else -%}
      Quality rating changed from '''{{l[art]['quality'].l_old.decode('utf-8')}}''' to '''{{l[art]['quality'].l_new.decode('utf-8')}}'''.
@@ -19,7 +19,7 @@
 {%- endmacro %}
 
 {% macro importance(art) -%}
-   {% if l[art]['importance'].l_old.decode('utf-8') == 'NotA-Class' -%}
+   {% if not l[art]['importance'].l_old or l[art]['importance'].l_old.decode('utf-8') == 'NotA-Class' -%}
      Importance assessed as '''{{l[art]['importance'].l_new.decode('utf-8')}}'''.
    {%- else -%}
      Importance rating changed from '''{{l[art]['importance'].l_old.decode('utf-8')}}''' to '''{{l[art]['importance'].l_new.decode('utf-8')}}'''.

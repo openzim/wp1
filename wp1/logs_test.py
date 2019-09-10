@@ -43,6 +43,9 @@ class LogsTest(BaseCombinedDbTest):
       (b'Failures of tests', b'C-Class', b'C-Class'),
       (b'How to test', b'Stub-Class', b'C-Class', b'NotA-Class',
        b'Unknown-Class'),
+      (b'Testing None-a', None, None, None, None),
+      (b'Testing None-ab', None, b'Stub-Class', None, b'Unknown-Class'),
+      (b'Test for None-abc', None, None, b'Unknown-Class', b'Mid-Class'),
   ]
 
   moves = [
@@ -165,14 +168,6 @@ class LogsTest(BaseCombinedDbTest):
 
   def test_get_logs(self):
     expected = [
-        (b'Catholicism', 0, b'Test Baz Bang', b'moved', b'20181225112233', None,
-         None, b'2018-12-25T08:22:33Z'),
-        (b'Catholicism', 0, b'Test Foo Bar', b'moved', b'20181227130000', None,
-         None, b'2018-12-27T08:00:00Z'),
-        (b'Catholicism', 0, b'Testing in Copenhaven', b'moved',
-         b'20181225112233', None, None, b'2018-12-25T08:22:33Z'),
-        (b'Catholicism', 0, b'Tests', b'moved', b'20181226101010', None, None,
-         b'2018-12-26T05:10:10Z'),
         (b'Catholicism', 0, b'Art of testing', b'importance', b'20181226101010',
          b'FA-Class', b'Mid-Class', b'2018-12-26T05:10:10Z'),
         (b'Catholicism', 0, b'Art of testing', b'quality', b'20181226101010',
@@ -202,6 +197,12 @@ class LogsTest(BaseCombinedDbTest):
          b'2018-12-27T08:00:00Z'),
         (b'Catholicism', 0, b'Rules of testing', b'quality', b'20181227130000',
          b'B-Class', b'FA-Class', b'2018-12-27T08:00:00Z'),
+        (b'Catholicism', 0, b'Test Baz Bang', b'moved', b'20181225112233', None,
+         None, b'2018-12-25T08:22:33Z'),
+        (b'Catholicism', 0, b'Test Foo Bar', b'moved', b'20181227130000', None,
+         None, b'2018-12-27T08:00:00Z'),
+        (b'Catholicism', 0, b'Test for None-abc', b'importance',
+         b'20181227130000', None, b'Unknown-Class', b'2018-12-27T08:00:00Z'),
         (b'Catholicism', 0, b'Test frameworks', b'quality', b'20181226101010',
          b'NotA-Class', b'FL-Class', b'2018-12-26T05:10:10Z'),
         (b'Catholicism', 0, b'Test main inheritance', b'importance',
@@ -213,8 +214,6 @@ class LogsTest(BaseCombinedDbTest):
         (b'Catholicism', 0, b'Test other inheritance', b'quality',
          b'20181225112233', b'Unknown-Class', b'B-Class',
          b'2018-12-25T08:22:33Z'),
-        (b'Catholicism', 14, b'Test practices', b'quality', b'20181225112233',
-         b'Unknown-Class', b'Category-Class', b'2018-12-25T08:22:33Z'),
         (b'Catholicism', 0, b'Test results', b'importance', b'20181227130000',
          b'NotA-Class', b'Mid-Class', b'2018-12-27T08:00:00Z'),
         (b'Catholicism', 0, b'Test results', b'quality', b'20181227130000',
@@ -222,6 +221,10 @@ class LogsTest(BaseCombinedDbTest):
         (b'Catholicism', 0, b'Test sub inheritance', b'quality',
          b'20181227130000', b'Unknown-Class', b'GA-Class',
          b'2018-12-27T08:00:00Z'),
+        (b'Catholicism', 0, b'Testing None-a', b'importance', b'20181225112233',
+         None, None, b'2018-12-25T08:22:33Z'),
+        (b'Catholicism', 0, b'Testing None-ab', b'importance',
+         b'20181226101010', b'Stub-Class', None, b'2018-12-26T05:10:10Z'),
         (b'Catholicism', 0, b'Testing best practices', b'quality',
          b'20181226101010', b'C-Class', b'B-Class', b'2018-12-26T05:10:10Z'),
         (b'Catholicism', 0, b'Testing figures', b'importance',
@@ -230,11 +233,17 @@ class LogsTest(BaseCombinedDbTest):
          b'NotA-Class', b'A-Class', b'2018-12-27T08:00:00Z'),
         (b'Catholicism', 0, b'Testing history', b'quality', b'20181225112233',
          b'Unassessed-Class', b'FL-Class', b'2018-12-25T08:22:33Z'),
+        (b'Catholicism', 0, b'Testing in Copenhaven', b'moved',
+         b'20181225112233', None, None, b'2018-12-25T08:22:33Z'),
+        (b'Catholicism', 0, b'Testing tools', b'quality', b'20181225112233',
+         b'B-Class', b'NotA-Class', b'2018-12-25T08:22:33Z'),
+        (b'Catholicism', 0, b'Tests', b'moved', b'20181226101010', None, None,
+         b'2018-12-26T05:10:10Z'),
+        (b'Catholicism', 14, b'Test practices', b'quality', b'20181225112233',
+         b'Unknown-Class', b'Category-Class', b'2018-12-25T08:22:33Z'),
         (b'Catholicism', 14, b'Testing mechanics', b'quality',
          b'20181226101010', b'NotA-Class', b'Category-Class',
-         b'2018-12-26T05:10:10Z'),
-        (b'Catholicism', 0, b'Testing tools', b'quality', b'20181225112233',
-         b'B-Class', b'NotA-Class', b'2018-12-25T08:22:33Z')
+         b'2018-12-26T05:10:10Z')
     ]
     actual = logs.get_logs(self.wp10db, self.project, datetime(2018, 11, 24))
     actual = list(attr.astuple(a) for a in actual)
@@ -310,23 +319,21 @@ class LogsTest(BaseCombinedDbTest):
 
   def test_get_section_categories(self):
     expected = {
-        'assessed':
-            set((
-                b'Testing mechanics',
-                b'Test frameworks',
-                b'Important tests',
-            )),
-        'reassessed':
-            set((b'Art of testing', b'Failures of tests', b'How to test',
-                 b'Lesser-known tests', b'Operation of tests',
-                 b'Rules of testing', b'Test other inheritance',
-                 b'Test practices', b'Test results', b'Test sub inheritance',
-                 b'Testing best practices', b'Testing figures',
-                 b'Testing history')),
-        'removed':
-            set((b'Testing tools', b'Test main inheritance')),
-        'renamed':
-            set()
+        'assessed': {
+            b'Testing mechanics', b'Test frameworks', b'Important tests'
+        },
+        'reassessed': {
+            b'Art of testing', b'Failures of tests', b'How to test',
+            b'Lesser-known tests', b'Operation of tests', b'Rules of testing',
+            b'Test for None-abc', b'Test other inheritance', b'Test practices',
+            b'Test results', b'Test sub inheritance', b'Testing best practices',
+            b'Testing figures', b'Testing history'
+        },
+        'removed': {
+            b'Test main inheritance', b'Testing None-a', b'Testing None-ab',
+            b'Testing tools'
+        },
+        'renamed': set()
     }
     l = defaultdict(defaultdict)
     for log in self._logs():
@@ -348,6 +355,7 @@ class LogsTest(BaseCombinedDbTest):
             b'Test Baz Bang': 'Test Baz Bang',
             b'Test other inheritance': 'Test other inheritance',
             b'Test practices': ':Category:Test practices',
+            b'Testing None-a': 'Testing None-a',
             b'Testing history': 'Testing history',
             b'Testing in Copenhaven': 'Testing in Copenhaven',
             b'Testing tools': 'Testing tools'
@@ -367,6 +375,9 @@ class LogsTest(BaseCombinedDbTest):
             b'Test practices': {
                 'quality': 14000
             },
+            b'Testing None-a': {
+                'importance': 14000
+            },
             b'Testing history': {
                 'quality': 15000
             },
@@ -380,6 +391,7 @@ class LogsTest(BaseCombinedDbTest):
             b'Test Baz Bang': 'Talk:Test Baz Bang',
             b'Test other inheritance': 'Talk:Test other inheritance',
             b'Test practices': 'Category talk:Test practices',
+            b'Testing None-a': 'Talk:Testing None-a',
             b'Testing history': 'Talk:Testing history',
             b'Testing in Copenhaven': 'Talk:Testing in Copenhaven',
             b'Testing tools': 'Talk:Testing tools'
@@ -398,6 +410,9 @@ class LogsTest(BaseCombinedDbTest):
             },
             b'Test practices': {
                 'quality': None
+            },
+            b'Testing None-a': {
+                'importance': None
             },
             b'Testing history': {
                 'quality': None
@@ -441,61 +456,83 @@ class LogsTest(BaseCombinedDbTest):
 
   def test_section_for_date(self):
     # Excuse my mess.
-    expected = (
-        '=== December 25, 2018 ===\n'
-        '==== Renamed ====\n'
-        "* '''[[Test Baz Bang]]''' renamed to '''[[Test Baz]]'''.\n"
-        "* '''[[Testing in Copenhaven]]''' renamed to '''[[Testing in "
-        "Copenhagen]]'''.\n"
-        '==== Reassessed ====\n'
-        "* '''[[Lesser-known tests]]''' ([[Talk:Lesser-known tests|talk]]) "
-        "reassessed.  Quality rating changed from '''Stub-Class''' to "
-        '\'\'\'Start-Class\'\'\'. <span style=\\"white-space: '
-        'nowrap;\\">([https://en.wikipedia.org/w/index.php??title=Lesser-known%20tests&oldid=18000 '
-        'rev] &middot; '
-        '[https://en.wikipedia.org/w/index.php??title=Talk%3ALesser-known%20tests&oldid=None '
-        "t])</span> Importance rating changed from '''Start-Class''' to "
-        '\'\'\'Unknown-Class\'\'\'. <span style=\\"white-space: '
-        'nowrap;\\">([https://en.wikipedia.org/w/index.php??title=Lesser-known%20tests&oldid=18000 '
-        'rev] &middot; '
-        '[https://en.wikipedia.org/w/index.php??title=Talk%3ALesser-known%20tests&oldid=None '
-        't])</span>\n'
-        "* '''[[Test other inheritance]]''' ([[Talk:Test other inheritance|talk]]) "
-        "reassessed.  Quality rating changed from '''Unknown-Class''' to "
-        '\'\'\'B-Class\'\'\'. <span style=\\"white-space: '
-        'nowrap;\\">([https://en.wikipedia.org/w/index.php??title=Test%20other%20inheritance&oldid=22000 '
-        'rev] &middot; '
-        '[https://en.wikipedia.org/w/index.php??title=Talk%3ATest%20other%20inheritance&oldid=None '
-        't])</span>\n'
-        "* '''[[:Category:Test practices]]''' ([[Category talk:Test practices|talk]]) "
-        "reassessed.  Quality rating changed from '''Unknown-Class''' to "
-        '\'\'\'Category-Class\'\'\'. <span style=\\"white-space: '
-        'nowrap;\\">([https://en.wikipedia.org/w/index.php??title=%3ACategory%3ATest%20practices&oldid=14000 '
-        'rev] &middot; '
-        '[https://en.wikipedia.org/w/index.php??title=Category%20talk%3ATest%20practices&oldid=None '
-        't])</span>\n'
-        "* '''[[Testing history]]''' ([[Talk:Testing history|talk]]) reassessed.  "
-        "Quality rating changed from '''Unassessed-Class''' to '''FL-Class'''. <span "
-        'style=\\"white-space: '
-        'nowrap;\\">([https://en.wikipedia.org/w/index.php??title=Testing%20history&oldid=15000 '
-        'rev] &middot; '
-        '[https://en.wikipedia.org/w/index.php??title=Talk%3ATesting%20history&oldid=None '
-        't])</span>\n\n'
-        '==== Assessed ====\n'
-        "* '''[[Important tests]]''' ([[Talk:Important tests|talk]]) assessed.  "
-        'Quality assessed as \'\'\'NotA-Class\'\'\'. <span style=\\"white-space: '
-        'nowrap;\\">([https://en.wikipedia.org/w/index.php??title=Important%20tests&oldid=15000 '
-        'rev] &middot; '
-        '[https://en.wikipedia.org/w/index.php??title=Talk%3AImportant%20tests&oldid=None '
-        "t])</span> Importance assessed as '''Unknown-Class'''. <span "
-        'style=\\"white-space: '
-        'nowrap;\\">([https://en.wikipedia.org/w/index.php??title=Important%20tests&oldid=15000 '
-        'rev] &middot; '
-        '[https://en.wikipedia.org/w/index.php??title=Talk%3AImportant%20tests&oldid=None '
-        't])</span>\n'
-        '\n'
-        '==== Removed ====\n'
-        "* '''[[Testing tools]]''' ([[Talk:Testing tools|talk]]) removed. \n")
+    expected = ('=== December 25, 2018 ===\n'
+                '==== Renamed ====\n'
+                "* '''[[Test Baz Bang]]''' renamed to '''[[Test Baz]]'''.\n"
+                "* '''[[Testing in Copenhaven]]''' renamed to '''[[Testing in "
+                "Copenhagen]]'''.\n"
+                '==== Reassessed ====\n'
+                "* '''[[Lesser-known tests]]''' ([[Talk:Lesser-known "
+                'tests|talk]]) reassessed.  Quality rating changed from '
+                "'''Stub-Class''' to '''Start-Class'''. <span "
+                'style=\\"white-space: '
+                'nowrap;\\">([https://en.wikipedia.org/w/index.php?'
+                'title=Lesser-known%20tests&oldid=18000 '
+                'rev] &middot; '
+                '[https://en.wikipedia.org/w/index.php?'
+                'title=Talk%3ALesser-known%20tests&oldid=None '
+                "t])</span> Importance rating changed from '''Start-Class''' "
+                'to \'\'\'Unknown-Class\'\'\'. <span style=\\"white-space: '
+                'nowrap;\\">([https://en.wikipedia.org/w/index.php?'
+                'title=Lesser-known%20tests&oldid=18000 '
+                'rev] &middot; '
+                '[https://en.wikipedia.org/w/index.php?'
+                'title=Talk%3ALesser-known%20tests&oldid=None '
+                't])</span>\n'
+                "* '''[[Test other inheritance]]''' ([[Talk:Test other "
+                'inheritance|talk]]) reassessed.  Quality rating changed from '
+                "'''Unknown-Class''' to '''B-Class'''. <span "
+                'style=\\"white-space: '
+                'nowrap;\\">([https://en.wikipedia.org/w/index.php?'
+                'title=Test%20other%20inheritance&oldid=22000 '
+                'rev] &middot; '
+                '[https://en.wikipedia.org/w/index.php?'
+                'title=Talk%3ATest%20other%20inheritance&oldid=None '
+                't])</span>\n'
+                "* '''[[:Category:Test practices]]''' ([[Category talk:Test "
+                'practices|talk]]) reassessed.  Quality rating changed from '
+                "'''Unknown-Class''' to '''Category-Class'''. <span "
+                'style=\\"white-space: '
+                'nowrap;\\">([https://en.wikipedia.org/w/index.php?'
+                'title=%3ACategory%3ATest%20practices&oldid=14000 '
+                'rev] &middot; '
+                '[https://en.wikipedia.org/w/index.php?'
+                'title=Category%20talk%3ATest%20practices&oldid=None '
+                't])</span>\n'
+                "* '''[[Testing history]]''' ([[Talk:Testing history|talk]]) "
+                'reassessed.  Quality rating changed from '
+                "'''Unassessed-Class''' to '''FL-Class'''. <span "
+                'style=\\"white-space: '
+                'nowrap;\\">([https://en.wikipedia.org/w/index.php?'
+                'title=Testing%20history&oldid=15000 '
+                'rev] &middot; '
+                '[https://en.wikipedia.org/w/index.php?'
+                'title=Talk%3ATesting%20history&oldid=None '
+                't])</span>\n'
+                '\n'
+                '==== Assessed ====\n'
+                "* '''[[Important tests]]''' ([[Talk:Important tests|talk]]) "
+                "assessed.  Quality assessed as '''NotA-Class'''. <span "
+                'style=\\"white-space: '
+                'nowrap;\\">([https://en.wikipedia.org/w/index.php?'
+                'title=Important%20tests&oldid=15000 '
+                'rev] &middot; '
+                '[https://en.wikipedia.org/w/index.php?'
+                'title=Talk%3AImportant%20tests&oldid=None '
+                "t])</span> Importance assessed as '''Unknown-Class'''. <span "
+                'style=\\"white-space: '
+                'nowrap;\\">([https://en.wikipedia.org/w/index.php?'
+                'title=Important%20tests&oldid=15000 '
+                'rev] &middot; '
+                '[https://en.wikipedia.org/w/index.php?'
+                'title=Talk%3AImportant%20tests&oldid=None '
+                't])</span>\n'
+                '\n'
+                '==== Removed ====\n'
+                "* '''[[Testing None-a]]''' ([[Talk:Testing None-a|talk]]) "
+                'removed. \n'
+                "* '''[[Testing tools]]''' ([[Talk:Testing tools|talk]]) "
+                'removed. \n')
 
     test_logs = [
         l for l in self._logs()
