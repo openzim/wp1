@@ -17,6 +17,7 @@ NOT_A_CLASS = config['NOT_A_CLASS'].encode('utf-8')
 
 RE_EXTRACT_TIME = re.compile(r'Log for ([^(]+)')
 
+
 def log_page_name(project_name):
   return ('Wikipedia:Version_1.0_Editorial_Team/%s_articles_by_quality_log' %
           project_name.decode('utf-8'))
@@ -25,14 +26,15 @@ def log_page_name(project_name):
 def get_logs(wp10db, project_name, start_dt):
   with wp10db.cursor() as cursor:
     cursor.execute(
-      'SELECT * FROM logging WHERE l_project = %s AND l_timestamp > %s',
-      (project_name, start_dt.strftime(TS_FORMAT_WP10)))
+        'SELECT * FROM logging WHERE l_project = %s AND l_timestamp > %s',
+        (project_name, start_dt.strftime(TS_FORMAT_WP10)))
     return [Log(**db_log) for db_log in cursor.fetchall()]
 
 
 def move_target(wp10db, ns, article, db_timestamp):
   with wp10db.cursor() as cursor:
-    cursor.execute('''
+    cursor.execute(
+        '''
       SELECT m_new_namespace as ns, m_new_article as article FROM moves
       WHERE m_old_namespace = %s AND m_old_article = %s AND m_timestamp = %s
     ''', (ns, article, db_timestamp))
@@ -41,9 +43,10 @@ def move_target(wp10db, ns, article, db_timestamp):
 
 def get_revid(wikidb, name, namespace, revision_dt):
   with wikidb.cursor() as cursor:
-    cursor.execute('''
+    cursor.execute(
+        '''
       SELECT rev_id FROM revision JOIN page
-         ON page_namespace = %s AND page_title = %s AND rev_page = page_id 
+         ON page_namespace = %s AND page_title = %s AND rev_page = page_id
       WHERE rev_timestamp <= %s
       ORDER BY rev_timestamp DESC LIMIT 1
     ''', (namespace, name, revision_dt.strftime(TS_FORMAT_WP10)))
@@ -73,11 +76,12 @@ def calculate_logs_to_update(wikidb, wp10db, project_name, from_dt=None):
   """
   from_dt = get_current_datetime() - timedelta(days=7)
   from_dt.replace(hour=23, minute=59, second=59)
-  
+
   dt_to_log = defaultdict(list)
   for log in get_logs(wp10db, project_name, from_dt):
     dt_to_log[log.timestamp_dt.date()].append(log)
   return dt_to_log
+
 
 def get_section_categories(logs_for_article):
   renamed = set()
@@ -99,15 +103,15 @@ def get_section_categories(logs_for_article):
     if no_new_qual and no_new_imp:
       removed.add(article)
     elif no_old_qual and no_old_imp:
-      assessed.add(article) 
+      assessed.add(article)
     else:
       reassessed.add(article)
 
   return {
-    'renamed': renamed,
-    'reassessed': reassessed,
-    'assessed': assessed,
-    'removed': removed,
+      'renamed': renamed,
+      'reassessed': reassessed,
+      'assessed': assessed,
+      'removed': removed,
   }
 
 
@@ -121,15 +125,14 @@ def get_section_data(wikidb, wp10db, project_name, dt, logs):
     if 'moved' not in sublogs:
       continue
     log = sublogs['moved']
-    move =  move_target(
-      wp10db, log.l_namespace, log.l_article, log.l_revision_timestamp)
+    move = move_target(wp10db, log.l_namespace, log.l_article,
+                       log.l_revision_timestamp)
     moved_name[article] = name_for_article(wp10db, move['article'], move['ns'])
 
   uniq_names = set((log.l_article, log.l_namespace) for log in logs)
-  name = dict((n[0], name_for_article(wp10db, n[0], n[1]))
-              for n in uniq_names)
-  talk = dict((n[0], talk_page_for_article(wp10db, n[0], n[1]))
-              for n in uniq_names)
+  name = dict((n[0], name_for_article(wp10db, n[0], n[1])) for n in uniq_names)
+  talk = dict(
+      (n[0], talk_page_for_article(wp10db, n[0], n[1])) for n in uniq_names)
 
   revid = defaultdict(defaultdict)
   talk_revid = defaultdict(defaultdict)
@@ -138,33 +141,34 @@ def get_section_data(wikidb, wp10db, project_name, dt, logs):
     action = log.l_action.decode('utf-8')
     if art in moved_name:
       continue
-    revid[art][action] = get_revid(
-      wikidb, log.l_article, log.l_namespace, log.rev_timestamp_dt)
-    talk_revid[art][action] = get_revid(
-      wikidb, log.l_article, log.l_namespace + 1, log.rev_timestamp_dt)
+    revid[art][action] = get_revid(wikidb, log.l_article, log.l_namespace,
+                                   log.rev_timestamp_dt)
+    talk_revid[art][action] = get_revid(wikidb, log.l_article,
+                                        log.l_namespace + 1,
+                                        log.rev_timestamp_dt)
 
-  categories =  get_section_categories(l)
+  categories = get_section_categories(l)
   # Sort the articles so that the output is idempotent.
   for k, set_ in categories.items():
     categories[k] = sorted(list(set_))
 
   return {
-    **categories,
-    'log_date': dt.strftime('%b %d, %Y'),
-    'l': l,
-    'name': name,
-    'talk': talk,
-    'revid': revid,
-    'talk_revid': talk_revid,
-    'moved_name': moved_name,
+      **categories,
+      'log_date': dt.strftime('%B %-d, %Y'),
+      'l': l,
+      'name': name,
+      'talk': talk,
+      'revid': revid,
+      'talk_revid': talk_revid,
+      'moved_name': moved_name,
   }
 
 
 def section_for_date(wikidb, wp10db, project_name, dt, logs):
   if len(logs) > MAX_LOGS_PER_DAY:
     return [
-      'The log for today is too large to upload. It contains %s entries.' %
-      len(logs)
+        'The log for today is too large to upload. It contains %s entries.' %
+        len(logs)
     ]
 
   template_data = get_section_data(wikidb, wp10db, project_name, dt, logs)
@@ -175,13 +179,13 @@ def section_for_date(wikidb, wp10db, project_name, dt, logs):
 def generate_log_edits(wikidb, wp10db, project_name, log_map):
   dt_to_sections = {}
   for dt, logs in log_map.items():
-    dt_to_sections[dt] = section_for_date(
-      wikidb, wp10db, project_name, dt, logs)
+    dt_to_sections[dt] = section_for_date(wikidb, wp10db, project_name, dt,
+                                          logs)
 
   dt_sorted = sorted(dt_to_sections.keys(), reverse=True)
   sorted_sections = [dt_to_sections[dt] for dt in dt_sorted]
 
-  # Put in logic to check the length of the sections and break them across 
+  # Put in logic to check the length of the sections and break them across
   # multiple pages as appropriate
   return sorted_sections
 
