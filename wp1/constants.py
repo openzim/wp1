@@ -15,6 +15,7 @@ TALK_NS_INT = 1
 
 TS_FORMAT = '%Y-%m-%dT%H:%M:%SZ'
 TS_FORMAT_WP10 = '%Y%m%d%H%M%S'
+LOG_DATE_FORMAT = '%B %-d, %Y'
 
 GLOBAL_TIMESTAMP = time.strftime(TS_FORMAT_WP10, time.gmtime()).encode('utf-8')
 GLOBAL_TIMESTAMP_WIKI = time.strftime(TS_FORMAT, time.gmtime()).encode('utf-8')

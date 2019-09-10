@@ -576,6 +576,24 @@ class LogsTest(BaseCombinedDbTest):
   @patch('wp1.logs.wiki_connect')
   @patch('wp1.logs.wp10_connect')
   @patch('wp1.logs.api')
+  @patch('wp1.logs.get_current_datetime',
+         return_value=datetime(2018, 12, 28, 12))
+  def test_upload_log_page_for_project_no_logs(self, patched_datetime,
+                                               patched_api, patched_wp10,
+                                               patched_wiki):
+    project_name = b'Catholicism'
+    header = ('{{Log}}\n'
+              '<noinclude>[[Category:%s articles by quality]]</noinclude>\n' %
+              project_name.decode('utf-8').replace('_', ' '))
+    no_logs_msg = ("'''There were no logs for this project from December 21, "
+                   "2018 - December 28, 2018.'''")
+    logs.update_log_page_for_project(project_name)
+    call = patched_api.save_page.call_args[0]
+    self.assertEqual(header + no_logs_msg, call[1])
+
+  @patch('wp1.logs.wiki_connect')
+  @patch('wp1.logs.wp10_connect')
+  @patch('wp1.logs.api')
   @patch('wp1.logs.generate_log_edits')
   def test_upload_log_page_for_project_huge_text(self, patched_generate,
                                                  patched_api, patched_wp10,
@@ -586,7 +604,7 @@ class LogsTest(BaseCombinedDbTest):
               project_name.decode('utf-8'))
     text = 'a' * 1000 * 1024
     patched_generate.return_value = [text, text, text]
-    logs.update_log_page_for_project(b'Catholicism')
+    logs.update_log_page_for_project(project_name)
     call = patched_api.save_page.call_args[0]
     self.assertEqual('%s%s\n%s' % (header, text, text), call[1])
 
