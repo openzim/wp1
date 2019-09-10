@@ -203,7 +203,16 @@ def update_log_page_for_project(project_name):
               '<noinclude>[[Category:%s articles by quality]]</noinclude>\n' %
               project_name.decode('utf-8').replace('_', ' '))
 
-    api.save_page(p, header + '\n'.join(edits), 'Update logs for past 7 days')
+    update = header + '\n'.join(edits)
+    i = 1
+    while len(update) > 2048 * 1024:
+      update = header + '\n'.join(edits[:-1 * i])
+      i += 1
+      if i == len(edits):
+        update = (header + 'Sorry, all of the logs for this date were too '
+                  'large to upload.')
+
+    api.save_page(p, update, 'Update logs for past 7 days')
   finally:
     if wikidb:
       wikidb.close()

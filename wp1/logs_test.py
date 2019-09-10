@@ -535,3 +535,39 @@ class LogsTest(BaseCombinedDbTest):
     logs.update_log_page_for_project(b'Catholicism')
     call = patched_api.save_page.call_args[0]
     self.assertEqual('Update logs for past 7 days', call[2])
+
+  @patch('wp1.logs.wiki_connect')
+  @patch('wp1.logs.wp10_connect')
+  @patch('wp1.logs.api')
+  @patch('wp1.logs.generate_log_edits')
+  def test_upload_log_page_for_project_huge_text(self, patched_generate,
+                                                 patched_api, patched_wp10,
+                                                 patched_wiki):
+    project_name = b'Catholicism'
+    header = ('{{Log}}\n'
+              '<noinclude>[[Category:%s articles by quality]]</noinclude>\n' %
+              project_name.decode('utf-8'))
+    text = 'a' * 1000 * 1024
+    patched_generate.return_value = [text, text, text]
+    logs.update_log_page_for_project(b'Catholicism')
+    call = patched_api.save_page.call_args[0]
+    self.assertEqual('%s%s\n%s' % (header, text, text), call[1])
+
+  @patch('wp1.logs.wiki_connect')
+  @patch('wp1.logs.wp10_connect')
+  @patch('wp1.logs.api')
+  @patch('wp1.logs.generate_log_edits')
+  def test_upload_log_page_for_project_huge_give_up(self, patched_generate,
+                                                    patched_api, patched_wp10,
+                                                    patched_wiki):
+    project_name = b'Catholicism'
+    sorry_msg = ('Sorry, all of the logs for this date were too large to '
+                 'upload.')
+    header = ('{{Log}}\n'
+              '<noinclude>[[Category:%s articles by quality]]</noinclude>\n' %
+              project_name.decode('utf-8'))
+    text = 'a' * 3000 * 1024
+    patched_generate.return_value = [text, text, text]
+    logs.update_log_page_for_project(b'Catholicism')
+    call = patched_api.save_page.call_args[0]
+    self.assertEqual(header + sorry_msg, call[1])
