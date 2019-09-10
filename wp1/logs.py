@@ -4,7 +4,7 @@ import re
 
 from wp1 import api
 from wp1.conf import get_conf
-from wp1.constants import LOG_NS, TS_FORMAT, TS_FORMAT_WP10, MAX_LOGS_PER_DAY
+from wp1.constants import LOG_NS, LOG_DATE_FORMAT, TS_FORMAT, TS_FORMAT_WP10, MAX_LOGS_PER_DAY
 from wp1.logic.util import int_to_ns
 from wp1.models.wp10.log import Log
 from wp1.templates import env as jinja_env
@@ -154,7 +154,7 @@ def get_section_data(wikidb, wp10db, project_name, dt, logs):
 
   return {
       **categories,
-      'log_date': dt.strftime('%B %-d, %Y'),
+      'log_date': dt.strftime(LOG_DATE_FORMAT),
       'l': l,
       'name': name,
       'talk': talk,
@@ -203,14 +203,21 @@ def update_log_page_for_project(project_name):
               '<noinclude>[[Category:%s articles by quality]]</noinclude>\n' %
               project_name.decode('utf-8').replace('_', ' '))
 
-    update = header + '\n'.join(edits)
-    i = 1
-    while len(update) > 2048 * 1024:
-      update = header + '\n'.join(edits[:-1 * i])
-      i += 1
-      if i == len(edits):
-        update = (header + 'Sorry, all of the logs for this date were too '
-                  'large to upload.')
+    if len(edits) == 0:
+      today = get_current_datetime()
+      from_dt = get_current_datetime() - timedelta(days=7)
+      update = ("%s'''There were no logs for this project from %s - %s.'''" %
+                (header, from_dt.strftime(LOG_DATE_FORMAT),
+                 today.strftime(LOG_DATE_FORMAT)))
+    else:
+      update = header + '\n'.join(edits)
+      i = 1
+      while len(update) > 2048 * 1024:
+        update = header + '\n'.join(edits[:-1 * i])
+        i += 1
+        if i == len(edits):
+          update = (header + 'Sorry, all of the logs for this date were too '
+                    'large to upload.')
 
     api.save_page(p, update, 'Update logs for past 7 days')
   finally:
