@@ -35,15 +35,21 @@ RE_INDICATOR = re.compile(b'([A-Za-z]+)[ _-]')
 RE_REJECT_GENERIC = re.compile(ARTICLES_LABEL + b'_' + BY_QUALITY, re.I)
 
 
+def count_projects(wp10db):
+  with wp10db.cursor() as cursor:
+    cursor.execute('SELECT COUNT(*) AS count FROM projects')
+    res = cursor.fetchone()
+
+  return res and res['count']
+
+
 def update_global_project_count():
   wp10db = wp10_connect()
   try:
     logger.info('Querying for number of projects')
-    with wp10db.cursor() as cursor:
-      cursor.execute('SELECT COUNT(*) AS count FROM projects')
-      res = cursor.fetchone()
 
-    count = res['count']
+    count = count_projects(wp10db)
+
     logger.info('Found %s projects, updating wiki', count)
     page = api.get_page('User:WP 1.0 bot/Data/Count')
     api.save_page(page, '%s\n' % count, 'Updating count: %s projects' % count)
