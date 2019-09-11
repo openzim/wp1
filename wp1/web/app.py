@@ -15,8 +15,8 @@ rq_pass = os.environ.get('RQ_PASS')
 
 if rq_user is not None and rq_pass is not None:
   app.config.from_object(rq_dashboard.default_settings)
-  app.config.update({'RQ_DASHBOARD_REDISH_HOST': 'redis'})
-  add_basic_auth(rq_dashboard.blueprint, 'foo', 'bar')
+  app.config.update({'RQ_DASHBOARD_REDIS_HOST': 'redis'})
+  add_basic_auth(rq_dashboard.blueprint, rq_user, rq_pass)
   app.register_blueprint(rq_dashboard.blueprint, url_prefix="/rq")
 else:
   print('No RQ_USER/RQ_PASS found in env, no rq dashboard created')
