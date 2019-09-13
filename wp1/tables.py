@@ -276,7 +276,7 @@ def generate_global_table_data(wp10db):
 
 
 def upload_project_table(project_name):
-  logging.basicConfig(level=logging.DEBUG)
+  logging.basicConfig(level=logging.INFO)
   wp10db = wp10_connect()
 
   try:
@@ -296,7 +296,7 @@ def upload_project_table(project_name):
 
 
 def upload_global_table():
-  logging.basicConfig(level=logging.DEBUG)
+  logging.basicConfig(level=logging.INFO)
   wp10db = wp10_connect()
 
   try:

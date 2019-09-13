@@ -13,7 +13,7 @@ def main():
   wikidb = wiki_connect()
   wp10db = wp10_connect()
 
-  logging.basicConfig(level=logging.DEBUG)
+  logging.basicConfig(level=logging.INFO)
 
   for project_name in logic_project.project_names_to_update(wikidb):
     logic_project.update_global_articles_for_project_name(wp10db, project_name)
