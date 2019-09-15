@@ -1,24 +1,80 @@
 from contextlib import contextmanager
-from flask import appcontext_pushed, g
+import unittest
 
-from wp1.base_db_test import BaseCombinedDbTest
+from flask import appcontext_pushed, g
+import pymysql
+
+from wp1.base_db_test import parse_sql
 from wp1.web.app import app
 
 
-class BaseWebTestcase(BaseCombinedDbTest):
+class BaseWebTestcase(unittest.TestCase):
+
+  def _connect_wp_one_db(self):
+    return pymysql.connect(host='localhost',
+                           db='enwp10_test',
+                           user='root',
+                           charset=None,
+                           use_unicode=False,
+                           cursorclass=pymysql.cursors.DictCursor)
+
+  def _connect_wiki_db(self):
+    return pymysql.connect(host='localhost',
+                           db='enwikip_test',
+                           user='root',
+                           charset=None,
+                           use_unicode=False,
+                           cursorclass=pymysql.cursors.DictCursor)
+
+  def _cleanup_wp_one_db(self):
+    stmts = parse_sql('wp10_test.down.sql')
+    with self.wp10db.cursor() as cursor:
+      for stmt in stmts:
+        cursor.execute(stmt)
+    self.wp10db.commit()
+    self.wp10db.close()
+
+  def _setup_wp_one_db(self):
+    self.wp10db = self._connect_wp_one_db()
+    stmts = parse_sql('wp10_test.up.sql')
+    with self.wp10db.cursor() as cursor:
+      for stmt in stmts:
+        cursor.execute(stmt)
+    self.wp10db.commit()
+
+  def _cleanup_wiki_db(self):
+    stmts = parse_sql('wiki_test.down.sql')
+    with self.wikidb.cursor() as cursor:
+      for stmt in stmts:
+        cursor.execute(stmt)
+    self.wikidb.commit()
+    self.wikidb.close()
+
+  def _setup_wiki_db(self):
+    self.wikidb = self._connect_wiki_db()
+    stmts = parse_sql('wiki_test.up.sql')
+    with self.wikidb.cursor() as cursor:
+      for stmt in stmts:
+        cursor.execute(stmt)
+    self.wikidb.commit()
 
   def setUp(self):
-    super().setUp()
+    self.addCleanup(self._cleanup_wiki_db)
+    self._setup_wiki_db()
+
+    self.addCleanup(self._cleanup_wp_one_db)
+    self._setup_wp_one_db()
+
     app.config['TESTING'] = True
 
   @contextmanager
-  def _override_db(self, app):
+  def override_db(self, app):
 
     @contextmanager
     def set_wiki_db():
 
       def handler(sender, **kwargs):
-        g.wikidb = self.wikidb
+        g.wikidb = self._connect_wiki_db()
 
       with appcontext_pushed.connected_to(handler, app):
         yield
@@ -27,7 +83,7 @@ class BaseWebTestcase(BaseCombinedDbTest):
     def set_wp10_db():
 
       def handler(sender, **kwargs):
-        g.wp10db = self.wp10db
+        g.wp10db = self._connect_wp_one_db()
 
       with appcontext_pushed.connected_to(handler, app):
         yield
