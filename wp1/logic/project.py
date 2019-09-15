@@ -321,7 +321,6 @@ def store_new_ratings(wp10db, new_ratings, old_ratings):
 
   for article_ref, ratings_list in new_ratings.items():
     sorted_ratings = sorted(ratings_list, key=sort_rating_tuples, reverse=True)
-    print(sorted_ratings)
     rating, kind, old_rating_value = sorted_ratings[0]
 
     if kind == AssessmentKind.QUALITY:
