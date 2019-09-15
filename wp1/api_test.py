@@ -23,7 +23,6 @@ class ApiWithCredsTest(unittest.TestCase):
   def test_login_exception(self, patched_logger, patched_mwsite,
                            patched_credentials):
     site = patched_mwsite()
-    print('in test', site)
     site.login.side_effect = mwclient.errors.LoginError()
     wp1.api.login()
     self.assertEqual(1, patched_logger.exception.call_count)

@@ -185,7 +185,6 @@ def generate_table_data(stats, categories, table_overrides=None):
   to_del = []
   for r in data.keys():
     if r not in categories['sort_qual']:
-      print(r)
       to_del.append(r)
   for r in to_del:
     del data[r]
