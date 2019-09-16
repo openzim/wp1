@@ -16,6 +16,11 @@ services:
       - /srv/log/wp1bot/:/var/log/wp1bot/
     links:
       - redis
+    logging:
+      driver: "json-file"
+      options:
+        max-file: 2
+        max-size: 10m
     restart: always
     depends_on:
       - redis
@@ -34,6 +39,11 @@ services:
       - /data/wp1bot/rq-credentials.txt:/usr/src/app/rq-credentials.txt
     links:
       - redis
+    logging:
+      driver: "json-file"
+      options:
+        max-file: 2
+        max-size: 10m
     restart: always
     depends_on:
       - redis
@@ -69,6 +79,10 @@ services:
       - "/data/certs:/etc/nginx/certs:rw"
       - "/var/local/vhost.d:/etc/nginx/vhost.d"
       - "/data/html:/usr/share/nginx/html"
+    logging:
+      driver: "none"
+      options:
+        max-size: 10k
     restart: always
 
 networks:
