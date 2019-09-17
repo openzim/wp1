@@ -1,5 +1,6 @@
 #!/bin/sh
-USER=$(head -n 1 app/rq-credentials.txt)
-PASS=$(tail -n 1 app/rq-credentials.txt)
+export RQ_USER=$(head -n 1 app/rq-credentials.txt)
+export RQ_PASS=$(tail -n 1 app/rq-credentials.txt)
 
-rq-dashboard --username $USER --password $PASS -H redis
+cd app
+gunicorn -b 0.0.0.0:6555 'wp1.web.app:create_app()'
