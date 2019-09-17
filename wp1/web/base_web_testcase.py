@@ -5,7 +5,7 @@ from flask import appcontext_pushed, g
 import pymysql
 
 from wp1.base_db_test import parse_sql
-from wp1.web.app import app
+from wp1.web.app import create_app
 
 
 class BaseWebTestcase(unittest.TestCase):
@@ -65,7 +65,8 @@ class BaseWebTestcase(unittest.TestCase):
     self.addCleanup(self._cleanup_wp_one_db)
     self._setup_wp_one_db()
 
-    app.config['TESTING'] = True
+    self.app = create_app()
+    self.app.config['TESTING'] = True
 
   @contextmanager
   def override_db(self, app):
