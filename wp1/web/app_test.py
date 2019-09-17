@@ -43,7 +43,7 @@ class RqTest(unittest.TestCase):
         'port': 6379,
     }
     os.environ['RQ_USER'] = 'testuser'
-    os.environ['RQ_PASS'] = 'testpass'
+    os.environ['RQ_PASS'] = 'testpass'  # nosec
     self.app = create_app()
     with self.app.test_client() as client:
       rv = client.get('/rq', follow_redirects=True)
@@ -56,7 +56,7 @@ class RqTest(unittest.TestCase):
         'port': 6379,
     }
     os.environ['RQ_USER'] = 'testuser'
-    os.environ['RQ_PASS'] = 'testpass'
+    os.environ['RQ_PASS'] = 'testpass'  # nosec
     self.app = create_app()
     with self.app.test_client() as client:
       rv = client.get(
