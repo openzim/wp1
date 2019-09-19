@@ -34,7 +34,7 @@ services:
       - LETSENCRYPT_EMAIL=contact@openzim.org
       - HTTPS_METHOD=noredirect
     expose:
-      - 9181
+      - 6555
     volumes:
       - /data/wp1bot/rq-credentials.txt:/usr/src/app/rq-credentials.txt
     links:
