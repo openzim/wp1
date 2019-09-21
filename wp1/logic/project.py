@@ -189,6 +189,7 @@ def update_category(wp10db, project, page, extra, kind, rating_to_category):
       logging.warning(
           'Could not cast "ranking" field for extra category to int: %s | %s',
           extra_category, ranking)
+      return
 
     if kind == AssessmentKind.QUALITY:
       replaces = extra_category.get('replaces')
