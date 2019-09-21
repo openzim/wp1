@@ -179,16 +179,16 @@ def update_category(wp10db, project, page, extra, kind, rating_to_category):
     ranking = extra_category.get('ranking')
     if rating is None or ranking is None:
       logger.warning(
-          'Skipping extra category with missing "title" or "ranking"'
-          'field: %s', extra_category)
+          'Skipping extra category with missing "title" or "ranking" field: %s',
+          extra_category)
       return
 
     try:
       ranking = int(ranking)
     except ValueError:
       logging.warning(
-          'Could not cast "ranking" field for extra category to int'
-          ': %s | %s', extra_category, ranking)
+          'Could not cast "ranking" field for extra category to int: %s | %s',
+          extra_category, ranking)
 
     if kind == AssessmentKind.QUALITY:
       replaces = extra_category.get('replaces')
