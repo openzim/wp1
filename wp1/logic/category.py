@@ -12,5 +12,7 @@ def insert_or_update(wp10db, category):
         VALUES
           (%(c_project)s, %(c_type)s, %(c_rating)s, %(c_replacement)s,
            %(c_category)s, %(c_ranking)s)
-        ON DUPLICATE KEY UPDATE c_project = c_project
+        ON DUPLICATE KEY UPDATE c_replacement = %(c_replacement)s,
+          c_category = %(c_category)s, c_ranking = %(c_ranking)s
     ''', attr.asdict(category))
+  wp10db.commit()
