@@ -118,6 +118,55 @@ class UpdateCategoryTest(BaseWpOneDbTest):
     self.assertEqual(10, category.c_ranking)
     self.assertEqual(b'Disambig-Class', category.c_replacement)
 
+  def test_extra_category_missing_title_no_update(self):
+    rating_to_category = {}
+    extra = {
+        'extra': {
+            self.page_2.page_title.decode('utf-8'): {
+                'ranking': 10,
+                'replaces': 'Disambig-Class',
+            }
+        }
+    }
+    logic_project.update_category(self.wp10db, self.project, self.page_2, extra,
+                                  AssessmentKind.QUALITY, rating_to_category)
+
+    category = _get_first_category(self.wp10db)
+    self.assertIsNone(category)
+
+  def test_extra_category_missing_ranking_no_update(self):
+    rating_to_category = {}
+    extra = {
+        'extra': {
+            self.page_2.page_title.decode('utf-8'): {
+                'title': 'Draft-Class',
+                'replaces': 'Disambig-Class',
+            }
+        }
+    }
+    logic_project.update_category(self.wp10db, self.project, self.page_2, extra,
+                                  AssessmentKind.QUALITY, rating_to_category)
+
+    category = _get_first_category(self.wp10db)
+    self.assertIsNone(category)
+
+  def test_extra_category_ranking_not_int_no_update(self):
+    rating_to_category = {}
+    extra = {
+        'extra': {
+            self.page_2.page_title.decode('utf-8'): {
+                'title': 'Draft-Class',
+                'ranking': '10b',
+                'replaces': 'Disambig-Class',
+            }
+        }
+    }
+    logic_project.update_category(self.wp10db, self.project, self.page_2, extra,
+                                  AssessmentKind.QUALITY, rating_to_category)
+
+    category = _get_first_category(self.wp10db)
+    self.assertIsNone(category)
+
   def test_skips_page_with_no_mapping_match(self):
     rating_to_category = {}
     page = Page(page_title=b'123*go', page_id=None, page_namespace=None)
