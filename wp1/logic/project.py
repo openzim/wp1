@@ -175,10 +175,23 @@ def update_category(wp10db, project, page, extra, kind, rating_to_category):
   replaces = None
   extra_category = extra.get('extra', {}).get(page.page_title.decode('utf-8'))
   if extra_category is not None:
-    rating = extra_category['title']
-    ranking = extra_category['ranking']
+    rating = extra_category.get('title')
+    ranking = extra_category.get('ranking')
+    if rating is None or ranking is None:
+      logger.warning(
+          'Skipping extra category with missing "title" or "ranking"'
+          'field: %s', extra_category)
+      return
+
+    try:
+      ranking = int(ranking)
+    except ValueError:
+      logging.warning(
+          'Could not cast "ranking" field for extra category to int'
+          ': %s | %s', extra_category, ranking)
+
     if kind == AssessmentKind.QUALITY:
-      replaces = extra_category['replaces']
+      replaces = extra_category.get('replaces')
   else:
     md = RE_INDICATOR.search(page.page_title)
     if not md:
@@ -208,6 +221,7 @@ def update_category(wp10db, project, page, extra, kind, rating_to_category):
                       c_category=page.page_title,
                       c_ranking=ranking,
                       c_replacement=replaces.encode('utf-8'))
+
   # If there is an existing category, merge in our changes.
   logic_category.insert_or_update(wp10db, category)
 
