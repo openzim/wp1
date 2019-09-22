@@ -73,7 +73,7 @@ class UpdateCategoryTest(BaseWpOneDbTest):
                                   AssessmentKind.QUALITY, rating_to_category)
 
     category = _get_first_category(self.wp10db)
-    self.assertEqual(self.page.page_title, rating_to_category['A-Class'])
+    self.assertEqual(self.page.page_title, rating_to_category['A-Class'][0])
     self.assertEqual(self.project.p_project, category.c_project)
     self.assertEqual(b'quality', category.c_type)
     self.assertEqual(b'A-Class', category.c_rating)
@@ -87,7 +87,7 @@ class UpdateCategoryTest(BaseWpOneDbTest):
                                   AssessmentKind.IMPORTANCE, rating_to_category)
 
     category = _get_first_category(self.wp10db)
-    self.assertEqual(self.page_1.page_title, rating_to_category['Mid-Class'])
+    self.assertEqual(self.page_1.page_title, rating_to_category['Mid-Class'][0])
     self.assertEqual(self.project.p_project, category.c_project)
     self.assertEqual(b'importance', category.c_type)
     self.assertEqual(b'Mid-Class', category.c_rating)
@@ -110,7 +110,8 @@ class UpdateCategoryTest(BaseWpOneDbTest):
                                   AssessmentKind.QUALITY, rating_to_category)
 
     category = _get_first_category(self.wp10db)
-    self.assertEqual(self.page_2.page_title, rating_to_category['Draft-Class'])
+    self.assertEqual(self.page_2.page_title,
+                     rating_to_category['Draft-Class'][0])
     self.assertEqual(self.project.p_project, category.c_project)
     self.assertEqual(b'quality', category.c_type)
     self.assertEqual(b'Draft-Class', category.c_rating)
@@ -192,15 +193,18 @@ class UpdateCategoryTest(BaseWpOneDbTest):
 
 class UpdateProjectCategoriesByKindTest(BaseCombinedDbTest):
   quality_pages = (
-      (101, b'FA-Class_Test_articles', b'Test_articles_by_quality',
-       b'FA-Class'),
-      (102, b'FL-Class_Test_articles', b'Test_articles_by_quality',
-       b'FL-Class'),
-      (103, b'A-Class_Test_articles', b'Test_articles_by_quality', b'A-Class'),
-      (104, b'GA-Class_Test_articles', b'Test_articles_by_quality',
-       b'GA-Class'),
-      (105, b'B-Class_Test_articles', b'Test_articles_by_quality', b'B-Class'),
-      (106, b'C-Class_Test_articles', b'Test_articles_by_quality', b'C-Class'),
+      (101, b'FA-Class_Test_articles', b'Test_articles_by_quality', b'FA-Class',
+       500),
+      (102, b'FL-Class_Test_articles', b'Test_articles_by_quality', b'FL-Class',
+       480),
+      (103, b'A-Class_Test_articles', b'Test_articles_by_quality', b'A-Class',
+       425),
+      (104, b'GA-Class_Test_articles', b'Test_articles_by_quality', b'GA-Class',
+       400),
+      (105, b'B-Class_Test_articles', b'Test_articles_by_quality', b'B-Class',
+       300),
+      (106, b'C-Class_Test_articles', b'Test_articles_by_quality', b'C-Class',
+       225),
   )
 
   additional_junk_pages = (
@@ -287,7 +291,9 @@ class UpdateProjectCategoriesByKindTest(BaseCombinedDbTest):
     rating_to_category = logic_project.update_project_categories_by_kind(
         self.wikidb, self.wp10db, self.project, {}, AssessmentKind.QUALITY)
 
-    expected = dict((p[3].decode('utf-8'), p[1]) for p in self.quality_pages)
+    expected = dict(
+        (p[3].decode('utf-8'), (p[1], p[4])) for p in self.quality_pages)
+    self.maxDiff = None
     self.assertEqual(expected, rating_to_category)
 
   def test_update_importance(self):
@@ -365,6 +371,15 @@ class ArticlesTest(BaseCombinedDbTest):
       (100, 100, 415),
   ]
 
+  custom_quality_pages = (
+      (107, b'Draft-Class_Test_articles', b'Test_articles_by_quality', None,
+       14),
+      (270, b'Starting out testing', b'Draft-Class_Test_articles',
+       b'Draft-Class', 1),
+      (271, b'Your First Test', b'Draft-Class_Test_articles', b'Draft-Class',
+       1),
+  )
+
   quality_pages = (
       (101, b'FA-Class_Test_articles', b'Test_articles_by_quality', None, 14),
       (102, b'FL-Class_Test_articles', b'Test_articles_by_quality', None, 14),
@@ -395,9 +410,9 @@ class ArticlesTest(BaseCombinedDbTest):
   )
 
   multiple_quality_pages = (
-      (250, b'Lesser-known tests', b'A-Class_Test_articles', b'A-Class', 1),
-      (251, b'Failures of tests', b'A-Class_Test_articles', b'A-Class', 1),
-      (252, b'How to test', b'A-Class_Test_articles', b'A-Class', 1),
+      (260, b'Lesser-known tests', b'A-Class_Test_articles', b'A-Class', 1),
+      (261, b'Failures of tests', b'A-Class_Test_articles', b'A-Class', 1),
+      (262, b'How to test', b'A-Class_Test_articles', b'A-Class', 1),
   )
 
   importance_pages = (
@@ -436,12 +451,12 @@ class ArticlesTest(BaseCombinedDbTest):
   )
 
   multiple_importance_pages = (
-      (2420, b'Operation of tests', b'Mid-Class_Test_articles', b'Mid-Class',
+      (2620, b'Operation of tests', b'Mid-Class_Test_articles', b'Mid-Class',
        1),
-      (2500, b'Lesser-known tests', b'Mid-Class_Test_articles', b'Mid-Class',
+      (2600, b'Lesser-known tests', b'Mid-Class_Test_articles', b'Mid-Class',
        1),
-      (2510, b'Failures of tests', b'Mid-Class_Test_articles', b'Mid-Class', 1),
-      (2520, b'How to test', b'Mid-Class_Test_articles', b'Mid-Class', 1),
+      (2710, b'Failures of tests', b'Mid-Class_Test_articles', b'Mid-Class', 1),
+      (2720, b'How to test', b'Mid-Class_Test_articles', b'Mid-Class', 1),
   )
 
   def _insert_pages(self, pages):
@@ -759,6 +774,41 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
 
     logs = _get_all_logs(self.wp10db)
     self.assertEqual(len(q_pages) + len(i_pages), len(logs))
+
+  def test_custom_rating(self):
+    self._insert_pages(self.quality_pages)
+    self._insert_pages(self.custom_quality_pages)
+
+    extra = {
+        'extra': {
+            'Draft-Class_Test_articles': {
+                'category': 'Draft-Class_Test_articles',
+                'ranking': '10',
+                'title': 'Draft-Class',
+                'type': 'quality'
+            }
+        }
+    }
+
+    expected_global_ts = b'20190113000000'
+    with patch('wp1.logic.rating.GLOBAL_TIMESTAMP', expected_global_ts):
+      logic_project.update_project_assessments(self.wikidb, self.wp10db,
+                                               self.project, extra)
+
+    ratings = _get_all_ratings(self.wp10db)
+    self.assertNotEqual(0, len(ratings))
+
+    q_pages = self.custom_quality_pages[1:]
+    expected_titles = set(p[1] for p in q_pages)
+    actual_titles = set(r.r_article for r in ratings)
+    for title in expected_titles:
+      self.assertTrue(title in actual_titles,
+                      '%s not in %s' % (title, actual_titles))
+
+    q_page_to_rating = dict((p[1], p[3]) for p in q_pages)
+    for r in ratings:
+      if r.r_article in q_page_to_rating:
+        self.assertEqual(q_page_to_rating[r.r_article], r.r_quality)
 
   def _do_assessment(self):
     expected_global_ts = b'20190113000000'

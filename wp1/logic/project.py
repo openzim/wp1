@@ -212,7 +212,7 @@ def update_category(wp10db, project, page, extra, kind, rating_to_category):
       return
     ranking = rating_map[rating]
 
-  rating_to_category[rating] = page.page_title
+  rating_to_category[rating] = (page.page_title, ranking)
   if replaces is None:
     replaces = rating
 
@@ -262,10 +262,9 @@ def update_project_assessments(wikidb, wp10db, project, extra_assessments):
   for kind in (AssessmentKind.QUALITY, AssessmentKind.IMPORTANCE):
     logger.debug('Updating %s assessments by %s',
                  project.p_project.decode('utf-8'), kind)
-    new_ratings = update_project_assessments_by_kind(wikidb, wp10db, project,
-                                                     extra_assessments, kind,
-                                                     old_ratings, seen)
-    store_new_ratings(wp10db, new_ratings, old_ratings)
+    new_ratings, rating_to_category = update_project_assessments_by_kind(
+        wikidb, wp10db, project, extra_assessments, kind, old_ratings, seen)
+    store_new_ratings(wp10db, new_ratings, old_ratings, rating_to_category)
 
   process_unseen_articles(wikidb, wp10db, project, old_ratings, seen)
 
@@ -282,7 +281,7 @@ def update_project_assessments_by_kind(wikidb, wp10db, project,
 
   n = 0
   new_ratings = defaultdict(list)
-  for current_rating, category in rating_to_category.items():
+  for current_rating, (category, ranking) in rating_to_category.items():
     logger.info('Fetching article list for %r' % category.decode('utf-8'))
     current_rating = current_rating.encode('utf-8')
 
@@ -329,16 +328,18 @@ def update_project_assessments_by_kind(wikidb, wp10db, project,
   wp10db.ping()
   wp10db.commit()
 
-  return new_ratings
+  return (new_ratings, rating_to_category)
 
 
-def store_new_ratings(wp10db, new_ratings, old_ratings):
+def store_new_ratings(wp10db, new_ratings, old_ratings, rating_to_category):
 
   def sort_rating_tuples(rating_tuple):
-    if rating_tuple[1] == AssessmentKind.QUALITY:
-      return QUALITY[rating_tuple[0].r_quality.decode('utf-8')]
-    elif rating_tuple[1] == AssessmentKind.IMPORTANCE:
-      return IMPORTANCE[rating_tuple[0].r_importance.decode('utf-8')]
+    rating, kind, _ = rating_tuple
+    if kind == AssessmentKind.QUALITY:
+      return rating_to_category[rating.r_quality.decode('utf-8')][1]  # ranking
+    elif kind == AssessmentKind.IMPORTANCE:
+      return rating_to_category[rating.r_importance.decode('utf-8')][
+          1]  # ranking
 
   for article_ref, ratings_list in new_ratings.items():
     sorted_ratings = sorted(ratings_list, key=sort_rating_tuples, reverse=True)
