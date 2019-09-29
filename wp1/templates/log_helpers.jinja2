@@ -11,18 +11,22 @@
 {%- endmacro %}
 
 {% macro quality(art) -%}
-   {% if not l[art]['quality'].l_old or l[art]['quality'].l_old.decode('utf-8') == 'NotA-Class' -%}
-     Quality assessed as '''{{l[art]['quality'].l_new.decode('utf-8')}}'''.
-   {%- else -%}
-     Quality rating changed from '''{{l[art]['quality'].l_old.decode('utf-8')}}''' to '''{{l[art]['quality'].l_new.decode('utf-8')}}'''.
+   {% if l[art]['quality'].l_new -%}
+     {%- if not l[art]['quality'].l_old or l[art]['quality'].l_old.decode('utf-8') == 'NotA-Class' -%}
+       Quality assessed as '''{{l[art]['quality'].l_new.decode('utf-8')}}'''.
+     {%- else -%}
+       Quality rating changed from '''{{l[art]['quality'].l_old.decode('utf-8')}}''' to '''{{l[art]['quality'].l_new.decode('utf-8')}}'''.
+     {%- endif -%}
    {%- endif %}
 {%- endmacro %}
 
 {% macro importance(art) -%}
-   {% if not l[art]['importance'].l_old or l[art]['importance'].l_old.decode('utf-8') == 'NotA-Class' -%}
-     Importance assessed as '''{{l[art]['importance'].l_new.decode('utf-8')}}'''.
-   {%- else -%}
-     Importance rating changed from '''{{l[art]['importance'].l_old.decode('utf-8')}}''' to '''{{l[art]['importance'].l_new.decode('utf-8')}}'''.
+   {% if l[art]['importance'].l_new -%}
+     {%- if not l[art]['importance'].l_old or l[art]['importance'].l_old.decode('utf-8') == 'NotA-Class' -%}
+       Importance assessed as '''{{l[art]['importance'].l_new.decode('utf-8')}}'''.
+     {%- else -%}
+       Importance rating changed from '''{{l[art]['importance'].l_old.decode('utf-8')}}''' to '''{{l[art]['importance'].l_new.decode('utf-8')}}'''.
+     {%- endif -%}
    {%- endif %}
 {%- endmacro %}
 
