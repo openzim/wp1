@@ -76,6 +76,7 @@ def get_global_categories():
 
 
 def get_global_stats(wp10db):
+  wp10db.ping()
   with wp10db.cursor() as cursor:
     cursor.execute('''
         SELECT count(distinct a_article) AS n,
@@ -91,6 +92,7 @@ def get_global_stats(wp10db):
 
 
 def get_project_stats(wp10db, project_name):
+  wp10db.ping()
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''
@@ -103,6 +105,7 @@ def get_project_stats(wp10db, project_name):
 
 
 def db_project_categories(wp10db, project_name):
+  wp10db.ping()
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''
