@@ -24,6 +24,7 @@ def log_page_name(project_name):
 
 
 def get_logs(wp10db, project_name, start_dt):
+  wp10db.ping()
   with wp10db.cursor() as cursor:
     cursor.execute(
         'SELECT * FROM logging WHERE l_project = %s AND l_timestamp > %s',
@@ -32,6 +33,7 @@ def get_logs(wp10db, project_name, start_dt):
 
 
 def move_target(wp10db, ns, article, db_timestamp):
+  wp10db.ping()
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''
@@ -42,6 +44,7 @@ def move_target(wp10db, ns, article, db_timestamp):
 
 
 def get_revid(wikidb, name, namespace, revision_dt):
+  wikidb.ping()
   with wikidb.cursor() as cursor:
     cursor.execute(
         '''
