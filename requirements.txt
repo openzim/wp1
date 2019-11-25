@@ -8,6 +8,7 @@ chardet==3.0.4
 Click==7.0
 croniter==0.3.30
 Flask==1.1.1
+Flask-Cors==3.0.8
 gunicorn==19.9.0
 identify==1.4.6
 idna==2.8
