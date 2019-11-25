@@ -29,8 +29,8 @@ services:
     image: openzim/wp1bot-web
     container_name: wp1bot-web
     environment:
-      - VIRTUAL_HOST=wp1.openzim.org
-      - LETSENCRYPT_HOST=wp1.openzim.org
+      - VIRTUAL_HOST=api.wp1.openzim.org
+      - LETSENCRYPT_HOST=api.wp1.openzim.org
       - LETSENCRYPT_EMAIL=contact@openzim.org
       - HTTPS_METHOD=noredirect
     expose:
@@ -48,6 +48,25 @@ services:
     restart: always
     depends_on:
       - redis
+
+  frontend:
+    image: openzim/wp1bot-frontend
+    contiainer_name: wp1bot-frontend
+    environment:
+      - VIRTUAL_HOST=wp1.openzim.org
+      - LETSENCRYPT_HOST=wp1.openzim.org
+      - LETSENCRYPT_EMAIL=contact@openzim.org
+      - HTTPS_METHOD=noredirect
+    expose:
+       - 80
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "2"
+        max-size: "10m"
+    restart: always
+    depends_on:
+      - web
 
   reverse-proxy:
     image: jwilder/nginx-proxy
