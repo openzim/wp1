@@ -11,9 +11,20 @@ export default {
   name: 'stats',
   data: function() {
     return {
-      'numProjects': 2497
+      'numProjects': '...',
     }
   },
+  created: async function() {
+    this.numProjects = await this.getProjectCount();
+  },
+  methods: {
+    getProjectCount: async function() {
+      const response = await fetch(
+        `${process.env.VUE_APP_API_URL}/projects/count`);
+      const data = await response.json();
+      return data.count;
+    }
+  }
 }
 </script>
 
