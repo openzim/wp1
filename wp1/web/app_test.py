@@ -1,4 +1,5 @@
 from base64 import b64encode
+import json
 import os
 import unittest
 from unittest.mock import patch
@@ -32,6 +33,25 @@ class AppTest(BaseWebTestcase):
       rv = client.get('/')
       self.assertTrue(b'There are currently 101 projects being tracked '
                       b'and updated each day.' in rv.data)
+
+  def test_project_count(self):
+    projects = []
+    for i in range(101):
+      projects.append({
+          'p_project': b'Project %s' % str(i).encode('utf-8'),
+          'p_timestamp': b'20181225'
+      })
+
+    with self.wp10db.cursor() as cursor:
+      cursor.executemany(
+          'INSERT INTO projects (p_project, p_timestamp) '
+          'VALUES (%(p_project)s, %(p_timestamp)s)', projects)
+    self.wp10db.commit()
+
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get('/projects/count')
+      data = json.loads(rv.data)
+      self.assertEquals(101, data['count'])
 
 
 class RqTest(unittest.TestCase):
