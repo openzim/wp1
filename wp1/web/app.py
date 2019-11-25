@@ -1,6 +1,7 @@
 import os
 
 import flask
+import flask_cors
 import rq_dashboard
 from rq_dashboard.cli import add_basic_auth
 
@@ -19,6 +20,7 @@ def get_redis_creds():
 
 def create_app():
   app = flask.Flask(__name__)
+  cors = flask_cors.CORS(app)
 
   rq_user = os.environ.get('RQ_USER')
   rq_pass = os.environ.get('RQ_PASS')
@@ -48,5 +50,11 @@ def create_app():
     wp10db = get_db('wp10db')
     count = logic_project.count_projects(wp10db)
     return flask.render_template('index.html.jinja2', count=count)
+
+  @app.route('/projects/count')
+  def count_projects():
+    wp10db = get_db('wp10db')
+    count = logic_project.count_projects(wp10db)
+    return flask.jsonify({'count': count})
 
   return app
