@@ -51,7 +51,7 @@ services:
 
   frontend:
     image: openzim/wp1bot-frontend
-    contiainer_name: wp1bot-frontend
+    container_name: wp1bot-frontend
     environment:
       - VIRTUAL_HOST=wp1.openzim.org
       - LETSENCRYPT_HOST=wp1.openzim.org
