@@ -33,7 +33,6 @@ export default {
   },
   methods: {
     filterResults: function() {
-      window.console.log(this.projects);
       if (this.search === '' || !this.projects) {
         this.results = [];
         return;
