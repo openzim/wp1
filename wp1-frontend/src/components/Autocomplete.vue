@@ -7,7 +7,7 @@
     </div>
       <ul tabindex="0" ref="list" class="results" v-show="isOpen">
         <li v-for="(result, i) of results" :key="i"
-            v-on:click="selectResult"
+            v-on:click="selectResult" v-on:keyup.enter="selectResult"
             v-on:keyup.down="focusNext" v-on:keyup.up="focusPrev"
             class="result" tabindex="0">
           {{result.name}}
