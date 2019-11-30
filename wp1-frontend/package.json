@@ -31,6 +31,7 @@
     "eslint": "^5.16.0",
     "eslint-loader": "^3.0.2",
     "eslint-plugin-vue": "^5.0.0",
+    "fetch-mock": "^8.0.0",
     "vue-template-compiler": "^2.6.10"
   },
   "eslintConfig": {
