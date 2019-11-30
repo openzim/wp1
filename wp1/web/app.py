@@ -2,6 +2,7 @@ import os
 
 import flask
 import flask_cors
+import flask_gzip
 import rq_dashboard
 from rq_dashboard.cli import add_basic_auth
 
@@ -21,6 +22,7 @@ def get_redis_creds():
 def create_app():
   app = flask.Flask(__name__)
   cors = flask_cors.CORS(app)
+  gzip = flask_gzip.Gzip(app, minimum_size=256)
 
   rq_user = os.environ.get('RQ_USER')
   rq_pass = os.environ.get('RQ_PASS')
