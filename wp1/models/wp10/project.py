@@ -26,3 +26,9 @@ class Project:
     if self.p_timestamp is None:
       return datetime(1970, 1, 1)
     return datetime.strptime(self.p_timestamp.decode('utf-8'), TS_FORMAT_WP10)
+
+  def to_web_dict(self):
+    return {
+        'name': self.p_project.decode('utf-8').replace('_', ' '),
+        'last_updated': self.p_timestamp.decode('utf-8'),
+    }
