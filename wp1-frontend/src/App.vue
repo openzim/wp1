@@ -1,7 +1,11 @@
 <template>
-  <div id="app">
-    <h1>Wikipedia 1.0 Server</h1>
-    <Stats></Stats>
+  <div id="app" class="container">
+    <div class="row">
+      <div class="col">
+        <h1>Wikipedia 1.0 Server</h1>
+        <Stats></Stats>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -17,5 +21,7 @@ export default {
 </script>
 
 <style>
-
+  #app {
+    margin-top: 10px;
+  }
 </style>

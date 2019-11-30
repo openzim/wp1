@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div v-show="!!numProjects">
     There are currently {{numProjects}} projects being tracked and updated each
     day.
   </div>
@@ -11,7 +11,7 @@ export default {
   name: 'stats',
   data: function() {
     return {
-      'numProjects': '...',
+      'numProjects': null,
     }
   },
   created: async function() {
