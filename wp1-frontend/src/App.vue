@@ -19,20 +19,20 @@
 </template>
 
 <script>
-import Autocomplete from './components/Autocomplete.vue'
-import Stats from './components/Stats.vue'
+import Autocomplete from './components/Autocomplete.vue';
+import Stats from './components/Stats.vue';
 
 export default {
   name: 'app',
   components: {
     Autocomplete,
-    Stats,
-  },
-}
+    Stats
+  }
+};
 </script>
 
 <style>
-  .row {
-    margin-top: 10px;
-  }
+.row {
+  margin-top: 10px;
+}
 </style>
