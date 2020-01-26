@@ -29,10 +29,14 @@ const payload = [
     last_updated: '20190101000000',
   },
   {
-    name: 'Australian Sports',
-    last_updated: '20190101000000',
+    name: 'Australian Rules Football',
+    last_updated: "20190101000000"
   },
-]
+  {
+    name: "Australian Sports",
+    last_updated: "20190101000000"
+  }
+];
 
 storiesOf('Autocomplete', module)
   .add('default', () => {
@@ -46,6 +50,5 @@ storiesOf('Autocomplete', module)
     return {
       components: {Autocomplete},
       template: '<div style="width: 500px"><Autocomplete/></div>',
-      data: () => {return {};},
     }
-  });
+  })
