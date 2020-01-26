@@ -10,7 +10,7 @@ projects = flask.Blueprint('projects', __name__)
 @projects.route('/')
 def list_():
   wp10db = get_db('wp10db')
-  projects = logic_project.list(wp10db)
+  projects = logic_project.list_all_projects(wp10db)
   return flask.jsonify(list(project.to_web_dict() for project in projects))
 
 
