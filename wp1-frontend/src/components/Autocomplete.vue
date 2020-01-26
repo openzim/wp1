@@ -108,9 +108,11 @@ export default {
 .results {
   border: 1px solid #ddd;
   border-top: none;
-  box-style: border-box;
+  box-sizing: border-box;
   cursor: pointer;
   list-style: none;
+  max-height: 20rem;
+  overflow: auto;
   padding: 0;
   text-align: left;
 }
