@@ -18,3 +18,4 @@ repos:
       - id: prettier
         args:
           - --single-quote=true
+            --trailing-comma all
