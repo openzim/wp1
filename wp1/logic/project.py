@@ -345,7 +345,7 @@ def store_new_ratings(wp10db, new_ratings, old_ratings, rating_to_category):
     rating, kind, _ = rating_tuple
     if kind == AssessmentKind.QUALITY:
       return rating_to_category[rating.r_quality.decode('utf-8')][1]  # ranking
-    elif kind == AssessmentKind.IMPORTANCE:
+    if kind == AssessmentKind.IMPORTANCE:
       return rating_to_category[rating.r_importance.decode('utf-8')][
           1]  # ranking
 
