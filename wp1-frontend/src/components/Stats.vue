@@ -1,18 +1,17 @@
 <template>
   <div v-show="!!numProjects">
-    There are currently {{numProjects}} projects being tracked and updated each
-    day.
+    There are currently {{ numProjects }} projects being tracked and updated
+    each day.
   </div>
 </template>
 
 <script>
-
 export default {
   name: 'stats',
   data: function() {
     return {
-      'numProjects': null,
-    }
+      numProjects: null
+    };
   },
   created: async function() {
     this.numProjects = await this.getProjectCount();
@@ -20,14 +19,13 @@ export default {
   methods: {
     getProjectCount: async function() {
       const response = await fetch(
-        `${process.env.VUE_APP_API_URL}/projects/count`);
+        `${process.env.VUE_APP_API_URL}/projects/count`
+      );
       const data = await response.json();
       return data.count;
     }
   }
-}
+};
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

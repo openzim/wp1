@@ -8,6 +8,7 @@ from rq_dashboard.cli import add_basic_auth
 
 import wp1.logic.project as logic_project
 from wp1.web.db import get_db, has_db
+from wp1.web.projects import projects
 
 
 def get_redis_creds():
@@ -53,10 +54,6 @@ def create_app():
     count = logic_project.count_projects(wp10db)
     return flask.render_template('index.html.jinja2', count=count)
 
-  @app.route('/projects/count')
-  def count_projects():
-    wp10db = get_db('wp10db')
-    count = logic_project.count_projects(wp10db)
-    return flask.jsonify({'count': count})
+  app.register_blueprint(projects, url_prefix='/v1/projects')
 
   return app
