@@ -1,6 +1,5 @@
 version: '3.5'
 services:
-
   redis:
     image: redis
     container_name: wp1bot-redis
@@ -17,10 +16,10 @@ services:
     links:
       - redis
     logging:
-      driver: "json-file"
+      driver: 'json-file'
       options:
-        max-file: "2"
-        max-size: "10m"
+        max-file: '2'
+        max-size: '10m'
     restart: always
     depends_on:
       - redis
@@ -41,10 +40,10 @@ services:
     links:
       - redis
     logging:
-      driver: "json-file"
+      driver: 'json-file'
       options:
-        max-file: "2"
-        max-size: "10m"
+        max-file: '2'
+        max-size: '10m'
     restart: always
     depends_on:
       - redis
@@ -58,12 +57,12 @@ services:
       - LETSENCRYPT_EMAIL=contact@openzim.org
       - HTTPS_METHOD=noredirect
     expose:
-       - 80
+      - 80
     logging:
-      driver: "json-file"
+      driver: 'json-file'
       options:
-        max-file: "2"
-        max-size: "10m"
+        max-file: '2'
+        max-size: '10m'
     restart: always
     depends_on:
       - web
@@ -74,19 +73,19 @@ services:
     depends_on:
       - web
     volumes:
-      - "/var/run/docker.sock:/tmp/docker.sock:ro"
-      - "/data/certs:/etc/nginx/certs:ro"
-      - "/var/local/vhost.d:/etc/nginx/vhost.d"
-      - "/data/html:/usr/share/nginx/html"
+      - '/var/run/docker.sock:/tmp/docker.sock:ro'
+      - '/data/certs:/etc/nginx/certs:ro'
+      - '/var/local/vhost.d:/etc/nginx/vhost.d'
+      - '/data/html:/usr/share/nginx/html'
     labels:
       - com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy
     ports:
       - 80:80
       - 443:443
     logging:
-      driver: "none"
+      driver: 'none'
       options:
-        max-size: "10k"
+        max-size: '10k'
     restart: always
 
   letsencrypt:
@@ -95,14 +94,14 @@ services:
     depends_on:
       - reverse-proxy
     volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock:ro"
-      - "/data/certs:/etc/nginx/certs:rw"
-      - "/var/local/vhost.d:/etc/nginx/vhost.d"
-      - "/data/html:/usr/share/nginx/html"
+      - '/var/run/docker.sock:/var/run/docker.sock:ro'
+      - '/data/certs:/etc/nginx/certs:rw'
+      - '/var/local/vhost.d:/etc/nginx/vhost.d'
+      - '/data/html:/usr/share/nginx/html'
     logging:
-      driver: "none"
+      driver: 'none'
       options:
-        max-size: "10k"
+        max-size: '10k'
     restart: always
 
 networks:

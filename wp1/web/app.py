@@ -10,6 +10,7 @@ from rq_dashboard.cli import add_basic_auth
 
 import wp1.logic.project as logic_project
 from wp1.web.db import get_db, has_db
+from wp1.web.projects import projects
 
 
 def get_redis_creds():
@@ -81,5 +82,7 @@ def create_app():
   @nocache
   def swagger_api_docs_yml():
     return flask.send_from_directory(".", "swagger.yml")
+
+  app.register_blueprint(projects, url_prefix='/v1/projects')
 
   return app

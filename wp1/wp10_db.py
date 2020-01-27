@@ -36,8 +36,6 @@ try:
           raise
 
 except ImportError:
-  print('import error')
-
   # No creds, so return an empty connect method that will blow up. This is only
   # to satisfy imports.
   def connect():
