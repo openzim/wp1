@@ -1,3 +1,5 @@
+from datetime import datetime
+from functools import wraps, update_wrapper
 import os
 
 import flask
@@ -17,6 +19,26 @@ def get_redis_creds():
   except ImportError:
     print('No REDIS_CREDS found, using defaults.')
     return None
+
+
+SWAGGER_UI_DIST_DIR = "swagger-ui-dist"
+
+
+# We use this to prevent caching of `/swagger.yml`
+# Credits: https://arusahni.net/blog/2014/03/flask-nocache.html
+def nocache(view):
+
+  @wraps(view)
+  def no_cache(*args, **kwargs):
+    response = flask.make_response(view(*args, **kwargs))
+    response.headers["Last-Modified"] = datetime.now()
+    response.headers[
+        "Cache-Control"] = "no-store, no-cache, must-revalidate, pre-check=0, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "-1"
+    return response
+
+  return update_wrapper(no_cache, view)
 
 
 def create_app():
@@ -49,14 +71,15 @@ def create_app():
 
   @app.route('/')
   def index():
-    wp10db = get_db('wp10db')
-    count = logic_project.count_projects(wp10db)
-    return flask.render_template('index.html.jinja2', count=count)
+    return flask.send_from_directory(SWAGGER_UI_DIST_DIR, "index.html")
 
-  @app.route('/projects/count')
-  def count_projects():
-    wp10db = get_db('wp10db')
-    count = logic_project.count_projects(wp10db)
-    return flask.jsonify({'count': count})
+  @app.route("/<asset>")
+  def swagger_assets(asset):
+    return flask.send_from_directory(SWAGGER_UI_DIST_DIR, asset)
+
+  @app.route("/v1/swagger.yml")
+  @nocache
+  def swagger_api_docs_yml():
+    return flask.send_from_directory(".", "swagger.yml")
 
   return app
