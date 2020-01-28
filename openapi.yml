@@ -1,0 +1,52 @@
+openapi: 3.0.0
+servers:
+  - url: https://api.wp1.openzim.org
+    description: Production server HTTPS
+  - url: http://api.wp1.openzim.org
+    description: Production server HTTP
+info:
+  description: 'Wikipedia 1.0 is an editing project on Wikipedia. It includes a bot, called the WP 1.0 bot, and a frontend web interface for that bot which lives at https://wp1.openzim.org. This document describes the server that acts as the API backend for that frontend server. Generally speaking, it contains only features which are useful to that frontend. However it is documented here and made available without restriction in the hopes that it may be useful.'
+  version: 'v1'
+  title: 'WP 1.0 Frontend'
+  contact:
+    name: 'Travis Briggs'
+    email: 'audiodude@gmail.com'
+  license:
+    name: 'GPL v2 or greater'
+    url: 'https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html'
+paths:
+  /projects:
+    get:
+      summary: 'List all projects that the WP 1.0 bot updates'
+      operationId: listProjects
+      responses:
+        200:
+          description: 'Successful operation'
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Project'
+  /projects/count:
+    get:
+      summary: 'Count of the total number of projects'
+      operationId: countProjects
+      responses:
+        200:
+          description: 'Successful operation'
+          application/json:
+            schema:
+              type: object
+              properties:
+                count:
+                  type: integer
+components:
+  schemas:
+    Project:
+      type: object
+      properties:
+        name:
+          type: string
+        last_updated:
+          type: string
+          description: 'The last time the project was updated, in the date format YYYYMMDDhhmmss. So, year month day, hour minute second'
