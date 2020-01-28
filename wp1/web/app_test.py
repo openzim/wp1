@@ -13,19 +13,12 @@ class AppTest(BaseWebTestcase):
   def test_index(self):
     with self.override_db(self.app), self.app.test_client() as client:
       rv = client.get('/')
-      self.assertTrue(b'<title>Swagger UI</title>' in rv.data)
-
-  def test_swagger_asset(self):
-    with self.override_db(self.app), self.app.test_client() as client:
-      rv = client.get('/index.js')
-      test_string = (
-          b'module.exports.SwaggerUIBundle = require("./swagger-ui-bundle.js")')
-      self.assertTrue(test_string in rv.data)
+      self.assertTrue(b'<title>WP 1.0 API</title>' in rv.data)
 
   def test_swagger_yml(self):
     with self.override_db(self.app), self.app.test_client() as client:
-      rv = client.get('/v1/swagger.yml')
-      self.assertTrue(b'title: "WP 1.0 Frontend"' in rv.data)
+      rv = client.get('/v1/openapi.yml')
+      self.assertTrue(b"title: 'WP 1.0 Frontend'" in rv.data)
 
 
 class RqTest(unittest.TestCase):
