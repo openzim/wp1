@@ -72,16 +72,12 @@ def create_app():
 
   @app.route('/')
   def index():
-    return flask.send_from_directory(SWAGGER_UI_DIST_DIR, "index.html")
+    return flask.send_from_directory('.', "swagger.html")
 
-  @app.route("/<asset>")
-  def swagger_assets(asset):
-    return flask.send_from_directory(SWAGGER_UI_DIST_DIR, asset)
-
-  @app.route("/v1/swagger.yml")
+  @app.route("/v1/openapi.yml")
   @nocache
   def swagger_api_docs_yml():
-    return flask.send_from_directory(".", "swagger.yml")
+    return flask.send_from_directory(".", "openapi.yml")
 
   app.register_blueprint(projects, url_prefix='/v1/projects')
 
