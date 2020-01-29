@@ -22,11 +22,12 @@ paths:
       responses:
         200:
           description: 'Successful operation'
-          application/json:
-            schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/Project'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
   /projects/count:
     get:
       summary: 'Count of the total number of projects'
@@ -34,12 +35,13 @@ paths:
       responses:
         200:
           description: 'Successful operation'
-          application/json:
-            schema:
-              type: object
-              properties:
-                count:
-                  type: integer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
 components:
   schemas:
     Project:
