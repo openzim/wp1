@@ -1,8 +1,8 @@
 openapi: 3.0.0
 servers:
-  - url: https://api.wp1.openzim.org
+  - url: https://api.wp1.openzim.org/v1
     description: Production server HTTPS
-  - url: http://api.wp1.openzim.org
+  - url: http://api.wp1.openzim.org/v1
     description: Production server HTTP
 info:
   description: 'Wikipedia 1.0 is an editing project on Wikipedia. It includes a bot, called the WP 1.0 bot, and a frontend web interface for that bot which lives at https://wp1.openzim.org. This document describes the server that acts as the API backend for that frontend server. Generally speaking, it contains only features which are useful to that frontend. However it is documented here and made available without restriction in the hopes that it may be useful.'
