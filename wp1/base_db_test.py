@@ -1,5 +1,12 @@
+import importlib
 import unittest
+import unittest
+import unittest.mock
+import sys
+
 import pymysql
+
+from wp1.environment import Environment
 
 
 def parse_sql(filename):
@@ -95,3 +102,24 @@ class BaseCombinedDbTest(BaseWikiDbTest, BaseWpOneDbTest):
 
     self.addCleanup(self._cleanup_wp_one_db)
     self._setup_wp_one_db()
+
+
+def get_test_connect_creds():
+  return {
+      Environment.DEVELOPMENT: {
+          'WP10DB': {
+              'user': 'root',
+              'host': 'localhost',
+              'db': 'enwp10_test',
+          },
+          'WIKIDB': {
+              'user': 'root',
+              'host': 'localhost',
+              'db': 'enwikip_test',
+          }
+      },
+      Environment.PRODUCTION: {
+          'WP10DB': {},
+          'WIKIDB': {},
+      }
+  }
