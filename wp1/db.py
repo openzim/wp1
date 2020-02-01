@@ -14,9 +14,6 @@ RETRY_TIME_SECONDS = 5
 
 
 def connect(db_name):
-  print(CREDENTIALS)
-  print(ENV)
-
   creds = CREDENTIALS[ENV].get(db_name)
   if creds is None:
     raise ValueError('db credentials for %r in ENV=%s are None')

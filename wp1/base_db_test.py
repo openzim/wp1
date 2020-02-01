@@ -118,8 +118,5 @@ def get_test_connect_creds():
               'db': 'enwikip_test',
           }
       },
-      Environment.PRODUCTION: {
-          'WP10DB': {},
-          'WIKIDB': {},
-      }
+      Environment.PRODUCTION: {}
   }

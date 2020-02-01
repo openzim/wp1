@@ -16,6 +16,16 @@ class DbTest(unittest.TestCase):
     self.assertIsNotNone(connect('WP10DB'))
     self.assertIsNotNone(connect('WIKIDB'))
 
+  @unittest.mock.patch('wp1.db.ENV', Environment.PRODUCTION)
+  @unittest.mock.patch('wp1.db.CREDENTIALS', get_test_connect_creds())
+  def test_exception_thrown_with_empty_creds(self):
+    from wp1.db import connect
+    with self.assertRaises(ValueError):
+      connect('WP10DB')
+
+    with self.assertRaises(ValueError):
+      self.assertIsNotNone(connect('WIKIDB'))
+
   @unittest.mock.patch('wp1.db.ENV', Environment.DEVELOPMENT)
   @unittest.mock.patch('wp1.db.CREDENTIALS', get_test_connect_creds())
   @unittest.mock.patch('wp1.db.pymysql.connect')
