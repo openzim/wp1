@@ -1,6 +1,5 @@
 import importlib
 import unittest
-import unittest
 import unittest.mock
 import sys
 
