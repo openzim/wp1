@@ -17,7 +17,7 @@ CREDENTIALS = {
             'user': 'someuser',
             'password': 'somepass',
             'host': 'tools.db.svc.eqiad.wmflabs',
-            'db': 'youruser_enwp10',
+            'db': 's51114_enwp10',
         },
 
         # WMF wiki OAuth credentials.
@@ -48,7 +48,7 @@ CREDENTIALS = {
     #     'user': 'someuser', # EDIT this line for production.
     #     'password': 'somepass', # EDIT this line for production.
     #     'host': 'tools.db.svc.eqiad.wmflabs',
-    #     'db': 'youruser_enwp10',
+    #     'db': 's51114_enwp10',
     #   },
 
     #   # WMF wiki oauth credentials
