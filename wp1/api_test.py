@@ -5,10 +5,12 @@ from unittest.mock import MagicMock, patch
 import mwclient
 
 import wp1.api
+from wp1.environment import Environment
 
 
 class ApiWithCredsTest(unittest.TestCase):
 
+  @patch('wp1.api.ENV', Environment.PRODUCTION)
   @patch('wp1.api.get_credentials')
   @patch('wp1.api.mwclient.Site')
   def test_login(self, patched_mwsite, patched_credentials):
@@ -16,6 +18,7 @@ class ApiWithCredsTest(unittest.TestCase):
     wp1.api.login()
     self.assertEqual(1, site.login.call_count)
 
+  @patch('wp1.api.ENV', Environment.PRODUCTION)
   @patch('wp1.api.get_credentials')
   @patch('wp1.api.mwclient.Site')
   @patch('wp1.api.logger')

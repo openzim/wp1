@@ -2,17 +2,15 @@ import logging
 
 import mwclient
 
+from wp1.credentials import CREDENTIALS, ENV
+from wp1.environment import Environment
+
 logger = logging.getLogger(__name__)
 _ua = 'WP1.0Bot/3.0. Run by User:Audiodude. Using mwclient/0.9.1'
 
 
 def get_credentials():
-  try:
-    from wp1.credentials import API_CREDS
-    return API_CREDS
-  except ImportError:
-    # No credentials, probably in development environment.
-    pass
+  return CREDENTIALS[ENV]['API']
 
 
 site = None
@@ -20,13 +18,13 @@ site = None
 
 def login():
   global site
+  if ENV == Environment.DEVELOPMENT:
+    logger.warning('Not using API, environment=development')
+    return
   try:
     api_creds = get_credentials()
-    if api_creds is None:
-      logger.warning('Not creating site, no credentials')
-      return
     site = mwclient.Site('en.wikipedia.org', clients_useragent=_ua)
-    site.login(api_creds['user'], api_creds['pass'])
+    site.login(api_creds.get('user'), api_creds.get('pass'))
   except mwclient.errors.LoginError:
     logger.exception('Exception logging into wikipedia')
 

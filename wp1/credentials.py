@@ -21,12 +21,7 @@ CREDENTIALS = {
         },
 
         # WMF wiki OAuth credentials.
-        'API': {
-            'CONSUMER_TOKEN': 'some_consumer_token',
-            'CONSUMER_SECRET': 'some_consumer_secret',
-            'ACCESS_TOKEN': 'some_access_token',
-            'ACCESS_SECRET': 'some_access_secret',
-        }
+        'API': {}
     },
 
     # EDIT: Remove the next line after you've provided actual credentials.
@@ -53,10 +48,9 @@ CREDENTIALS = {
 
     #   # WMF wiki oauth credentials
     #   'API': {
-    #     'CONSUMER_TOKEN': 'a_consumer_token', # EDIT this line for production.
-    #     'CONSUMER_SECRET': 'a_consumer_secret', # EDIT this line for production.
-    #     'ACCESS_TOKEN': 'an_access_token', # EDIT this line for production.
-    #     'ACCESS_SECRET': 'an_access_secret', # EDIT this line for production.
-    #   }
+    #     # For production, the bot has a "bot password" that it uses.
+    #     'user': 'username',
+    #     'pass': 'password',
+    #   },
     # }
 }
