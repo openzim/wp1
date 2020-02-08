@@ -21,6 +21,7 @@ CREDENTIALS = {
         },
 
         # WMF wiki OAuth credentials.
+        # Not used in Development. API calls will be skipped.
         'API': {}
     },
 
