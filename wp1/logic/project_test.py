@@ -1241,13 +1241,13 @@ class UpdateProjectRecordTest(BaseWpOneDbTest):
                      self.project.parent.decode('utf-8'))
 
   def test_count(self):
-    self.assertEqual(8, self.project.count)
+    self.assertEqual(8, self.project.p_count)
 
   def test_quality_count(self):
-    self.assertEqual(5, self.project.qcount)
+    self.assertEqual(5, self.project.p_qcount)
 
   def test_importance_count(self):
-    self.assertEqual(6, self.project.icount)
+    self.assertEqual(6, self.project.p_icount)
 
 
 class ProjectNamesTest(ArticlesTest):
