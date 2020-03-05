@@ -70,8 +70,8 @@ def update_project_by_name(project_name):
   try:
     project = get_project_by_name(wp10db, project_name)
     if not project:
-      logger.error('No project with name: %s', project_name)
-      return
+      project = Project(p_project=project_name,
+                        p_timestamp=GLOBAL_TIMESTAMP_WIKI)
     update_project(wikidb, wp10db, project)
   finally:
     wp10db.close()
@@ -498,10 +498,10 @@ def update_project_record(wp10db, project, metadata):
     logger.warning('Setting NULL shortname for project: %s', project_display)
   else:
     project.shortname = shortname.encode('utf-8')
-  project.count = num_ratings
-  project.qcount = quality_count
-  project.icount = importance_count
-  project.scope = 0
+  project.p_count = num_ratings
+  project.p_qcount = quality_count
+  project.p_icount = importance_count
+  project.p_scope = 0
   project.upload_timestamp = b'00000000000000'
 
   insert_or_update(wp10db, project)
