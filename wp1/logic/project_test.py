@@ -1326,6 +1326,7 @@ class GlobalCountAndListTest(BaseWpOneDbTest):
     finally:
       self.wp10db.close = orig_close
 
+
 class UpdateProjectByNameTest(BaseCombinedDbTest):
 
   def _insert_project(self):
@@ -1345,7 +1346,9 @@ class UpdateProjectByNameTest(BaseCombinedDbTest):
   @patch('wp1.logic.project.wiki_connect')
   @patch('wp1.logic.project.wp10_connect')
   @patch('wp1.logic.project.update_project')
-  def test_calls_update_project_with_existing(self, patched_update_project, patched_wp10_connect, patched_wiki_connect):
+  def test_calls_update_project_with_existing(self, patched_update_project,
+                                              patched_wp10_connect,
+                                              patched_wiki_connect):
     orig_wp10_close = self.wp10db.close
     orig_wiki_close = self.wikidb.close
     try:
@@ -1353,7 +1356,7 @@ class UpdateProjectByNameTest(BaseCombinedDbTest):
       self.wikidb.close = lambda: True
       patched_wp10_connect.return_value = self.wp10db
       patched_wiki_connect.return_value = self.wikidb
-    
+
       logic_project.update_project_by_name(b'Test Project')
       patched_update_project.assert_called_once()
     finally:
@@ -1363,7 +1366,8 @@ class UpdateProjectByNameTest(BaseCombinedDbTest):
   @patch('wp1.logic.project.wiki_connect')
   @patch('wp1.logic.project.wp10_connect')
   @patch('wp1.logic.project.update_project')
-  def test_creates_new(self, patched_update_project, patched_wp10_connect, patched_wiki_connect):
+  def test_creates_new(self, patched_update_project, patched_wp10_connect,
+                       patched_wiki_connect):
     orig_wp10_close = self.wp10db.close
     orig_wiki_close = self.wikidb.close
     try:
@@ -1371,7 +1375,7 @@ class UpdateProjectByNameTest(BaseCombinedDbTest):
       self.wikidb.close = lambda: True
       patched_wp10_connect.return_value = self.wp10db
       patched_wiki_connect.return_value = self.wikidb
-    
+
       logic_project.update_project_by_name(b'Foo New Project')
       patched_update_project.assert_called_once()
     finally:

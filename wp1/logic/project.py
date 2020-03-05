@@ -70,8 +70,8 @@ def update_project_by_name(project_name):
   try:
     project = get_project_by_name(wp10db, project_name)
     if not project:
-      project = Project(
-        p_project=project_name, p_timestamp=GLOBAL_TIMESTAMP_WIKI)
+      project = Project(p_project=project_name,
+                        p_timestamp=GLOBAL_TIMESTAMP_WIKI)
     update_project(wikidb, wp10db, project)
   finally:
     wp10db.close()
