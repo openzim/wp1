@@ -5,19 +5,34 @@ ENV = Environment.DEVELOPMENT
 CREDENTIALS = {
     Environment.DEVELOPMENT: {
         # Database credentials for the wikipedia replica database.
+        # For development, you can use your toolforge credentials and connect
+        # to a live replica via an SSH tunnel, as outlined here:
+        # https://wikitech.wikimedia.org/wiki/Help:Toolforge/Database#Connecting_to_the_database_replicas_from_your_own_computer
+        # The 'local port' you use, 4711 in the example, will correspond to the
+        # port you set below.
         'WIKIDB': {
-            'user': 'someuser',
-            'password': 'somepass',
-            'host': 'enwiki.analytics.db.svc.eqiad.wmflabs',
+            'user': 'youruser',
+            'password': 'yourpass',
+            'host': 'localhost',
+            'port': 4711,
             'db': 'enwiki_p',
         },
 
         # Database credentials for the enwp10 project/application database.
+        # For development, use the docker-compose-dev.yml file and spin up a
+        # local database that has some (potentially out of date) data in it.
         'WP10DB': {
-            'user': 'someuser',
-            'password': 'somepass',
-            'host': 'tools.db.svc.eqiad.wmflabs',
-            'db': 's51114_enwp10',
+            'user': 'root',
+            'password': 'wikipedia',
+            'host': 'localhost',
+            'port': 6300,
+            'db': 'enwp10_dev',
+        },
+
+        # Development Redis is provided by docker-compose-dev graph.
+        'REDIS': {
+            'host': 'localhost',
+            'port': 9736,
         },
 
         # WMF wiki OAuth credentials.
@@ -50,6 +65,12 @@ CREDENTIALS = {
     #     'host': 'tools.db.svc.eqiad.wmflabs',
     #     'db': 's51114_enwp10',
     #   },
+
+    #   # Redis is available on the docker network for production
+    #   # docker-compose.
+    #   'REDIS': {
+    #     'host': 'redis',
+    #   }
 
     #   # WMF wiki oauth credentials
     #   'API': {
