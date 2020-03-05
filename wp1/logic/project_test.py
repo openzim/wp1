@@ -1241,13 +1241,13 @@ class UpdateProjectRecordTest(BaseWpOneDbTest):
                      self.project.parent.decode('utf-8'))
 
   def test_count(self):
-    self.assertEqual(8, self.project.count)
+    self.assertEqual(8, self.project.p_count)
 
   def test_quality_count(self):
-    self.assertEqual(5, self.project.qcount)
+    self.assertEqual(5, self.project.p_qcount)
 
   def test_importance_count(self):
-    self.assertEqual(6, self.project.icount)
+    self.assertEqual(6, self.project.p_icount)
 
 
 class ProjectNamesTest(ArticlesTest):
@@ -1325,3 +1325,59 @@ class GlobalCountAndListTest(BaseWpOneDbTest):
       self.assertEqual(50, len(projects))
     finally:
       self.wp10db.close = orig_close
+
+
+class UpdateProjectByNameTest(BaseCombinedDbTest):
+
+  def _insert_project(self):
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+          '''
+          INSERT INTO projects
+            (p_project, p_timestamp)
+          VALUES
+            (%s, '20181225001122')
+      ''', ('Test Projecct',))
+
+  def setUp(self):
+    super().setUp()
+    self._insert_project()
+
+  @patch('wp1.logic.project.wiki_connect')
+  @patch('wp1.logic.project.wp10_connect')
+  @patch('wp1.logic.project.update_project')
+  def test_calls_update_project_with_existing(self, patched_update_project,
+                                              patched_wp10_connect,
+                                              patched_wiki_connect):
+    orig_wp10_close = self.wp10db.close
+    orig_wiki_close = self.wikidb.close
+    try:
+      self.wp10db.close = lambda: True
+      self.wikidb.close = lambda: True
+      patched_wp10_connect.return_value = self.wp10db
+      patched_wiki_connect.return_value = self.wikidb
+
+      logic_project.update_project_by_name(b'Test Project')
+      patched_update_project.assert_called_once()
+    finally:
+      self.wp10db.close = orig_wp10_close
+      self.wikidb.close = orig_wiki_close
+
+  @patch('wp1.logic.project.wiki_connect')
+  @patch('wp1.logic.project.wp10_connect')
+  @patch('wp1.logic.project.update_project')
+  def test_creates_new(self, patched_update_project, patched_wp10_connect,
+                       patched_wiki_connect):
+    orig_wp10_close = self.wp10db.close
+    orig_wiki_close = self.wikidb.close
+    try:
+      self.wp10db.close = lambda: True
+      self.wikidb.close = lambda: True
+      patched_wp10_connect.return_value = self.wp10db
+      patched_wiki_connect.return_value = self.wikidb
+
+      logic_project.update_project_by_name(b'Foo New Project')
+      patched_update_project.assert_called_once()
+    finally:
+      self.wp10db.close = orig_wp10_close
+      self.wikidb.close = orig_wiki_close
