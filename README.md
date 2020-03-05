@@ -31,8 +31,8 @@ run [inside the workers image](https://github.com/openzim/wp1/blob/master/docker
 
 The `setup` directory contains a historical record of the database
 schema used by the tool for what is refered to in code as the `wp10`
-database. This file has been heavily edited from its mysqldump roots
-and cannot be directly run without errors.
+database. This file has been heavily edited, but should be able to be
+used to re-create the `enwp10` database if necessary.
 
 `wp1-frontend` contains the code for the Vue-CLI based frontend,
 which is encapsulated and served from the `frontend` docker image.
@@ -45,6 +45,13 @@ library code.
 `docker-compose.yml` is a file read by the `docker-compose`
 [command](https://docs.docker.com/compose/) in order to generate the
 graph of required docker images that represent the production environment.
+
+`docker-compose-dev.yml` is a similar file which sets up a dev environment,
+with Redis and a MariaDB server for the `enwp10` database. Use it like so
+
+```bash
+docker-compose -f docker-compose-dev.yml up -d
+```
 
 The `*.dockerfile` symlinks allow for each docker image in this repository
 to be more easily built on [Docker Hub](https://hub.docker.com/). See:
@@ -65,7 +72,7 @@ interfaces with. They are used for unit testing.
 
 ## Installation
 
-This code is targetted to and tested on Python 3.7.5.
+This code is targeted to and tested on Python 3.7.5.
 
 ### Creating your virtualenv
 
@@ -127,7 +134,9 @@ and create a copy called `credentials.py` with the relevant information
 filled in. The production version of this code also requires Englis Wikipedia
 API credentials for automatically editing and updating
 [tables like this one](https://en.wikipedia.org/wiki/User:WP_1.0_bot/Tables/Project/Catholicism).
-There is currently no way to disable the API editing portion of the tool.
+Currently, if your environment is DEVELOPMENT, jobs that utilize the API
+to edit Wikipedia are disabled. There is no development wiki that gets edited
+at this time.
 
 ## Updating production
 
