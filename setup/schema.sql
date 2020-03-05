@@ -13,7 +13,6 @@ CREATE TABLE `categories` (
   `c_ranking` int(10) unsigned NOT NULL,
   PRIMARY KEY (`c_project`,`c_type`,`c_rating`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
 CREATE TABLE `global_articles` (
   `a_article` varbinary(255) NOT NULL,
@@ -55,8 +54,6 @@ CREATE TABLE `moves` (
   KEY `m_new_namespace` (`m_new_namespace`,`m_new_article`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-
-DROP TABLE IF EXISTS `namespacename`;
 CREATE TABLE `namespacename` (
   `dbname` varbinary(32) NOT NULL,
   `domain` varbinary(48) NOT NULL,
@@ -96,9 +93,6 @@ CREATE TABLE `ratings` (
   KEY `nstitle` (`r_namespace`,`r_article`(50))
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `selection_data`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `selection_data` (
   `sd_article` varbinary(255) NOT NULL,
   `sd_langlinks` int(10) unsigned NOT NULL DEFAULT '0',
@@ -108,9 +102,6 @@ CREATE TABLE `selection_data` (
   PRIMARY KEY (`sd_article`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS `workingselection`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `workingselection` (
   `ws_article` varbinary(255) NOT NULL,
   `ws_revid` int(8) unsigned DEFAULT NULL,
@@ -122,6 +113,7 @@ CREATE TABLE `workingselection` (
 -- tool, which was written in Perl. The current code in this repository neither
 -- reads from nor updates these tables. They are kept here for archival reasons.
 
+/**
 --- Only used by old Perl bot.
 CREATE TABLE `cache` (
   `c_key` varchar(255) COLLATE utf8_bin NOT NULL,
@@ -155,8 +147,6 @@ CREATE TABLE `manualselectionlog` (
 
 -- Only used by old Perl bot.
 DROP TABLE IF EXISTS `passwd`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `passwd` (
   `pw_user` varchar(255) COLLATE utf8_bin NOT NULL,
   `pw_password` binary(32) NOT NULL,
@@ -165,8 +155,6 @@ CREATE TABLE `passwd` (
 
 -- Only used by old Perl bot.
 DROP TABLE IF EXISTS `releases`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `releases` (
   `rel_article` varbinary(255) NOT NULL,
   `rel_0p5_category` varbinary(63) NOT NULL,
@@ -183,3 +171,5 @@ CREATE TABLE `reviews` (
   PRIMARY KEY (`rev_article`),
   KEY `rev_value` (`rev_value`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+**/

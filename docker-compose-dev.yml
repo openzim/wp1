@@ -1,0 +1,19 @@
+version: '3.5'
+services:
+  redis:
+    image: redis
+    container_name: wp1bot-redis-dev
+    ports:
+      - '9736:6379'
+    restart: always
+
+  dev-database:
+    image: openzim/wp1-dev-database
+    container_name: wp1bot-db-dev
+    ports:
+      - '6300:3306'
+    restart: always
+
+networks:
+  default:
+    name: dev.openzim.org
