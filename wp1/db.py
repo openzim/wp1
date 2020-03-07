@@ -16,30 +16,30 @@ except ImportError:
   CREDENTIALS = None
   ENV = None
 
-  RETRY_TIME_SECONDS = 5
+RETRY_TIME_SECONDS = 5
 
-  def connect(db_name):
-    creds = CREDENTIALS[ENV].get(db_name)
-    if creds is None:
-      raise ValueError('db credentials for %r in ENV=%s are None')
 
-    kwargs = {
-        'charset': None,
-        'use_unicode': False,
-        'cursorclass': pymysql.cursors.SSDictCursor,
-        **creds
-    }
+def connect(db_name):
+  creds = CREDENTIALS[ENV].get(db_name)
+  if creds is None:
+    raise ValueError('db credentials for %r in ENV=%s are None')
 
-    tries = 4
-    while True:
-      try:
-        return pymysql.connect(**kwargs)
-      except pymysql.err.InternalError:
-        if tries > 0:
-          logging.warning(
-              'Could not connect to database, retrying in %s seconds',
-              RETRY_TIME_SECONDS)
-          time.sleep(RETRY_TIME_SECONDS)
-          tries -= 1
-        else:
-          raise
+  kwargs = {
+      'charset': None,
+      'use_unicode': False,
+      'cursorclass': pymysql.cursors.SSDictCursor,
+      **creds
+  }
+
+  tries = 4
+  while True:
+    try:
+      return pymysql.connect(**kwargs)
+    except pymysql.err.InternalError:
+      if tries > 0:
+        logging.warning('Could not connect to database, retrying in %s seconds',
+                        RETRY_TIME_SECONDS)
+        time.sleep(RETRY_TIME_SECONDS)
+        tries -= 1
+      else:
+        raise
