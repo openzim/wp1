@@ -56,7 +56,7 @@ export default {
     },
     focusList: function() {
       if (!this.results.length) {
-        return;
+        this.results = this.projects;
       }
       this.isOpen = true;
       this.$refs.list.children[0].focus();
@@ -94,6 +94,8 @@ export default {
       this.search = event.target.innerText;
       this.isOpen = false;
       this.filterResults();
+      window.console.log('About to emit');
+      this.$emit('select-project', this.search);
     }
   }
 };
