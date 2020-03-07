@@ -1,2 +1,5 @@
 **/__pycache__
 venv
+
+# Don't commit credentials!
+wp1/credentials.py
