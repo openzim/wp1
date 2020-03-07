@@ -117,6 +117,39 @@ def db_project_categories(wp10db, project_name):
     return cursor.fetchall()
 
 
+def convert_table_data_for_web(data):
+  data = dict(data)
+  if 'project' in data:
+    data['project'] = data['project'].decode('utf-8')
+  if 'ordered_cols' in data:
+    data['ordered_cols'] = [x.decode('utf-8') for x in data['ordered_cols']]
+  if 'ordered_rows' in data:
+    data['ordered_rows'] = [x.decode('utf-8') for x in data['ordered_rows']]
+  if 'col_labels' in data:
+    data['col_labels'] = dict((key.decode('utf-8'), val.replace("'''", ''))
+                              for key, val in data['col_labels'].items())
+  if 'row_labels' in data:
+    data['row_labels'] = dict(
+        (key.decode('utf-8'), val.replace('{{', '').replace('}}', ''))
+        for key, val in data['row_labels'].items())
+  if 'row_totals' in data:
+    data['row_totals'] = dict(
+        (key.decode('utf-8'), val) for key, val in data['row_totals'].items())
+  if 'col_totals' in data:
+    data['col_totals'] = dict(
+        (key.decode('utf-8'), val) for key, val in data['col_totals'].items())
+
+  if 'data' in data:
+    new = {}
+    for key, value in data['data'].items():
+      print('k: %s, v: %s' % (key, value))
+      new[key.decode('utf-8')] = dict(
+          (k.decode('utf-8'), v) for k, v in value.items())
+    data['data'] = new
+
+  return data
+
+
 def get_project_categories(wp10db, project_name):
   sort_imp = {}
   sort_qual = {}
