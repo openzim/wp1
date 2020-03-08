@@ -235,6 +235,26 @@ def update_category(wp10db, project, page, extra, kind, rating_to_category):
   logic_category.insert_or_update(wp10db, category)
 
 
+def create_not_a_class_categories(wp10db, project):
+  for kind in (AssessmentKind.QUALITY, AssessmentKind.IMPORTANCE):
+    rating = NOT_A_CLASS
+
+    if kind == AssessmentKind.QUALITY:
+      rating_map = QUALITY
+    else:
+      rating_map = IMPORTANCE
+    ranking = rating_map[rating]
+
+    category = Category(c_project=project.p_project,
+                        c_type=kind.value.encode('utf-8'),
+                        c_rating=rating.encode('utf-8'),
+                        c_category=b'',
+                        c_ranking=ranking,
+                        c_replacement=b'Unknown-Class')
+
+    logic_category.insert_or_update(wp10db, category)
+
+
 def update_project_categories_by_kind(wikidb, wp10db, project, extra, kind):
   logger.info('Updating project categories for %s', project.p_project)
   rating_to_category = {}
@@ -255,6 +275,10 @@ def update_project_categories_by_kind(wikidb, wp10db, project, extra, kind):
     # the alternate name ("by priority"), unless we already found pages.
     if found_page:
       break
+
+  # There is no wiki category for NotA-Class, but we need to make categories
+  # for it so that it shows up in the assessment table.
+  create_not_a_class_categories(wp10db, project)
 
   return rating_to_category
 
