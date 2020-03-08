@@ -271,6 +271,9 @@ class UpdateProjectCategoriesByKindTest(BaseCombinedDbTest):
 
     categories = _get_all_categories(self.wp10db)
     self.assertNotEqual(0, len(categories))
+    categories = [
+        cat for cat in categories if cat.c_rating != NOT_A_CLASS.encode('utf-8')
+    ]
     for category in categories:
       self.assertEqual(self.project.p_project, category.c_project)
       self.assertEqual(b'quality', category.c_type)
@@ -304,6 +307,9 @@ class UpdateProjectCategoriesByKindTest(BaseCombinedDbTest):
 
     categories = _get_all_categories(self.wp10db)
     self.assertNotEqual(0, len(categories))
+    categories = [
+        cat for cat in categories if cat.c_rating != NOT_A_CLASS.encode('utf-8')
+    ]
     for category in categories:
       self.assertEqual(self.project.p_project, category.c_project)
       self.assertEqual(b'importance', category.c_type)
@@ -327,6 +333,9 @@ class UpdateProjectCategoriesByKindTest(BaseCombinedDbTest):
 
     categories = _get_all_categories(self.wp10db)
     self.assertNotEqual(0, len(categories))
+    categories = [
+        cat for cat in categories if cat.c_rating != NOT_A_CLASS.encode('utf-8')
+    ]
     for category in categories:
       self.assertEqual(self.project.p_project, category.c_project)
       self.assertEqual(b'importance', category.c_type)
