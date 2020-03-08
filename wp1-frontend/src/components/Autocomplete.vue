@@ -10,6 +10,9 @@
         type="text"
         placeholder="Project name"
       />
+      <button v-on:click="onButtonClick()" class="btn-primary">
+        Make Table
+      </button>
     </div>
     <ul tabindex="0" ref="list" class="results" v-show="isOpen">
       <li
@@ -90,12 +93,20 @@ export default {
       }
       this.filterResults();
     },
-    selectResult: function(event) {
-      this.search = event.target.innerText;
+    makeSelection: function() {
       this.isOpen = false;
       this.filterResults();
-      window.console.log('About to emit');
       this.$emit('select-project', this.search);
+    },
+    onButtonClick: function() {
+      if (this.results.length == 1) {
+        this.search = this.results[0].name;
+      }
+      this.makeSelection();
+    },
+    selectResult: function(event) {
+      this.search = event.target.innerText;
+      this.makeSelection();
     }
   }
 };
