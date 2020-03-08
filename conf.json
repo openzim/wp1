@@ -12,6 +12,7 @@
     "Mid-Class": 200,
     "Low-Class": 100,
     "NA-Class": 25,
+    "NotA-Class": 21,
     "Unknown-Class": 0
   },
   "NOT_A_CLASS": "NotA-Class",
@@ -37,6 +38,7 @@
     "Redirect-Class": 43,
     "Template-Class": 40,
     "NA-Class": 25,
+    "NotA-Class": 21,
     "Assessed-Class": 20,
     "Unassessed-Class": 0
   },
