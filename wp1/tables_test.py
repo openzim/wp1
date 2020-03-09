@@ -762,3 +762,22 @@ class TablesDbTest(BaseWpOneDbTest):
       tables.upload_global_table()
     finally:
       self.wp10db.close = orig_close
+
+
+class TestMakeWikiLink(unittest.TestCase):
+
+  def test_creates_link(self):
+    link = tables.make_wiki_link(
+        '{{Foo-Class|category=Foo_categories_by_importance}}')
+    self.assertEqual(link['text'], 'Foo')
+    self.assertEqual(
+        link['href'],
+        'https://en.wikipedia.org/wiki/Foo_categories_by_importance')
+
+  def test_returns_verbatim(self):
+    link = tables.make_wiki_link('Foo Bar Baz')
+    self.assertEqual(link, 'Foo Bar Baz')
+
+  def test_replaces_assessed(self):
+    link = tables.make_wiki_link('{{Assessed-Class}}')
+    self.assertEqual(link, 'Assessed')
