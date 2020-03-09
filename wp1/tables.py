@@ -128,7 +128,8 @@ def make_wiki_link(wiki_text):
     if text == 'Unknown':
       text = '???'
     return {'href': WIKI_BASE + md.group(2), 'text': text}
-  elif wiki_text == '{{Assessed-Class}}':
+
+  if wiki_text == '{{Assessed-Class}}':
     return 'Assessed'
   elif 'Other' in wiki_text:
     return 'Other'
@@ -139,31 +140,23 @@ def make_wiki_link(wiki_text):
 def convert_table_data_for_web(data):
   data = dict(data)
 
-  if 'project' in data:
-    data['project'] = data['project'].decode('utf-8')
-  if 'ordered_cols' in data:
-    data['ordered_cols'] = [x.decode('utf-8') for x in data['ordered_cols']]
-  if 'ordered_rows' in data:
-    data['ordered_rows'] = [x.decode('utf-8') for x in data['ordered_rows']]
-  if 'col_labels' in data:
-    data['col_labels'] = dict((key.decode('utf-8'), make_wiki_link(val))
-                              for key, val in data['col_labels'].items())
-  if 'row_labels' in data:
-    data['row_labels'] = dict((key.decode('utf-8'), make_wiki_link(val))
-                              for key, val in data['row_labels'].items())
-  if 'row_totals' in data:
-    data['row_totals'] = dict(
-        (key.decode('utf-8'), val) for key, val in data['row_totals'].items())
-  if 'col_totals' in data:
-    data['col_totals'] = dict(
-        (key.decode('utf-8'), val) for key, val in data['col_totals'].items())
+  data['project'] = data['project'].decode('utf-8')
+  data['ordered_cols'] = [x.decode('utf-8') for x in data['ordered_cols']]
+  data['ordered_rows'] = [x.decode('utf-8') for x in data['ordered_rows']]
+  data['col_labels'] = dict((key.decode('utf-8'), make_wiki_link(val))
+                            for key, val in data['col_labels'].items())
+  data['row_labels'] = dict((key.decode('utf-8'), make_wiki_link(val))
+                            for key, val in data['row_labels'].items())
+  data['row_totals'] = dict(
+      (key.decode('utf-8'), val) for key, val in data['row_totals'].items())
+  data['col_totals'] = dict(
+      (key.decode('utf-8'), val) for key, val in data['col_totals'].items())
 
-  if 'data' in data:
-    new = {}
-    for key, value in data['data'].items():
-      new[key.decode('utf-8')] = dict(
-          (k.decode('utf-8'), v) for k, v in value.items())
-    data['data'] = new
+  new = {}
+  for key, value in data['data'].items():
+    new[key.decode('utf-8')] = dict(
+        (k.decode('utf-8'), v) for k, v in value.items())
+  data['data'] = new
 
   return data
 
