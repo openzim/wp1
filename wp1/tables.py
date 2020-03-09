@@ -138,6 +138,7 @@ def make_wiki_link(wiki_text):
 
 def convert_table_data_for_web(data):
   data = dict(data)
+
   if 'project' in data:
     data['project'] = data['project'].decode('utf-8')
   if 'ordered_cols' in data:
