@@ -142,7 +142,7 @@ at this time.
 
 - Log in to the box that contains the production docker images. It is
   called wp1.
-- `cd /data/code/wikimedia_wp1_bot/`
+- `cd /data/code/wp1/`
 - `sudo git pull origin master`
 - Pull the docker images from docker hub:
   - `docker pull openzim/wp1bot-workers`
