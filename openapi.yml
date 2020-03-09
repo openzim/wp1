@@ -42,6 +42,30 @@ paths:
                 properties:
                   count:
                     type: integer
+  /projects/{projectId}/table:
+    get:
+      summary: 'Data for building a summary table for a given project'
+      operationId: projectTable
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  table_data:
+                    type: object
+                    description: 'The various data needed to construct the table'
+        404:
+          description: 'No project with that projectId was found'
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        description: 'The name of the project, with spaces replaced by "_"'
+        schema:
+          type: string
 components:
   schemas:
     Project:

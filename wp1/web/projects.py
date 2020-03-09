@@ -26,6 +26,10 @@ def count():
 def table(project_name):
   wp10db = get_db('wp10db')
   project_name_bytes = project_name.encode('utf-8')
+  project = logic_project.get_project_by_name(wp10db, project_name_bytes)
+  if project is None:
+    return flask.abort(404)
+
   data = tables.generate_project_table_data(wp10db, project_name_bytes)
   data = tables.convert_table_data_for_web(data)
 
