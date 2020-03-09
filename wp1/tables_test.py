@@ -762,3 +762,447 @@ class TablesDbTest(BaseWpOneDbTest):
       tables.upload_global_table()
     finally:
       self.wp10db.close = orig_close
+
+
+class TestMakeWikiLink(unittest.TestCase):
+
+  def test_creates_link(self):
+    link = tables.make_wiki_link(
+        '{{Foo-Class|category=Foo_categories_by_importance}}')
+    self.assertEqual(link['text'], 'Foo')
+    self.assertEqual(
+        link['href'],
+        'https://en.wikipedia.org/wiki/Foo_categories_by_importance')
+
+  def test_returns_verbatim(self):
+    link = tables.make_wiki_link('Foo Bar Baz')
+    self.assertEqual(link, 'Foo Bar Baz')
+
+  def test_replaces_assessed(self):
+    link = tables.make_wiki_link('{{Assessed-Class}}')
+    self.assertEqual(link, 'Assessed')
+
+
+class TestConvertTableForWeb(unittest.TestCase):
+
+  data = {
+      'project': b'Modern_philosophy',
+      'project_display': 'Modern philosophy',
+      'create_link': True,
+      'title': 'Modern philosophy articles by quality and importance',
+      'center_table': False,
+      'data': {
+          b'B-Class': {
+              b'High-Class': 24,
+              b'Low-Class': 11,
+              b'Mid-Class': 15,
+              b'Top-Class': 7,
+              b'Unknown-Class': 3
+          },
+          b'C-Class': {
+              b'High-Class': 24,
+              b'Low-Class': 44,
+              b'Mid-Class': 49,
+              b'Top-Class': 3,
+              b'Unknown-Class': 10
+          },
+          b'Category-Class': {
+              b'Mid-Class': 1,
+              b'NotA-Class': 95
+          },
+          b'Disambig-Class': {
+              b'NotA-Class': 2
+          },
+          b'FA-Class': {
+              b'Mid-Class': 7
+          },
+          b'File-Class': {
+              b'NotA-Class': 10
+          },
+          b'GA-Class': {
+              b'High-Class': 4,
+              b'Low-Class': 4,
+              b'Top-Class': 1
+          },
+          b'List-Class': {
+              b'High-Class': 1,
+              b'Low-Class': 2,
+              b'Mid-Class': 1,
+              b'NotA-Class': 1
+          },
+          b'Project-Class': {
+              b'NotA-Class': 2
+          },
+          b'Redirect-Class': {
+              b'Low-Class': 2,
+              b'NotA-Class': 11
+          },
+          b'Start-Class': {
+              b'High-Class': 42,
+              b'Low-Class': 178,
+              b'Mid-Class': 77,
+              b'Top-Class': 1,
+              b'Unknown-Class': 11
+          },
+          b'Stub-Class': {
+              b'High-Class': 13,
+              b'Low-Class': 303,
+              b'Mid-Class': 49,
+              b'Unknown-Class': 11
+          },
+          b'Template-Class': {
+              b'NotA-Class': 10
+          },
+          b'Unassessed-Class': {
+              b'Unknown-Class': 1
+          },
+          b'Assessed-Class': {
+              b'Top-Class': 12,
+              b'High-Class': 108,
+              b'Mid-Class': 199,
+              b'Low-Class': 544,
+              b'NotA-Class': 131,
+              b'Unknown-Class': 35
+          }
+      },
+      'ordered_cols': [
+          b'Top-Class', b'High-Class', b'Mid-Class', b'Low-Class',
+          b'NotA-Class', b'Unknown-Class'
+      ],
+      'ordered_rows': [
+          b'FA-Class', b'GA-Class', b'B-Class', b'C-Class', b'Start-Class',
+          b'Stub-Class', b'List-Class', b'Category-Class', b'Disambig-Class',
+          b'File-Class', b'Project-Class', b'Redirect-Class', b'Template-Class',
+          b'Assessed-Class', b'Unassessed-Class'
+      ],
+      'row_totals': {
+          b'FA-Class': 7,
+          b'GA-Class': 9,
+          b'B-Class': 60,
+          b'C-Class': 130,
+          b'Start-Class': 309,
+          b'Stub-Class': 376,
+          b'List-Class': 5,
+          b'Category-Class': 96,
+          b'Disambig-Class': 2,
+          b'File-Class': 10,
+          b'Project-Class': 2,
+          b'Redirect-Class': 13,
+          b'Template-Class': 10,
+          b'Assessed-Class': 1029,
+          b'Unassessed-Class': 1
+      },
+      'col_totals': {
+          b'Top-Class': 12,
+          b'High-Class': 108,
+          b'Mid-Class': 199,
+          b'Low-Class': 544,
+          b'NotA-Class': 131,
+          b'Unknown-Class': 36
+      },
+      'total': 1030,
+      'col_labels': {
+          b'High-Class':
+              '{{High-Class|category=Category:High-importance_Modern_philosophy_articles}}',
+          b'Low-Class':
+              '{{Low-Class|category=Category:Low-importance_Modern_philosophy_articles}}',
+          b'Mid-Class':
+              '{{Mid-Class|category=Category:Mid-importance_Modern_philosophy_articles}}',
+          b'NotA-Class':
+              'Other',
+          b'Top-Class':
+              '{{Top-Class|category=Category:Top-importance_Modern_philosophy_articles}}',
+          b'Unknown-Class':
+              '{{Unknown-Class|category=Category:Unknown-importance_Modern_philosophy_articles}}',
+          b'Unassessed-Class':
+              'No-Class'
+      },
+      'row_labels': {
+          b'A-Class':
+              '{{A-Class|category=Category:A-Class_Modern_philosophy_articles}}',
+          b'B-Class':
+              '{{B-Class|category=Category:B-Class_Modern_philosophy_articles}}',
+          b'C-Class':
+              '{{C-Class|category=Category:C-Class_Modern_philosophy_articles}}',
+          b'Category-Class':
+              '{{Category-Class|category=Category:Category-Class_Modern_philosophy_articles}}',
+          b'Disambig-Class':
+              '{{Disambig-Class|category=Category:Disambig-Class_Modern_philosophy_articles}}',
+          b'FA-Class':
+              '{{FA-Class|category=Category:FA-Class_Modern_philosophy_articles}}',
+          b'File-Class':
+              '{{File-Class|category=Category:File-Class_Modern_philosophy_articles}}',
+          b'GA-Class':
+              '{{GA-Class|category=Category:GA-Class_Modern_philosophy_articles}}',
+          b'List-Class':
+              '{{List-Class|category=Category:List-Class_Modern_philosophy_articles}}',
+          b'NotA-Class':
+              ' style="text-align: center;" | \'\'\'Other\'\'\'',
+          b'Project-Class':
+              '{{Project-Class|category=Category:Project-Class_Modern_philosophy_articles}}',
+          b'Redirect-Class':
+              '{{Redirect-Class|category=Category:Redirect-Class_Modern_philosophy_articles}}',
+          b'Start-Class':
+              '{{Start-Class|category=Category:Start-Class_Modern_philosophy_articles}}',
+          b'Stub-Class':
+              '{{Stub-Class|category=Category:Stub-Class_Modern_philosophy_articles}}',
+          b'Template-Class':
+              '{{Template-Class|category=Category:Template-Class_Modern_philosophy_articles}}',
+          b'Unassessed-Class':
+              '{{Unassessed-Class|category=Category:Unassessed_Modern_philosophy_articles}}',
+          b'Assessed-Class':
+              '{{Assessed-Class}}'
+      },
+      'total_cols': 8
+  }
+
+  expected = {
+      'project': 'Modern_philosophy',
+      'project_display': 'Modern philosophy',
+      'create_link': True,
+      'title': 'Modern philosophy articles by quality and importance',
+      'center_table': False,
+      'data': {
+          'B-Class': {
+              'High-Class': 24,
+              'Low-Class': 11,
+              'Mid-Class': 15,
+              'Top-Class': 7,
+              'Unknown-Class': 3
+          },
+          'C-Class': {
+              'High-Class': 24,
+              'Low-Class': 44,
+              'Mid-Class': 49,
+              'Top-Class': 3,
+              'Unknown-Class': 10
+          },
+          'Category-Class': {
+              'Mid-Class': 1,
+              'NotA-Class': 95
+          },
+          'Disambig-Class': {
+              'NotA-Class': 2
+          },
+          'FA-Class': {
+              'Mid-Class': 7
+          },
+          'File-Class': {
+              'NotA-Class': 10
+          },
+          'GA-Class': {
+              'High-Class': 4,
+              'Low-Class': 4,
+              'Top-Class': 1
+          },
+          'List-Class': {
+              'High-Class': 1,
+              'Low-Class': 2,
+              'Mid-Class': 1,
+              'NotA-Class': 1
+          },
+          'Project-Class': {
+              'NotA-Class': 2
+          },
+          'Redirect-Class': {
+              'Low-Class': 2,
+              'NotA-Class': 11
+          },
+          'Start-Class': {
+              'High-Class': 42,
+              'Low-Class': 178,
+              'Mid-Class': 77,
+              'Top-Class': 1,
+              'Unknown-Class': 11
+          },
+          'Stub-Class': {
+              'High-Class': 13,
+              'Low-Class': 303,
+              'Mid-Class': 49,
+              'Unknown-Class': 11
+          },
+          'Template-Class': {
+              'NotA-Class': 10
+          },
+          'Unassessed-Class': {
+              'Unknown-Class': 1
+          },
+          'Assessed-Class': {
+              'Top-Class': 12,
+              'High-Class': 108,
+              'Mid-Class': 199,
+              'Low-Class': 544,
+              'NotA-Class': 131,
+              'Unknown-Class': 35
+          }
+      },
+      'ordered_cols': [
+          'Top-Class', 'High-Class', 'Mid-Class', 'Low-Class', 'NotA-Class',
+          'Unknown-Class'
+      ],
+      'ordered_rows': [
+          'FA-Class', 'GA-Class', 'B-Class', 'C-Class', 'Start-Class',
+          'Stub-Class', 'List-Class', 'Category-Class', 'Disambig-Class',
+          'File-Class', 'Project-Class', 'Redirect-Class', 'Template-Class',
+          'Assessed-Class', 'Unassessed-Class'
+      ],
+      'row_totals': {
+          'FA-Class': 7,
+          'GA-Class': 9,
+          'B-Class': 60,
+          'C-Class': 130,
+          'Start-Class': 309,
+          'Stub-Class': 376,
+          'List-Class': 5,
+          'Category-Class': 96,
+          'Disambig-Class': 2,
+          'File-Class': 10,
+          'Project-Class': 2,
+          'Redirect-Class': 13,
+          'Template-Class': 10,
+          'Assessed-Class': 1029,
+          'Unassessed-Class': 1
+      },
+      'col_totals': {
+          'Top-Class': 12,
+          'High-Class': 108,
+          'Mid-Class': 199,
+          'Low-Class': 544,
+          'NotA-Class': 131,
+          'Unknown-Class': 36
+      },
+      'total': 1030,
+      'col_labels': {
+          'High-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:High-importance_Modern_philosophy_articles',
+              'text':
+                  'High'
+          },
+          'Low-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:Low-importance_Modern_philosophy_articles',
+              'text':
+                  'Low'
+          },
+          'Mid-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:Mid-importance_Modern_philosophy_articles',
+              'text':
+                  'Mid'
+          },
+          'NotA-Class': 'Other',
+          'Top-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:Top-importance_Modern_philosophy_articles',
+              'text':
+                  'Top'
+          },
+          'Unknown-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:Unknown-importance_Modern_philosophy_articles',
+              'text':
+                  '???'
+          },
+          'Unassessed-Class': 'No-Class'
+      },
+      'row_labels': {
+          'A-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:A-Class_Modern_philosophy_articles',
+              'text':
+                  'A'
+          },
+          'B-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:B-Class_Modern_philosophy_articles',
+              'text':
+                  'B'
+          },
+          'C-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:C-Class_Modern_philosophy_articles',
+              'text':
+                  'C'
+          },
+          'Category-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:Category-Class_Modern_philosophy_articles',
+              'text':
+                  'Category'
+          },
+          'Disambig-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:Disambig-Class_Modern_philosophy_articles',
+              'text':
+                  'Disambig'
+          },
+          'FA-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:FA-Class_Modern_philosophy_articles',
+              'text':
+                  'FA'
+          },
+          'File-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:File-Class_Modern_philosophy_articles',
+              'text':
+                  'File'
+          },
+          'GA-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:GA-Class_Modern_philosophy_articles',
+              'text':
+                  'GA'
+          },
+          'List-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:List-Class_Modern_philosophy_articles',
+              'text':
+                  'List'
+          },
+          'NotA-Class': 'Other',
+          'Project-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:Project-Class_Modern_philosophy_articles',
+              'text':
+                  'Project'
+          },
+          'Redirect-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:Redirect-Class_Modern_philosophy_articles',
+              'text':
+                  'Redirect'
+          },
+          'Start-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:Start-Class_Modern_philosophy_articles',
+              'text':
+                  'Start'
+          },
+          'Stub-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:Stub-Class_Modern_philosophy_articles',
+              'text':
+                  'Stub'
+          },
+          'Template-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:Template-Class_Modern_philosophy_articles',
+              'text':
+                  'Template'
+          },
+          'Unassessed-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:Unassessed_Modern_philosophy_articles',
+              'text':
+                  'Unassessed'
+          },
+          'Assessed-Class': 'Assessed'
+      },
+      'total_cols': 8
+  }
+
+  def test_conversion(self):
+    actual = tables.convert_table_data_for_web(self.data)
+    self.assertEqual(actual, self.expected)

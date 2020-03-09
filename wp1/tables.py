@@ -1,5 +1,6 @@
 from collections import defaultdict
 import logging
+import re
 
 from wp1 import api
 from wp1.conf import get_conf
@@ -20,6 +21,9 @@ config = get_conf()
 NOT_A_CLASS = config['NOT_A_CLASS'].encode('utf-8')
 ASSESSED_CLASS = b'Assessed-Class'
 UNASSESSED_CLASS = b'Unassessed-Class'
+
+WIKI_BASE = 'https://en.wikipedia.org/wiki/'
+WIKI_LINK_RE = re.compile(r'{{([^|]+)\|category=([^}]+)}}')
 
 
 def labels_for_classes(sort_qual, sort_imp):
@@ -115,6 +119,47 @@ def db_project_categories(wp10db, project_name):
     ''', (project_name,))
 
     return cursor.fetchall()
+
+
+def make_wiki_link(wiki_text):
+  md = WIKI_LINK_RE.match(wiki_text)
+  if md:
+    text = md.group(1).replace('-Class', '')
+    if text == 'Unknown':
+      text = '???'
+    return {'href': WIKI_BASE + md.group(2), 'text': text}
+
+  if wiki_text == '{{Assessed-Class}}':
+    return 'Assessed'
+
+  if 'Other' in wiki_text:
+    return 'Other'
+
+  return wiki_text
+
+
+def convert_table_data_for_web(data):
+  data = dict(data)
+
+  data['project'] = data['project'].decode('utf-8')
+  data['ordered_cols'] = [x.decode('utf-8') for x in data['ordered_cols']]
+  data['ordered_rows'] = [x.decode('utf-8') for x in data['ordered_rows']]
+  data['col_labels'] = dict((key.decode('utf-8'), make_wiki_link(val))
+                            for key, val in data['col_labels'].items())
+  data['row_labels'] = dict((key.decode('utf-8'), make_wiki_link(val))
+                            for key, val in data['row_labels'].items())
+  data['row_totals'] = dict(
+      (key.decode('utf-8'), val) for key, val in data['row_totals'].items())
+  data['col_totals'] = dict(
+      (key.decode('utf-8'), val) for key, val in data['col_totals'].items())
+
+  new = {}
+  for key, value in data['data'].items():
+    new[key.decode('utf-8')] = dict(
+        (k.decode('utf-8'), v) for k, v in value.items())
+  data['data'] = new
+
+  return data
 
 
 def get_project_categories(wp10db, project_name):
@@ -233,6 +278,7 @@ def generate_table_data(stats, categories, table_overrides=None):
       'total': total,
       'col_labels': categories['imp_labels'],
       'row_labels': categories['qual_labels'],
+      'total_cols': len(ordered_cols) + 2,
   }
 
   # If we have only one column, don't display it because it is identical to the
@@ -318,7 +364,5 @@ def create_wikicode(table_data):
   template = jinja_env.get_template('table.jinja2')
   display = {
       'LIST_URL': LIST_URL,
-      # Number of columns plus one, plus a column for Total.
-      'total_cols': len(table_data['ordered_cols']) + 2,
   }
   return template.render({**table_data, **display})

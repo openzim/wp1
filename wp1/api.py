@@ -23,7 +23,7 @@ def login():
   try:
     api_creds = get_credentials()
     if api_creds is None:
-      logger.warning('Not creating site, no credentials')
+      logger.warning('Not creating API site object, no credentials')
       return
     site = mwclient.Site('en.wikipedia.org', clients_useragent=_ua)
     site.login(api_creds['user'], api_creds['pass'])
