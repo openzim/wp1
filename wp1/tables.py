@@ -131,10 +131,11 @@ def make_wiki_link(wiki_text):
 
   if wiki_text == '{{Assessed-Class}}':
     return 'Assessed'
-  elif 'Other' in wiki_text:
+
+  if 'Other' in wiki_text:
     return 'Other'
-  else:
-    return wiki_text
+
+  return wiki_text
 
 
 def convert_table_data_for_web(data):
