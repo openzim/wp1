@@ -227,7 +227,6 @@ def generate_table_data(stats, categories, table_overrides=None):
   for col in cols.keys():
     if col not in categories['sort_imp']:
       to_del.append(col)
-  print('cols to del %s' % to_del)
   for c in to_del:
     del cols[c]
 
