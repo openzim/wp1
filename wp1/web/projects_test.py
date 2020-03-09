@@ -32,3 +32,14 @@ class ProjectTest(BaseWebTestcase):
       rv = client.get('/v1/projects/count')
       data = json.loads(rv.data)
       self.assertEqual(101, data['count'])
+
+  def test_table(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get('/v1/projects/Project 1/table')
+      data = json.loads(rv.data)
+      self.assertTrue('data' in data['table_data'])
+
+  def test_table_404(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get('/v1/projects/Foo Fake Project/table')
+      self.assertEqual('404 NOT FOUND', rv.status)
