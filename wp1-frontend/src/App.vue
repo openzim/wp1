@@ -47,7 +47,7 @@ export default {
       if (!this.currentProject) {
         return null;
       }
-      return this.currentProject.replace(' ', '_');
+      return this.currentProject.replace(/ /g, '_');
     }
   }
 };
