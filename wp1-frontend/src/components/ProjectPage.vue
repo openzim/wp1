@@ -7,6 +7,7 @@
           box below
         </p>
         <Autocomplete
+          :incomingSearch="incomingSearch || $route.params.projectName"
           v-on:select-project="currentProject = $event"
         ></Autocomplete>
       </div>
@@ -31,7 +32,8 @@ export default {
   },
   data: function() {
     return {
-      currentProject: null
+      currentProject: null,
+      incomingSearch: null
     };
   },
   computed: {
@@ -41,6 +43,17 @@ export default {
       }
       return this.currentProject.replace(/ /g, '_');
     }
+  },
+  watch: {
+    currentProject: function(val) {
+      if (val !== this.$route.params.projectName) {
+        this.$router.push({ path: `/project/${val}` });
+      }
+    }
+  },
+  beforeRouteUpdate(to, from, next) {
+    this.incomingSearch = to.params.projectName;
+    next();
   }
 };
 </script>

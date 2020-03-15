@@ -27,12 +27,9 @@ export default {
       currentProject: null
     };
   },
-  computed: {
-    currentProjectId: function() {
-      if (!this.currentProject) {
-        return null;
-      }
-      return this.currentProject.replace(/ /g, '_');
+  watch: {
+    currentProject: function(val) {
+      this.$router.replace({ path: `project/${val}` });
     }
   }
 };

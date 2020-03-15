@@ -14,7 +14,7 @@ Vue.use(VueRouter);
 
 const routes = [
   { path: '/', component: IndexPage },
-  { path: '/project', component: ProjectPage }
+  { path: '/project/:projectName', component: ProjectPage }
 ];
 
 const router = new VueRouter({
