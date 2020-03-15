@@ -10,6 +10,7 @@
     "build-storybook": "build-storybook"
   },
   "dependencies": {
+    "acorn": "6.4.1",
     "bootstrap": "^4.4.1",
     "core-js": "^3.3.2",
     "jquery": "^3.4.1",
