@@ -115,7 +115,6 @@ export default {
     },
     updateFromIncomingSearch: function(val) {
       if (!!val && val !== this.search) {
-        window.console.log('Changing search');
         this.search = val;
         this.onChange();
         this.makeSelection();
