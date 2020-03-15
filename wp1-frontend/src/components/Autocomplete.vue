@@ -34,6 +34,7 @@
 <script>
 export default {
   name: 'autocomplete',
+  props: ['incomingSearch'],
   data: function() {
     return {
       isOpen: false,
@@ -43,6 +44,7 @@ export default {
     };
   },
   created: async function() {
+    this.updateFromIncomingSearch(this.incomingSearch);
     this.projects = await this.getProjects();
   },
   methods: {
@@ -82,6 +84,9 @@ export default {
       }
     },
     getProjects: async function() {
+      if (this.projects.length !== 0) {
+        return this.projects;
+      }
       const response = await fetch(`${process.env.VUE_APP_API_URL}/projects/`);
       return await response.json();
     },
@@ -107,6 +112,18 @@ export default {
     selectResult: function(event) {
       this.search = event.target.innerText;
       this.makeSelection();
+    },
+    updateFromIncomingSearch: function(val) {
+      if (!!val && val !== this.search) {
+        this.search = val;
+        this.onChange();
+        this.makeSelection();
+      }
+    }
+  },
+  watch: {
+    incomingSearch: function(val) {
+      this.updateFromIncomingSearch(val);
     }
   }
 };
