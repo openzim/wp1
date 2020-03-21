@@ -15,7 +15,7 @@
         placeholder="Project name"
       />
       <button v-on:click="onButtonClick()" class="btn-primary">
-        Make Table
+        Select Project
       </button>
     </div>
     <ul tabindex="0" ref="list" class="results" v-show="isOpen">

@@ -45,8 +45,8 @@ def articles(project_name):
   if project is None:
     return flask.abort(404)
 
-  quality = flask.request.form.get('quality')
-  importance = flask.request.form.get('importance')
+  quality = flask.request.args.get('quality')
+  importance = flask.request.args.get('importance')
 
   if quality:
     quality = quality.encode('utf-8')

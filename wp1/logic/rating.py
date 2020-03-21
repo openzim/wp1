@@ -38,6 +38,7 @@ def get_project_rating_by_type(wp10db,
     if importance is not None:
       query += ' AND r_importance = %(r_importance)s'
 
+    # Hardcode a limit of 100 for now. Need to revisit this.
     query += ' LIMIT 100'
 
     cursor.execute(
