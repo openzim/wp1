@@ -63,9 +63,6 @@ def create_app():
 
   @app.teardown_request
   def close_dbs(ex):
-    if has_db('wikidb'):
-      conn = get_db('wikidb')
-      conn.close()
     if has_db('wp10db'):
       conn = get_db('wp10db')
       conn.close()

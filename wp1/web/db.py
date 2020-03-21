@@ -1,11 +1,9 @@
 import flask
 
 from wp1.wp10_db import connect as wp10_connect
-from wp1.wiki_db import connect as wiki_connect
 
 DB_CONNECT = {
     'wp10db': wp10_connect,
-    'wikidb': wiki_connect,
 }
 
 
