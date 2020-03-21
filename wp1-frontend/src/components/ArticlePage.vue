@@ -14,21 +14,11 @@
 import Autocomplete from './Autocomplete.vue';
 
 export default {
-  name: 'app',
+  name: 'articlepage',
   components: {
     Autocomplete
-  },
-  data: function() {
-    return {
-      currentProject: null
-    };
-  },
-  watch: {
-    currentProject: function(val) {
-      this.$router.replace({ path: `project/${val}` });
-    }
   }
 };
 </script>
 
-<style></style>
+<style scoped></style>
