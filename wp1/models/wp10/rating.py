@@ -3,7 +3,7 @@ import logging
 
 import attr
 
-from wp1.constants import TS_FORMAT
+from wp1.constants import TS_FORMAT, WIKI_BASE
 
 logger = logging.getLogger(__name__)
 
@@ -46,3 +46,26 @@ class Rating:
           'Attempt to set rating importance_timestamp to None ignored')
       return
     self.r_importance_timestamp = dt.strftime(TS_FORMAT).encode('utf-8')
+
+  def _ts_for_web(self, ts):
+    return ts.split('T')[0]
+
+  def _web_label(self, cls):
+    return cls.split('-')[0]
+
+  def to_web_dict(self):
+    article_name = self.r_article.decode('utf-8').replace('_', ' ')
+    return {
+        'article':
+            article_name,
+        'article_link':
+            WIKI_BASE + 'index.php?title=' + article_name,
+        'quality':
+            self._web_label(self.r_quality.decode('utf-8')),
+        'quality_updated':
+            self._ts_for_web(self.r_quality_timestamp.decode('utf-8')),
+        'importance':
+            self._web_label(self.r_importance.decode('utf-8')),
+        'importance_updated':
+            self._ts_for_web(self.r_importance_timestamp.decode('utf-8')),
+    }

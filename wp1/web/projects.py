@@ -3,6 +3,7 @@ import flask
 
 from wp1.web.db import get_db
 import wp1.logic.project as logic_project
+import wp1.logic.rating as logic_rating
 import wp1.tables as tables
 
 projects = flask.Blueprint('projects', __name__)
@@ -34,3 +35,27 @@ def table(project_name):
   data = tables.convert_table_data_for_web(data)
 
   return flask.jsonify({'table_data': data})
+
+
+@projects.route('/<project_name>/articles')
+def articles(project_name):
+  wp10db = get_db('wp10db')
+  project_name_bytes = project_name.encode('utf-8')
+  project = logic_project.get_project_by_name(wp10db, project_name_bytes)
+  if project is None:
+    return flask.abort(404)
+
+  quality = flask.request.form.get('quality')
+  importance = flask.request.form.get('importance')
+
+  if quality:
+    quality = quality.encode('utf-8')
+  if importance:
+    importance = importance.encode('utf-8')
+
+  ratings = logic_rating.get_project_rating_by_type(wp10db,
+                                                    project_name_bytes,
+                                                    quality=quality,
+                                                    importance=importance)
+
+  return flask.jsonify(list(rating.to_web_dict() for rating in ratings))
