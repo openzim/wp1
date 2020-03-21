@@ -24,6 +24,31 @@ def get_project_ratings(wp10db, project_name):
     return [Rating(**db_rating) for db_rating in cursor.fetchall()]
 
 
+def get_project_rating_by_type(wp10db,
+                               project_name,
+                               quality=None,
+                               importance=None):
+  with wp10db.cursor() as cursor:
+    query = ('SELECT * FROM ' + Rating.table_name + '''
+      WHERE r_project = %(r_project)s
+    ''')
+
+    if quality is not None:
+      query += ' AND r_quality = %(r_quality)s'
+    if importance is not None:
+      query += ' AND r_importance = %(r_importance)s'
+
+    query += ' LIMIT 100'
+
+    cursor.execute(
+        query, {
+            'r_project': project_name,
+            'r_quality': quality,
+            'r_importance': importance,
+        })
+    return [Rating(**db_rating) for db_rating in cursor.fetchall()]
+
+
 def insert_or_update(wp10db, rating, kind):
   duplicate_clause = ''
   if kind == AssessmentKind.QUALITY:
