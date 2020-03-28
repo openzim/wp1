@@ -1,6 +1,7 @@
 import attr
 import flask
 
+from wp1.constants import PAGE_SIZE
 from wp1.web.db import get_db
 import wp1.logic.project as logic_project
 import wp1.logic.rating as logic_rating
@@ -47,15 +48,30 @@ def articles(project_name):
 
   quality = flask.request.args.get('quality')
   importance = flask.request.args.get('importance')
+  page = flask.request.args.get('page', 1)
 
   if quality:
     quality = quality.encode('utf-8')
   if importance:
     importance = importance.encode('utf-8')
 
-  ratings = logic_rating.get_project_rating_by_type(wp10db,
-                                                    project_name_bytes,
-                                                    quality=quality,
-                                                    importance=importance)
+  total = logic_rating.get_project_rating_count_by_type(wp10db,
+                                                        project_name_bytes,
+                                                        quality=quality,
+                                                        importance=importance)
+  total_pages = total // PAGE_SIZE + 1 if total % PAGE_SIZE != 0 else 0
 
-  return flask.jsonify(list(rating.to_web_dict() for rating in ratings))
+  articles = logic_rating.get_project_rating_by_type(wp10db,
+                                                     project_name_bytes,
+                                                     quality=quality,
+                                                     importance=importance)
+
+  output = {
+      'pagination': {
+          'page': page,
+          'total_pages': total_pages,
+          'total': total
+      },
+      'articles': list(article.to_web_dict() for article in articles),
+  }
+  return flask.jsonify(output)
