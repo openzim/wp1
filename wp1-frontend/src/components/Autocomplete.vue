@@ -1,5 +1,9 @@
 <template>
   <div>
+    <p>
+      A list of indexed projects is available using the autocomplete search box
+      below
+    </p>
     <div class="input-group">
       <input
         v-model="search"
@@ -11,7 +15,7 @@
         placeholder="Project name"
       />
       <button v-on:click="onButtonClick()" class="btn-primary">
-        Make Table
+        Select Project
       </button>
     </div>
     <ul tabindex="0" ref="list" class="results" v-show="isOpen">

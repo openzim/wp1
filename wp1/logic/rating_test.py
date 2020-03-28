@@ -56,3 +56,92 @@ class LogicRatingTest(BaseWpOneDbTest):
     self.assertEqual(b'Mid-Class', log.l_new)
     self.assertEqual(b'NotA-Class', log.l_old)
     self.assertEqual(b'importance', log.l_action)
+
+
+class GetProjectRatingByTypeTest(BaseWpOneDbTest):
+
+  def _add_ratings(self):
+    ratings = []
+    for i in range(25):
+      for quality in ('FA-Class', 'A-Class', 'B-Class'):
+        for importance in ('High-Class', 'Low-Class'):
+          ratings.append({
+              'r_project': 'Project 0',
+              'r_namespace': 0,
+              'r_article': '%s_%s_%s' % (quality, importance, i),
+              'r_score': 0,
+              'r_quality': quality,
+              'r_quality_timestamp': '20191225T00:00:00',
+              'r_importance': importance,
+              'r_importance_timestamp': '20191226T00:00:00',
+          })
+
+    for i in range(1, 10):
+      ratings.append({
+          'r_project': 'Project %s' % i,
+          'r_namespace': 0,
+          'r_article': 'Fake_Article',
+          'r_score': 0,
+          'r_quality': 'FA-Class',
+          'r_quality_timestamp': '20191225T00:00:00',
+          'r_importance': 'High-Class',
+          'r_importance_timestamp': '20191226T00:00:00',
+      })
+
+    with self.wp10db.cursor() as cursor:
+      cursor.executemany(
+          'INSERT INTO ratings '
+          '(r_project, r_namespace, r_article, r_score, r_quality, '
+          ' r_quality_timestamp, r_importance, r_importance_timestamp) '
+          'VALUES '
+          '(%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s, '
+          ' %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s, '
+          ' %(r_importance_timestamp)s)', ratings)
+    self.wp10db.commit()
+
+  def setUp(self):
+    super().setUp()
+    self._add_ratings()
+
+  def test_no_quality_or_importance(self):
+    ratings = logic_rating.get_project_rating_by_type(self.wp10db, b'Project 0')
+
+    # Currently limited to 100 results
+    self.assertEqual(100, len(ratings))
+    for rating in ratings:
+      self.assertEqual(b'Project 0', rating.r_project)
+
+  def test_quality(self):
+    ratings = logic_rating.get_project_rating_by_type(self.wp10db,
+                                                      b'Project 0',
+                                                      quality='FA-Class')
+
+    self.assertEqual(50, len(ratings))
+    for rating in ratings:
+      self.assertEqual(b'FA-Class', rating.r_quality)
+
+  def test_importance(self):
+    ratings = logic_rating.get_project_rating_by_type(self.wp10db,
+                                                      b'Project 0',
+                                                      importance='High-Class')
+
+    self.assertEqual(75, len(ratings))
+    for rating in ratings:
+      self.assertEqual(b'High-Class', rating.r_importance)
+
+  def test_no_results(self):
+    ratings = logic_rating.get_project_rating_by_type(self.wp10db,
+                                                      b'Project 0',
+                                                      importance='Foo-Class')
+    self.assertEqual(0, len(ratings))
+
+    ratings = logic_rating.get_project_rating_by_type(self.wp10db,
+                                                      b'Project 0',
+                                                      quality='Bar-Class')
+    self.assertEqual(0, len(ratings))
+
+    ratings = logic_rating.get_project_rating_by_type(self.wp10db,
+                                                      b'Project 0',
+                                                      quality='Foo-Class',
+                                                      importance='Bar-Class')
+    self.assertEqual(0, len(ratings))

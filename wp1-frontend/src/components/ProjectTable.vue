@@ -76,11 +76,15 @@
       </th>
       <td v-for="col in tableData.ordered_cols" :key="col">
         <span v-if="tableData.data[row][col]">
-          {{ tableData.data[row][col] }}
+          <a @click="setRoute(row, col)" class="table-link">{{
+            tableData.data[row][col]
+          }}</a>
         </span>
       </td>
       <td>
-        {{ tableData.row_totals[row] }}
+        <a @click="setRoute(row)" class="table-link">{{
+          tableData.row_totals[row]
+        }}</a>
       </td>
     </tr>
 
@@ -88,7 +92,9 @@
     <tr>
       <td>Total</td>
       <td v-for="col in tableData.ordered_cols" :key="col">
-        {{ tableData.col_totals[col] }}
+        <a @click="setRoute(undefined, col)" class="table-link">{{
+          tableData.col_totals[col]
+        }}</a>
       </td>
       <td>
         {{ tableData.total }}
@@ -132,12 +138,21 @@ export default {
         return cls.text;
       }
       return cls;
+    },
+    setRoute: function(quality, importance) {
+      const projectName = this.projectId.replace(/_/g, ' ');
+      this.$router.push({
+        path: `/project/${projectName}/articles`,
+        query: { quality: quality, importance: importance }
+      });
     }
   }
 };
 </script>
 
 <style scoped>
+@import '../labels.scss';
+
 table {
   background: #eee;
   border-collapse: collapse;
@@ -159,75 +174,12 @@ td {
   padding-right: 0.5rem;
 }
 
+.table-link {
+  color: #007bff;
+  cursor: pointer;
+}
+
 .quality {
   vertical-align: bottom;
-}
-
-.Top {
-  background: #ff97ff;
-}
-
-.High {
-  background: #ffacff;
-}
-
-.Mid {
-  background: #ffc1ff;
-}
-
-.Low {
-  background: #ffd6ff;
-}
-
-.FA {
-  background: #9cbdff;
-}
-
-.GA {
-  background: #66ff66;
-}
-
-.B {
-  background: #b2ff66;
-}
-
-.C {
-  background: #ffff66;
-}
-
-.Start {
-  background: #ffaa66;
-}
-
-.Stub {
-  background: #ffa4a4;
-}
-
-.List {
-  background: #c7b1ff;
-}
-
-.Category {
-  background: #ffdb58;
-}
-
-.Disambig {
-  background: #00fa9a;
-}
-
-.File {
-  background: #ddccff;
-}
-
-.Project {
-  background: #c0c090;
-}
-
-.Redirect {
-  background: #c0c0c0;
-}
-
-.Template {
-  background: #fbceb1;
 }
 </style>
