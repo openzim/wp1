@@ -2,10 +2,6 @@
   <div>
     <div class="row">
       <div class="col-6">
-        <p>
-          A list of indexed projects is available using the autocomplete search
-          box below
-        </p>
         <Autocomplete
           v-on:select-project="currentProject = $event"
         ></Autocomplete>

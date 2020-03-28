@@ -66,6 +66,38 @@ paths:
         description: 'The name of the project, with spaces replaced by "_"'
         schema:
           type: string
+      - name: quality
+        in: query
+        required: false
+        description: 'The quality class of articles, used to filter the results. Eg: "FA-Class"'
+        schema:
+          type: string
+      - name: importance
+        in: query
+        required: false
+        description: 'The importance class of articles, used to filter the results. Eg: "High-Class"'
+        schema:
+          type: string
+  /projects/{projectId}/articles:
+    get:
+      summary: 'List of articles for a project, optionally filtered by quality/importance'
+      operationId: projectArticles
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Article'
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        description: 'The name of the project, with spaces replaced by "_"'
+        schema:
+          type: string
 components:
   schemas:
     Project:
@@ -76,3 +108,26 @@ components:
         last_updated:
           type: string
           description: 'The last time the project was updated, in the date format YYYYMMDDhhmmss. So, year month day, hour minute second'
+    Article:
+      type: object
+      properties:
+        article:
+          type: string
+          description: 'The name of the article, as it appears on Wikipedia'
+        article_link:
+          type: string
+          description: 'A link to the article on Wikipedia'
+        importance:
+          type: string
+          description: 'The importance class of the article'
+        quality:
+          type: string
+          description: 'The quality class of the article'
+        importance_updated:
+          type: string
+          format: date
+          description: 'The date on which the article importance classification was updated'
+        quality_updated:
+          type: string
+          format: date
+          description: 'The date on which the article quality classification was updated'

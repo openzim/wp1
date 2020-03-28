@@ -4,7 +4,7 @@ import re
 
 from wp1 import api
 from wp1.conf import get_conf
-from wp1.constants import LIST_URL
+from wp1.constants import LIST_URL, WIKI_BASE
 from wp1.models.wp10.category import Category
 from wp1.models.wp10.rating import Rating
 from wp1.templates import env as jinja_env
@@ -22,7 +22,6 @@ NOT_A_CLASS = config['NOT_A_CLASS'].encode('utf-8')
 ASSESSED_CLASS = b'Assessed-Class'
 UNASSESSED_CLASS = b'Unassessed-Class'
 
-WIKI_BASE = 'https://en.wikipedia.org/wiki/'
 WIKI_LINK_RE = re.compile(r'{{([^|]+)\|category=([^}]+)}}')
 
 
