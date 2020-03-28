@@ -16,7 +16,7 @@
             >{{ displayClass($route.query.importance) }} importance</span
           >
           <span v-if="$route.query.quality"
-            ><span v-if="$route.query.importance"> and </span
+            ><span v-if="$route.query.importance"> / </span
             >{{ displayClass($route.query.quality) }} quality</span
           >
         </h4>

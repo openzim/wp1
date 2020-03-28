@@ -21,13 +21,21 @@ export default {
   name: 'articletable',
   data: function() {
     return {
-      tableData: null
+      articleData: null
     };
   },
   props: {
     projectId: String,
     importance: String,
     quality: String
+  },
+  computed: {
+    tableData: function() {
+      if (this.articleData === null) {
+        return [];
+      }
+      return this.articleData['articles'];
+    }
   },
   watch: {
     projectId: async function(projectId) {
@@ -61,7 +69,7 @@ export default {
       );
 
       const response = await fetch(url);
-      this.tableData = await response.json();
+      this.articleData = await response.json();
     }
   }
 };
