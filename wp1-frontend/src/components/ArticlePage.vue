@@ -11,7 +11,10 @@
     <div class="row">
       <div class="col">
         <h4>
-          {{ currentProject }} articles -
+          {{ currentProject }} articles
+          <span v-if="$route.query.importance || $route.query.quality">
+            -
+          </span>
           <span v-if="$route.query.importance"
             >{{ displayClass($route.query.importance) }} importance</span
           >
@@ -51,17 +54,17 @@ export default {
       incomingSearch: null
     };
   },
-  methods: {
-    displayClass: function(cls) {
-      return cls.split('-')[0];
-    }
-  },
   computed: {
     currentProjectId: function() {
       if (!this.currentProject) {
         return null;
       }
       return this.currentProject.replace(/ /g, '_');
+    }
+  },
+  methods: {
+    displayClass: function(cls) {
+      return cls.split('-')[0];
     }
   },
   watch: {

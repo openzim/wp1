@@ -1,6 +1,10 @@
 <template>
   <table v-if="tableData">
-    <th :colspan="tableData.total_cols">{{ tableData.title }}</th>
+    <th :colspan="tableData.total_cols">
+      <a :href="'#/project/' + currentProject + '/articles'">{{
+        tableData.title
+      }}</a>
+    </th>
     <tr>
       <th class="quality" rowspan="2">Quality</th>
       <th
@@ -118,6 +122,14 @@ export default {
     return {
       tableData: null
     };
+  },
+  computed: {
+    currentProject: function() {
+      if (!this.projectId) {
+        return null;
+      }
+      return this.projectId.replace(/_/g, '_');
+    }
   },
   watch: {
     projectId: async function(projectId) {
