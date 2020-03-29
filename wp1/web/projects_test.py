@@ -120,6 +120,16 @@ class ProjectTest(BaseWebTestcase):
       data = json.loads(rv.data)
       self.assertEqual(0, len(data['articles']))
 
+  def test_articles_pagination(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get('/v1/projects/Project 0/articles')
+      self.assertEqual('200 OK', rv.status)
+      data = json.loads(rv.data)
+
+      self.assertEqual(1, data['pagination']['page'])
+      self.assertEqual(150, data['pagination']['total'])
+      self.assertEqual(2, data['pagination']['total_pages'])
+
   def test_articles_page_2(self):
     with self.override_db(self.app), self.app.test_client() as client:
       rv = client.get('/v1/projects/Project 0/articles?page=2')
