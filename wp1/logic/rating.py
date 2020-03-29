@@ -63,7 +63,6 @@ def _project_rating_query(project_name,
   else:
     query += ' LIMIT 100'
 
-  print(query)
   return query
 
 
@@ -83,7 +82,6 @@ def get_project_rating_count_by_type(wp10db,
             'r_importance': importance,
         })
     res = cursor.fetchone()
-    print(res)
     return res['count']
 
 

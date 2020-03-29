@@ -49,6 +49,15 @@ def articles(project_name):
   quality = flask.request.args.get('quality')
   importance = flask.request.args.get('importance')
   page = flask.request.args.get('page')
+  if page is not None:
+    try:
+      page_int = int(page)
+    except ValueError:
+      # Non-integer page number
+      return flask.abort(400)
+    if page_int < 1:
+      # Negative page number
+      return flask.abort(400)
 
   if quality:
     quality = quality.encode('utf-8')
