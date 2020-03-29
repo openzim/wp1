@@ -78,7 +78,7 @@ class ProjectTest(BaseWebTestcase):
       data = json.loads(rv.data)
 
       # Currently limited to 100 items
-      self.assertEqual(100, len(data))
+      self.assertEqual(100, len(data['articles']))
 
   def test_articles_quality_only(self):
     with self.override_db(self.app), self.app.test_client() as client:
@@ -86,8 +86,8 @@ class ProjectTest(BaseWebTestcase):
       data = json.loads(rv.data)
 
       # Currently limited to 100 items
-      self.assertEqual(50, len(data))
-      for article in data:
+      self.assertEqual(50, len(data['articles']))
+      for article in data['articles']:
         self.assertEqual('FA', article['quality'])
 
   def test_articles_importance_only(self):
@@ -95,8 +95,8 @@ class ProjectTest(BaseWebTestcase):
       rv = client.get('/v1/projects/Project 0/articles?importance=High-Class')
       data = json.loads(rv.data)
 
-      self.assertEqual(75, len(data))
-      for article in data:
+      self.assertEqual(75, len(data['articles']))
+      for article in data['articles']:
         self.assertEqual('High', article['importance'])
 
   def test_articles_quality_importance(self):
@@ -106,8 +106,8 @@ class ProjectTest(BaseWebTestcase):
       )
       data = json.loads(rv.data)
 
-      self.assertEqual(25, len(data))
-      for article in data:
+      self.assertEqual(25, len(data['articles']))
+      for article in data['articles']:
         self.assertEqual('Low', article['importance'])
         self.assertEqual('A', article['quality'])
 
@@ -118,4 +118,35 @@ class ProjectTest(BaseWebTestcase):
       )
       self.assertEqual('200 OK', rv.status)
       data = json.loads(rv.data)
-      self.assertEqual(0, len(data))
+      self.assertEqual(0, len(data['articles']))
+
+  def test_articles_pagination(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get('/v1/projects/Project 0/articles')
+      self.assertEqual('200 OK', rv.status)
+      data = json.loads(rv.data)
+
+      self.assertEqual(1, data['pagination']['page'])
+      self.assertEqual(150, data['pagination']['total'])
+      self.assertEqual(2, data['pagination']['total_pages'])
+
+  def test_articles_page_2(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get('/v1/projects/Project 0/articles?page=2')
+      self.assertEqual('200 OK', rv.status)
+      data = json.loads(rv.data)
+      self.assertEqual(50, len(data['articles']))
+
+  def test_articles_404(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get('/v1/projects/Foo Fake Project/articles')
+      self.assertEqual('404 NOT FOUND', rv.status)
+
+  def test_articles_400_invalid_page(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get('/v1/projects/Project 0/articles?page=foo')
+      self.assertEqual('400 BAD REQUEST', rv.status)
+
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get('/v1/projects/Project 0/articles?page=-5')
+      self.assertEqual('400 BAD REQUEST', rv.status)

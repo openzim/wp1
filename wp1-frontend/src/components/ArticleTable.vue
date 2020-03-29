@@ -1,5 +1,27 @@
 <template>
   <div>
+    <p v-if="articleData" class="pages-cont">
+      {{ articleData.pagination.total }} articles
+
+      <span v-if="articleData.pagination.total_pages > 1">
+        - Pages:
+        <span
+          v-for="i in Math.min(articleData.pagination.total_pages, 15)"
+          :key="i"
+          :class="
+            'page-indicator' +
+              (i === Number(page) || (i === 1 && !page) ? '' : ' link')
+          "
+          ><a v-on:click="updatePage(i)">{{ i }}</a></span
+        >
+        <span v-if="articleData.pagination.total_pages > 15">
+          ...(more results truncated)
+        </span>
+      </span>
+    </p>
+
+    <hr />
+
     <table>
       <tr v-for="row in tableData" :key="row.article">
         <td>
@@ -21,13 +43,22 @@ export default {
   name: 'articletable',
   data: function() {
     return {
-      tableData: null
+      articleData: null
     };
   },
   props: {
     projectId: String,
     importance: String,
-    quality: String
+    quality: String,
+    page: String
+  },
+  computed: {
+    tableData: function() {
+      if (this.articleData === null) {
+        return [];
+      }
+      return this.articleData['articles'];
+    }
   },
   watch: {
     projectId: async function(projectId) {
@@ -41,6 +72,9 @@ export default {
       await this.updateTable();
     },
     quality: async function() {
+      await this.updateTable();
+    },
+    page: async function() {
       await this.updateTable();
     }
   },
@@ -56,12 +90,30 @@ export default {
       if (this.quality) {
         params.quality = this.quality;
       }
+      if (this.page) {
+        params.page = this.page;
+      }
       Object.keys(params).forEach(key =>
         url.searchParams.append(key, params[key])
       );
 
       const response = await fetch(url);
-      this.tableData = await response.json();
+      this.articleData = await response.json();
+    },
+    updatePage: function(page) {
+      if (page === this.page) {
+        return;
+      }
+
+      const projectName = this.projectId.replace(/_/g, ' ');
+      this.$router.push({
+        path: `/project/${projectName}/articles`,
+        query: {
+          quality: this.quality,
+          importance: this.importance,
+          page: page
+        }
+      });
     }
   }
 };
@@ -87,5 +139,20 @@ td {
 
 tr:nth-child(even) {
   background: lightyellow;
+}
+
+.pages-cont {
+  margin: auto;
+  text-align: center;
+}
+
+.page-indicator {
+  display: inline-block;
+  padding: 0 0.25rem;
+}
+
+.page-indicator.link {
+  color: #007bff;
+  cursor: pointer;
 }
 </style>

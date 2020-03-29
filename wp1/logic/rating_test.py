@@ -145,3 +145,56 @@ class GetProjectRatingByTypeTest(BaseWpOneDbTest):
                                                       quality='Foo-Class',
                                                       importance='Bar-Class')
     self.assertEqual(0, len(ratings))
+
+  def test_sorted_by_quality(self):
+    ratings = logic_rating.get_project_rating_by_type(self.wp10db,
+                                                      b'Project 0',
+                                                      importance='High-Class')
+
+    self.assertEqual(75, len(ratings))
+    for rating in ratings[:25]:
+      self.assertEqual(b'FA-Class', rating.r_quality)
+    for rating in ratings[25:50]:
+      self.assertEqual(b'A-Class', rating.r_quality)
+    for rating in ratings[50:]:
+      self.assertEqual(b'B-Class', rating.r_quality)
+
+  def test_sorted_by_importance(self):
+    ratings = logic_rating.get_project_rating_by_type(self.wp10db,
+                                                      b'Project 0',
+                                                      quality='FA-Class')
+
+    self.assertEqual(50, len(ratings))
+    for rating in ratings[:25]:
+      self.assertEqual(b'High-Class', rating.r_importance)
+    for rating in ratings[25:50]:
+      self.assertEqual(b'Low-Class', rating.r_importance)
+
+  def test_overall_sort_and_paging(self):
+    ratings = logic_rating.get_project_rating_by_type(self.wp10db, b'Project 0')
+
+    self.assertEqual(100, len(ratings))
+    for rating in ratings[:25]:
+      self.assertEqual(b'FA-Class', rating.r_quality)
+      self.assertEqual(b'High-Class', rating.r_importance)
+    for rating in ratings[25:50]:
+      self.assertEqual(b'FA-Class', rating.r_quality)
+      self.assertEqual(b'Low-Class', rating.r_importance)
+    for rating in ratings[50:75]:
+      self.assertEqual(b'A-Class', rating.r_quality)
+      self.assertEqual(b'High-Class', rating.r_importance)
+    for rating in ratings[75:]:
+      self.assertEqual(b'A-Class', rating.r_quality)
+      self.assertEqual(b'Low-Class', rating.r_importance)
+
+    ratings = logic_rating.get_project_rating_by_type(self.wp10db,
+                                                      b'Project 0',
+                                                      page=2)
+
+    self.assertEqual(50, len(ratings))
+    for rating in ratings[:25]:
+      self.assertEquals(b'B-Class', rating.r_quality)
+      self.assertEquals(b'High-Class', rating.r_importance)
+    for rating in ratings[25:50]:
+      self.assertEquals(b'B-Class', rating.r_quality)
+      self.assertEquals(b'Low-Class', rating.r_importance)
