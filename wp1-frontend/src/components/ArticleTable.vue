@@ -1,19 +1,23 @@
 <template>
   <div>
-    <p
-      v-if="articleData && articleData.pagination.total_pages > 1"
-      class="pages-cont"
-    >
-      Pages:
-      <span
-        v-for="i in articleData.pagination.total_pages"
-        :key="i"
-        :class="
-          'page-indicator' +
-            (i === Number(page) || (i === 1 && !page) ? '' : ' link')
-        "
-        ><a v-on:click="updatePage(i)">{{ i }}</a></span
-      >
+    <p v-if="articleData" class="pages-cont">
+      {{ articleData.pagination.total }} articles
+
+      <span v-if="articleData.pagination.total_pages > 1">
+        - Pages:
+        <span
+          v-for="i in Math.min(articleData.pagination.total_pages, 15)"
+          :key="i"
+          :class="
+            'page-indicator' +
+              (i === Number(page) || (i === 1 && !page) ? '' : ' link')
+          "
+          ><a v-on:click="updatePage(i)">{{ i }}</a></span
+        >
+        <span v-if="articleData.pagination.total_pages > 15">
+          ...(more results truncated)
+        </span>
+      </span>
     </p>
 
     <hr />
@@ -139,7 +143,6 @@ tr:nth-child(even) {
 
 .pages-cont {
   margin: auto;
-  padding: 0.5rem;
   text-align: center;
 }
 
