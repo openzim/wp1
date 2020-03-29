@@ -66,18 +66,6 @@ paths:
         description: 'The name of the project, with spaces replaced by "_"'
         schema:
           type: string
-      - name: quality
-        in: query
-        required: false
-        description: 'The quality class of articles, used to filter the results. Eg: "FA-Class"'
-        schema:
-          type: string
-      - name: importance
-        in: query
-        required: false
-        description: 'The importance class of articles, used to filter the results. Eg: "High-Class"'
-        schema:
-          type: string
   /projects/{projectId}/articles:
     get:
       summary: 'List of articles for a project, optionally filtered by quality/importance'
@@ -88,14 +76,45 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Article'
+                type: object
+                properties:
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: number
+                        description: 'The current page of results. Will be 1 if no page is specified'
+                      total:
+                        type: number
+                        description: 'The total number of results for the query'
+                      total_pages:
+                        type: number
+                        description: 'The total number of pages of results, by 100'
+                  articles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Article'
+        400:
+          description: 'The page parameter was either not a number, or a negative number'
+        404:
+          description: 'No project with that projectId was found'
     parameters:
       - name: projectId
         in: path
         required: true
         description: 'The name of the project, with spaces replaced by "_"'
+        schema:
+          type: string
+      - name: quality
+        in: query
+        required: false
+        description: 'The quality class of articles, used to filter the results. Eg: "FA-Class"'
+        schema:
+          type: string
+      - name: importance
+        in: query
+        required: false
+        description: 'The importance class of articles, used to filter the results. Eg: "High-Class"'
         schema:
           type: string
 components:
