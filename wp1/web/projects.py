@@ -48,7 +48,7 @@ def articles(project_name):
 
   quality = flask.request.args.get('quality')
   importance = flask.request.args.get('importance')
-  page = flask.request.args.get('page', 1)
+  page = flask.request.args.get('page')
 
   if quality:
     quality = quality.encode('utf-8')
@@ -64,7 +64,8 @@ def articles(project_name):
   articles = logic_rating.get_project_rating_by_type(wp10db,
                                                      project_name_bytes,
                                                      quality=quality,
-                                                     importance=importance)
+                                                     importance=importance,
+                                                     page=page)
 
   output = {
       'pagination': {

@@ -1,5 +1,23 @@
 <template>
   <div>
+    <p
+      v-if="articleData && articleData.pagination.total_pages > 1"
+      class="pages-cont"
+    >
+      Pages:
+      <span
+        v-for="i in articleData.pagination.total_pages"
+        :key="i"
+        :class="
+          'page-indicator' +
+            (i === Number(page) || (i === 1 && !page) ? '' : ' link')
+        "
+        ><a v-on:click="updatePage(i)">{{ i }}</a></span
+      >
+    </p>
+
+    <hr />
+
     <table>
       <tr v-for="row in tableData" :key="row.article">
         <td>
@@ -27,7 +45,8 @@ export default {
   props: {
     projectId: String,
     importance: String,
-    quality: String
+    quality: String,
+    page: String
   },
   computed: {
     tableData: function() {
@@ -50,6 +69,9 @@ export default {
     },
     quality: async function() {
       await this.updateTable();
+    },
+    page: async function() {
+      await this.updateTable();
     }
   },
   methods: {
@@ -64,12 +86,30 @@ export default {
       if (this.quality) {
         params.quality = this.quality;
       }
+      if (this.page) {
+        params.page = this.page;
+      }
       Object.keys(params).forEach(key =>
         url.searchParams.append(key, params[key])
       );
 
       const response = await fetch(url);
       this.articleData = await response.json();
+    },
+    updatePage: function(page) {
+      if (page === this.page) {
+        return;
+      }
+
+      const projectName = this.projectId.replace(/_/g, ' ');
+      this.$router.push({
+        path: `/project/${projectName}/articles`,
+        query: {
+          quality: this.quality,
+          importance: this.importance,
+          page: page
+        }
+      });
     }
   }
 };
@@ -95,5 +135,21 @@ td {
 
 tr:nth-child(even) {
   background: lightyellow;
+}
+
+.pages-cont {
+  margin: auto;
+  padding: 0.5rem;
+  text-align: center;
+}
+
+.page-indicator {
+  display: inline-block;
+  padding: 0 0.25rem;
+}
+
+.page-indicator.link {
+  color: #007bff;
+  cursor: pointer;
 }
 </style>

@@ -32,6 +32,7 @@
           :projectId="currentProjectId"
           :importance="$route.query.importance"
           :quality="$route.query.quality"
+          :page="$route.query.page"
         ></ArticleTable>
       </div>
     </div>
