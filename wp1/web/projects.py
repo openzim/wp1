@@ -78,7 +78,7 @@ def articles(project_name):
 
   output = {
       'pagination': {
-          'page': page,
+          'page': page or 1,
           'total_pages': total_pages,
           'total': total
       },
