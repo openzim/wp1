@@ -24,23 +24,77 @@ def get_project_ratings(wp10db, project_name):
     return [Rating(**db_rating) for db_rating in cursor.fetchall()]
 
 
+def _project_rating_query(project_name,
+                          quality=None,
+                          importance=None,
+                          page=None,
+                          count=False):
+  if count:
+    query = 'SELECT COUNT(*) as count FROM ' + Rating.table_name
+  else:
+    query = ('SELECT r_project, r_namespace, r_article, r_score, r_quality,'
+             ' r_quality_timestamp, r_importance, r_importance_timestamp'
+             ' FROM ' + Rating.table_name)
+
+  if importance is None:
+    query += (' JOIN global_rankings gri ON gri.gr_type = "importance" AND'
+              ' gri.gr_rating = r_importance')
+  if quality is None:
+    query += (' JOIN global_rankings grq ON grq.gr_type = "quality" AND'
+              ' grq.gr_rating = r_quality')
+
+  query += ' WHERE r_project = %(r_project)s'
+
+  if quality is not None:
+    query += ' AND r_quality = %(r_quality)s'
+  if importance is not None:
+    query += ' AND r_importance = %(r_importance)s'
+
+  if quality is None and importance is None:
+    query += ' ORDER BY grq.gr_ranking DESC, gri.gr_ranking DESC'
+  elif quality is None:
+    query += ' ORDER BY grq.gr_ranking DESC'
+  elif importance is None:
+    query += ' ORDER BY gri.gr_ranking DESC'
+
+  if page is not None:
+    page = int(page) - 1
+    query += ' LIMIT %s,100' % (page * 100)
+  else:
+    query += ' LIMIT 100'
+
+  return query
+
+
+def get_project_rating_count_by_type(wp10db,
+                                     project_name,
+                                     quality=None,
+                                     importance=None):
+  query = _project_rating_query(project_name,
+                                quality=quality,
+                                importance=importance,
+                                count=True)
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        query, {
+            'r_project': project_name,
+            'r_quality': quality,
+            'r_importance': importance,
+        })
+    res = cursor.fetchone()
+    return res['count']
+
+
 def get_project_rating_by_type(wp10db,
                                project_name,
                                quality=None,
-                               importance=None):
+                               importance=None,
+                               page=None):
+  query = _project_rating_query(project_name,
+                                quality=quality,
+                                importance=importance,
+                                page=page)
   with wp10db.cursor() as cursor:
-    query = ('SELECT * FROM ' + Rating.table_name + '''
-      WHERE r_project = %(r_project)s
-    ''')
-
-    if quality is not None:
-      query += ' AND r_quality = %(r_quality)s'
-    if importance is not None:
-      query += ' AND r_importance = %(r_importance)s'
-
-    # Hardcode a limit of 100 for now. Need to revisit this.
-    query += ' LIMIT 100'
-
     cursor.execute(
         query, {
             'r_project': project_name,
