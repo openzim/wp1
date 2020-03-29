@@ -58,8 +58,8 @@ def _project_rating_query(project_name,
     query += ' ORDER BY gri.gr_ranking DESC'
 
   if page is not None:
-    page = int(page)
-    query += ' LIMIT %s,100' % page
+    page = int(page) - 1
+    query += ' LIMIT %s,100' % (page * 100)
   else:
     query += ' LIMIT 100'
 
