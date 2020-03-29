@@ -23,20 +23,21 @@ ROOT_CATEGORY = config['ROOT_CATEGORY']
 
 def _get_first_category(wp10db):
   with wp10db.cursor() as cursor:
-    cursor.execute('SELECT * FROM ' + Category.table_name + ' LIMIT 1')
+    cursor.execute('SELECT * FROM ' + Category.table_name +  # nosec
+                   ' LIMIT 1')
     db_category = cursor.fetchone()
     return Category(**db_category) if db_category else None
 
 
 def _get_all_categories(wp10db):
   with wp10db.cursor() as cursor:
-    cursor.execute('SELECT * FROM ' + Category.table_name)
+    cursor.execute('SELECT * FROM ' + Category.table_name)  # nosec
     return [Category(**db_category) for db_category in cursor.fetchall()]
 
 
 def _get_all_ratings(wp10db):
   with wp10db.cursor() as cursor:
-    cursor.execute('SELECT * FROM ' + Rating.table_name)
+    cursor.execute('SELECT * FROM ' + Rating.table_name)  # nosec
     return [Rating(**db_rating) for db_rating in cursor.fetchall()]
 
 
