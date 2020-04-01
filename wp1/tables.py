@@ -182,7 +182,7 @@ def get_cached_table_data(project_name):
   pkl = r.get(project_name)
   if pkl is None:
     return None
-  return pickle.loads(pkl)
+  return pickle.loads(pkl)  # nosec
 
 
 def cache_table_data(project_name, data):
