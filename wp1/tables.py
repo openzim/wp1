@@ -1,6 +1,10 @@
 from collections import defaultdict
+from datetime import timedelta
 import logging
+import pickle
 import re
+
+from redis import Redis
 
 from wp1 import api
 from wp1.conf import get_conf
@@ -10,12 +14,15 @@ from wp1.models.wp10.rating import Rating
 from wp1.templates import env as jinja_env
 from wp1.wp10_db import connect as wp10_connect
 
-
-def commas(n):
-  return "{:,d}".format(n)
-
-
 logger = logging.getLogger(__name__)
+
+try:
+  from wp1.credentials import ENV, CREDENTIALS
+except ImportError:
+  logger.exception('The file credentials.py must be populated manually in '
+                   'order to connect to Redis')
+  CREDENTIALS = None
+  ENV = None
 
 config = get_conf()
 NOT_A_CLASS = config['NOT_A_CLASS'].encode('utf-8')
@@ -23,6 +30,10 @@ ASSESSED_CLASS = b'Assessed-Class'
 UNASSESSED_CLASS = b'Unassessed-Class'
 
 WIKI_LINK_RE = re.compile(r'{{([^|]+)\|category=([^}]+)}}')
+
+
+def commas(n):
+  return "{:,d}".format(n)
 
 
 def labels_for_classes(sort_qual, sort_imp):
@@ -161,6 +172,34 @@ def convert_table_data_for_web(data):
   return data
 
 
+def get_cached_table_data(project_name):
+  if CREDENTIALS is None and ENV is None:
+    return None
+
+  creds = CREDENTIALS[ENV]['REDIS']
+  r = Redis(**creds)
+
+  pkl = r.get(project_name)
+  if pkl is None:
+    return None
+  return pickle.loads(pkl)  # nosec
+
+
+def cache_table_data(project_name, data):
+  if CREDENTIALS is None and ENV is None:
+    return
+
+  creds = CREDENTIALS[ENV]['REDIS']
+  r = Redis(**creds)
+
+  # The data nested dict is actually a defaultdict. Cast it back to a normal
+  # dictionary for pickling.
+  data['data'] = dict(data['data'])
+
+  pkl = pickle.dumps(data)
+  r.setex(project_name, timedelta(days=1), value=pkl)
+
+
 def get_project_categories(wp10db, project_name):
   sort_imp = {}
   sort_qual = {}
@@ -291,19 +330,24 @@ def generate_table_data(stats, categories, table_overrides=None):
 
 
 def generate_project_table_data(wp10db, project_name):
-  stats = get_project_stats(wp10db, project_name)
-  categories = get_project_categories(wp10db, project_name)
-  project_display = project_name.decode('utf-8').replace('_', ' ')
-  title = ('%s articles by quality and importance' % project_display)
+  data = get_cached_table_data(project_name)
+  if data is None:
+    stats = get_project_stats(wp10db, project_name)
+    categories = get_project_categories(wp10db, project_name)
+    project_display = project_name.decode('utf-8').replace('_', ' ')
+    title = ('%s articles by quality and importance' % project_display)
 
-  return generate_table_data(
-      stats, categories, {
-          'project': project_name,
-          'project_display': project_display,
-          'create_link': True,
-          'title': title,
-          'center_table': False,
-      })
+    data = generate_table_data(
+        stats, categories, {
+            'project': project_name,
+            'project_display': project_display,
+            'create_link': True,
+            'title': title,
+            'center_table': False,
+        })
+    cache_table_data(project_name, data)
+
+  return data
 
 
 def generate_global_table_data(wp10db):
@@ -330,6 +374,7 @@ def upload_project_table(project_name):
     logger.info('Getting table data for project: %s',
                 project_name.decode('utf-8'))
     table_data = generate_project_table_data(wp10db, project_name)
+
     wikicode = create_wikicode(table_data)
     page_name = ('User:WP 1.0 bot/Tables/Project/%s' %
                  project_name.decode('utf-8'))
