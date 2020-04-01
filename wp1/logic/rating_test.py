@@ -193,8 +193,8 @@ class GetProjectRatingByTypeTest(BaseWpOneDbTest):
 
     self.assertEqual(50, len(ratings))
     for rating in ratings[:25]:
-      self.assertEquals(b'B-Class', rating.r_quality)
-      self.assertEquals(b'High-Class', rating.r_importance)
+      self.assertEqual(b'B-Class', rating.r_quality)
+      self.assertEqual(b'High-Class', rating.r_importance)
     for rating in ratings[25:50]:
-      self.assertEquals(b'B-Class', rating.r_quality)
-      self.assertEquals(b'Low-Class', rating.r_importance)
+      self.assertEqual(b'B-Class', rating.r_quality)
+      self.assertEqual(b'Low-Class', rating.r_importance)
