@@ -173,6 +173,9 @@ def convert_table_data_for_web(data):
 
 
 def get_cached_table_data(project_name):
+  if CREDENTIALS is None and ENV is None:
+    return None
+
   creds = CREDENTIALS[ENV]['REDIS']
   r = Redis(**creds)
 
@@ -183,6 +186,9 @@ def get_cached_table_data(project_name):
 
 
 def cache_table_data(project_name, data):
+  if CREDENTIALS is None and ENV is None:
+    return
+
   creds = CREDENTIALS[ENV]['REDIS']
   r = Redis(**creds)
 
