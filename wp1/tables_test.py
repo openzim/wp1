@@ -1,5 +1,7 @@
+from datetime import timedelta
+import pickle
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import attr
 
@@ -732,6 +734,8 @@ class TablesDbTest(BaseWpOneDbTest):
     for k, v in expected_overrides.items():
       self.assertEqual(v, actual[k])
 
+  @patch('wp1.tables.CREDENTIALS', {'DEVELOPMENT': {'REDIS': {}}})
+  @patch('wp1.tables.ENV', 'DEVELOPMENT')
   def test_generate_project_table_data(self):
     actual = tables.generate_project_table_data(self.wp10db, b'Catholicism')
     self.assertEqual('Catholicism pages by quality', actual['title'])
@@ -741,6 +745,8 @@ class TablesDbTest(BaseWpOneDbTest):
     self.assertEqual('All rated articles by quality and importance',
                      actual['title'])
 
+  @patch('wp1.tables.CREDENTIALS', {'DEVELOPMENT': {'REDIS': {}}})
+  @patch('wp1.tables.ENV', 'DEVELOPMENT')
   @patch('wp1.tables.api')
   @patch('wp1.tables.wp10_connect')
   def test_upload_project_table(self, patched_connect, patched_site):
@@ -781,6 +787,50 @@ class TestMakeWikiLink(unittest.TestCase):
   def test_replaces_assessed(self):
     link = tables.make_wiki_link('{{Assessed-Class}}')
     self.assertEqual(link, 'Assessed')
+
+
+class TestTableCaching(BaseWpOneDbTest):
+
+  @patch('wp1.tables.CREDENTIALS', {'DEVELOPMENT': {'REDIS': {}}})
+  @patch('wp1.tables.ENV', 'DEVELOPMENT')
+  @patch('wp1.tables.Redis')
+  @patch('wp1.tables.generate_table_data')
+  def test_empty_cache(self, patched_table_data, patched_redis):
+    expected_table = {'data': {}}
+    expected_pkl = pickle.dumps(expected_table)
+
+    redis_conn = MagicMock()
+    redis_conn.get = MagicMock()
+    redis_conn.get.return_value = None
+    patched_redis.return_value = redis_conn
+    patched_table_data.return_value = expected_table
+
+    actual = tables.generate_project_table_data(self.wp10db, b'Water')
+
+    patched_table_data.assert_called_once()
+    redis_conn.setex.assert_called_once_with(b'Water',
+                                             timedelta(days=1),
+                                             value=expected_pkl)
+    self.assertEqual(expected_table, actual)
+
+  @patch('wp1.tables.CREDENTIALS', {'DEVELOPMENT': {'REDIS': {}}})
+  @patch('wp1.tables.ENV', 'DEVELOPMENT')
+  @patch('wp1.tables.Redis')
+  @patch('wp1.tables.generate_table_data')
+  def test_full_cache(self, patched_table_data, patched_redis):
+    expected_table = {'data': {}}
+    expected_pkl = pickle.dumps(expected_table)
+
+    redis_conn = MagicMock()
+    redis_conn.get = MagicMock()
+    redis_conn.get.return_value = expected_pkl
+    patched_redis.return_value = redis_conn
+
+    actual = tables.generate_project_table_data(self.wp10db, b'Water')
+
+    patched_table_data.assert_not_called()
+    redis_conn.get.assert_called_once()
+    self.assertEqual(expected_table, actual)
 
 
 class TestConvertTableForWeb(unittest.TestCase):
