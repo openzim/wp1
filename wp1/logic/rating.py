@@ -46,7 +46,11 @@ def _project_rating_query(project_name,
   query += ' WHERE r_project = %(r_project)s'
 
   if quality is not None:
-    query += ' AND r_quality = %(r_quality)s'
+    if quality == b'Assessed-Class':
+      print('Assessed-Class triggered')
+      query += ' AND r_quality != "Unassessed-Class"'
+    else:
+      query += ' AND r_quality = %(r_quality)s'
   if importance is not None:
     query += ' AND r_importance = %(r_importance)s'
 
