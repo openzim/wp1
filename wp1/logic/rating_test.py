@@ -60,7 +60,10 @@ class LogicRatingTest(BaseWpOneDbTest):
 
 class GetProjectRatingByTypeTest(BaseWpOneDbTest):
 
-  def _add_ratings(self):
+  def _add_ratings(self, use_unassessed=False):
+    qualities = ('FA-Class', 'A-Class', 'B-Class')
+    if use_unassessed:
+      qualities = qualities + ('Unassessed-Class',)
     ratings = []
     for i in range(25):
       for quality in ('FA-Class', 'A-Class', 'B-Class'):
@@ -99,11 +102,8 @@ class GetProjectRatingByTypeTest(BaseWpOneDbTest):
           ' %(r_importance_timestamp)s)', ratings)
     self.wp10db.commit()
 
-  def setUp(self):
-    super().setUp()
-    self._add_ratings()
-
   def test_no_quality_or_importance(self):
+    self._add_ratings()
     ratings = logic_rating.get_project_rating_by_type(self.wp10db, b'Project 0')
 
     # Currently limited to 100 results
@@ -112,44 +112,48 @@ class GetProjectRatingByTypeTest(BaseWpOneDbTest):
       self.assertEqual(b'Project 0', rating.r_project)
 
   def test_quality(self):
+    self._add_ratings()
     ratings = logic_rating.get_project_rating_by_type(self.wp10db,
                                                       b'Project 0',
-                                                      quality='FA-Class')
+                                                      quality=b'FA-Class')
 
     self.assertEqual(50, len(ratings))
     for rating in ratings:
       self.assertEqual(b'FA-Class', rating.r_quality)
 
   def test_importance(self):
+    self._add_ratings()
     ratings = logic_rating.get_project_rating_by_type(self.wp10db,
                                                       b'Project 0',
-                                                      importance='High-Class')
+                                                      importance=b'High-Class')
 
     self.assertEqual(75, len(ratings))
     for rating in ratings:
       self.assertEqual(b'High-Class', rating.r_importance)
 
   def test_no_results(self):
+    self._add_ratings()
     ratings = logic_rating.get_project_rating_by_type(self.wp10db,
                                                       b'Project 0',
-                                                      importance='Foo-Class')
+                                                      importance=b'Foo-Class')
     self.assertEqual(0, len(ratings))
 
     ratings = logic_rating.get_project_rating_by_type(self.wp10db,
                                                       b'Project 0',
-                                                      quality='Bar-Class')
+                                                      quality=b'Bar-Class')
     self.assertEqual(0, len(ratings))
 
     ratings = logic_rating.get_project_rating_by_type(self.wp10db,
                                                       b'Project 0',
-                                                      quality='Foo-Class',
-                                                      importance='Bar-Class')
+                                                      quality=b'Foo-Class',
+                                                      importance=b'Bar-Class')
     self.assertEqual(0, len(ratings))
 
   def test_sorted_by_quality(self):
+    self._add_ratings()
     ratings = logic_rating.get_project_rating_by_type(self.wp10db,
                                                       b'Project 0',
-                                                      importance='High-Class')
+                                                      importance=b'High-Class')
 
     self.assertEqual(75, len(ratings))
     for rating in ratings[:25]:
@@ -160,9 +164,10 @@ class GetProjectRatingByTypeTest(BaseWpOneDbTest):
       self.assertEqual(b'B-Class', rating.r_quality)
 
   def test_sorted_by_importance(self):
+    self._add_ratings()
     ratings = logic_rating.get_project_rating_by_type(self.wp10db,
                                                       b'Project 0',
-                                                      quality='FA-Class')
+                                                      quality=b'FA-Class')
 
     self.assertEqual(50, len(ratings))
     for rating in ratings[:25]:
@@ -171,6 +176,7 @@ class GetProjectRatingByTypeTest(BaseWpOneDbTest):
       self.assertEqual(b'Low-Class', rating.r_importance)
 
   def test_overall_sort_and_paging(self):
+    self._add_ratings()
     ratings = logic_rating.get_project_rating_by_type(self.wp10db, b'Project 0')
 
     self.assertEqual(100, len(ratings))
@@ -198,3 +204,22 @@ class GetProjectRatingByTypeTest(BaseWpOneDbTest):
     for rating in ratings[25:50]:
       self.assertEqual(b'B-Class', rating.r_quality)
       self.assertEqual(b'Low-Class', rating.r_importance)
+
+  def test_assessed_class(self):
+    self._add_ratings(use_unassessed=True)
+    ratings = logic_rating.get_project_rating_by_type(self.wp10db,
+                                                      b'Project 0',
+                                                      quality=b'Assessed-Class')
+
+    self.assertEqual(100, len(ratings))
+    for rating in ratings:
+      self.assertNotEqual(b'Unassessed-Class', rating.r_quality)
+
+    ratings = logic_rating.get_project_rating_by_type(self.wp10db,
+                                                      b'Project 0',
+                                                      quality=b'Assessed-Class',
+                                                      page=2)
+
+    self.assertEqual(50, len(ratings))
+    for rating in ratings:
+      self.assertNotEqual(b'Unassessed-Class', rating.r_quality)
