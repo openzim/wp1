@@ -15,8 +15,8 @@ from wp1.web.projects import projects
 
 def get_redis_creds():
   try:
-    from wp1.credentials import REDIS_CREDS
-    return REDIS_CREDS
+    from wp1.credentials import ENV, CREDENTIALS
+    return CREDENTIALS[ENV]['REDIS']
   except ImportError:
     print('No REDIS_CREDS found, using defaults.')
     return None
