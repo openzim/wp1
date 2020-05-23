@@ -8,6 +8,7 @@ import App from './App.vue';
 import ArticlePage from './components/ArticlePage.vue';
 import IndexPage from './components/IndexPage.vue';
 import ProjectPage from './components/ProjectPage.vue';
+import UpdatePage from './components/UpdatePage.vue';
 
 Vue.config.productionTip = false;
 
@@ -20,6 +21,19 @@ const routes = [
     path: '/',
     component: IndexPage,
     meta: { title: () => BASE_TITLE }
+  },
+  {
+    path: '/update/',
+    component: UpdatePage,
+    meta: { title: () => BASE_TITLE + ' - Manual Update' }
+  },
+  {
+    path: '/update/:projectName',
+    component: UpdatePage,
+    meta: {
+      title: route =>
+        BASE_TITLE + ' - Manual Update - ' + route.params.projectName
+    }
   },
   {
     path: '/project/:projectName',

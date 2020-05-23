@@ -115,7 +115,8 @@ def get_test_connect_creds():
               'user': 'root',
               'host': 'localhost',
               'db': 'enwikip_test',
-          }
+          },
+          'REDIS': {},
       },
       Environment.PRODUCTION: {}
   }
