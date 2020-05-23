@@ -15,6 +15,7 @@ from wp1.models.wiki.page import Page
 from wp1.models.wp10.category import Category
 from wp1.models.wp10.project import Project
 from wp1.models.wp10.rating import Rating
+from wp1 import tables
 from wp1.wp10_db import connect as wp10_connect
 from wp1.wiki_db import connect as wiki_connect
 

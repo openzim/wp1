@@ -22,9 +22,6 @@ def get_redis_creds():
     return None
 
 
-SWAGGER_UI_DIST_DIR = "swagger-ui-dist"
-
-
 # We use this to prevent caching of `/swagger.yml`
 # Credits: https://arusahni.net/blog/2014/03/flask-nocache.html
 def nocache(view):

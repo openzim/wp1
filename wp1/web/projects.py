@@ -5,7 +5,8 @@ from wp1.constants import PAGE_SIZE
 from wp1.web.db import get_db
 import wp1.logic.project as logic_project
 import wp1.logic.rating as logic_rating
-import wp1.tables as tables
+from wp1 import queues
+from wp1 import tables
 
 projects = flask.Blueprint('projects', __name__)
 
@@ -85,3 +86,15 @@ def articles(project_name):
       'articles': list(article.to_web_dict() for article in articles),
   }
   return flask.jsonify(output)
+
+
+@projects.route('/<project_name>/update')
+def udpate(project_name):
+  wp10db = get_db('wp10db')
+  project_name_bytes = project_name.encode('utf-8')
+  project = logic_project.get_project_by_name(wp10db, project_name_bytes)
+  if project is None:
+    return flask.abort(404)
+
+  queues.enqueue_single_project(project_name)
+  return ('', 204)
