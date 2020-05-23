@@ -10,7 +10,12 @@
     </div>
     <div class="row">
       <div class="col-6">
-        <div v-if="this.$route.params.projectName && !showSuccessMessage">
+        <div
+          v-if="
+            this.$route.params.projectName &&
+              !(showSuccessMessage || showFailureMessage)
+          "
+        >
           <label class="mt-2" for="confirm"
             >Proceed with manual update of
             <b>{{ this.$route.params.projectName }}</b
@@ -26,7 +31,19 @@
           <p>
             Manual update of <b>{{ this.$route.params.projectName }}</b> has
             been scheduled. It can take anywhere from 2 - 200 minutes, dpending
-            on project size.
+            on project size. The next update can be performed at
+            <b>{{ updateTime }}</b
+            >.
+          </p>
+        </div>
+        <div v-if="this.$route.params.projectName && showFailureMessage">
+          <p>
+            <span style="color:red">Manual update failed.</span>
+          </p>
+          <p>
+            Another manual update has been performed too recently. The next
+            update can be performed at <b>{{ updateTime }}</b
+            >.
           </p>
         </div>
       </div>
@@ -46,7 +63,9 @@ export default {
     return {
       currentProject: null,
       incomingSearch: null,
-      showSuccessMessage: false
+      showSuccessMessage: false,
+      showFailureMessage: false,
+      updateTime: null
     };
   },
   computed: {
@@ -67,6 +86,8 @@ export default {
   beforeRouteUpdate(to, from, next) {
     this.incomingSearch = to.params.projectName;
     this.showSuccessMessage = false;
+    this.showFailureMessage = false;
+    this.updateTime = null;
     next();
   },
   methods: {
@@ -74,7 +95,13 @@ export default {
       const response = await fetch(
         `${process.env.VUE_APP_API_URL}/projects/${this.currentProjectId}/update`
       );
+      const data = await response.json();
+      this.updateTime = data.next_update_time;
+
       this.showSuccessMessage = response.ok;
+      if (response.status == 400) {
+        this.showFailureMessage = true;
+      }
     }
   }
 };

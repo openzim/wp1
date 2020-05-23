@@ -96,5 +96,10 @@ def udpate(project_name):
   if project is None:
     return flask.abort(404)
 
-  queues.enqueue_single_project(project_name)
-  return ('', 204)
+  update_time = queues.next_update_time(project_name_bytes)
+  if update_time is not None:
+    return flask.jsonify({'next_update_time': update_time}), 400
+
+  queues.enqueue_single_project(project_name_bytes)
+  next_update_time = queues.mark_project_manual_update_time(project_name_bytes)
+  return flask.jsonify({'next_update_time': next_update_time})
