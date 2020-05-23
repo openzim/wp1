@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import logging
 
 from redis import Redis
@@ -55,6 +56,31 @@ def enqueue_single_project(project_name):
   upload_q = Queue('upload', connection=Redis(**creds))
 
   enqueue_project(project_name, update_q, upload_q)
+
+
+def _manual_key(project_name):
+  return b'manual_update_time:%s' % project_name
+
+
+def next_update_time(project_name):
+  creds = CREDENTIALS[ENV]['REDIS']
+  r = Redis(**creds)
+
+  key = _manual_key(project_name)
+  ts = r.get(key)
+  if ts is not None:
+    ts = ts.decode('utf-8')
+  return ts
+
+
+def mark_project_manual_update_time(project_name):
+  creds = CREDENTIALS[ENV]['REDIS']
+  r = Redis(**creds)
+
+  key = _manual_key(project_name)
+  ts = (datetime.utcnow() + timedelta(hours=1)).strftime('%Y-%m-%d %H:%M UTC')
+  r.setex(key, timedelta(hours=1), value=ts)
+  return ts
 
 
 def enqueue_project(project_name, update_q, upload_q):
