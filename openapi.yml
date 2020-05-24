@@ -151,6 +151,30 @@ paths:
         description: 'The name of the project, with spaces replaced by "_"'
         schema:
           type: string
+  /projects/{projectId}/nextUpdateTime:
+    get:
+      summary: 'Get the time at which the given project can next be scheduled for a manual update, or null if the project is currently eligible for a manual update.'
+      operationId: projectNextUpdateTime
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  next_update_time:
+                    type: string
+                    description: 'A string representing the UTC timestamp of when the next manual update can be performed.'
+        404:
+          description: 'No project with that projectId was found'
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        description: 'The name of the project, with spaces replaced by "_"'
+        schema:
+          type: string
 components:
   schemas:
     Project:
