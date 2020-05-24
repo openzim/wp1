@@ -89,7 +89,7 @@ def articles(project_name):
   return flask.jsonify(output)
 
 
-@projects.route('/<project_name>/update')
+@projects.route('/<project_name>/update', methods=['POST'])
 def udpate(project_name):
   wp10db = get_db('wp10db')
   project_name_bytes = project_name.encode('utf-8')
