@@ -18,14 +18,16 @@
         <ul class="navbar-nav mr-auto">
           <li
             :class="
-              'nav-item ' + (this.$route.path !== '/update' ? 'active' : '')
+              'nav-item ' +
+                !(this.$route.path.startsWith('/update') ? 'active' : '')
             "
           >
             <router-link class="nav-link" to="/">Projects</router-link>
           </li>
           <li
             :class="
-              'nav-item ' + (this.$route.path === '/update' ? 'active' : '')
+              'nav-item ' +
+                (this.$route.path.startsWith('/update') ? 'active' : '')
             "
           >
             <router-link class="nav-link" to="/update"
