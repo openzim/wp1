@@ -3,6 +3,7 @@ import flask
 
 from wp1.constants import PAGE_SIZE
 from wp1.web.db import get_db
+from wp1.web.redis import get_redis
 import wp1.logic.project as logic_project
 import wp1.logic.rating as logic_rating
 from wp1 import queues
@@ -96,10 +97,13 @@ def udpate(project_name):
   if project is None:
     return flask.abort(404)
 
-  update_time = queues.next_update_time(project_name_bytes)
+  redis = get_redis()
+
+  update_time = queues.next_update_time(redis, project_name_bytes)
   if update_time is not None:
     return flask.jsonify({'next_update_time': update_time}), 400
 
-  queues.enqueue_single_project(project_name_bytes)
-  next_update_time = queues.mark_project_manual_update_time(project_name_bytes)
+  queues.enqueue_single_project(redis, project_name_bytes)
+  next_update_time = queues.mark_project_manual_update_time(
+      redis, project_name_bytes)
   return flask.jsonify({'next_update_time': next_update_time})

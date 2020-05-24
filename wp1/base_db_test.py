@@ -1,6 +1,5 @@
 import importlib
 import unittest
-import unittest.mock
 import sys
 
 import pymysql
@@ -116,7 +115,11 @@ def get_test_connect_creds():
               'host': 'localhost',
               'db': 'enwikip_test',
           },
-          'REDIS': {},
+          # Put a phony Redis port so that nothing gets connected.
+          'REDIS': {
+              'host': 'localhost',
+              'port': 55555
+          },
       },
       Environment.PRODUCTION: {}
   }

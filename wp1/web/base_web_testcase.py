@@ -2,6 +2,7 @@ from contextlib import contextmanager
 import unittest
 
 from flask import appcontext_pushed, g
+import fakeredis
 import pymysql
 
 from wp1.base_db_test import parse_sql
@@ -65,6 +66,8 @@ class BaseWebTestcase(unittest.TestCase):
     self.addCleanup(self._cleanup_wp_one_db)
     self._setup_wp_one_db()
 
+    self.redis = fakeredis.FakeStrictRedis()
+
     self.app = create_app()
     self.app.config['TESTING'] = True
 
@@ -89,5 +92,14 @@ class BaseWebTestcase(unittest.TestCase):
       with appcontext_pushed.connected_to(handler, app):
         yield
 
-    with set_wiki_db(), set_wp10_db():
+    @contextmanager
+    def set_redis():
+
+      def handler(sender, **kwargs):
+        g.redis = self.redis
+
+      with appcontext_pushed.connected_to(handler, app):
+        yield
+
+    with set_wiki_db(), set_wp10_db(), set_redis():
       yield
