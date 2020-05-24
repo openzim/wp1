@@ -103,7 +103,7 @@ def udpate(project_name):
   if update_time is not None:
     return flask.jsonify({'next_update_time': update_time}), 400
 
-  queues.enqueue_single_project(redis, project_name_bytes)
+  queues.enqueue_single_project(redis, project_name_bytes, manual=True)
   next_update_time = queues.mark_project_manual_update_time(
       redis, project_name_bytes)
   return flask.jsonify({'next_update_time': next_update_time})
