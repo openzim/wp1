@@ -98,3 +98,13 @@ class QueuesTest(BaseRedisTest):
 
     for project_name in projects:
       patched_enqueue_project.assert_any_call(project_name, update_q, upload_q)
+
+  def test_next_update_time_empty(self):
+    actual = queues.next_update_time(self.redis, b'Some_Project')
+    self.assertIsNone(actual)
+
+  def test_next_update_time_after_update(self):
+    expected = queues.mark_project_manual_update_time(self.redis,
+                                                      b'Some_Project')
+    actual = queues.next_update_time(self.redis, b'Some_Project')
+    self.assertEquals(expected, actual)
