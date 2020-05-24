@@ -10,12 +10,7 @@
     </div>
     <div class="row">
       <div class="col-6">
-        <div
-          v-if="
-            this.$route.params.projectName &&
-              !(showSuccessMessage || showFailureMessage)
-          "
-        >
+        <div v-if="this.$route.params.projectName && !updateTime">
           <label class="mt-2" for="confirm"
             >Proceed with manual update of
             <b>{{ this.$route.params.projectName }}</b
@@ -27,22 +22,12 @@
             </button>
           </div>
         </div>
-        <div v-if="this.$route.params.projectName && showSuccessMessage">
+        <div v-if="this.$route.params.projectName && updateTime">
           <p>
             Manual update of <b>{{ this.$route.params.projectName }}</b> has
-            been scheduled. It can take anywhere from 2 - 200 minutes, dpending
+            been scheduled. It can take anywhere from 2 - 200 minutes, depending
             on project size. The next update can be performed at
             <b>{{ updateTime }}</b
-            >.
-          </p>
-        </div>
-        <div v-if="this.$route.params.projectName && showFailureMessage">
-          <p>
-            <span style="color:red">Manual update failed.</span>
-          </p>
-          <p>
-            Another manual update has been performed too recently. The next
-            update can be performed at <b>{{ updateTime }}</b
             >.
           </p>
         </div>
@@ -59,12 +44,10 @@ export default {
   components: {
     Autocomplete
   },
+  props: ['incomingSearch'],
   data: function() {
     return {
       currentProject: null,
-      incomingSearch: null,
-      showSuccessMessage: false,
-      showFailureMessage: false,
       updateTime: null
     };
   },
@@ -77,17 +60,19 @@ export default {
     }
   },
   watch: {
-    currentProject: function(val) {
+    currentProject: async function(val) {
       if (val !== this.$route.params.projectName) {
         this.$router.push({ path: `/update/${val}` });
       }
+      const response = await fetch(
+        `${process.env.VUE_APP_API_URL}/projects/${this.currentProjectId}/nextUpdateTime`
+      );
+      const data = await response.json();
+      this.updateTime = data.next_update_time;
     }
   },
   beforeRouteUpdate(to, from, next) {
     this.incomingSearch = to.params.projectName;
-    this.showSuccessMessage = false;
-    this.showFailureMessage = false;
-    this.updateTime = null;
     next();
   },
   methods: {
@@ -98,11 +83,6 @@ export default {
       );
       const data = await response.json();
       this.updateTime = data.next_update_time;
-
-      this.showSuccessMessage = response.ok;
-      if (response.status == 400) {
-        this.showFailureMessage = true;
-      }
     }
   }
 };
