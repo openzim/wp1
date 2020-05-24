@@ -7,6 +7,7 @@ cfgv==2.0.1
 chardet==3.0.4
 Click==7.0
 croniter==0.3.30
+fakeredis==1.4.1
 Flask==1.1.1
 Flask-Cors==3.0.8
 Flask-gzip==0.2
@@ -34,6 +35,7 @@ requests-oauthlib==1.0.0
 rq==1.1.0
 rq-dashboard==0.5.2
 six==1.12.0
+sortedcontainers==2.1.0
 supervisor==4.0.4
 toml==0.10.0
 urllib3==1.24.2
