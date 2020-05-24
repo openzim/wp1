@@ -1,5 +1,9 @@
+import logging
+
 import flask
 from redis import Redis
+
+logger = logging.getLogger(__name__)
 
 try:
   from wp1.credentials import CREDENTIALS, ENV
