@@ -23,9 +23,11 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def _get_queues(redis):
-  update_q = Queue('update', connection=redis)
-  upload_q = Queue('upload', connection=redis)
+def _get_queues(redis, manual=False):
+  prefix = 'manual-' if manual else ''
+
+  update_q = Queue('%supdate' % prefix, connection=redis)
+  upload_q = Queue('%supload' % prefix, connection=redis)
 
   return update_q, upload_q
 
@@ -49,8 +51,8 @@ def enqueue_multiple_projects(redis, project_names):
     enqueue_project(project_name, update_q, upload_q)
 
 
-def enqueue_single_project(redis, project_name):
-  update_q, upload_q = _get_queues(redis)
+def enqueue_single_project(redis, project_name, manual=False):
+  update_q, upload_q = _get_queues(redis, manual=manual)
 
   enqueue_project(project_name, update_q, upload_q)
 
@@ -75,6 +77,7 @@ def mark_project_manual_update_time(redis, project_name):
 
 
 def enqueue_project(project_name, update_q, upload_q):
+  logger.warning(update_q.name)
   logger.info('Enqueuing update %s', project_name)
   update_job = update_q.enqueue(logic_project.update_project_by_name,
                                 project_name,
