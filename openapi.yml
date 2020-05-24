@@ -118,7 +118,7 @@ paths:
         schema:
           type: string
   /projects/{projectId}/update:
-    get:
+    post:
       summary: 'Schedule a manual update of a project. This includes fetching new assessments from Wikipedia, and updating Wikipedia with assessment and log tables. This can only be done once per hour.'
       operationId: projectUpdate
       responses:
