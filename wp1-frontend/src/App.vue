@@ -19,7 +19,7 @@
           <li
             :class="
               'nav-item ' +
-                !(this.$route.path.startsWith('/update') ? 'active' : '')
+                (!this.$route.path.startsWith('/update') ? 'active' : '')
             "
           >
             <router-link class="nav-link" to="/">Projects</router-link>
