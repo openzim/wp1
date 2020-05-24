@@ -1,7 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 import logging
 
-from redis import Redis
 from rq import Queue
 
 from wp1 import constants
@@ -10,25 +9,29 @@ import wp1.logic.project as logic_project
 from wp1.wiki_db import connect as wiki_connect
 from wp1 import logs
 from wp1 import tables
+from wp1.timestamp import utcnow
 
 logger = logging.getLogger(__name__)
 
 try:
-  from wp1.credentials import ENV, CREDENTIALS
+  from wp1.credentials import ENV
 except ImportError:
   logger.exception('The file credentials.py must be populated manually in '
                    'order to connect to Redis')
-  CREDENTIALS = None
   ENV = None
 
 logger = logging.getLogger(__name__)
 
 
-def enqueue_all_projects():
-  creds = CREDENTIALS[ENV]['REDIS']
+def _get_queues(redis):
+  update_q = Queue('update', connection=redis)
+  upload_q = Queue('upload', connection=redis)
 
-  update_q = Queue('update', connection=Redis(**creds))
-  upload_q = Queue('upload', connection=Redis(**creds))
+  return update_q, upload_q
+
+
+def enqueue_all_projects(redis):
+  update_q, upload_q = _get_queues(redis)
 
   if (update_q.count > 0 or upload_q.count > 0):
     logger.error('Queues are not empty. Refusing to add more work.')
@@ -39,21 +42,15 @@ def enqueue_all_projects():
     enqueue_project(project_name, update_q, upload_q)
 
 
-def enqueue_multiple_projects(project_names):
-  creds = CREDENTIALS[ENV]['REDIS']
-
-  update_q = Queue('update', connection=Redis(**creds))
-  upload_q = Queue('upload', connection=Redis(**creds))
+def enqueue_multiple_projects(redis, project_names):
+  update_q, upload_q = _get_queues(redis)
 
   for project_name in project_names:
     enqueue_project(project_name, update_q, upload_q)
 
 
-def enqueue_single_project(project_name):
-  creds = CREDENTIALS[ENV]['REDIS']
-
-  update_q = Queue('update', connection=Redis(**creds))
-  upload_q = Queue('upload', connection=Redis(**creds))
+def enqueue_single_project(redis, project_name):
+  update_q, upload_q = _get_queues(redis)
 
   enqueue_project(project_name, update_q, upload_q)
 
@@ -62,24 +59,18 @@ def _manual_key(project_name):
   return b'manual_update_time:%s' % project_name
 
 
-def next_update_time(project_name):
-  creds = CREDENTIALS[ENV]['REDIS']
-  r = Redis(**creds)
-
+def next_update_time(redis, project_name):
   key = _manual_key(project_name)
-  ts = r.get(key)
+  ts = redis.get(key)
   if ts is not None:
     ts = ts.decode('utf-8')
   return ts
 
 
-def mark_project_manual_update_time(project_name):
-  creds = CREDENTIALS[ENV]['REDIS']
-  r = Redis(**creds)
-
+def mark_project_manual_update_time(redis, project_name):
   key = _manual_key(project_name)
-  ts = (datetime.utcnow() + timedelta(hours=1)).strftime('%Y-%m-%d %H:%M UTC')
-  r.setex(key, timedelta(hours=1), value=ts)
+  ts = (utcnow() + timedelta(hours=1)).strftime('%Y-%m-%d %H:%M UTC')
+  redis.setex(key, timedelta(hours=1), value=ts)
   return ts
 
 
