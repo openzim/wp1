@@ -1,9 +1,18 @@
 <template>
   <div>
-    <p>
-      A list of indexed projects is available using the autocomplete search box
-      below
+    <p v-if="!this.$route.path.startsWith('/update')">
+      Use the autocomplete search box below to search for a project in order to
+      display it's summary table.
     </p>
+    <div v-if="this.$route.path.startsWith('/update')">
+      <p>
+        To begin a manual update, use the autocomplete search box below to find
+        the project you wish to update.
+      </p>
+      <p>
+        <b>Note: This tool can only perform manual updates once per hour.</b>
+      </p>
+    </div>
     <div class="input-group">
       <input
         v-model="search"

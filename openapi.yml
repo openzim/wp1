@@ -117,6 +117,40 @@ paths:
         description: 'The importance class of articles, used to filter the results. Eg: "High-Class"'
         schema:
           type: string
+  /projects/{projectId}/update:
+    post:
+      summary: 'Schedule a manual update of a project. This includes fetching new assessments from Wikipedia, and updating Wikipedia with assessment and log tables. This can only be done once per hour.'
+      operationId: projectUpdate
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  next_update_time:
+                    type: string
+                    description: 'A string representing the UTC timestamp of when the next manual update can be performed.'
+        400:
+          description: 'The update could not be performed because it is too soon after another update. Check the next_update_time value in the returned response.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  next_update_time:
+                    type: string
+                    description: 'A string representing the UTC timestamp of when the next manual update can be performed.'
+        404:
+          description: 'No project with that projectId was found'
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        description: 'The name of the project, with spaces replaced by "_"'
+        schema:
+          type: string
 components:
   schemas:
     Project:
