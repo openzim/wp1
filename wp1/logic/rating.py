@@ -108,6 +108,15 @@ def get_project_rating_by_type(wp10db,
     return [Rating(**db_rating) for db_rating in cursor.fetchall()]
 
 
+def get_all_ratings_count_for_project(wp10db, project_name):
+  with wp10db.cursor() as cursor:
+    cursor.execute('SELECT COUNT(*) as count FROM ratings WHERE r_project = %s',
+                   (project_name,))
+
+    res = cursor.fetchone()
+    return res['count']
+
+
 def insert_or_update(wp10db, rating, kind):
   duplicate_clause = ''
   if kind == AssessmentKind.QUALITY:
