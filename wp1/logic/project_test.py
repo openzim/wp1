@@ -3,6 +3,7 @@ from unittest.mock import patch
 import time
 
 import attr
+import fakeredis
 
 from wp1.base_db_test import BaseWpOneDbTest, BaseWikiDbTest, BaseCombinedDbTest
 from wp1.conf import get_conf
@@ -531,7 +532,7 @@ class ArticlesTest(BaseCombinedDbTest):
                %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
                %(r_importance_timestamp)s)
         ''', attr.asdict(rating))
-      self.wp10db.commit()
+    self.wp10db.commit()
 
   def _insert_global_scores(self):
     article_scores = [(art[1],) + score for score, art in zip(
@@ -1391,3 +1392,33 @@ class UpdateProjectByNameTest(BaseCombinedDbTest):
     finally:
       self.wp10db.close = orig_wp10_close
       self.wikidb.close = orig_wiki_close
+
+
+class ProjectProgressTest(ArticlesTest):
+
+  def setUp(self):
+    super().setUp()
+    self._insert_pages(self.quality_pages)
+    self._insert_pages(self.importance_pages)
+    self._insert_ratings(zip(self.quality_pages[6:], self.importance_pages[4:]),
+                         0, 'both')
+    self.redis = fakeredis.FakeStrictRedis()
+
+  def test_initial_work_count(self):
+    logic_project.update_project_assessments(self.wikidb,
+                                             self.wp10db,
+                                             self.project, {},
+                                             redis=self.redis,
+                                             track_progress=True)
+    actual = self.redis.hget(b'progress:%s' % self.project.p_project, 'work')
+    self.assertEqual(b'32', actual)
+
+  def test_final_progress(self):
+    logic_project.update_project_assessments(self.wikidb,
+                                             self.wp10db,
+                                             self.project, {},
+                                             redis=self.redis,
+                                             track_progress=True)
+    actual = self.redis.hget(b'progress:%s' % self.project.p_project,
+                             'progress')
+    self.assertEqual(b'36', actual)

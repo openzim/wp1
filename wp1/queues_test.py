@@ -107,4 +107,4 @@ class QueuesTest(BaseRedisTest):
     expected = queues.mark_project_manual_update_time(self.redis,
                                                       b'Some_Project')
     actual = queues.next_update_time(self.redis, b'Some_Project')
-    self.assertEquals(expected, actual)
+    self.assertEqual(expected, actual)

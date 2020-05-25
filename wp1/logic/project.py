@@ -58,7 +58,7 @@ def update_global_project_count():
     wp10db.close()
 
 
-def update_project_by_name(project_name):
+def update_project_by_name(project_name, redis=None, track_progress=False):
   wp10db = wp10_connect()
   wikidb = wiki_connect()
 
@@ -73,7 +73,11 @@ def update_project_by_name(project_name):
     if not project:
       project = Project(p_project=project_name,
                         p_timestamp=GLOBAL_TIMESTAMP_WIKI)
-    update_project(wikidb, wp10db, project)
+    update_project(wikidb,
+                   wp10db,
+                   project,
+                   redis=redis,
+                   track_progress=track_progress)
   finally:
     wp10db.close()
     wikidb.close()
@@ -284,27 +288,75 @@ def update_project_categories_by_kind(wikidb, wp10db, project, extra, kind):
   return rating_to_category
 
 
-def update_project_assessments(wikidb, wp10db, project, extra_assessments):
+def _project_progress_key(project_name):
+  return b'progress:%s' % project_name
+
+
+def count_initial_work(redis, wp10db, project_name):
+  if redis is None:
+    logger.error(
+        'Attempt to track progress without specifying a Redis instance')
+    return
+
+  count = logic_rating.get_all_ratings_count_for_project(wp10db, project_name)
+  work = int(count * 1.8)
+
+  key = _project_progress_key(project_name)
+  redis.hset(key, 'work', work)
+  redis.hset(key, 'progress', 0)
+
+
+def increment_progress_count(redis, project_name):
+  if redis is None:
+    return
+
+  key = _project_progress_key(project_name)
+  redis.hincrby(key, 'progress', 1)
+
+
+def update_project_assessments(wikidb,
+                               wp10db,
+                               project,
+                               extra_assessments,
+                               redis=None,
+                               track_progress=False):
   old_ratings = {}
   for rating in logic_rating.get_project_ratings(wp10db, project.p_project):
     rating_ref = (str(rating.r_namespace).encode('utf-8') + b':' +
                   rating.r_article)
     old_ratings[rating_ref] = rating
 
+  if track_progress:
+    count_initial_work(redis, wp10db, project.p_project)
+
   seen = set()
   for kind in (AssessmentKind.QUALITY, AssessmentKind.IMPORTANCE):
     logger.debug('Updating %s assessments by %s',
                  project.p_project.decode('utf-8'), kind)
     new_ratings, rating_to_category = update_project_assessments_by_kind(
-        wikidb, wp10db, project, extra_assessments, kind, old_ratings, seen)
+        wikidb,
+        wp10db,
+        project,
+        extra_assessments,
+        kind,
+        old_ratings,
+        seen,
+        redis=redis,
+        track_progress=track_progress)
     store_new_ratings(wp10db, new_ratings, old_ratings, rating_to_category)
 
   process_unseen_articles(wikidb, wp10db, project, old_ratings, seen)
 
 
-def update_project_assessments_by_kind(wikidb, wp10db, project,
-                                       extra_assessments, kind, old_ratings,
-                                       seen):
+def update_project_assessments_by_kind(wikidb,
+                                       wp10db,
+                                       project,
+                                       extra_assessments,
+                                       kind,
+                                       old_ratings,
+                                       seen,
+                                       redis=None,
+                                       track_progress=False):
   if kind not in (AssessmentKind.QUALITY, AssessmentKind.IMPORTANCE):
     raise ValueError('Parameter "kind" was not one of QUALITY or IMPORTANCE')
 
@@ -357,6 +409,9 @@ def update_project_assessments_by_kind(wikidb, wp10db, project,
       if n >= MAX_ARTICLES_BEFORE_COMMIT:
         wp10db.ping()
         wp10db.commit()
+
+      if track_progress:
+        increment_progress_count(redis, project.p_project)
   logger.info('End, committing db')
   wp10db.ping()
   wp10db.commit()
@@ -532,10 +587,15 @@ def update_project_record(wp10db, project, metadata):
   insert_or_update(wp10db, project)
 
 
-def update_project(wikidb, wp10db, project):
+def update_project(wikidb, wp10db, project, redis=None, track_progress=False):
   extra_assessments = api_project.get_extra_assessments(project.p_project)
 
-  update_project_assessments(wikidb, wp10db, project, extra_assessments)
+  update_project_assessments(wikidb,
+                             wp10db,
+                             project,
+                             extra_assessments,
+                             redis=redis,
+                             track_progress=track_progress)
 
   cleanup_project(wp10db, project)
 
