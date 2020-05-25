@@ -109,8 +109,8 @@ def update(project_name):
   return flask.jsonify({'next_update_time': next_update_time})
 
 
-@projects.route('/<project_name>/nextUpdateTime')
-def next_update_time(project_name):
+@projects.route('/<project_name>/update/time')
+def update_time(project_name):
   wp10db = get_db('wp10db')
   project_name_bytes = project_name.encode('utf-8')
   project = logic_project.get_project_by_name(wp10db, project_name_bytes)

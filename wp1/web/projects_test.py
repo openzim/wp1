@@ -193,7 +193,7 @@ class ProjectTest(BaseWebTestcase):
   @patch('wp1.queues.utcnow', return_value=datetime(2018, 12, 25, 5, 55, 55))
   def test_update_time(self, patched_now):
     with self.override_db(self.app), self.app.test_client() as client:
-      rv = client.get('/v1/projects/Project 0/nextUpdateTime')
+      rv = client.get('/v1/projects/Project 0/update/time')
       self.assertEqual('200 OK', rv.status)
 
       data = json.loads(rv.data)
@@ -203,7 +203,7 @@ class ProjectTest(BaseWebTestcase):
   @patch('wp1.queues.utcnow', return_value=datetime(2018, 12, 25, 5, 55, 55))
   def test_update_time_404(self, patched_now):
     with self.override_db(self.app), self.app.test_client() as client:
-      rv = client.get('/v1/projects/Foo Bar Baz/nextUpdateTime')
+      rv = client.get('/v1/projects/Foo Bar Baz/update/time')
       self.assertEqual('404 NOT FOUND', rv.status)
 
   @patch('wp1.queues.ENV', Environment.PRODUCTION)
@@ -217,7 +217,7 @@ class ProjectTest(BaseWebTestcase):
         data = json.loads(rv.data)
         self.assertEqual('2018-12-25 06:55 UTC', data['next_update_time'])
 
-        rv = client.get('/v1/projects/Project 0/nextUpdateTime')
+        rv = client.get('/v1/projects/Project 0/update/time')
         self.assertEqual('200 OK', rv.status)
 
         data = json.loads(rv.data)

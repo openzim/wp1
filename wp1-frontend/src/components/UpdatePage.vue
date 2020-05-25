@@ -65,7 +65,7 @@ export default {
         this.$router.push({ path: `/update/${val}` });
       }
       const response = await fetch(
-        `${process.env.VUE_APP_API_URL}/projects/${this.currentProjectId}/nextUpdateTime`
+        `${process.env.VUE_APP_API_URL}/projects/${this.currentProjectId}/update/time`
       );
       const data = await response.json();
       this.updateTime = data.next_update_time;

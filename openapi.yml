@@ -151,7 +151,7 @@ paths:
         description: 'The name of the project, with spaces replaced by "_"'
         schema:
           type: string
-  /projects/{projectId}/nextUpdateTime:
+  /projects/{projectId}/update/time:
     get:
       summary: 'Get the time at which the given project can next be scheduled for a manual update, or null if the project is currently eligible for a manual update.'
       operationId: projectNextUpdateTime
