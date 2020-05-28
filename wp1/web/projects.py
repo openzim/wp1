@@ -121,3 +121,28 @@ def update_time(project_name):
 
   update_time = queues.next_update_time(redis, project_name_bytes)
   return flask.jsonify({'next_update_time': update_time}), 200
+
+
+@projects.route('/<project_name>/update/progress')
+def update_progress(project_name):
+  wp10db = get_db('wp10db')
+  project_name_bytes = project_name.encode('utf-8')
+  project = logic_project.get_project_by_name(wp10db, project_name_bytes)
+  if project is None:
+    return flask.abort(404)
+
+  redis = get_redis()
+
+  progress, work = logic_project.get_project_progress(redis, project_name_bytes)
+  if progress is None or work is None:
+    job = None
+  else:
+    try:
+      progress = int(progress.decode('utf-8'))
+      work = int(work.decode('utf-8'))
+    except ValueError:
+      # Either progress or work were not ints
+      pass
+    job = {'progress': progress, 'total': work}
+
+  return flask.jsonify({'queue': None, 'job': job})

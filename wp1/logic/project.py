@@ -15,6 +15,7 @@ from wp1.models.wiki.page import Page
 from wp1.models.wp10.category import Category
 from wp1.models.wp10.project import Project
 from wp1.models.wp10.rating import Rating
+from wp1.redis_db import connect as redis_connect
 from wp1 import tables
 from wp1.wp10_db import connect as wp10_connect
 from wp1.wiki_db import connect as wiki_connect
@@ -58,9 +59,10 @@ def update_global_project_count():
     wp10db.close()
 
 
-def update_project_by_name(project_name, redis=None, track_progress=False):
+def update_project_by_name(project_name, track_progress=False):
   wp10db = wp10_connect()
   wikidb = wiki_connect()
+  redis = redis_connect()
 
   logging.basicConfig(level=logging.INFO)
   logging.getLogger('mwclient').setLevel(logging.CRITICAL)
@@ -292,6 +294,15 @@ def _project_progress_key(project_name):
   return b'progress:%s' % project_name
 
 
+def get_project_progress(redis, project_name):
+  key = _project_progress_key(project_name)
+
+  if not redis.exists(key):
+    return None, None
+
+  return redis.hmget(key, ('progress', 'work'))
+
+
 def count_initial_work(redis, wp10db, project_name):
   if redis is None:
     logger.error(
@@ -299,11 +310,11 @@ def count_initial_work(redis, wp10db, project_name):
     return
 
   count = logic_rating.get_all_ratings_count_for_project(wp10db, project_name)
-  work = int(count * 1.8)
+  # Not all articles have both quality and importance.
+  work = int(count * 1.9)
 
   key = _project_progress_key(project_name)
-  redis.hset(key, 'work', work)
-  redis.hset(key, 'progress', 0)
+  redis.hmset(key, {'work': work, 'progress': 0})
 
 
 def increment_progress_count(redis, project_name):
