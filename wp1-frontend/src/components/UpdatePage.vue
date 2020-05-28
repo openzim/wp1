@@ -30,6 +30,23 @@
             <b>{{ updateTime }}</b
             >.
           </p>
+          <div>
+            <p>
+              <b>Progress:</b>
+              {{ getProgressString() }}
+            </p>
+
+            <div v-if="!jobComplete && !jobNotStarted" class="progress">
+              <div
+                class="progress-bar"
+                role="progressbar"
+                :style="{ width: progressWidth + '%' }"
+                :aria-valuenow="progressCurrent"
+                aria-valuemin="0"
+                :aria-valuemax="progressTotal"
+              ></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -48,7 +65,11 @@ export default {
   data: function() {
     return {
       currentProject: null,
-      updateTime: null
+      updateTime: null,
+      pollingId: 0,
+      progressCurrent: null,
+      progressTotal: null,
+      jobStatusEnum: null
     };
   },
   computed: {
@@ -57,6 +78,18 @@ export default {
         return null;
       }
       return this.currentProject.replace(/ /g, '_');
+    },
+    jobComplete: function() {
+      return this.progressCurrent >= this.progressTotal;
+    },
+    jobNotStarted: function() {
+      return this.progressCurrent === null || this.progressTotal === null;
+    },
+    progressWidth: function() {
+      if (this.progressCurrent !== null && this.progressTotal !== null) {
+        return ((this.progressCurrent * 100) / this.progressTotal).toFixed(4);
+      }
+      return null;
     }
   },
   watch: {
@@ -69,6 +102,13 @@ export default {
       );
       const data = await response.json();
       this.updateTime = data.next_update_time;
+    },
+    updateTime: function(val) {
+      if (val !== null) {
+        this.startProgressPolling();
+      } else {
+        this.stopProgressPolling();
+      }
     }
   },
   beforeRouteUpdate(to, from, next) {
@@ -83,6 +123,36 @@ export default {
       );
       const data = await response.json();
       this.updateTime = data.next_update_time;
+    },
+    pollForProgress: async function() {
+      const response = await fetch(
+        `${process.env.VUE_APP_API_URL}/projects/${this.currentProjectId}/update/progress`
+      );
+      const data = await response.json();
+      this.progressCurrent = data.job.progress || null;
+      this.progressTotal = data.job.total || null;
+      if (this.jobComplete) {
+        this.stopProgressPolling();
+      }
+    },
+    getProgressString: function() {
+      if (this.jobNotStarted) {
+        return "Your job has been scheduled, but hasn't started yet.";
+      }
+      if (this.jobComplete) {
+        return (
+          'Your job is complete! You must wait up to an hour to start ' +
+          'a new manual update.'
+        );
+      }
+      return 'Your job is running, track its progress below.';
+    },
+    startProgressPolling: function() {
+      this.pollForProgress();
+      this.pollingId = setInterval(() => this.pollForProgress(), 2000);
+    },
+    stopProgressPolling: function() {
+      clearInterval(this.pollingId);
     }
   }
 };

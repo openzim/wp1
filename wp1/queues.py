@@ -54,7 +54,7 @@ def enqueue_multiple_projects(redis, project_names):
 def enqueue_single_project(redis, project_name, manual=False):
   update_q, upload_q = _get_queues(redis, manual=manual)
 
-  enqueue_project(project_name, update_q, upload_q)
+  enqueue_project(project_name, update_q, upload_q, track_progress=manual)
 
 
 def _manual_key(project_name):
@@ -76,11 +76,12 @@ def mark_project_manual_update_time(redis, project_name):
   return ts
 
 
-def enqueue_project(project_name, update_q, upload_q):
+def enqueue_project(project_name, update_q, upload_q, track_progress=False):
   logger.warning(update_q.name)
   logger.info('Enqueuing update %s', project_name)
   update_job = update_q.enqueue(logic_project.update_project_by_name,
                                 project_name,
+                                track_progress=track_progress,
                                 job_timeout=constants.JOB_TIMEOUT)
   if ENV == Environment.PRODUCTION:
     logger.info('Enqueuing upload (dependent) %s', project_name)
