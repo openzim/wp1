@@ -142,7 +142,9 @@ def update_progress(project_name):
     try:
       progress = int(progress.decode('utf-8'))
       work = int(work.decode('utf-8'))
-    except:
+    except AttributeError, ValueError:
+      # AttributeError: The values are not bytes and can't be decoded.
+      # ValueError: The values are not castable to int.
       progress = 0
       work = 0
     job = {'progress': progress, 'total': work}
