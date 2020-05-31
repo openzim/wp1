@@ -268,3 +268,16 @@ class ProjectTest(BaseWebTestcase):
       data = json.loads(rv.data)
       self.assertEqual(expected_total, data['job']['total'])
       self.assertEqual(expected_progress, data['job']['progress'])
+
+  @patch('wp1.queues.ENV', Environment.PRODUCTION)
+  @patch('wp1.web.projects.logic_project.get_project_progress')
+  def test_update_progress_progress_not_ints(self, patched_progress):
+    patched_progress.return_value = (b'a', b'b')
+
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get('/v1/projects/Project 0/update/progress')
+      self.assertEqual('200 OK', rv.status)
+
+      data = json.loads(rv.data)
+      self.assertEqual(0, data['job']['progress'])
+      self.assertEqual(0, data['job']['total'])

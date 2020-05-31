@@ -114,3 +114,24 @@ class QueuesTest(BaseRedisTest):
                                                       b'Some_Project')
     actual = queues.next_update_time(self.redis, b'Some_Project')
     self.assertEqual(expected, actual)
+
+  def test_get_project_queue_status_no_job(self):
+    key = queues._update_job_status_key(b'Water')
+    self.redis.hset(key, 'job_id', '1234-56')
+
+    actual = queues.get_project_queue_status(self.redis, b'Water')
+    self.assertIsNone(actual)
+
+  @patch('wp1.queues.Job.fetch')
+  def test_get_project_queue_status_job_finished(self, patched_fetch):
+    job = MagicMock()
+    patched_fetch.return_value = job
+    expected_end = '2012-12-25'
+    job.get_status.return_value = 'finished'
+    job.ended_at = expected_end
+
+    key = queues._update_job_status_key(b'Water')
+    self.redis.hset(key, 'job_id', '1234-56')
+
+    actual = queues.get_project_queue_status(self.redis, b'Water')
+    self.assertEqual({'status': 'finished', 'ended_at': expected_end}, actual)
