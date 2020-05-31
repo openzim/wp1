@@ -175,6 +175,46 @@ paths:
         description: 'The name of the project, with spaces replaced by "_"'
         schema:
           type: string
+  /projects/{projectId}/update/progress:
+    get:
+      summary: 'Get the status/progress of a manual update job. If there is no manual update job, or if its status has expired, the "queue" and "job" keys will have null values.'
+      operationId: projectUpdateProgress
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  queue:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        description: 'One of "queued", "started" or "finished" based on the state of the manual update in the job queue'
+                      ended_at:
+                        type: string
+                        description: 'A datetime string representing when this job finished. Only available if the status key has a value of "finished"'
+                  job:
+                    type: object
+                    properties:
+                      progress:
+                        type: integer
+                        description: 'An abstract number representing the amount of progress that has been made on a manual update job'
+                      total:
+                        type: integer
+                        description: 'An abstract number representing the total amount of progress that must be made for this job to be considered complete. Note that it is considered reasonable for the progress number to reach a value higher than this total.'
+                    description: 'A string representing the UTC timestamp of when the next manual update can be performed.'
+        404:
+          description: 'No project with that projectId was found'
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        description: 'The name of the project, with spaces replaced by "_"'
+        schema:
+          type: string
 components:
   schemas:
     Project:
