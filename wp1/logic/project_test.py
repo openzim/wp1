@@ -1354,12 +1354,14 @@ class UpdateProjectByNameTest(BaseCombinedDbTest):
     super().setUp()
     self._insert_project()
 
+  @patch('wp1.logic.project.redis_connect')
   @patch('wp1.logic.project.wiki_connect')
   @patch('wp1.logic.project.wp10_connect')
   @patch('wp1.logic.project.update_project')
   def test_calls_update_project_with_existing(self, patched_update_project,
                                               patched_wp10_connect,
-                                              patched_wiki_connect):
+                                              patched_wiki_connect,
+                                              patched_redis_connect):
     orig_wp10_close = self.wp10db.close
     orig_wiki_close = self.wikidb.close
     try:
@@ -1367,6 +1369,7 @@ class UpdateProjectByNameTest(BaseCombinedDbTest):
       self.wikidb.close = lambda: True
       patched_wp10_connect.return_value = self.wp10db
       patched_wiki_connect.return_value = self.wikidb
+      patched_redis_connect.return_value = fakeredis.FakeStrictRedis()
 
       logic_project.update_project_by_name(b'Test Project')
       patched_update_project.assert_called_once()
@@ -1374,11 +1377,12 @@ class UpdateProjectByNameTest(BaseCombinedDbTest):
       self.wp10db.close = orig_wp10_close
       self.wikidb.close = orig_wiki_close
 
+  @patch('wp1.logic.project.redis_connect')
   @patch('wp1.logic.project.wiki_connect')
   @patch('wp1.logic.project.wp10_connect')
   @patch('wp1.logic.project.update_project')
   def test_creates_new(self, patched_update_project, patched_wp10_connect,
-                       patched_wiki_connect):
+                       patched_wiki_connect, patched_redis_connect):
     orig_wp10_close = self.wp10db.close
     orig_wiki_close = self.wikidb.close
     try:
@@ -1386,6 +1390,7 @@ class UpdateProjectByNameTest(BaseCombinedDbTest):
       self.wikidb.close = lambda: True
       patched_wp10_connect.return_value = self.wp10db
       patched_wiki_connect.return_value = self.wikidb
+      patched_redis_connect.return_value = fakeredis.FakeStrictRedis()
 
       logic_project.update_project_by_name(b'Foo New Project')
       patched_update_project.assert_called_once()
@@ -1411,7 +1416,7 @@ class ProjectProgressTest(ArticlesTest):
                                              redis=self.redis,
                                              track_progress=True)
     actual = self.redis.hget(b'progress:%s' % self.project.p_project, 'work')
-    self.assertEqual(b'32', actual)
+    self.assertEqual(b'34', actual)
 
   def test_final_progress(self):
     logic_project.update_project_assessments(self.wikidb,
