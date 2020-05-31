@@ -19,7 +19,8 @@ class QueuesTest(BaseRedisTest):
 
     update_q.enqueue.assert_called_once_with(patched_project_fn,
                                              b'Water',
-                                             job_timeout=constants.JOB_TIMEOUT)
+                                             job_timeout=constants.JOB_TIMEOUT,
+                                             track_progress=False)
     upload_q.enqueue.assert_not_called()
 
   @patch('wp1.queues.ENV', Environment.PRODUCTION)
@@ -30,7 +31,8 @@ class QueuesTest(BaseRedisTest):
                                       patched_project_fn):
     update_q = MagicMock()
     upload_q = MagicMock()
-    update_job = 'UPDATE JOB'
+    update_job = MagicMock()
+    update_job.id = '1234-567'
     update_q.enqueue.return_value = update_job
     project_name = b'Water'
 
@@ -38,7 +40,8 @@ class QueuesTest(BaseRedisTest):
 
     update_q.enqueue.assert_called_once_with(patched_project_fn,
                                              project_name,
-                                             job_timeout=constants.JOB_TIMEOUT)
+                                             job_timeout=constants.JOB_TIMEOUT,
+                                             track_progress=False)
     upload_q.enqueue.assert_any_call(patched_tables_fn,
                                      project_name,
                                      depends_on=update_job,
@@ -59,8 +62,11 @@ class QueuesTest(BaseRedisTest):
 
     queues.enqueue_single_project(self.redis, b'Water')
 
-    patched_enqueue_project.assert_called_once_with(b'Water', update_q,
-                                                    upload_q)
+    patched_enqueue_project.assert_called_once_with(b'Water',
+                                                    update_q,
+                                                    upload_q,
+                                                    redis=self.redis,
+                                                    track_progress=False)
 
   @patch('wp1.queues.ENV', Environment.DEVELOPMENT)
   @patch('wp1.queues.Queue')
