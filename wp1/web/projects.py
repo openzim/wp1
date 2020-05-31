@@ -134,6 +134,8 @@ def update_progress(project_name):
   redis = get_redis()
 
   progress, work = logic_project.get_project_progress(redis, project_name_bytes)
+  queue_status = queues.get_project_queue_status(redis, project_name_bytes)
+
   if progress is None or work is None:
     job = None
   else:
@@ -145,4 +147,4 @@ def update_progress(project_name):
       pass
     job = {'progress': progress, 'total': work}
 
-  return flask.jsonify({'queue': None, 'job': job})
+  return flask.jsonify({'queue': queue_status, 'job': job})
