@@ -29,5 +29,6 @@ LOG_NS = 4
 MAX_LOGS_PER_DAY = 100000
 
 WIKI_BASE = 'https://en.wikipedia.org/wiki/'
+FRONTEND_WIKI_BASE = 'https://en.wikipedia.org/w/'
 
 PAGE_SIZE = 100
