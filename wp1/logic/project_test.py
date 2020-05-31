@@ -1,5 +1,5 @@
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import time
 
 import attr
@@ -1373,6 +1373,30 @@ class UpdateProjectByNameTest(BaseCombinedDbTest):
 
       logic_project.update_project_by_name(b'Test Project')
       patched_update_project.assert_called_once()
+    finally:
+      self.wp10db.close = orig_wp10_close
+      self.wikidb.close = orig_wiki_close
+
+  @patch('wp1.logic.project.redis_connect')
+  @patch('wp1.logic.project.wiki_connect')
+  @patch('wp1.logic.project.wp10_connect')
+  @patch('wp1.logic.project.update_project')
+  def test_calls_update_project_manual(self, patched_update_project,
+                                       patched_wp10_connect,
+                                       patched_wiki_connect,
+                                       patched_redis_connect):
+    orig_wp10_close = self.wp10db.close
+    orig_wiki_close = self.wikidb.close
+    try:
+      self.wp10db.close = lambda: True
+      self.wikidb.close = lambda: True
+      redis_mock = MagicMock()
+      patched_wp10_connect.return_value = self.wp10db
+      patched_wiki_connect.return_value = self.wikidb
+      patched_redis_connect.return_value = redis_mock
+
+      logic_project.update_project_by_name(b'Test Project', track_progress=True)
+      redis_mock.expire.assert_called_once()
     finally:
       self.wp10db.close = orig_wp10_close
       self.wikidb.close = orig_wiki_close

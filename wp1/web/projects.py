@@ -142,9 +142,9 @@ def update_progress(project_name):
     try:
       progress = int(progress.decode('utf-8'))
       work = int(work.decode('utf-8'))
-    except ValueError:
-      # Either progress or work were not ints
-      pass
+    except:
+      progress = 0
+      work = 0
     job = {'progress': progress, 'total': work}
 
   return flask.jsonify({'queue': queue_status, 'job': job})
