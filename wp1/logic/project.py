@@ -80,6 +80,9 @@ def update_project_by_name(project_name, track_progress=False):
                    project,
                    redis=redis,
                    track_progress=track_progress)
+
+    if track_progress:
+      redis.expire(_project_progress_key(project_name), 600)
   finally:
     wp10db.close()
     wikidb.close()
@@ -294,6 +297,11 @@ def _project_progress_key(project_name):
   return b'progress:%s' % project_name
 
 
+def clear_project_progress(redis, project_name):
+  key = _project_progress_key(project_name)
+  redis.delete(key)
+
+
 def get_project_progress(redis, project_name):
   key = _project_progress_key(project_name)
 
@@ -314,7 +322,8 @@ def count_initial_work(redis, wp10db, project_name):
   work = int(count * 1.9)
 
   key = _project_progress_key(project_name)
-  redis.hmset(key, {'work': work, 'progress': 0})
+  redis.hset(key, 'work', work)
+  redis.hset(key, 'progress', 0)
 
 
 def increment_progress_count(redis, project_name):

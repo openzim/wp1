@@ -80,10 +80,16 @@ export default {
       return this.currentProject.replace(/ /g, '_');
     },
     jobComplete: function() {
-      return this.progressCurrent >= this.progressTotal;
+      return this.jobStatusEnum === 'finished';
+    },
+    jobFinishingUp: function() {
+      return (
+        this.jobStatusEnum !== 'finished' &&
+        this.progressCurrent >= this.progressTotal
+      );
     },
     jobNotStarted: function() {
-      return this.progressCurrent === null || this.progressTotal === null;
+      return this.jobStatusEnum === 'queued';
     },
     progressWidth: function() {
       if (this.progressCurrent !== null && this.progressTotal !== null) {
@@ -102,6 +108,9 @@ export default {
       );
       const data = await response.json();
       this.updateTime = data.next_update_time;
+      this.progressCurrent = null;
+      this.progressTotal = null;
+      this.jobStatusEnum = null;
     },
     updateTime: function(val) {
       if (val !== null) {
@@ -131,6 +140,7 @@ export default {
       const data = await response.json();
       this.progressCurrent = data.job.progress || null;
       this.progressTotal = data.job.total || null;
+      this.jobStatusEnum = data.queue.status || null;
       if (this.jobComplete) {
         this.stopProgressPolling();
       }
@@ -144,6 +154,9 @@ export default {
           'Your job is complete! You must wait up to an hour to start ' +
           'a new manual update.'
         );
+      }
+      if (this.jobFinishingUp) {
+        return 'Your job is almost finished, just wrapping up some tasks.';
       }
       return 'Your job is running, track its progress below.';
     },

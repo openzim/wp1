@@ -2,6 +2,7 @@ from datetime import datetime
 import json
 from unittest.mock import patch
 
+from wp1.logic import project as logic_project
 from wp1.base_db_test import get_test_connect_creds
 from wp1.web.app import create_app
 from wp1.web.base_web_testcase import BaseWebTestcase
@@ -222,3 +223,48 @@ class ProjectTest(BaseWebTestcase):
 
         data = json.loads(rv.data)
         self.assertEqual('2018-12-25 06:55 UTC', data['next_update_time'])
+
+  def test_update_progress_empty(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get('/v1/projects/Project 0/update/progress')
+      self.assertEqual('200 OK', rv.status)
+
+      data = json.loads(rv.data)
+      self.assertIsNone(data['queue'])
+      self.assertIsNone(data['job'])
+
+  @patch('wp1.queues.ENV', Environment.PRODUCTION)
+  def test_update_progress(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.post('/v1/projects/Project 0/update')
+      self.assertEqual('200 OK', rv.status)
+
+      rv = client.get('/v1/projects/Project 0/update/progress')
+      self.assertEqual('200 OK', rv.status)
+
+      data = json.loads(rv.data)
+      self.assertIsNone(data['job'])
+      self.assertEqual({'status': 'queued'}, data['queue'])
+
+  @patch('wp1.queues.ENV', Environment.PRODUCTION)
+  def test_update_progress_404(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get('/v1/projects/Foo Bar Baz/update/progress')
+      self.assertEqual('404 NOT FOUND', rv.status)
+
+  @patch('wp1.queues.ENV', Environment.PRODUCTION)
+  def test_update_progress_return_job_progress(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      expected_total = 100
+      expected_progress = 25
+
+      key = logic_project._project_progress_key(b'Project 0')
+      self.redis.hset(key, 'work', expected_total)
+      self.redis.hset(key, 'progress', expected_progress)
+
+      rv = client.get('/v1/projects/Project 0/update/progress')
+      self.assertEqual('200 OK', rv.status)
+
+      data = json.loads(rv.data)
+      self.assertEqual(expected_total, data['job']['total'])
+      self.assertEqual(expected_progress, data['job']['progress'])
