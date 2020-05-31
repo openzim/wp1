@@ -103,8 +103,7 @@ def get_project_queue_status(redis, project_name):
   status = job.get_status()
   if status == 'finished':
     return {'status': status, 'ended_at': job.ended_at}
-  else:
-    return {'status': status}
+  return {'status': status}
 
 
 def set_project_update_job_id(redis, project_name, job_id):
