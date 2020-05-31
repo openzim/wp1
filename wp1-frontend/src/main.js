@@ -30,6 +30,12 @@ const routes = [
   {
     path: '/update/:projectName',
     component: UpdatePage,
+    props: route => ({
+      incomingSearch: route.params.projectName,
+      updateTime: route.query.updateTime,
+      showSuccessMessage: route.query.success == 1,
+      showFailureMessage: route.query.failure == 1
+    }),
     meta: {
       title: route =>
         BASE_TITLE + ' - Manual Update - ' + route.params.projectName

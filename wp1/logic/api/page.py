@@ -28,7 +28,7 @@ def get_redirect(title_with_ns):
       retries -= 1
 
   if res is None:
-    logger.warn('Error contacting API, returning None')
+    logger.warning('Error contacting API, returning None')
     return None
 
   if ('query' not in res or 'redirects' not in res['query'] or
@@ -60,7 +60,7 @@ def get_moves(title_with_ns):
       retries -= 1
 
   if res is None:
-    logger.warn('Error contacting API, returning None')
+    logger.warning('Error contacting API, returning None')
     return None
 
   ans = []
@@ -86,6 +86,6 @@ def get_moves(title_with_ns):
       retries -= 1
 
   if retries == 0:
-    logger.warn('Error contacting continuation API, returning None')
+    logger.warning('Error contacting continuation API, returning None')
 
   return ans or None

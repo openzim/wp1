@@ -90,7 +90,7 @@ def articles(project_name):
 
 
 @projects.route('/<project_name>/update', methods=['POST'])
-def udpate(project_name):
+def update(project_name):
   wp10db = get_db('wp10db')
   project_name_bytes = project_name.encode('utf-8')
   project = logic_project.get_project_by_name(wp10db, project_name_bytes)
@@ -107,3 +107,46 @@ def udpate(project_name):
   next_update_time = queues.mark_project_manual_update_time(
       redis, project_name_bytes)
   return flask.jsonify({'next_update_time': next_update_time})
+
+
+@projects.route('/<project_name>/update/time')
+def update_time(project_name):
+  wp10db = get_db('wp10db')
+  project_name_bytes = project_name.encode('utf-8')
+  project = logic_project.get_project_by_name(wp10db, project_name_bytes)
+  if project is None:
+    return flask.abort(404)
+
+  redis = get_redis()
+
+  update_time = queues.next_update_time(redis, project_name_bytes)
+  return flask.jsonify({'next_update_time': update_time}), 200
+
+
+@projects.route('/<project_name>/update/progress')
+def update_progress(project_name):
+  wp10db = get_db('wp10db')
+  project_name_bytes = project_name.encode('utf-8')
+  project = logic_project.get_project_by_name(wp10db, project_name_bytes)
+  if project is None:
+    return flask.abort(404)
+
+  redis = get_redis()
+
+  progress, work = logic_project.get_project_progress(redis, project_name_bytes)
+  queue_status = queues.get_project_queue_status(redis, project_name_bytes)
+
+  if progress is None or work is None:
+    job = None
+  else:
+    try:
+      progress = int(progress.decode('utf-8'))
+      work = int(work.decode('utf-8'))
+    except (AttributeError, ValueError):
+      # AttributeError: The values are not bytes and can't be decoded.
+      # ValueError: The values are not castable to int.
+      progress = 0
+      work = 0
+    job = {'progress': progress, 'total': work}
+
+  return flask.jsonify({'queue': queue_status, 'job': job})
