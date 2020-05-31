@@ -19,7 +19,8 @@ class QueuesTest(BaseRedisTest):
 
     update_q.enqueue.assert_called_once_with(patched_project_fn,
                                              b'Water',
-                                             job_timeout=constants.JOB_TIMEOUT)
+                                             job_timeout=constants.JOB_TIMEOUT,
+                                             track_progress=False)
     upload_q.enqueue.assert_not_called()
 
   @patch('wp1.queues.ENV', Environment.PRODUCTION)
@@ -30,7 +31,8 @@ class QueuesTest(BaseRedisTest):
                                       patched_project_fn):
     update_q = MagicMock()
     upload_q = MagicMock()
-    update_job = 'UPDATE JOB'
+    update_job = MagicMock()
+    update_job.id = '1234-567'
     update_q.enqueue.return_value = update_job
     project_name = b'Water'
 
@@ -38,7 +40,8 @@ class QueuesTest(BaseRedisTest):
 
     update_q.enqueue.assert_called_once_with(patched_project_fn,
                                              project_name,
-                                             job_timeout=constants.JOB_TIMEOUT)
+                                             job_timeout=constants.JOB_TIMEOUT,
+                                             track_progress=False)
     upload_q.enqueue.assert_any_call(patched_tables_fn,
                                      project_name,
                                      depends_on=update_job,
@@ -59,8 +62,11 @@ class QueuesTest(BaseRedisTest):
 
     queues.enqueue_single_project(self.redis, b'Water')
 
-    patched_enqueue_project.assert_called_once_with(b'Water', update_q,
-                                                    upload_q)
+    patched_enqueue_project.assert_called_once_with(b'Water',
+                                                    update_q,
+                                                    upload_q,
+                                                    redis=self.redis,
+                                                    track_progress=False)
 
   @patch('wp1.queues.ENV', Environment.DEVELOPMENT)
   @patch('wp1.queues.Queue')
@@ -107,4 +113,25 @@ class QueuesTest(BaseRedisTest):
     expected = queues.mark_project_manual_update_time(self.redis,
                                                       b'Some_Project')
     actual = queues.next_update_time(self.redis, b'Some_Project')
-    self.assertEquals(expected, actual)
+    self.assertEqual(expected, actual)
+
+  def test_get_project_queue_status_no_job(self):
+    key = queues._update_job_status_key(b'Water')
+    self.redis.hset(key, 'job_id', '1234-56')
+
+    actual = queues.get_project_queue_status(self.redis, b'Water')
+    self.assertIsNone(actual)
+
+  @patch('wp1.queues.Job.fetch')
+  def test_get_project_queue_status_job_finished(self, patched_fetch):
+    job = MagicMock()
+    patched_fetch.return_value = job
+    expected_end = '2012-12-25'
+    job.get_status.return_value = 'finished'
+    job.ended_at = expected_end
+
+    key = queues._update_job_status_key(b'Water')
+    self.redis.hset(key, 'job_id', '1234-56')
+
+    actual = queues.get_project_queue_status(self.redis, b'Water')
+    self.assertEqual({'status': 'finished', 'ended_at': expected_end}, actual)

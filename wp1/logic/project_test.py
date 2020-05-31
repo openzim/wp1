@@ -1,8 +1,9 @@
 from datetime import datetime
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import time
 
 import attr
+import fakeredis
 
 from wp1.base_db_test import BaseWpOneDbTest, BaseWikiDbTest, BaseCombinedDbTest
 from wp1.conf import get_conf
@@ -531,7 +532,7 @@ class ArticlesTest(BaseCombinedDbTest):
                %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
                %(r_importance_timestamp)s)
         ''', attr.asdict(rating))
-      self.wp10db.commit()
+    self.wp10db.commit()
 
   def _insert_global_scores(self):
     article_scores = [(art[1],) + score for score, art in zip(
@@ -1353,12 +1354,14 @@ class UpdateProjectByNameTest(BaseCombinedDbTest):
     super().setUp()
     self._insert_project()
 
+  @patch('wp1.logic.project.redis_connect')
   @patch('wp1.logic.project.wiki_connect')
   @patch('wp1.logic.project.wp10_connect')
   @patch('wp1.logic.project.update_project')
   def test_calls_update_project_with_existing(self, patched_update_project,
                                               patched_wp10_connect,
-                                              patched_wiki_connect):
+                                              patched_wiki_connect,
+                                              patched_redis_connect):
     orig_wp10_close = self.wp10db.close
     orig_wiki_close = self.wikidb.close
     try:
@@ -1366,6 +1369,7 @@ class UpdateProjectByNameTest(BaseCombinedDbTest):
       self.wikidb.close = lambda: True
       patched_wp10_connect.return_value = self.wp10db
       patched_wiki_connect.return_value = self.wikidb
+      patched_redis_connect.return_value = fakeredis.FakeStrictRedis()
 
       logic_project.update_project_by_name(b'Test Project')
       patched_update_project.assert_called_once()
@@ -1373,11 +1377,36 @@ class UpdateProjectByNameTest(BaseCombinedDbTest):
       self.wp10db.close = orig_wp10_close
       self.wikidb.close = orig_wiki_close
 
+  @patch('wp1.logic.project.redis_connect')
+  @patch('wp1.logic.project.wiki_connect')
+  @patch('wp1.logic.project.wp10_connect')
+  @patch('wp1.logic.project.update_project')
+  def test_calls_update_project_manual(self, patched_update_project,
+                                       patched_wp10_connect,
+                                       patched_wiki_connect,
+                                       patched_redis_connect):
+    orig_wp10_close = self.wp10db.close
+    orig_wiki_close = self.wikidb.close
+    try:
+      self.wp10db.close = lambda: True
+      self.wikidb.close = lambda: True
+      redis_mock = MagicMock()
+      patched_wp10_connect.return_value = self.wp10db
+      patched_wiki_connect.return_value = self.wikidb
+      patched_redis_connect.return_value = redis_mock
+
+      logic_project.update_project_by_name(b'Test Project', track_progress=True)
+      redis_mock.expire.assert_called_once()
+    finally:
+      self.wp10db.close = orig_wp10_close
+      self.wikidb.close = orig_wiki_close
+
+  @patch('wp1.logic.project.redis_connect')
   @patch('wp1.logic.project.wiki_connect')
   @patch('wp1.logic.project.wp10_connect')
   @patch('wp1.logic.project.update_project')
   def test_creates_new(self, patched_update_project, patched_wp10_connect,
-                       patched_wiki_connect):
+                       patched_wiki_connect, patched_redis_connect):
     orig_wp10_close = self.wp10db.close
     orig_wiki_close = self.wikidb.close
     try:
@@ -1385,9 +1414,40 @@ class UpdateProjectByNameTest(BaseCombinedDbTest):
       self.wikidb.close = lambda: True
       patched_wp10_connect.return_value = self.wp10db
       patched_wiki_connect.return_value = self.wikidb
+      patched_redis_connect.return_value = fakeredis.FakeStrictRedis()
 
       logic_project.update_project_by_name(b'Foo New Project')
       patched_update_project.assert_called_once()
     finally:
       self.wp10db.close = orig_wp10_close
       self.wikidb.close = orig_wiki_close
+
+
+class ProjectProgressTest(ArticlesTest):
+
+  def setUp(self):
+    super().setUp()
+    self._insert_pages(self.quality_pages)
+    self._insert_pages(self.importance_pages)
+    self._insert_ratings(zip(self.quality_pages[6:], self.importance_pages[4:]),
+                         0, 'both')
+    self.redis = fakeredis.FakeStrictRedis()
+
+  def test_initial_work_count(self):
+    logic_project.update_project_assessments(self.wikidb,
+                                             self.wp10db,
+                                             self.project, {},
+                                             redis=self.redis,
+                                             track_progress=True)
+    actual = self.redis.hget(b'progress:%s' % self.project.p_project, 'work')
+    self.assertEqual(b'34', actual)
+
+  def test_final_progress(self):
+    logic_project.update_project_assessments(self.wikidb,
+                                             self.wp10db,
+                                             self.project, {},
+                                             redis=self.redis,
+                                             track_progress=True)
+    actual = self.redis.hget(b'progress:%s' % self.project.p_project,
+                             'progress')
+    self.assertEqual(b'36', actual)
