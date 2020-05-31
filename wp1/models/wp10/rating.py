@@ -3,7 +3,7 @@ import logging
 
 import attr
 
-from wp1.constants import TS_FORMAT, WIKI_BASE
+from wp1.constants import TS_FORMAT, FRONTEND_WIKI_BASE
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ class Rating:
         'article':
             article_name,
         'article_link':
-            WIKI_BASE + 'index.php?title=' + article_name,
+            FRONTEND_WIKI_BASE + 'index.php?title=' + article_name,
         'quality':
             self._web_label(self.r_quality.decode('utf-8')),
         'quality_updated':
