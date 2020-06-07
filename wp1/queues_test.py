@@ -17,10 +17,12 @@ class QueuesTest(BaseRedisTest):
 
     queues.enqueue_project(b'Water', update_q, upload_q)
 
-    update_q.enqueue.assert_called_once_with(patched_project_fn,
-                                             b'Water',
-                                             job_timeout=constants.JOB_TIMEOUT,
-                                             track_progress=False)
+    update_q.enqueue.assert_called_once_with(
+        patched_project_fn,
+        b'Water',
+        job_timeout=constants.JOB_TIMEOUT,
+        failure_ttl=constants.JOB_FAILURE_TTL,
+        track_progress=False)
     upload_q.enqueue.assert_not_called()
 
   @patch('wp1.queues.ENV', Environment.PRODUCTION)
@@ -38,18 +40,22 @@ class QueuesTest(BaseRedisTest):
 
     queues.enqueue_project(project_name, update_q, upload_q)
 
-    update_q.enqueue.assert_called_once_with(patched_project_fn,
-                                             project_name,
-                                             job_timeout=constants.JOB_TIMEOUT,
-                                             track_progress=False)
+    update_q.enqueue.assert_called_once_with(
+        patched_project_fn,
+        project_name,
+        job_timeout=constants.JOB_TIMEOUT,
+        failure_ttl=constants.JOB_FAILURE_TTL,
+        track_progress=False)
     upload_q.enqueue.assert_any_call(patched_tables_fn,
                                      project_name,
                                      depends_on=update_job,
-                                     job_timeout=constants.JOB_TIMEOUT)
+                                     job_timeout=constants.JOB_TIMEOUT,
+                                     failure_ttl=constants.JOB_FAILURE_TTL)
     upload_q.enqueue.assert_any_call(patched_log_fn,
                                      project_name,
                                      depends_on=update_job,
-                                     job_timeout=constants.JOB_TIMEOUT)
+                                     job_timeout=constants.JOB_TIMEOUT,
+                                     failure_ttl=constants.JOB_FAILURE_TTL)
 
   @patch('wp1.queues.ENV', Environment.DEVELOPMENT)
   @patch('wp1.queues.Queue')
