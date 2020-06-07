@@ -84,12 +84,13 @@ export default {
     },
     jobFinishingUp: function() {
       return (
+        this.jobStatusEnum !== null &&
         this.jobStatusEnum !== 'finished' &&
         this.progressCurrent >= this.progressTotal
       );
     },
     jobNotStarted: function() {
-      return this.jobStatusEnum === 'queued';
+      return this.jobStatusEnum === null || this.jobStatusEnum === 'queued';
     },
     progressWidth: function() {
       if (this.progressCurrent !== null && this.progressTotal !== null) {
@@ -100,6 +101,7 @@ export default {
   },
   watch: {
     currentProject: async function(val) {
+      this.stopProgressPolling();
       if (val !== this.$route.params.projectName) {
         this.$router.push({ path: `/update/${val}` });
       }
@@ -122,6 +124,11 @@ export default {
   },
   beforeRouteUpdate(to, from, next) {
     this.incomingSearch = to.params.projectName;
+    this.stopProgressPolling();
+    next();
+  },
+  beforeRouteLeave: function(to, from, next) {
+    this.stopProgressPolling();
     next();
   },
   methods: {
@@ -138,9 +145,9 @@ export default {
         `${process.env.VUE_APP_API_URL}/projects/${this.currentProjectId}/update/progress`
       );
       const data = await response.json();
-      this.progressCurrent = data.job.progress || null;
-      this.progressTotal = data.job.total || null;
-      this.jobStatusEnum = data.queue.status || null;
+      this.progressCurrent = (data.job && data.job.progress) || null;
+      this.progressTotal = (data.job && data.job.total) || null;
+      this.jobStatusEnum = (data.queue && data.queue.status) || null;
       if (this.jobComplete) {
         this.stopProgressPolling();
       }
