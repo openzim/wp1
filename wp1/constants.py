@@ -24,6 +24,7 @@ LIST_URL = 'https://tools.wmflabs.org/enwp10/cgi-bin/list2.fcgi'
 
 # Timeout for the rq worker jobs, in seconds
 JOB_TIMEOUT = 60 * 60 * 2  # 2 hours
+JOB_FAILURE_TTL = 60 * 60 * 24 * 7  # 7 days
 
 LOG_NS = 4
 MAX_LOGS_PER_DAY = 100000

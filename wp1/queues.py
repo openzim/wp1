@@ -127,19 +127,22 @@ def enqueue_project(project_name,
   update_job = update_q.enqueue(logic_project.update_project_by_name,
                                 project_name,
                                 track_progress=track_progress,
-                                job_timeout=constants.JOB_TIMEOUT)
+                                job_timeout=constants.JOB_TIMEOUT,
+                                failure_ttl=constants.JOB_FAILURE_TTL)
   set_project_update_job_id(redis, project_name, update_job.id)
   if ENV == Environment.PRODUCTION:
     logger.info('Enqueuing upload (dependent) %s', project_name)
     upload_q.enqueue(tables.upload_project_table,
                      project_name,
                      depends_on=update_job,
-                     job_timeout=constants.JOB_TIMEOUT)
+                     job_timeout=constants.JOB_TIMEOUT,
+                     failure_ttl=constants.JOB_FAILURE_TTL)
     logger.info('Enqueuing log upload (dependent) %s', project_name)
     upload_q.enqueue(logs.update_log_page_for_project,
                      project_name,
                      depends_on=update_job,
-                     job_timeout=constants.JOB_TIMEOUT)
+                     job_timeout=constants.JOB_TIMEOUT,
+                     failure_ttl=constants.JOB_FAILURE_TTL)
   else:
     logger.warning('Skipping enqueuing the upload job because environment is '
                    'not PRODUCTION')
