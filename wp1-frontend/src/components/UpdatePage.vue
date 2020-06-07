@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="row">
-      <div class="col-6">
+      <div class="col-xlg-6">
         <Autocomplete
           :incomingSearch="incomingSearch || $route.params.projectName"
           v-on:select-project="currentProject = $event"
@@ -9,7 +9,7 @@
       </div>
     </div>
     <div class="row">
-      <div class="col-6">
+      <div class="col-xlg-6">
         <div v-if="this.$route.params.projectName && !updateTime">
           <label class="mt-2" for="confirm"
             >Proceed with manual update of
