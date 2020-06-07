@@ -1,5 +1,15 @@
 <template>
   <div>
+    <div class="alert alert-info my-0" role="alert">
+      Welcome to the latest version of the WP 1.0 tool! If you need a feature
+      that is only in the old tool, it's still running
+      <a href="https://tools.wmflabs.org/enwp10/cgi-bin/pindex.fcgi">here</a>.
+      Please provide all feedback and feature requests for this tool on
+      <a
+        href="https://en.wikipedia.org/wiki/Wikipedia_talk:Version_1.0_Editorial_Team/Index"
+        >English Wikipedia</a
+      >.
+    </div>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
       <a class="navbar-brand" href="#">Wikipedia 1.0 Server</a>
       <button
