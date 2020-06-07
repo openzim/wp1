@@ -92,12 +92,14 @@ def get_project_queue_status(redis, project_name):
   job_id = redis.hmget(key, 'job_id')
 
   if not job_id or not job_id[0]:
+    logger.info('No redis data for key: %s', key)
     return None
 
   job_id = job_id[0].decode('utf-8')
   try:
     job = Job.fetch(job_id, connection=redis)
   except rq.exceptions.NoSuchJobError:
+    logger.info('No such job with id: %s', job_id)
     return None
 
   status = job.get_status()
@@ -121,7 +123,6 @@ def enqueue_project(project_name,
                     upload_q,
                     redis=None,
                     track_progress=False):
-  logger.warning(update_q.name)
   logger.info('Enqueuing update %s', project_name)
   update_job = update_q.enqueue(logic_project.update_project_by_name,
                                 project_name,
