@@ -83,6 +83,7 @@ export default {
   },
   watch: {
     projectId: async function(projectId) {
+      window.console.log('watching projectId:', projectId);
       if (!projectId) {
         this.tableData = null;
         return;
@@ -128,6 +129,8 @@ export default {
       finishedRequest = true;
       if (response.ok) {
         this.articleData = await response.json();
+      } else {
+        this.articleData = null;
       }
       this.loading = false;
     },
