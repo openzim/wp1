@@ -55,6 +55,19 @@ class ProjectTest(BaseWebTestcase):
       data = json.loads(rv.data)
       self.assertEqual(101, len(data))
 
+  def test_individual_project(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get('/v1/projects/Project 0')
+      self.assertEqual('200 OK', rv.status)
+
+      data = json.loads(rv.data)
+      self.assertEqual(2, len(data))
+
+  def test_individual_project_404(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get('/v1/projects/Fee Fa Fo Project')
+      self.assertEqual('404 NOT FOUND', rv.status)
+
   def test_count(self):
     with self.override_db(self.app), self.app.test_client() as client:
       rv = client.get('/v1/projects/count')

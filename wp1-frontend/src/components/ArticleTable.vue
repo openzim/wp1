@@ -1,49 +1,67 @@
 <template>
   <div>
-    <p v-if="articleData" class="pages-cont">
-      {{ articleData.pagination.total }} articles
+    <div v-if="loading">
+      <pulse-loader
+        class="loader"
+        :loading="loading"
+        :color="loaderColor"
+        :size="loaderSize"
+      ></pulse-loader>
+    </div>
+    <div v-else>
+      <p v-if="articleData" class="pages-cont">
+        {{ articleData.pagination.total }} articles
 
-      <span v-if="articleData.pagination.total_pages > 1">
-        - Pages:
-        <span
-          v-for="i in Math.min(articleData.pagination.total_pages, 15)"
-          :key="i"
-          :class="
-            'page-indicator' +
-              (i === Number(page) || (i === 1 && !page) ? '' : ' link')
-          "
-          ><a v-on:click="updatePage(i)">{{ i }}</a></span
-        >
-        <span v-if="articleData.pagination.total_pages > 15">
-          ...(more results truncated)
+        <span v-if="articleData.pagination.total_pages > 1">
+          - Pages:
+          <span
+            v-for="i in Math.min(articleData.pagination.total_pages, 15)"
+            :key="i"
+            :class="
+              'page-indicator' +
+                (i === Number(page) || (i === 1 && !page) ? '' : ' link')
+            "
+            ><a v-on:click="updatePage(i)">{{ i }}</a></span
+          >
+          <span v-if="articleData.pagination.total_pages > 15">
+            ...(more results truncated)
+          </span>
         </span>
-      </span>
-    </p>
+      </p>
 
-    <hr />
+      <hr />
 
-    <table>
-      <tr v-for="row in tableData" :key="row.article">
-        <td>
-          <a :href="row.article_link">{{ row.article }}</a>
-        </td>
-        <td :class="row.importance">{{ row.importance }}</td>
-        <td>{{ row.importance_updated }}</td>
-        <td :class="row.quality">{{ row.quality }}</td>
-        <td>{{ row.quality_updated }}</td>
-      </tr>
-    </table>
+      <table>
+        <tr v-for="row in tableData" :key="row.article">
+          <td>
+            <a :href="row.article_link">{{ row.article }}</a>
+          </td>
+          <td :class="row.importance">{{ row.importance }}</td>
+          <td>{{ row.importance_updated }}</td>
+          <td :class="row.quality">{{ row.quality }}</td>
+          <td>{{ row.quality_updated }}</td>
+        </tr>
+      </table>
 
-    <h2 v-if="!tableData.length">No results to display</h2>
+      <h2 v-if="!tableData.length">No results to display</h2>
+    </div>
   </div>
 </template>
 
 <script>
+import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
+
 export default {
   name: 'articletable',
+  components: {
+    PulseLoader
+  },
   data: function() {
     return {
-      articleData: null
+      articleData: null,
+      loading: false,
+      loaderColor: '#007bff',
+      loaderSize: '1rem'
     };
   },
   props: {
@@ -60,8 +78,12 @@ export default {
       return this.articleData['articles'];
     }
   },
+  created: function() {
+    this.updateTable();
+  },
   watch: {
     projectId: async function(projectId) {
+      window.console.log('watching projectId:', projectId);
       if (!projectId) {
         this.tableData = null;
         return;
@@ -97,8 +119,20 @@ export default {
         url.searchParams.append(key, params[key])
       );
 
+      let finishedRequest = false;
+      setTimeout(() => {
+        if (!finishedRequest) {
+          this.loading = true;
+        }
+      }, 100);
       const response = await fetch(url);
-      this.articleData = await response.json();
+      finishedRequest = true;
+      if (response.ok) {
+        this.articleData = await response.json();
+      } else {
+        this.articleData = null;
+      }
+      this.loading = false;
     },
     updatePage: function(page) {
       if (page === this.page) {
@@ -111,7 +145,7 @@ export default {
         query: {
           quality: this.quality,
           importance: this.importance,
-          page: page
+          page: page.toString()
         }
       });
     }
@@ -154,5 +188,10 @@ tr:nth-child(even) {
 .page-indicator.link {
   color: #007bff;
   cursor: pointer;
+}
+
+.loader {
+  margin: auto;
+  text-align: center;
 }
 </style>

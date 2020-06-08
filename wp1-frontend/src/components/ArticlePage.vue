@@ -1,15 +1,10 @@
 <template>
   <div>
     <div class="row">
-      <div class="col-xlg-6">
-        <Autocomplete
-          :incomingSearch="incomingSearch || $route.params.projectName"
-          v-on:select-project="currentProject = $event"
-        ></Autocomplete>
+      <div class="col" v-if="notFound">
+        <h4>The project with the name {{ currentProject }} was not found.</h4>
       </div>
-    </div>
-    <div class="row">
-      <div class="col">
+      <div class="col" v-else>
         <h4>
           {{ currentProject }} articles
           <span v-if="$route.query.importance || $route.query.quality">
@@ -40,19 +35,17 @@
 </template>
 
 <script>
-import Autocomplete from './Autocomplete.vue';
 import ArticleTable from './ArticleTable.vue';
 
 export default {
   name: 'articlepage',
   components: {
-    Autocomplete,
     ArticleTable
   },
+  props: ['currentProject'],
   data: function() {
     return {
-      currentProject: null,
-      incomingSearch: null
+      notFound: false
     };
   },
   computed: {
@@ -63,27 +56,29 @@ export default {
       return this.currentProject.replace(/ /g, '_');
     }
   },
+  beforeRouteUpdate(to, from, next) {
+    this.checkIfProjectExists(to.params.projectName.replace(/ /g, '_'));
+    window.console.log(
+      'before route update',
+      this.notFound,
+      this.currentProject,
+      this.currentProjectId
+    );
+    next();
+  },
+  created: function() {
+    this.checkIfProjectExists(this.currentProjectId);
+  },
   methods: {
     displayClass: function(cls) {
       return cls.split('-')[0];
+    },
+    checkIfProjectExists: async function(projectId) {
+      const response = await fetch(
+        `${process.env.VUE_APP_API_URL}/projects/${projectId}`
+      );
+      this.notFound = response.status === 404;
     }
-  },
-  watch: {
-    currentProject: function(val) {
-      if (val !== this.$route.params.projectName) {
-        this.$router.push({
-          path: `/project/${val}/articles`,
-          query: {
-            importance: this.$route.query.importance,
-            quality: this.$route.query.quality
-          }
-        });
-      }
-    }
-  },
-  beforeRouteUpdate(to, from, next) {
-    this.incomingSearch = to.params.projectName;
-    next();
   }
 };
 </script>
