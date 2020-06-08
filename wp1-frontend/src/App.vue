@@ -48,24 +48,14 @@
       </div>
     </nav>
     <div id="app" class="container">
-      <div class="row">
-        <div class="col">
-          <Stats></Stats>
-        </div>
-      </div>
       <router-view></router-view>
     </div>
   </div>
 </template>
 
 <script>
-import Stats from './components/Stats.vue';
-
 export default {
-  name: 'app',
-  components: {
-    Stats
-  }
+  name: 'app'
 };
 </script>
 

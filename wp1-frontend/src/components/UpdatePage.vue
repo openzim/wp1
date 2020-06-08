@@ -10,10 +10,9 @@
     </div>
     <div class="row">
       <div class="col-xlg-6">
-        <div v-if="this.$route.params.projectName && !updateTime">
+        <div v-if="currentProject && !updateTime">
           <label class="mt-2" for="confirm"
-            >Proceed with manual update of
-            <b>{{ this.$route.params.projectName }}</b
+            >Proceed with manual update of <b>{{ currentProject }}</b
             >?</label
           >
           <div class="input-group">
@@ -22,7 +21,7 @@
             </button>
           </div>
         </div>
-        <div v-if="this.$route.params.projectName && updateTime">
+        <div v-if="currentProject && updateTime">
           <p>
             Manual update of <b>{{ this.$route.params.projectName }}</b> has
             been scheduled. It can take anywhere from 2 - 200 minutes, depending
@@ -123,7 +122,6 @@ export default {
     }
   },
   beforeRouteUpdate(to, from, next) {
-    this.incomingSearch = to.params.projectName;
     this.stopProgressPolling();
     next();
   },
