@@ -1,11 +1,28 @@
 {% macro format(value, project=None, quality=None, importance=None) -%}
   {%- if create_link -%}
-    {%- call bold(quality, importance) -%}
-      [{{LIST_URL}}?run=yes
-      {%- if project %}&projecta={{project.decode('utf-8')|urlencode}}{% endif -%}
-      {%- if importance %}&importance={{importance.decode('utf-8')|urlencode}}{% endif -%}
-      {%- if quality %}&quality={{quality.decode('utf-8')|urlencode}}{% endif %} {{ value|commas }}]
-    {%- endcall -%}
+    {%- if link_to_v2 -%}
+      {%- call bold(quality, importance) -%}
+        {%- if project -%}
+          [{{LIST_V2_URL}}/{{project.decode('utf-8')|urlencode}}/articles
+          {%- if quality %}?quality={{quality.decode('utf-8')|urlencode}}
+            {%- if importance %}&{% endif -%}
+          {%- elif importance -%}
+            ?
+          {%- endif -%}
+          {%- if importance -%}
+            importance={{importance.decode('utf-8')|urlencode}} {{ value|commas }}]
+          {%- else %} {{ value|commas }}]
+          {%- endif -%}
+        {%- endif -%}
+      {%- endcall -%}
+    {%- else -%}
+      {%- call bold(quality, importance) -%}
+        [{{LIST_URL}}?run=yes
+        {%- if project %}&projecta={{project.decode('utf-8')|urlencode}}{% endif -%}
+        {%- if importance %}&importance={{importance.decode('utf-8')|urlencode}}{% endif -%}
+        {%- if quality %}&quality={{quality.decode('utf-8')|urlencode}}{% endif %} {{ value|commas }}]
+      {%- endcall -%}
+    {%- endif -%}
   {%- else -%}
     {%- call bold(quality, importance) %}{{ value|commas }}{% endcall -%}
   {%- endif -%}
