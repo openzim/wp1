@@ -28,6 +28,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Project'
+        404:
+          description: 'No project with that projectId was found'
   /projects/count:
     get:
       summary: 'Count of the total number of projects'
@@ -42,6 +44,24 @@ paths:
                 properties:
                   count:
                     type: integer
+  /projects/{projectId}/:
+    get:
+      summary: 'Retrieve the entry for a specific project'
+      operationId: getProject
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        description: 'The name of the project, with spaces replaced by "_"'
+        schema:
+          type: string
   /projects/{projectId}/table:
     get:
       summary: 'Data for building a summary table for a given project'

@@ -1,7 +1,10 @@
 <template>
   <div>
     <div class="row">
-      <div class="col">
+      <div class="col" v-if="notFound">
+        <h4>The project with the name {{ currentProject }} was not found.</h4>
+      </div>
+      <div class="col" v-else>
         <h4>
           {{ currentProject }} articles
           <span v-if="$route.query.importance || $route.query.quality">
@@ -40,12 +43,25 @@ export default {
     ArticleTable
   },
   props: ['currentProject'],
+  data: function() {
+    return {
+      notFound: false
+    };
+  },
   computed: {
     currentProjectId: function() {
       if (!this.currentProject) {
         return null;
       }
       return this.currentProject.replace(/ /g, '_');
+    }
+  },
+  created: async function() {
+    const response = await fetch(
+      `${process.env.VUE_APP_API_URL}/projects/${this.currentProjectId}`
+    );
+    if (response.status === 404) {
+      this.notFound = true;
     }
   },
   methods: {
