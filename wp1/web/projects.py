@@ -26,6 +26,17 @@ def count():
   return flask.jsonify({'count': count})
 
 
+@projects.route('/<project_name>')
+def project(project_name):
+  wp10db = get_db('wp10db')
+  project_name_bytes = project_name.encode('utf-8')
+  project = logic_project.get_project_by_name(wp10db, project_name_bytes)
+  if project is None:
+    return flask.abort(404)
+
+  return flask.jsonify(project.to_web_dict())
+
+
 @projects.route('/<project_name>/table')
 def table(project_name):
   wp10db = get_db('wp10db')
