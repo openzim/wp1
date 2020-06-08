@@ -38,7 +38,7 @@ def _project_rating_query(project_name,
 
   if importance is None:
     query += (' JOIN global_rankings gri ON gri.gr_type = "importance" AND'
-              ' gri.gr_rating = r_importance')
+              ' (gri.gr_rating = r_importance OR r_importance = "NotA-Class")')
   if quality is None:
     query += (' JOIN global_rankings grq ON grq.gr_type = "quality" AND'
               ' grq.gr_rating = r_quality')
