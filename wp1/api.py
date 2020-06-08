@@ -8,8 +8,8 @@ _ua = 'WP1.0Bot/3.0. Run by User:Audiodude. Using mwclient/0.9.1'
 
 def get_credentials():
   try:
-    from wp1.credentials import API_CREDS
-    return API_CREDS
+    from wp1.credentials import ENV, CREDENTIALS
+    return CREDENTIALS[ENV]['API']
   except ImportError:
     # No credentials, probably in development environment.
     pass
