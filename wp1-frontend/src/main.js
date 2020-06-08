@@ -48,6 +48,9 @@ const routes = [
   {
     path: '/project/:projectName/articles',
     component: ArticlePage,
+    props: route => ({
+      currentProject: route.params.projectName
+    }),
     meta: {
       title: route =>
         BASE_TITLE + ' - ' + route.params.projectName + ' articles'
