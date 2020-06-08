@@ -56,30 +56,28 @@ export default {
       return this.currentProject.replace(/ /g, '_');
     }
   },
-  created: async function() {
-    const response = await fetch(
-      `${process.env.VUE_APP_API_URL}/projects/${this.currentProjectId}`
+  beforeRouteUpdate(to, from, next) {
+    this.checkIfProjectExists(to.params.projectName.replace(/ /g, '_'));
+    window.console.log(
+      'before route update',
+      this.notFound,
+      this.currentProject,
+      this.currentProjectId
     );
-    if (response.status === 404) {
-      this.notFound = true;
-    }
+    next();
+  },
+  created: function() {
+    this.checkIfProjectExists(this.currentProjectId);
   },
   methods: {
     displayClass: function(cls) {
       return cls.split('-')[0];
-    }
-  },
-  watch: {
-    currentProject: function(val) {
-      if (val !== this.$route.params.projectName) {
-        this.$router.push({
-          path: `/project/${val}/articles`,
-          query: {
-            importance: this.$route.query.importance,
-            quality: this.$route.query.quality
-          }
-        });
-      }
+    },
+    checkIfProjectExists: async function(projectId) {
+      const response = await fetch(
+        `${process.env.VUE_APP_API_URL}/projects/${projectId}`
+      );
+      this.notFound = response.status === 404;
     }
   }
 };
