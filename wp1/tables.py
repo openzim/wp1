@@ -8,7 +8,7 @@ from redis import Redis
 
 from wp1 import api
 from wp1.conf import get_conf
-from wp1.constants import LIST_URL, WIKI_BASE
+from wp1.constants import LIST_URL, LIST_V2_URL, WIKI_BASE
 from wp1.models.wp10.category import Category
 from wp1.models.wp10.rating import Rating
 from wp1.templates import env as jinja_env
@@ -342,6 +342,7 @@ def generate_project_table_data(wp10db, project_name):
             'project': project_name,
             'project_display': project_display,
             'create_link': True,
+            'link_to_v2': True,
             'title': title,
             'center_table': False,
         })
@@ -408,5 +409,6 @@ def create_wikicode(table_data):
   template = jinja_env.get_template('table.jinja2')
   display = {
       'LIST_URL': LIST_URL,
+      'LIST_V2_URL': LIST_V2_URL,
   }
   return template.render({**table_data, **display})
