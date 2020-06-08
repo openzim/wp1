@@ -57,8 +57,8 @@ export default {
     };
   },
   created: async function() {
-    this.updateFromIncomingSearch(this.incomingSearch);
     this.projects = await this.getProjects();
+    this.updateFromIncomingSearch(this.incomingSearch);
   },
   methods: {
     filterResults: function() {
@@ -68,7 +68,7 @@ export default {
       }
       this.results = this.projects.filter(project => {
         return (
-          project.name.toLowerCase().indexOf(this.search.toLowerCase()) > -1
+          project.name.toLowerCase().indexOf(this.search.toLowerCase()) !== -1
         );
       });
     },
@@ -128,9 +128,15 @@ export default {
     },
     updateFromIncomingSearch: function(val) {
       if (!!val && val !== this.search) {
-        this.search = val;
-        this.onChange();
-        this.makeSelection();
+        const found = this.projects.filter(project => {
+          return project.name == val;
+        });
+        window.console.log(found);
+        if (found.length === 1) {
+          this.search = val;
+          this.onChange();
+          this.makeSelection();
+        }
       }
     }
   },

@@ -1,14 +1,6 @@
 <template>
   <div>
     <div class="row">
-      <div class="col-xlg-6">
-        <Autocomplete
-          :incomingSearch="incomingSearch || $route.params.projectName"
-          v-on:select-project="currentProject = $event"
-        ></Autocomplete>
-      </div>
-    </div>
-    <div class="row">
       <div class="col">
         <h4>
           {{ currentProject }} articles
@@ -40,21 +32,14 @@
 </template>
 
 <script>
-import Autocomplete from './Autocomplete.vue';
 import ArticleTable from './ArticleTable.vue';
 
 export default {
   name: 'articlepage',
   components: {
-    Autocomplete,
     ArticleTable
   },
-  data: function() {
-    return {
-      currentProject: null,
-      incomingSearch: null
-    };
-  },
+  props: ['currentProject'],
   computed: {
     currentProjectId: function() {
       if (!this.currentProject) {
@@ -80,10 +65,6 @@ export default {
         });
       }
     }
-  },
-  beforeRouteUpdate(to, from, next) {
-    this.incomingSearch = to.params.projectName;
-    next();
   }
 };
 </script>
