@@ -3,6 +3,7 @@ import logging
 from redis import Redis
 from rq import Queue
 
+from wp1.environment import Environment
 from wp1 import constants
 from wp1 import tables
 import wp1.logic.project as logic_project
