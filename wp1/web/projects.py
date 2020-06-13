@@ -95,7 +95,7 @@ def articles(project_name):
           'total_pages': total_pages,
           'total': total
       },
-      'articles': list(article.to_web_dict() for article in articles),
+      'articles': list(article.to_web_dict(wp10db) for article in articles),
   }
   return flask.jsonify(output)
 
