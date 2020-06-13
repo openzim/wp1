@@ -188,7 +188,6 @@ export default {
 }
 
 table {
-  background: #eee;
   border-collapse: collapse;
   border: 1px solid #aaa;
   margin: auto;
@@ -202,6 +201,10 @@ th {
   text-align: center;
 }
 
+th a {
+  color: #000;
+}
+
 td {
   border: 1px solid #aaa;
   padding-left: 0.5rem;
@@ -209,7 +212,7 @@ td {
 }
 
 .table-link {
-  color: #007bff;
+  color: #006fe6;
   cursor: pointer;
 }
 
