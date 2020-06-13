@@ -11,7 +11,7 @@
       >.
     </div>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
-      <a class="navbar-brand" href="#">Wikipedia 1.0 Server</a>
+      <a class="navbar-brand" href="/">Wikipedia 1.0 Server</a>
       <button
         class="navbar-toggler"
         type="button"
