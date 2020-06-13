@@ -1,9 +1,11 @@
 from datetime import datetime
 import logging
+import urllib.parse
 
 import attr
 
 from wp1.constants import TS_FORMAT, FRONTEND_WIKI_BASE
+import wp1.logic.util as logic_util
 
 logger = logging.getLogger(__name__)
 
@@ -53,13 +55,22 @@ class Rating:
   def _web_label(self, cls):
     return cls.split('-')[0]
 
-  def to_web_dict(self):
+  def _make_article_link(self, wp10db, article_name):
+    namespace_prefix = ''
+    if self.r_namespace != 0:
+      base_prefix = logic_util.int_to_ns(wp10db)[self.r_namespace]
+      namespace_prefix = base_prefix.decode('utf-8') + ':'
+
+    return '%sindex.php?title=%s%s' % (FRONTEND_WIKI_BASE, namespace_prefix,
+                                       urllib.parse.quote(article_name))
+
+  def to_web_dict(self, wp10db):
     article_name = self.r_article.decode('utf-8').replace('_', ' ')
     return {
         'article':
             article_name,
         'article_link':
-            FRONTEND_WIKI_BASE + 'index.php?title=' + article_name,
+            self._make_article_link(wp10db, article_name),
         'quality':
             self._web_label(self.r_quality.decode('utf-8')),
         'quality_updated':
