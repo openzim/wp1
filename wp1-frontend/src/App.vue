@@ -60,6 +60,17 @@ export default {
 </script>
 
 <style>
+a {
+  color: #0063cc;
+}
+
+.alert-info {
+}
+
+.btn-primary {
+  background-color: #0071eb;
+}
+
 .row {
   margin-top: 10px;
 }
