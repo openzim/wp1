@@ -63,8 +63,11 @@ export default {
 a {
   color: #0063cc;
 }
-
-.alert-info {
+a:hover {
+  color: #000 !important;
+}
+a:visited {
+  color: #000 !important;
 }
 
 .btn-primary {
