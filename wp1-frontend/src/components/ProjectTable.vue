@@ -87,15 +87,23 @@
         </th>
         <td v-for="col in tableData.ordered_cols" :key="col">
           <span v-if="tableData.data[row][col]">
-            <a @click="setRoute(row, col)" class="table-link">{{
-              tableData.data[row][col]
-            }}</a>
+            <router-link
+              :to="{
+                path: `/project/${currentProject}/articles`,
+                query: { quality: row, importance: col }
+              }"
+              >{{ tableData.data[row][col] }}</router-link
+            >
           </span>
         </td>
         <td>
-          <a @click="setRoute(row)" class="table-link">{{
-            tableData.row_totals[row]
-          }}</a>
+          <router-link
+            :to="{
+              path: `/project/${currentProject}/articles`,
+              query: { quality: row }
+            }"
+            >{{ tableData.row_totals[row] }}</router-link
+          >
         </td>
       </tr>
 
@@ -103,9 +111,13 @@
       <tr>
         <td>Total</td>
         <td v-for="col in tableData.ordered_cols" :key="col">
-          <a @click="setRoute(undefined, col)" class="table-link">{{
-            tableData.col_totals[col]
-          }}</a>
+          <router-link
+            :to="{
+              path: `/project/${currentProject}/articles`,
+              query: { importance: col }
+            }"
+            >{{ tableData.col_totals[col] }}</router-link
+          >
         </td>
         <td>
           {{ tableData.total }}
@@ -141,7 +153,7 @@ export default {
       if (!this.projectId) {
         return null;
       }
-      return this.projectId.replace(/_/g, '_');
+      return this.projectId.replace(/_/g, ' ');
     }
   },
   watch: {
@@ -167,13 +179,6 @@ export default {
         return cls.text;
       }
       return cls;
-    },
-    setRoute: function(quality, importance) {
-      const projectName = this.projectId.replace(/_/g, ' ');
-      this.$router.push({
-        path: `/project/${projectName}/articles`,
-        query: { quality: quality, importance: importance }
-      });
     }
   }
 };

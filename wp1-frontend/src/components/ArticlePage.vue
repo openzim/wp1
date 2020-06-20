@@ -58,12 +58,6 @@ export default {
   },
   beforeRouteUpdate(to, from, next) {
     this.checkIfProjectExists(to.params.projectName.replace(/ /g, '_'));
-    window.console.log(
-      'before route update',
-      this.notFound,
-      this.currentProject,
-      this.currentProjectId
-    );
     next();
   },
   created: function() {
