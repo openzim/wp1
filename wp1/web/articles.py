@@ -14,5 +14,5 @@ def redirect(name, timestamp):
   if revid:
     return flask.redirect('%sindex.php?title=%s&oldid=%s' %
                           (FRONTEND_WIKI_BASE, name, revid))
-  else:
-    return flask.abort(404)
+
+  return flask.abort(404)
