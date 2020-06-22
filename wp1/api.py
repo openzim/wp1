@@ -61,3 +61,11 @@ def save_page(page, wikicode, msg):
     page = get_page(page.name)
     page.save(wikicode, msg)
   return True
+
+
+def get_revision_id_by_timestamp(page, timestamp):
+  try:
+    rev = next(page.revisions(start=timestamp, limit=1, prop='ids'))
+  except StopIteration:
+    return None
+  return rev['revid']
