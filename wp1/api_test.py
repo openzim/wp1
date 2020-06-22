@@ -59,7 +59,7 @@ class ApiTest(unittest.TestCase):
     self.page.revisions.return_value = iter(({'revid': 10},))
     actual = wp1.api.get_revision_id_by_timestamp(self.page,
                                                   '2015-05-05T15:55:55Z')
-    self.assertEquals(10, actual)
+    self.assertEqual(10, actual)
 
   def test_get_revision_id_absent(self):
     self.page.revisions.return_value = iter(())
