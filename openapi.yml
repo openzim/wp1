@@ -15,6 +15,28 @@ info:
     name: 'GPL v2 or greater'
     url: 'https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html'
 paths:
+  /articles/{articleName}/{timestamp}/redirect:
+    get:
+      summary: 'Redirect to the given Wikipedia article at the revision indicated by the timestamp'
+      operationId: articleRedirect
+      responses:
+        302:
+          description: 'Successful operation'
+        404:
+          description: 'The article with that name could not be found'
+      parameters:
+        - name: timestamp
+          in: path
+          required: true
+          description: 'A timestamp like 2020-06-22T10:55:10Z which represents the time of the revision to be redirected to'
+          schema:
+            type: string
+        - name: articleName
+          in: path
+          required: true
+          description: 'The name of the article, with namespace if required, as it appears on Wikipedia'
+          schema:
+            type: string
   /projects:
     get:
       summary: 'List all projects that the WP 1.0 bot updates'
@@ -250,10 +272,19 @@ components:
       properties:
         article:
           type: string
-          description: 'The name of the article, as it appears on Wikipedia'
+          description: 'The name of the article, as it appears on Wikipedia, with its namespace prefix included'
+        article_talk:
+          type: string
+          description: 'The name of fthe article, with the appropriate talk namespace prepended'
         article_link:
           type: string
           description: 'A link to the article on Wikipedia'
+        article_talk_link:
+          type: string
+          description: 'A link to the talk page o the article on Wikipedia'
+        article_history_link:
+          type: string
+          description: 'A link to the history listing of the article on Wikipedia'
         importance:
           type: string
           description: 'The importance class of the article'
@@ -263,8 +294,8 @@ components:
         importance_updated:
           type: string
           format: date
-          description: 'The date on which the article importance classification was updated'
+          description: 'The date on which the article importance classification was updated, the format is 2020-01-30T15:55:55Z'
         quality_updated:
           type: string
           format: date
-          description: 'The date on which the article quality classification was updated'
+          description: 'The date on which the article quality classification was updated, the format is 2020-01-30T15:55:55Z'

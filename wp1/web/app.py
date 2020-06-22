@@ -10,6 +10,7 @@ from rq_dashboard.cli import add_basic_auth
 
 import wp1.logic.project as logic_project
 from wp1.web.db import get_db, has_db
+from wp1.web.articles import articles
 from wp1.web.projects import projects
 
 
@@ -74,5 +75,5 @@ def create_app():
     return flask.send_from_directory(".", "openapi.yml")
 
   app.register_blueprint(projects, url_prefix='/v1/projects')
-
+  app.register_blueprint(articles, url_prefix='/v1/articles')
   return app

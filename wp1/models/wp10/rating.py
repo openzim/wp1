@@ -49,34 +49,54 @@ class Rating:
       return
     self.r_importance_timestamp = dt.strftime(TS_FORMAT).encode('utf-8')
 
-  def _ts_for_web(self, ts):
-    return ts.split('T')[0]
-
   def _web_label(self, cls):
     return cls.split('-')[0]
 
-  def _make_article_link(self, wp10db, article_name):
+  def _get_namespace_prefix(self, wp10db, ns=None):
+    if ns is None:
+      ns = self.r_namespace
     namespace_prefix = ''
-    if self.r_namespace != 0:
-      base_prefix = logic_util.int_to_ns(wp10db)[self.r_namespace]
+    if ns != 0:
+      base_prefix = logic_util.int_to_ns(wp10db)[ns]
       namespace_prefix = base_prefix.decode('utf-8') + ':'
+    return namespace_prefix
+
+  def _make_article_link(self, wp10db, article_name):
+    namespace_prefix = self._get_namespace_prefix(wp10db)
 
     return '%sindex.php?title=%s%s' % (FRONTEND_WIKI_BASE, namespace_prefix,
                                        urllib.parse.quote(article_name))
 
+  def _make_article_talk_link(self, wp10db, article_name):
+    namespace_prefix = self._get_namespace_prefix(wp10db, self.r_namespace + 1)
+
+    return '%sindex.php?title=%s%s' % (FRONTEND_WIKI_BASE, namespace_prefix,
+                                       urllib.parse.quote(article_name))
+
+  def _make_article_history_link(self, wp10db, article_name):
+    return '%s&action=history' % self._make_article_link(wp10db, article_name)
+
   def to_web_dict(self, wp10db):
+    namespace_prefix = self._get_namespace_prefix(wp10db)
+    talk_prefix = self._get_namespace_prefix(wp10db, self.r_namespace + 1)
     article_name = self.r_article.decode('utf-8').replace('_', ' ')
     return {
         'article':
-            article_name,
+            '%s%s' % (namespace_prefix, article_name),
+        'article_talk':
+            '%s%s' % (talk_prefix, article_name),
         'article_link':
             self._make_article_link(wp10db, article_name),
+        'article_talk_link':
+            self._make_article_talk_link(wp10db, article_name),
+        'article_history_link':
+            self._make_article_history_link(wp10db, article_name),
         'quality':
             self._web_label(self.r_quality.decode('utf-8')),
         'quality_updated':
-            self._ts_for_web(self.r_quality_timestamp.decode('utf-8')),
+            self.r_quality_timestamp.decode('utf-8'),
         'importance':
             self._web_label(self.r_importance.decode('utf-8')),
         'importance_updated':
-            self._ts_for_web(self.r_importance_timestamp.decode('utf-8')),
+            self.r_importance_timestamp.decode('utf-8'),
     }
