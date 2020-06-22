@@ -34,12 +34,32 @@
       <table>
         <tr v-for="row in tableData" :key="row.article">
           <td>
-            <a :href="row.article_link">{{ row.article }}</a>
+            <a :href="row.article_link">{{ row.article }}</a> (
+            <a :href="row.article_talk_link">t</a> ·
+            <a :href="row.article_history_link">h</a> )
           </td>
           <td :class="row.importance">{{ row.importance }}</td>
-          <td>{{ row.importance_updated }}</td>
+          <td>
+            <a :href="timestampLink(row.article, row.importance_updated)">{{
+              formatTimestamp(row.importance_updated)
+            }}</a>
+            (
+            <a :href="timestampLink(row.article_talk, row.importance_updated)"
+              >t</a
+            >
+            )
+          </td>
           <td :class="row.quality">{{ row.quality }}</td>
-          <td>{{ row.quality_updated }}</td>
+          <td>
+            <a :href="timestampLink(row.article, row.quality_updated)">{{
+              formatTimestamp(row.quality_updated)
+            }}</a>
+            (
+            <a :href="timestampLink(row.article_talk, row.quality_updated)"
+              >t</a
+            >
+            )
+          </td>
         </tr>
       </table>
 
@@ -148,6 +168,14 @@ export default {
           page: page.toString()
         }
       });
+    },
+    formatTimestamp: function(ts) {
+      return ts.split('T')[0];
+    },
+    timestampLink: function(articleName, ts) {
+      return `${process.env.VUE_APP_API_URL}/articles/${encodeURIComponent(
+        articleName
+      )}/${encodeURIComponent(ts)}/redirect`;
     }
   }
 };

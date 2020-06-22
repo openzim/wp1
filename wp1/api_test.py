@@ -54,3 +54,15 @@ class ApiTest(unittest.TestCase):
     patched_api.site = None
     actual = self.original_save_page(self.page, '<code>', 'edit summary')
     self.assertFalse(actual)
+
+  def test_get_revision_id_present(self):
+    self.page.revisions.return_value = iter(({'revid': 10},))
+    actual = wp1.api.get_revision_id_by_timestamp(self.page,
+                                                  '2015-05-05T15:55:55Z')
+    self.assertEqual(10, actual)
+
+  def test_get_revision_id_absent(self):
+    self.page.revisions.return_value = iter(())
+    actual = wp1.api.get_revision_id_by_timestamp(self.page,
+                                                  '2015-05-05T15:55:55Z')
+    self.assertIsNone(actual)
