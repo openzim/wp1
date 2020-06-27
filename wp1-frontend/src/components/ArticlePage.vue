@@ -10,12 +10,28 @@
           <span v-if="$route.query.importance || $route.query.quality">
             -
           </span>
-          <span v-if="$route.query.importance"
-            >{{ displayClass($route.query.importance) }} importance</span
+          <span v-if="$route.query.importance">
+            <WikiLink
+              v-if="categoryLinks[$route.query.importance].href"
+              :href="categoryLinks[$route.query.importance].href"
+              :text="categoryLinks[$route.query.importance].text"
+            ></WikiLink>
+            <span v-if="!categoryLinks[$route.query.importance].href">{{
+              categoryLinks[$route.query.importance]
+            }}</span>
+            importance</span
           >
           <span v-if="$route.query.quality"
-            ><span v-if="$route.query.importance"> / </span
-            >{{ displayClass($route.query.quality) }} quality</span
+            ><span v-if="$route.query.importance"> / </span>
+            <WikiLink
+              v-if="categoryLinks[$route.query.quality].href"
+              :href="categoryLinks[$route.query.quality].href"
+              :text="categoryLinks[$route.query.quality].text"
+            ></WikiLink>
+            <span v-if="!categoryLinks[$route.query.quality].href">{{
+              categoryLinks[$route.query.quality]
+            }}</span>
+            quality</span
           >
         </h4>
         <p><a :href="'#/project/' + currentProject">Back to table</a></p>
@@ -36,16 +52,19 @@
 
 <script>
 import ArticleTable from './ArticleTable.vue';
+import WikiLink from './WikiLink.vue';
 
 export default {
   name: 'articlepage',
   components: {
-    ArticleTable
+    ArticleTable,
+    WikiLink
   },
   props: ['currentProject'],
   data: function() {
     return {
-      notFound: false
+      notFound: false,
+      categoryLinks: {}
     };
   },
   computed: {
@@ -62,10 +81,16 @@ export default {
   },
   created: function() {
     this.checkIfProjectExists(this.currentProjectId);
+    if (!this.notFound) {
+      this.getCategoryLinks();
+    }
   },
   methods: {
-    displayClass: function(cls) {
-      return cls.split('-')[0];
+    getCategoryLinks: async function() {
+      const response = await fetch(
+        `${process.env.VUE_APP_API_URL}/projects/${this.currentProjectId}/category_links`
+      );
+      this.categoryLinks = await response.json();
     },
     checkIfProjectExists: async function(projectId) {
       const response = await fetch(
@@ -77,4 +102,8 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+h4 a:visited {
+  color: #5d7791 !important;
+}
+</style>
