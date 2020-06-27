@@ -294,3 +294,20 @@ class ProjectTest(BaseWebTestcase):
       data = json.loads(rv.data)
       self.assertEqual(0, data['job']['progress'])
       self.assertEqual(0, data['job']['total'])
+
+  def test_category_links(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get('/v1/projects/Project 0/category_links')
+      self.assertEqual('200 OK', rv.status)
+
+      data = json.loads(rv.data)
+      self.assertEqual(
+          {
+              'Assessed-Class': 'Assessed',
+              'Unassessed-Class': "'''Unassessed'''"
+          }, data)
+
+  def test_category_links_404(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get('/v1/projects/Foo Bar Baz/category_links')
+      self.assertEqual('404 NOT FOUND', rv.status)

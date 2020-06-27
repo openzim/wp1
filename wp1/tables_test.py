@@ -1255,4 +1255,134 @@ class TestConvertTableForWeb(unittest.TestCase):
 
   def test_conversion(self):
     actual = tables.convert_table_data_for_web(self.data)
-    self.assertEqual(actual, self.expected)
+    self.assertEqual(self.expected, actual)
+
+  def test_get_category_links(self):
+    self.maxDiff = None
+    expected = {
+        'A-Class': {
+            'href':
+                'https://en.wikipedia.org/wiki/Category:A-Class_Modern_philosophy_articles',
+            'text':
+                'A'
+        },
+        'Assessed-Class': 'Assessed',
+        'B-Class': {
+            'href':
+                'https://en.wikipedia.org/wiki/Category:B-Class_Modern_philosophy_articles',
+            'text':
+                'B'
+        },
+        'C-Class': {
+            'href':
+                'https://en.wikipedia.org/wiki/Category:C-Class_Modern_philosophy_articles',
+            'text':
+                'C'
+        },
+        'Category-Class': {
+            'href':
+                'https://en.wikipedia.org/wiki/Category:Category-Class_Modern_philosophy_articles',
+            'text':
+                'Category'
+        },
+        'Disambig-Class': {
+            'href':
+                'https://en.wikipedia.org/wiki/Category:Disambig-Class_Modern_philosophy_articles',
+            'text':
+                'Disambig'
+        },
+        'FA-Class': {
+            'href':
+                'https://en.wikipedia.org/wiki/Category:FA-Class_Modern_philosophy_articles',
+            'text':
+                'FA'
+        },
+        'File-Class': {
+            'href':
+                'https://en.wikipedia.org/wiki/Category:File-Class_Modern_philosophy_articles',
+            'text':
+                'File'
+        },
+        'GA-Class': {
+            'href':
+                'https://en.wikipedia.org/wiki/Category:GA-Class_Modern_philosophy_articles',
+            'text':
+                'GA'
+        },
+        'High-Class': {
+            'href':
+                'https://en.wikipedia.org/wiki/Category:High-importance_Modern_philosophy_articles',
+            'text':
+                'High'
+        },
+        'List-Class': {
+            'href':
+                'https://en.wikipedia.org/wiki/Category:List-Class_Modern_philosophy_articles',
+            'text':
+                'List'
+        },
+        'Low-Class': {
+            'href':
+                'https://en.wikipedia.org/wiki/Category:Low-importance_Modern_philosophy_articles',
+            'text':
+                'Low'
+        },
+        'Mid-Class': {
+            'href':
+                'https://en.wikipedia.org/wiki/Category:Mid-importance_Modern_philosophy_articles',
+            'text':
+                'Mid'
+        },
+        'NotA-Class': '---',
+        'Project-Class': {
+            'href':
+                'https://en.wikipedia.org/wiki/Category:Project-Class_Modern_philosophy_articles',
+            'text':
+                'Project'
+        },
+        'Redirect-Class': {
+            'href':
+                'https://en.wikipedia.org/wiki/Category:Redirect-Class_Modern_philosophy_articles',
+            'text':
+                'Redirect'
+        },
+        'Start-Class': {
+            'href':
+                'https://en.wikipedia.org/wiki/Category:Start-Class_Modern_philosophy_articles',
+            'text':
+                'Start'
+        },
+        'Stub-Class': {
+            'href':
+                'https://en.wikipedia.org/wiki/Category:Stub-Class_Modern_philosophy_articles',
+            'text':
+                'Stub'
+        },
+        'Template-Class': {
+            'href':
+                'https://en.wikipedia.org/wiki/Category:Template-Class_Modern_philosophy_articles',
+            'text':
+                'Template'
+        },
+        'Top-Class': {
+            'href':
+                'https://en.wikipedia.org/wiki/Category:Top-importance_Modern_philosophy_articles',
+            'text':
+                'Top'
+        },
+        'Unassessed-Class': {
+            'href':
+                'https://en.wikipedia.org/wiki/Category:Unassessed_Modern_philosophy_articles',
+            'text':
+                'Unassessed'
+        },
+        'Unknown-Class': {
+            'href':
+                'https://en.wikipedia.org/wiki/Category:Unknown-importance_Modern_philosophy_articles',
+            'text':
+                '???'
+        }
+    }
+
+    actual = tables.get_project_category_links(self.data)
+    self.assertEqual(expected, actual)
