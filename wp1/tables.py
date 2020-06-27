@@ -172,6 +172,17 @@ def convert_table_data_for_web(data):
   return data
 
 
+def get_project_category_links(data):
+  labels = dict((key.decode('utf-8'), make_wiki_link(val))
+                for key, val in data['col_labels'].items())
+  labels.update(
+      dict((key.decode('utf-8'), make_wiki_link(val))
+           for key, val in data['row_labels'].items()))
+  if 'NotA-Class' in labels:
+    labels['NotA-Class'] = '---'
+  return labels
+
+
 def get_cached_table_data(project_name):
   if CREDENTIALS is None and ENV is None:
     return None
