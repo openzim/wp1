@@ -159,6 +159,25 @@ paths:
         description: 'The importance class of articles, used to filter the results. Eg: "High-Class"'
         schema:
           type: string
+  /projects/{projectId}/category_links:
+    get:
+      summary: 'Get a mapping of category names (such as "A-Class") to an href on Wikipedia to link to and the text of such a link. The mapping can also be to simply a string which means no link is possible and the string itself should be displayed.'
+      operationId: projectCategoryLinks
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: 'The name of the project, with spaces replaced by "_"'
+          schema:
+            type: string
   /projects/{projectId}/update:
     post:
       summary: 'Schedule a manual update of a project. This includes fetching new assessments from Wikipedia, and updating Wikipedia with assessment and log tables. This can only be done once per hour.'
