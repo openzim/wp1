@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div v-if="loading">
+  <div class="row">
+    <div v-if="loading" class="col">
       <pulse-loader
         class="loader"
         :loading="loading"
@@ -8,31 +8,51 @@
         :size="loaderSize"
       ></pulse-loader>
     </div>
-    <div v-else>
-      <p v-if="articleData" class="pages-cont">
-        {{ articleData.pagination.total }} articles
-
-        <span v-if="articleData.pagination.total_pages > 1">
-          - Pages:
-          <span
-            v-for="i in Math.min(articleData.pagination.total_pages, 15)"
-            :key="i"
-            :class="
-              'page-indicator' +
-                (i === Number(page) || (i === 1 && !page) ? '' : ' link')
-            "
-            ><a v-on:click="updatePage(i)">{{ i }}</a></span
+    <div v-else-if="articleData" class="col">
+      <div class="my-0 row">
+        <p class="pages-cont">
+          Article {{ articleData.pagination.display.start }} -
+          {{ articleData.pagination.display.end }} of
+          {{ articleData.pagination.total }}
+        </p>
+      </div>
+      <div
+        v-if="articleData.pagination.total_pages > 1"
+        class="row justify-content-between my-0"
+      >
+        <p class="prev-page col-3 m-0">
+          <span :class="page === '1' || !page ? '' : ' link'"
+            ><a v-on:click="previousPage()">previous page</a></span
           >
-          <span v-if="articleData.pagination.total_pages > 15">
-            ...(more results truncated)
+        </p>
+        <p class="pages-cont col-6">
+          <span v-if="articleData.pagination.total_pages > 1">
+            <span
+              v-for="i in getPageDisplay()"
+              :key="i"
+              :class="
+                'page-indicator' +
+                  (i === Number(page) || (i === 1 && !page) ? '' : ' link')
+              "
+              ><a v-on:click="updatePage(i)">{{ i }}</a></span
+            >
           </span>
-        </span>
-      </p>
+        </p>
+        <p class="next-page col-3 m-0">
+          <span
+            :class="
+              Number(page) === articleData.pagination.total_pages ? '' : ' link'
+            "
+            ><a v-on:click="nextPage()">next page</a></span
+          >
+        </p>
+      </div>
 
-      <hr />
+      <hr class="mt-0" />
 
       <table>
-        <tr v-for="row in tableData" :key="row.article">
+        <tr v-for="(row, index) in tableData" :key="row.article">
+          <td>{{ articleData.pagination.display.start + index }}</td>
           <td>
             <a :href="row.article_link">{{ row.article }}</a> (
             <a :href="row.article_talk_link">t</a> ·
@@ -154,8 +174,34 @@ export default {
       }
       this.loading = false;
     },
+    getPageDisplay: function() {
+      const display = [];
+      const page = Number(this.page);
+      const bottom = Math.max(1, page - 5);
+      const top = Math.min(page + 5, this.articleData.pagination.total_pages);
+      for (let i = bottom; i <= top; i++) {
+        display.push(i);
+      }
+      return display;
+    },
+    nextPage: function() {
+      if (Number(this.page) === this.articleData.pagination.total_pages) {
+        return;
+      }
+      if (this.page) {
+        this.updatePage(Number(this.page) + 1);
+      } else {
+        this.updatePage(2);
+      }
+    },
+    previousPage: function() {
+      if (!this.page) {
+        return;
+      }
+      this.updatePage(Number(this.page) - 1);
+    },
     updatePage: function(page) {
-      if (page === this.page) {
+      if (page === Number(this.page)) {
         return;
       }
 
@@ -211,11 +257,18 @@ tr:nth-child(even) {
 .page-indicator {
   display: inline-block;
   padding: 0 0.25rem;
+  width: 1.5rem;
 }
 
+.next-page .link,
+.prev-page .link,
 .page-indicator.link {
   color: #007bff;
   cursor: pointer;
+}
+
+.next-page {
+  text-align: right;
 }
 
 .loader {
