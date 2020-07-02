@@ -76,6 +76,7 @@ def articles(project_name):
   quality = flask.request.args.get('quality')
   importance = flask.request.args.get('importance')
   page = flask.request.args.get('page')
+  page_int = 1
   if page is not None:
     try:
       page_int = int(page)
@@ -97,6 +98,10 @@ def articles(project_name):
                                                         importance=importance)
   total_pages = total // PAGE_SIZE + 1 if total % PAGE_SIZE != 0 else 0
 
+  start = 100 * (page_int - 1) + 1
+  end = min(100 - 1 + start, total)
+  display = {'start': start, 'end': end}
+
   articles = logic_rating.get_project_rating_by_type(wp10db,
                                                      project_name_bytes,
                                                      quality=quality,
@@ -107,7 +112,8 @@ def articles(project_name):
       'pagination': {
           'page': page or 1,
           'total_pages': total_pages,
-          'total': total
+          'total': total,
+          'display': display,
       },
       'articles': list(article.to_web_dict(wp10db) for article in articles),
   }
