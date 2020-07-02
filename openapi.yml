@@ -132,6 +132,15 @@ paths:
                       total_pages:
                         type: number
                         description: 'The total number of pages of results, by 100'
+                      display:
+                        type: object
+                        properties:
+                          start:
+                            type: number
+                            description: 'The article number at which the returned page of results starts'
+                          end:
+                            type: number
+                            description: 'The article number at which the returned page of results ends'
                   articles:
                     type: array
                     items:
