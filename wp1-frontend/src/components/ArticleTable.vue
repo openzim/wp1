@@ -16,37 +16,14 @@
           {{ articleData.pagination.total }}
         </p>
       </div>
-      <div
+      <ArticleTablePagination
         v-if="articleData.pagination.total_pages > 1"
         class="row justify-content-between my-0"
+        v-on:update-page="onUpdatePage($event)"
+        :page="page"
+        :totalPages="articleData.pagination.total_pages"
       >
-        <p class="prev-page col-3 m-0">
-          <span :class="page === '1' || !page ? '' : ' link'"
-            ><a v-on:click="previousPage()">previous page</a></span
-          >
-        </p>
-        <p class="pages-cont col-6">
-          <span v-if="articleData.pagination.total_pages > 1">
-            <span
-              v-for="i in getPageDisplay()"
-              :key="i"
-              :class="
-                'page-indicator' +
-                  (i === Number(page) || (i === 1 && !page) ? '' : ' link')
-              "
-              ><a v-on:click="updatePage(i)">{{ i }}</a></span
-            >
-          </span>
-        </p>
-        <p class="next-page col-3 m-0">
-          <span
-            :class="
-              Number(page) === articleData.pagination.total_pages ? '' : ' link'
-            "
-            ><a v-on:click="nextPage()">next page</a></span
-          >
-        </p>
-      </div>
+      </ArticleTablePagination>
 
       <hr class="mt-0" />
 
@@ -83,17 +60,35 @@
         </tr>
       </table>
 
+      <div class="my-0 row">
+        <p class="pages-cont">
+          Article {{ articleData.pagination.display.start }} -
+          {{ articleData.pagination.display.end }} of
+          {{ articleData.pagination.total }}
+        </p>
+      </div>
+      <ArticleTablePagination
+        v-if="articleData.pagination.total_pages > 1"
+        class="row justify-content-between mb-5 mt-0"
+        v-on:update-page="onUpdatePage($event)"
+        :page="page"
+        :totalPages="articleData.pagination.total_pages"
+      >
+      </ArticleTablePagination>
+
       <h2 v-if="!tableData.length">No results to display</h2>
     </div>
   </div>
 </template>
 
 <script>
+import ArticleTablePagination from './ArticleTablePagination.vue';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 
 export default {
   name: 'articletable',
   components: {
+    ArticleTablePagination,
     PulseLoader
   },
   data: function() {
@@ -141,6 +136,17 @@ export default {
     }
   },
   methods: {
+    onUpdatePage: function(page) {
+      const projectName = this.projectId.replace(/_/g, ' ');
+      this.$router.push({
+        path: `/project/${projectName}/articles`,
+        query: {
+          quality: this.quality,
+          importance: this.importance,
+          page: page.toString()
+        }
+      });
+    },
     updateTable: async function() {
       const url = new URL(
         `${process.env.VUE_APP_API_URL}/projects/${this.projectId}/articles`
@@ -173,47 +179,6 @@ export default {
         this.articleData = null;
       }
       this.loading = false;
-    },
-    getPageDisplay: function() {
-      const display = [];
-      const page = Number(this.page);
-      const bottom = Math.max(1, page - 5);
-      const top = Math.min(page + 5, this.articleData.pagination.total_pages);
-      for (let i = bottom; i <= top; i++) {
-        display.push(i);
-      }
-      return display;
-    },
-    nextPage: function() {
-      if (Number(this.page) === this.articleData.pagination.total_pages) {
-        return;
-      }
-      if (this.page) {
-        this.updatePage(Number(this.page) + 1);
-      } else {
-        this.updatePage(2);
-      }
-    },
-    previousPage: function() {
-      if (!this.page) {
-        return;
-      }
-      this.updatePage(Number(this.page) - 1);
-    },
-    updatePage: function(page) {
-      if (page === Number(this.page)) {
-        return;
-      }
-
-      const projectName = this.projectId.replace(/_/g, ' ');
-      this.$router.push({
-        path: `/project/${projectName}/articles`,
-        query: {
-          quality: this.quality,
-          importance: this.importance,
-          page: page.toString()
-        }
-      });
     },
     formatTimestamp: function(ts) {
       return ts.split('T')[0];
@@ -252,23 +217,6 @@ tr:nth-child(even) {
 .pages-cont {
   margin: auto;
   text-align: center;
-}
-
-.page-indicator {
-  display: inline-block;
-  padding: 0 0.25rem;
-  width: 1.5rem;
-}
-
-.next-page .link,
-.prev-page .link,
-.page-indicator.link {
-  color: #007bff;
-  cursor: pointer;
-}
-
-.next-page {
-  text-align: right;
 }
 
 .loader {
