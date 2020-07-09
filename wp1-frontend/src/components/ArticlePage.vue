@@ -12,11 +12,11 @@
           </span>
           <span v-if="$route.query.importance">
             <WikiLink
-              v-if="categoryLinks[$route.query.importance].href"
+              v-if="hasImportanceLink()"
               :href="categoryLinks[$route.query.importance].href"
               :text="categoryLinks[$route.query.importance].text"
             ></WikiLink>
-            <span v-if="!categoryLinks[$route.query.importance].href">{{
+            <span v-if="!hasImportanceLink()">{{
               categoryLinks[$route.query.importance]
             }}</span>
             importance</span
@@ -24,11 +24,11 @@
           <span v-if="$route.query.quality"
             ><span v-if="$route.query.importance"> / </span>
             <WikiLink
-              v-if="categoryLinks[$route.query.quality].href"
+              v-if="hasQualityLink()"
               :href="categoryLinks[$route.query.quality].href"
               :text="categoryLinks[$route.query.quality].text"
             ></WikiLink>
-            <span v-if="!categoryLinks[$route.query.quality].href">{{
+            <span v-if="!hasQualityLink()">{{
               categoryLinks[$route.query.quality]
             }}</span>
             quality</span
@@ -91,6 +91,20 @@ export default {
         `${process.env.VUE_APP_API_URL}/projects/${this.currentProjectId}/category_links`
       );
       this.categoryLinks = await response.json();
+    },
+    hasImportanceLink: function() {
+      return (
+        this.categoryLinks &&
+        this.categoryLinks[this.$route.query.importance] &&
+        this.categoryLinks[this.$route.query.importance].href
+      );
+    },
+    hasQualityLink: function() {
+      return (
+        this.categoryLinks &&
+        this.categoryLinks[this.$route.query.quality] &&
+        this.categoryLinks[this.$route.query.quality].href
+      );
     },
     checkIfProjectExists: async function(projectId) {
       const response = await fetch(
