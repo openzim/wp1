@@ -9,11 +9,19 @@
       ></pulse-loader>
     </div>
     <div v-else-if="articleData" class="col">
+      <ArticleTablePageSelect
+        :numRows="articleData.pagination.num_rows"
+        :startPage="page || '1'"
+        v-on:page-select="onPageSelect($event)"
+      ></ArticleTablePageSelect>
       <div class="my-0 row">
         <p class="pages-cont">
           Article {{ articleData.pagination.display.start }} -
           {{ articleData.pagination.display.end }} of
-          {{ articleData.pagination.total }}
+          {{ articleData.pagination.total }} ({{
+            articleData.pagination.total_pages
+          }}
+          pages)
         </p>
       </div>
       <ArticleTablePagination
@@ -83,12 +91,14 @@
 
 <script>
 import ArticleTablePagination from './ArticleTablePagination.vue';
+import ArticleTablePageSelect from './ArticleTablePageSelect.vue';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 
 export default {
   name: 'articletable',
   components: {
     ArticleTablePagination,
+    ArticleTablePageSelect,
     PulseLoader
   },
   data: function() {
@@ -136,6 +146,18 @@ export default {
     }
   },
   methods: {
+    onPageSelect: function(selection) {
+      const projectName = this.projectId.replace(/_/g, ' ');
+      this.$router.push({
+        path: `/project/${projectName}/articles`,
+        query: {
+          quality: this.quality,
+          importance: this.importance,
+          page: selection.startPage,
+          numRows: selection.numRows
+        }
+      });
+    },
     onUpdatePage: function(page) {
       const projectName = this.projectId.replace(/_/g, ' ');
       this.$router.push({
