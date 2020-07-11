@@ -10,7 +10,7 @@
     </div>
     <div v-else-if="articleData" class="col">
       <ArticleTablePageSelect
-        :numRows="articleData.pagination.num_rows"
+        :numRows="articleData.pagination.display.num_rows"
         :startPage="page || '1'"
         v-on:page-select="onPageSelect($event)"
       ></ArticleTablePageSelect>
