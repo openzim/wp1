@@ -1,13 +1,13 @@
 <template>
   <div class="row">
-    <div class="select-cont col-6">
+    <div class="select-cont col-7">
       <div
         class="accordion"
         id="accordion-ps"
         role="tablist"
         aria-multiselectable="true"
       >
-        <div class="card">
+        <div class="card mb-2">
           <div class="card-header p-0" role="tab" id="collapse-page-select">
             <a
               data-toggle="collapse"
@@ -28,9 +28,30 @@
             aria-labelledby="headingOne1"
             data-parent="#accordionEx"
           >
-            <div class="card-body p-2">
-              Show <input class="num-select" v-model="numRows" /> rows starting
-              with page <input class="num-select" v-model="startPage" />
+            <div class="card-body form-inline p-2">
+              Show
+              <input
+                id="row-input"
+                :class="[
+                  'num-select',
+                  'form-control',
+                  'm-2',
+                  { 'is-invalid': errorRows }
+                ]"
+                v-model="rows"
+              />
+              rows starting with page
+              <input
+                id="page-input"
+                :class="[
+                  'num-select',
+                  'form-control',
+                  'm-2',
+                  { 'is-invalid': errorPage }
+                ]"
+                v-model="page"
+              />
+
               <button v-on:click="onButtonClick()" class="btn-primary ml-4">
                 Update View
               </button>
@@ -49,11 +70,33 @@ export default {
     numRows: Number,
     startPage: String
   },
+  data: function() {
+    return {
+      rows: this.numRows,
+      page: this.startPage
+    };
+  },
+  computed: {
+    errorRows: function() {
+      return (
+        this.rows === '' || isNaN(this.rows) || this.rows > 500 || this.rows < 0
+      );
+    },
+    errorPage: function() {
+      return isNaN(this.page) || this.page < 0;
+    }
+  },
   methods: {
+    isValid: function() {
+      return !this.errorRows && !this.errorPage;
+    },
     onButtonClick: function() {
+      if (!this.isValid()) {
+        return;
+      }
       this.$emit('page-select', {
-        numRows: this.numRows,
-        startPage: this.startPage
+        numRows: this.rows,
+        startPage: this.page
       });
     }
   }
@@ -69,7 +112,17 @@ export default {
   border: none;
 }
 
+.card-body {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+  border-top: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-header {
+  border: none;
+}
+
 .num-select {
-  width: 2.2rem;
+  width: 6rem;
+  text-align: center;
 }
 </style>
