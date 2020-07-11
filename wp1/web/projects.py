@@ -100,7 +100,7 @@ def articles(project_name):
 
   start = 100 * (page_int - 1) + 1
   end = min(100 - 1 + start, total)
-  display = {'start': start, 'end': end}
+  display = {'start': start, 'end': end, 'num_rows': 100}
 
   articles = logic_rating.get_project_rating_by_type(wp10db,
                                                      project_name_bytes,
