@@ -21,7 +21,7 @@
           {{ articleData.pagination.total }} ({{
             articleData.pagination.total_pages
           }}
-          pages)
+          page<span v-if="articleData.pagination.total_pages !== 1">s</span>)
         </p>
       </div>
       <ArticleTablePagination
@@ -36,7 +36,7 @@
       <hr class="mt-0" />
 
       <table>
-        <tr v-for="(row, index) in tableData" :key="row.article">
+        <tr v-for="(row, index) in tableData" :key="index">
           <td>{{ articleData.pagination.display.start + index }}</td>
           <td>
             <a :href="row.article_link">{{ row.article }}</a> (
@@ -113,7 +113,8 @@ export default {
     projectId: String,
     importance: String,
     quality: String,
-    page: String
+    page: String,
+    numRows: String
   },
   computed: {
     tableData: function() {
@@ -128,9 +129,8 @@ export default {
   },
   watch: {
     projectId: async function(projectId) {
-      window.console.log('watching projectId:', projectId);
       if (!projectId) {
-        this.tableData = null;
+        this.articleData = null;
         return;
       }
       await this.updateTable();
@@ -143,6 +143,9 @@ export default {
     },
     page: async function() {
       await this.updateTable();
+    },
+    numRows: async function() {
+      await this.updateTable();
     }
   },
   methods: {
@@ -153,8 +156,8 @@ export default {
         query: {
           quality: this.quality,
           importance: this.importance,
-          page: selection.startPage,
-          numRows: selection.numRows
+          page: selection.page,
+          numRows: selection.rows
         }
       });
     },
@@ -165,7 +168,8 @@ export default {
         query: {
           quality: this.quality,
           importance: this.importance,
-          page: page.toString()
+          page: page.toString(),
+          numRows: this.numRows
         }
       });
     },
@@ -182,6 +186,9 @@ export default {
       }
       if (this.page) {
         params.page = this.page;
+      }
+      if (this.numRows) {
+        params.numRows = this.numRows;
       }
       Object.keys(params).forEach(key =>
         url.searchParams.append(key, params[key])
