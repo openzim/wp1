@@ -168,6 +168,18 @@ paths:
         description: 'The importance class of articles, used to filter the results. Eg: "High-Class"'
         schema:
           type: string
+      - name: page
+        in: query
+        required: false
+        description: 'The page to retrieve results starting with. The first page is page 1.'
+        schema:
+          type: number
+      - name: numRows
+        in: query
+        required: false
+        description: 'The number of rows (results) to return.'
+        schema:
+          type: number
   /projects/{projectId}/category_links:
     get:
       summary: 'Get a mapping of category names (such as "A-Class") to an href on Wikipedia to link to and the text of such a link. The mapping can also be to simply a string which means no link is possible and the string itself should be displayed.'

@@ -9,11 +9,19 @@
       ></pulse-loader>
     </div>
     <div v-else-if="articleData" class="col">
+      <ArticleTablePageSelect
+        :numRows="articleData.pagination.display.num_rows"
+        :startPage="page || '1'"
+        v-on:page-select="onPageSelect($event)"
+      ></ArticleTablePageSelect>
       <div class="my-0 row">
         <p class="pages-cont">
           Article {{ articleData.pagination.display.start }} -
           {{ articleData.pagination.display.end }} of
-          {{ articleData.pagination.total }}
+          {{ articleData.pagination.total }} ({{
+            articleData.pagination.total_pages
+          }}
+          page<span v-if="articleData.pagination.total_pages !== 1">s</span>)
         </p>
       </div>
       <ArticleTablePagination
@@ -28,7 +36,7 @@
       <hr class="mt-0" />
 
       <table>
-        <tr v-for="(row, index) in tableData" :key="row.article">
+        <tr v-for="(row, index) in tableData" :key="index">
           <td>{{ articleData.pagination.display.start + index }}</td>
           <td>
             <a :href="row.article_link">{{ row.article }}</a> (
@@ -83,12 +91,14 @@
 
 <script>
 import ArticleTablePagination from './ArticleTablePagination.vue';
+import ArticleTablePageSelect from './ArticleTablePageSelect.vue';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 
 export default {
   name: 'articletable',
   components: {
     ArticleTablePagination,
+    ArticleTablePageSelect,
     PulseLoader
   },
   data: function() {
@@ -103,7 +113,8 @@ export default {
     projectId: String,
     importance: String,
     quality: String,
-    page: String
+    page: String,
+    numRows: String
   },
   computed: {
     tableData: function() {
@@ -118,9 +129,8 @@ export default {
   },
   watch: {
     projectId: async function(projectId) {
-      window.console.log('watching projectId:', projectId);
       if (!projectId) {
-        this.tableData = null;
+        this.articleData = null;
         return;
       }
       await this.updateTable();
@@ -133,9 +143,24 @@ export default {
     },
     page: async function() {
       await this.updateTable();
+    },
+    numRows: async function() {
+      await this.updateTable();
     }
   },
   methods: {
+    onPageSelect: function(selection) {
+      const projectName = this.projectId.replace(/_/g, ' ');
+      this.$router.push({
+        path: `/project/${projectName}/articles`,
+        query: {
+          quality: this.quality,
+          importance: this.importance,
+          page: selection.page,
+          numRows: selection.rows
+        }
+      });
+    },
     onUpdatePage: function(page) {
       const projectName = this.projectId.replace(/_/g, ' ');
       this.$router.push({
@@ -143,7 +168,8 @@ export default {
         query: {
           quality: this.quality,
           importance: this.importance,
-          page: page.toString()
+          page: page.toString(),
+          numRows: this.numRows
         }
       });
     },
@@ -160,6 +186,9 @@ export default {
       }
       if (this.page) {
         params.page = this.page;
+      }
+      if (this.numRows) {
+        params.numRows = this.numRows;
       }
       Object.keys(params).forEach(key =>
         url.searchParams.append(key, params[key])
