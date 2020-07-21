@@ -155,6 +155,13 @@ class ProjectTest(BaseWebTestcase):
       data = json.loads(rv.data)
       self.assertEqual(50, len(data['articles']))
 
+  def test_articles_num_rows(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get('/v1/projects/Project 0/articles?page=2&numRows=25')
+      self.assertEqual('200 OK', rv.status)
+      data = json.loads(rv.data)
+      self.assertEqual(25, len(data['articles']))
+
   def test_articles_404(self):
     with self.override_db(self.app), self.app.test_client() as client:
       rv = client.get('/v1/projects/Foo Fake Project/articles')
