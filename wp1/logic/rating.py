@@ -28,7 +28,8 @@ def _project_rating_query(project_name,
                           quality=None,
                           importance=None,
                           page=None,
-                          count=False):
+                          count=False,
+                          limit=100):
   if count:
     query = 'SELECT COUNT(*) as count FROM ' + Rating.table_name
   else:
@@ -63,9 +64,9 @@ def _project_rating_query(project_name,
 
   if page is not None:
     page = int(page) - 1
-    query += ' LIMIT %s,100' % (page * 100)
+    query += ' LIMIT %s,%s' % (page * limit, limit)
   else:
-    query += ' LIMIT 100'
+    query += ' LIMIT %s' % limit
 
   return query
 
@@ -93,11 +94,22 @@ def get_project_rating_by_type(wp10db,
                                project_name,
                                quality=None,
                                importance=None,
-                               page=None):
+                               page=None,
+                               limit=100):
+  try:
+    limit = int(limit)
+  except ValueError:
+    limit = 100
+  if limit < 0:
+    limit = 100
+  if limit > 500:
+    limit = 500
+
   query = _project_rating_query(project_name,
                                 quality=quality,
                                 importance=importance,
-                                page=page)
+                                page=page,
+                                limit=limit)
   with wp10db.cursor() as cursor:
     cursor.execute(
         query, {
