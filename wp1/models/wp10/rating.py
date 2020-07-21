@@ -49,9 +49,6 @@ class Rating:
       return
     self.r_importance_timestamp = dt.strftime(TS_FORMAT).encode('utf-8')
 
-  def _web_label(self, cls):
-    return cls.split('-')[0]
-
   def _get_namespace_prefix(self, wp10db, ns=None):
     if ns is None:
       ns = self.r_namespace
@@ -92,11 +89,11 @@ class Rating:
         'article_history_link':
             self._make_article_history_link(wp10db, article_name),
         'quality':
-            self._web_label(self.r_quality.decode('utf-8')),
+            self.r_quality.decode('utf-8'),
         'quality_updated':
             self.r_quality_timestamp.decode('utf-8'),
         'importance':
-            self._web_label(self.r_importance.decode('utf-8')),
+            self.r_importance.decode('utf-8'),
         'importance_updated':
             self.r_importance_timestamp.decode('utf-8'),
     }
