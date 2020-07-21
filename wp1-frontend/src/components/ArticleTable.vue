@@ -43,11 +43,8 @@
             <a :href="row.article_talk_link">t</a> ·
             <a :href="row.article_history_link">h</a> )
           </td>
-          <td :class="row.importance">
-            {{
-              categoryLinks[row.importance].text ||
-                categoryLinks[row.importance]
-            }}
+          <td :class="classLabel(row.importance)">
+            {{ classLabel(row.importance) }}
           </td>
           <td>
             <a :href="timestampLink(row.article, row.importance_updated)">{{
@@ -59,8 +56,8 @@
             >
             )
           </td>
-          <td :class="row.quality">
-            {{ categoryLinks[row.quality].text || categoryLinks[row.quality] }}
+          <td :class="classLabel(row.quality)">
+            {{ classLabel(row.quality) }}
           </td>
           <td>
             <a :href="timestampLink(row.article, row.quality_updated)">{{
@@ -180,6 +177,11 @@ export default {
           numRows: this.numRows
         }
       });
+    },
+    classLabel: function(qualOrImp) {
+      return (
+        this.categoryLinks[qualOrImp].text || this.categoryLinks[qualOrImp]
+      );
     },
     getCategoryLinks: async function() {
       const response = await fetch(
