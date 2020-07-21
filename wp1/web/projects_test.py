@@ -106,7 +106,7 @@ class ProjectTest(BaseWebTestcase):
       # Currently limited to 100 items
       self.assertEqual(50, len(data['articles']))
       for article in data['articles']:
-        self.assertEqual('FA', article['quality'])
+        self.assertEqual('FA-Class', article['quality'])
 
   def test_articles_importance_only(self):
     with self.override_db(self.app), self.app.test_client() as client:
@@ -115,7 +115,7 @@ class ProjectTest(BaseWebTestcase):
 
       self.assertEqual(75, len(data['articles']))
       for article in data['articles']:
-        self.assertEqual('High', article['importance'])
+        self.assertEqual('High-Class', article['importance'])
 
   def test_articles_quality_importance(self):
     with self.override_db(self.app), self.app.test_client() as client:
@@ -126,8 +126,8 @@ class ProjectTest(BaseWebTestcase):
 
       self.assertEqual(25, len(data['articles']))
       for article in data['articles']:
-        self.assertEqual('Low', article['importance'])
-        self.assertEqual('A', article['quality'])
+        self.assertEqual('Low-Class', article['importance'])
+        self.assertEqual('A-Class', article['quality'])
 
   def test_articles_no_results(self):
     with self.override_db(self.app), self.app.test_client() as client:
