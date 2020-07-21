@@ -43,7 +43,9 @@
             <a :href="row.article_talk_link">t</a> ·
             <a :href="row.article_history_link">h</a> )
           </td>
-          <td :class="row.importance">{{ row.importance }}</td>
+          <td :class="classLabel(row.importance)">
+            {{ classLabel(row.importance) }}
+          </td>
           <td>
             <a :href="timestampLink(row.article, row.importance_updated)">{{
               formatTimestamp(row.importance_updated)
@@ -54,7 +56,9 @@
             >
             )
           </td>
-          <td :class="row.quality">{{ row.quality }}</td>
+          <td :class="classLabel(row.quality)">
+            {{ classLabel(row.quality) }}
+          </td>
           <td>
             <a :href="timestampLink(row.article, row.quality_updated)">{{
               formatTimestamp(row.quality_updated)
@@ -104,6 +108,7 @@ export default {
   data: function() {
     return {
       articleData: null,
+      categoryLinks: {},
       loading: false,
       loaderColor: '#007bff',
       loaderSize: '1rem'
@@ -173,6 +178,17 @@ export default {
         }
       });
     },
+    classLabel: function(qualOrImp) {
+      return (
+        this.categoryLinks[qualOrImp].text || this.categoryLinks[qualOrImp]
+      );
+    },
+    getCategoryLinks: async function() {
+      const response = await fetch(
+        `${process.env.VUE_APP_API_URL}/projects/${this.projectId}/category_links`
+      );
+      this.categoryLinks = await response.json();
+    },
     updateTable: async function() {
       const url = new URL(
         `${process.env.VUE_APP_API_URL}/projects/${this.projectId}/articles`
@@ -208,6 +224,7 @@ export default {
         this.articleData = null;
       }
       this.loading = false;
+      await this.getCategoryLinks();
     },
     formatTimestamp: function(ts) {
       return ts.split('T')[0];
