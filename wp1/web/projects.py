@@ -77,15 +77,25 @@ def articles(project_name):
   importance = flask.request.args.get('importance')
   page = flask.request.args.get('page')
   page_int = 1
+  limit = flask.request.args.get('numRows')
+  limit_int = 100
   if page is not None:
     try:
       page_int = int(page)
     except ValueError:
-      # Non-integer page number
       return flask.abort(400)
     if page_int < 1:
-      # Negative page number
       return flask.abort(400)
+
+  if limit is not None:
+    try:
+      limit_int = int(limit)
+    except ValueError:
+      return flask.abort(400)
+    if limit_int < 1:
+      return flask.abort(400)
+    if limit_int > 500:
+      limit_int = 500
 
   if quality:
     quality = quality.encode('utf-8')
@@ -96,17 +106,19 @@ def articles(project_name):
                                                         project_name_bytes,
                                                         quality=quality,
                                                         importance=importance)
-  total_pages = total // PAGE_SIZE + 1 if total % PAGE_SIZE != 0 else 0
+  total_pages = total // limit_int + 1 if total % limit_int != 0 else 0
 
-  start = 100 * (page_int - 1) + 1
-  end = min(100 - 1 + start, total)
-  display = {'start': start, 'end': end, 'num_rows': 100}
+  start = limit_int * (page_int - 1) + 1
+  end = min(limit_int - 1 + start, total)
+  display = {'start': start, 'end': end, 'num_rows': limit_int}
 
+  print('limit_int: %s' % limit_int)
   articles = logic_rating.get_project_rating_by_type(wp10db,
                                                      project_name_bytes,
                                                      quality=quality,
                                                      importance=importance,
-                                                     page=page)
+                                                     page=page,
+                                                     limit=limit_int)
 
   output = {
       'pagination': {

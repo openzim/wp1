@@ -95,9 +95,14 @@ export default {
         return;
       }
       this.$emit('page-select', {
-        numRows: this.rows,
-        startPage: this.page
+        rows: this.rows,
+        page: this.page
       });
+    }
+  },
+  watch: {
+    $route: function(to) {
+      this.page = to.query.page || 1;
     }
   }
 };

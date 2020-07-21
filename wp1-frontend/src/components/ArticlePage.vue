@@ -44,6 +44,7 @@
           :importance="$route.query.importance"
           :quality="$route.query.quality"
           :page="$route.query.page"
+          :numRows="$route.query.numRows"
         ></ArticleTable>
       </div>
     </div>
