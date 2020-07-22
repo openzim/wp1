@@ -10,6 +10,7 @@ English](https://en.wikipedia.org/wiki/Wikipedia:Version_1.0_Editorial_Team).
 [![CodeFactor](https://www.codefactor.io/repository/github/openzim/wp1/badge)](https://www.codefactor.io/repository/github/openzim/wp1)
 [![Docker Web Build Status](https://img.shields.io/docker/cloud/build/openzim/wp1bot-web?label=docker%20web%20build)](https://cloud.docker.com/u/openzim/repository/docker/openzim/wp1bot-web)
 [![Docker Worker Build Status](https://img.shields.io/docker/cloud/build/openzim/wp1bot-workers?label=docker%20workers%20build)](https://cloud.docker.com/u/openzim/repository/docker/openzim/wp1bot-workers)
+[![Docker Frontend Build Status](https://img.shields.io/docker/cloud/build/openzim/wp1bot-frontend?label=docker%20frontend%20build)](https://cloud.docker.com/u/openzim/repository/docker/openzim/wp1bot-frontend)
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 
 ## Contents
