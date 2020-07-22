@@ -34,7 +34,11 @@
             quality</span
           >
         </h4>
-        <p><a :href="'#/project/' + currentProject">Back to table</a></p>
+        <p>
+          <a :href="'#/project/' + currentProject.replace(/_/g, '%20')"
+            >Back to table</a
+          >
+        </p>
       </div>
     </div>
     <div class="row">
