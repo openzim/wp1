@@ -10,6 +10,79 @@ from wp1.environment import Environment
 
 
 class ProjectTest(BaseWebTestcase):
+  EXPECTED_CATEGORY_LINKS = {
+      'A-Class': {
+          'href':
+              'https://en.wikipedia.org/wiki/Category:A-Class_Project_0_articles',
+          'text':
+              'A'
+      },
+      'Assessed-Class': 'Assessed',
+      'B-Class': {
+          'href':
+              'https://en.wikipedia.org/wiki/Category:B-Class_Project_0_articles',
+          'text':
+              'B'
+      },
+      'FA-Class': {
+          'href':
+              'https://en.wikipedia.org/wiki/Category:FA-Class_Project_0_articles',
+          'text':
+              'FA'
+      },
+      'High-Class': {
+          'href':
+              'https://en.wikipedia.org/wiki/Category:High-Class_Project_0_articles',
+          'text':
+              'High'
+      },
+      'Low-Class': {
+          'href':
+              'https://en.wikipedia.org/wiki/Category:Low-Class_Project_0_articles',
+          'text':
+              'Low'
+      },
+      'Unassessed-Class': "'''Unassessed'''",
+  }
+  EXPECTED_CATEGORY_LINKS_SORTED = {
+      'quality': {
+          'A-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:A-Class_Project_0_articles',
+              'text':
+                  'A'
+          },
+          'Assessed-Class': 'Assessed',
+          'B-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:B-Class_Project_0_articles',
+              'text':
+                  'B'
+          },
+          'FA-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:FA-Class_Project_0_articles',
+              'text':
+                  'FA'
+          },
+          'Unassessed-Class': "'''Unassessed'''",
+      },
+      'importance': {
+          'High-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:High-Class_Project_0_articles',
+              'text':
+                  'High'
+          },
+          'Low-Class': {
+              'href':
+                  'https://en.wikipedia.org/wiki/Category:Low-Class_Project_0_articles',
+              'text':
+                  'Low'
+          },
+          'Unassessed-Class': 'No-Class',
+      }
+  }
 
   def setUp(self):
     super().setUp()
@@ -21,9 +94,14 @@ class ProjectTest(BaseWebTestcase):
       })
 
     ratings = []
+    categories = set()
     for i in range(25):
       for quality in ('FA-Class', 'A-Class', 'B-Class'):
+        categories.add(('Project 0', 'quality', quality, quality,
+                        '%s_Project_0_articles' % quality, 100))
         for importance in ('High-Class', 'Low-Class'):
+          categories.add(('Project 0', 'importance', importance, importance,
+                          '%s_Project_0_articles' % importance, 100))
           ratings.append({
               'r_project': 'Project 0',
               'r_namespace': 0,
@@ -47,6 +125,9 @@ class ProjectTest(BaseWebTestcase):
           '(%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s, '
           ' %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s, '
           ' %(r_importance_timestamp)s)', ratings)
+      cursor.executemany(
+          'INSERT INTO categories VALUES (%s, %s, %s, %s, %s, %s)',
+          list(categories))
     self.wp10db.commit()
 
   def test_list(self):
@@ -307,14 +388,27 @@ class ProjectTest(BaseWebTestcase):
       rv = client.get('/v1/projects/Project 0/category_links')
       self.assertEqual('200 OK', rv.status)
 
+      self.maxDiff = None
+
       data = json.loads(rv.data)
-      self.assertEqual(
-          {
-              'Assessed-Class': 'Assessed',
-              'Unassessed-Class': "'''Unassessed'''"
-          }, data)
+      self.assertEqual(self.EXPECTED_CATEGORY_LINKS, data)
 
   def test_category_links_404(self):
     with self.override_db(self.app), self.app.test_client() as client:
       rv = client.get('/v1/projects/Foo Bar Baz/category_links')
+      self.assertEqual('404 NOT FOUND', rv.status)
+
+  def test_category_links_sorted(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get('/v1/projects/Project 0/category_links/sorted')
+      self.assertEqual('200 OK', rv.status)
+
+      self.maxDiff = None
+
+      data = json.loads(rv.data)
+      self.assertEqual(self.EXPECTED_CATEGORY_LINKS_SORTED, data)
+
+  def test_category_links_sorted_404(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get('/v1/projects/Foo Bar Baz/category_links/sorted')
       self.assertEqual('404 NOT FOUND', rv.status)
