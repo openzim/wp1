@@ -65,6 +65,19 @@ def category_links(project_name):
   return flask.jsonify(data)
 
 
+@projects.route('/<project_name>/category_links/sorted')
+def category_links_sorted(project_name):
+  wp10db = get_db('wp10db')
+  project_name_bytes = project_name.encode('utf-8')
+  project = logic_project.get_project_by_name(wp10db, project_name_bytes)
+  if project is None:
+    return flask.abort(404)
+  data = tables.generate_project_table_data(wp10db, project_name_bytes)
+  data = tables.get_project_category_links(data, sort=True)
+
+  return flask.jsonify(data)
+
+
 @projects.route('/<project_name>/articles')
 def articles(project_name):
   wp10db = get_db('wp10db')
@@ -112,7 +125,6 @@ def articles(project_name):
   end = min(limit_int - 1 + start, total)
   display = {'start': start, 'end': end, 'num_rows': limit_int}
 
-  print('limit_int: %s' % limit_int)
   articles = logic_rating.get_project_rating_by_type(wp10db,
                                                      project_name_bytes,
                                                      quality=quality,

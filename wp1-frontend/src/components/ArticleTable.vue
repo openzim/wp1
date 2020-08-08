@@ -14,7 +14,11 @@
         :startPage="page || '1'"
         v-on:page-select="onPageSelect($event)"
       ></ArticleTablePageSelect>
-      <div class="my-0 row">
+      <ArticleTableRatingSelect
+        :projectId="projectId"
+        v-on:rating-select="onRatingSelect($event)"
+      ></ArticleTableRatingSelect>
+      <div v-if="tableData.length > 0" class="my-0 row">
         <p class="pages-cont">
           Article {{ articleData.pagination.display.start }} -
           {{ articleData.pagination.display.end }} of
@@ -72,7 +76,7 @@
         </tr>
       </table>
 
-      <div class="my-0 row">
+      <div v-if="tableData.length > 0" class="my-0 row">
         <p class="pages-cont">
           Article {{ articleData.pagination.display.start }} -
           {{ articleData.pagination.display.end }} of
@@ -96,6 +100,7 @@
 <script>
 import ArticleTablePagination from './ArticleTablePagination.vue';
 import ArticleTablePageSelect from './ArticleTablePageSelect.vue';
+import ArticleTableRatingSelect from './ArticleTableRatingSelect.vue';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 
 export default {
@@ -103,6 +108,7 @@ export default {
   components: {
     ArticleTablePagination,
     ArticleTablePageSelect,
+    ArticleTableRatingSelect,
     PulseLoader
   },
   data: function() {
@@ -166,6 +172,18 @@ export default {
         }
       });
     },
+    onRatingSelect: function(selection) {
+      const projectName = this.projectId.replace(/_/g, ' ');
+      this.$router.push({
+        path: `/project/${projectName}/articles`,
+        query: {
+          quality: selection.quality,
+          importance: selection.importance,
+          page: this.page,
+          numRows: this.numRows
+        }
+      });
+    },
     onUpdatePage: function(page) {
       const projectName = this.projectId.replace(/_/g, ' ');
       this.$router.push({
@@ -179,6 +197,9 @@ export default {
       });
     },
     classLabel: function(qualOrImp) {
+      if (!this.categoryLinks[qualOrImp]) {
+        return '';
+      }
       return (
         this.categoryLinks[qualOrImp].text || this.categoryLinks[qualOrImp]
       );
