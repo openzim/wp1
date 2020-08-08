@@ -192,6 +192,29 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
+        404:
+          description: 'No project with that projectId was found'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: 'The name of the project, with spaces replaced by "_"'
+          schema:
+            type: string
+  /projects/{projectId}/category_links/sorted:
+    get:
+      summary: 'The same as category_links, but the result is sorted into quality/importance designations.'
+      operationId: projectCategoryLinksSorted
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        404:
+          description: 'No project with that projectId was found'
       parameters:
         - name: projectId
           in: path
