@@ -12,21 +12,21 @@
             <a
               data-toggle="collapse"
               data-parent="#accordion-ps"
-              href="#collapseOne1"
+              href="#collapsePage"
               aria-expanded="true"
-              aria-controls="collapseOne1"
+              aria-controls="collapsePage"
             >
-              Custom pagination <i class="fas fa-angle-down rotate-icon"></i>
+              Custom pagination
             </a>
           </div>
 
           <!-- Card body -->
           <div
-            id="collapseOne1"
+            id="collapsePage"
             class="collapse"
             role="tabpanel"
             aria-labelledby="headingOne1"
-            data-parent="#accordionEx"
+            data-parent="#accordion-ps"
           >
             <div class="card-body form-inline p-2">
               Show
@@ -109,22 +109,7 @@ export default {
 </script>
 
 <style scoped>
-.card-header {
-  background-color: transparent;
-}
-
-.card {
-  border: none;
-}
-
-.card-body {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
-  border-top: 1px solid rgba(0, 0, 0, 0.125);
-}
-
-.card-header {
-  border: none;
-}
+@import '../cards.scss';
 
 .num-select {
   width: 6rem;
