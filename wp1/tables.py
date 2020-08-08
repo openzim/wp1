@@ -184,11 +184,11 @@ def get_project_category_links(data, sort=False):
 
   if sort:
     return {'quality': quality, 'importance': importance}
-  else:
-    all_labels = {}
-    all_labels.update(importance)
-    all_labels.update(quality)
-    return all_labels
+
+  all_labels = {}
+  all_labels.update(importance)
+  all_labels.update(quality)
+  return all_labels
 
 
 def get_cached_table_data(project_name):
