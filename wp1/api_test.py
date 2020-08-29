@@ -11,16 +11,21 @@ class ApiWithCredsTest(unittest.TestCase):
 
   @patch('wp1.api.get_credentials')
   @patch('wp1.api.mwclient.Site')
+  @patch('wp1.api.site')
   @patch('http.cookiejar.MozillaCookieJar')
-  def test_login(self, patched_cookies, patched_mwsite, patched_credentials):
+  def test_login(self, patched_cookies, patched_site, patched_mwsite,
+                 patched_credentials):
     site = patched_mwsite()
+    site.logged_in = False
+    patched_site.logged_in = False
     wp1.api.login()
     self.assertEqual(1, site.login.call_count)
 
   @patch('wp1.api.get_credentials')
   @patch('wp1.api.mwclient.Site')
   @patch('http.cookiejar.MozillaCookieJar')
-  def test_login(self, patched_cookies, patched_mwsite, patched_credentials):
+  def test_login_already_logged_in(self, patched_cookies, patched_mwsite,
+                                   patched_credentials):
     site = patched_mwsite()
     actual = wp1.api.login()
     self.assertTrue(actual)
@@ -61,6 +66,14 @@ class ApiTest(unittest.TestCase):
     self.original_save_page(self.page, '<code>', 'edit summary')
     self.assertEqual(1, patched_login.call_count)
     self.assertEqual(1, patched_get_page.call_count)
+
+  @patch('wp1.api.login')
+  @patch('wp1.api.site')
+  def test_save_page_no_credentials(self, patched_site, patched_login):
+    patched_site.logged_in = False
+    patched_login.return_value = False
+    actual = wp1.api.save_page(self.page, '<code>', 'edit summary')
+    self.assertFalse(actual)
 
   def test_get_revision_id_present(self):
     self.page.revisions.return_value = iter(({'revid': 10},))
