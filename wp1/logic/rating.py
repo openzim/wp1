@@ -27,6 +27,7 @@ def get_project_ratings(wp10db, project_name):
 def _project_rating_query(project_name,
                           quality=None,
                           importance=None,
+                          pattern=None,
                           page=None,
                           count=False,
                           limit=100):
@@ -45,6 +46,9 @@ def _project_rating_query(project_name,
               ' grq.gr_rating = r_quality')
 
   query += ' WHERE r_project = %(r_project)s'
+
+  if pattern is not None:
+    query += ' AND r_article LIKE %(article_pattern_compiled)s'
 
   if quality is not None:
     if quality == b'Assessed-Class':
@@ -68,24 +72,30 @@ def _project_rating_query(project_name,
   else:
     query += ' LIMIT %s' % limit
 
+  print(query)
   return query
 
 
 def get_project_rating_count_by_type(wp10db,
                                      project_name,
                                      quality=None,
-                                     importance=None):
+                                     importance=None,
+                                     pattern=None):
   query = _project_rating_query(project_name,
                                 quality=quality,
                                 importance=importance,
+                                pattern=pattern,
                                 count=True)
+
+  params = {
+      'r_project': project_name,
+      'r_quality': quality,
+      'r_importance': importance,
+  }
+  if pattern is not None:
+    params['article_pattern_compiled'] = '%' + pattern + '%'
   with wp10db.cursor() as cursor:
-    cursor.execute(
-        query, {
-            'r_project': project_name,
-            'r_quality': quality,
-            'r_importance': importance,
-        })
+    cursor.execute(query, params)
     res = cursor.fetchone()
     return res['count']
 
@@ -94,6 +104,7 @@ def get_project_rating_by_type(wp10db,
                                project_name,
                                quality=None,
                                importance=None,
+                               pattern=None,
                                page=None,
                                limit=100):
   try:
@@ -108,15 +119,18 @@ def get_project_rating_by_type(wp10db,
   query = _project_rating_query(project_name,
                                 quality=quality,
                                 importance=importance,
+                                pattern=pattern,
                                 page=page,
                                 limit=limit)
+  params = {
+      'r_project': project_name,
+      'r_quality': quality,
+      'r_importance': importance,
+  }
+  if pattern is not None:
+    params['article_pattern_compiled'] = '%' + pattern + '%'
   with wp10db.cursor() as cursor:
-    cursor.execute(
-        query, {
-            'r_project': project_name,
-            'r_quality': quality,
-            'r_importance': importance,
-        })
+    cursor.execute(query, params)
     return [Rating(**db_rating) for db_rating in cursor.fetchall()]
 
 

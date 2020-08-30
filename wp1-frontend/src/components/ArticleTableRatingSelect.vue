@@ -21,7 +21,11 @@
           </div>
 
           <!-- Card body -->
-          <div id="collapseRating" class="collapse" data-parent="#accordion-rs">
+          <div
+            id="collapseRating"
+            :class="['collapse', startOpen() ? 'show' : '']"
+            data-parent="#accordion-rs"
+          >
             <div class="card-body form-inline p-2">
               Quality
               <select class="custom-select" ref="qualitySelect">
@@ -69,6 +73,9 @@ export default {
     this.getCategoryLinks();
   },
   methods: {
+    startOpen: function() {
+      return !!this.$route.query.quality || !!this.$route.query.importance;
+    },
     getCategoryLinks: async function() {
       const response = await fetch(
         `${process.env.VUE_APP_API_URL}/projects/${this.projectId}/category_links/sorted`
@@ -93,4 +100,8 @@ export default {
 
 <style scoped>
 @import '../cards.scss';
+
+.custom-select {
+  margin: 0 0.5rem;
+}
 </style>
