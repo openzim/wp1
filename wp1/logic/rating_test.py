@@ -223,3 +223,21 @@ class GetProjectRatingByTypeTest(BaseWpOneDbTest):
     self.assertEqual(50, len(ratings))
     for rating in ratings:
       self.assertNotEqual(b'Unassessed-Class', rating.r_quality)
+
+  def test_article_pattern(self):
+    self._add_ratings()
+    ratings = logic_rating.get_project_rating_by_type(self.wp10db,
+                                                      b'Project 0',
+                                                      pattern='Class',
+                                                      limit=500)
+
+    self.assertEqual(150, len(ratings))
+
+  def test_article_pattern_no_results(self):
+    self._add_ratings()
+    ratings = logic_rating.get_project_rating_by_type(self.wp10db,
+                                                      b'Project 0',
+                                                      pattern='xyz',
+                                                      limit=500)
+
+    self.assertEqual(0, len(ratings))

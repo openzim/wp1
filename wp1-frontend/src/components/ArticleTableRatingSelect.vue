@@ -21,28 +21,34 @@
           </div>
 
           <!-- Card body -->
-          <div id="collapseRating" class="collapse" data-parent="#accordion-rs">
+          <div
+            id="collapseRating"
+            :class="['collapse', startOpen() ? 'show' : '']"
+            data-parent="#accordion-rs"
+          >
             <div class="card-body form-inline p-2">
-              Quality
-              <select class="custom-select" ref="qualitySelect">
-                <option
-                  v-for="(item, key) in categoryLinks.quality"
-                  :value="key"
-                  v-bind:key="key"
-                  :selected="$route.query.quality == key"
-                  >{{ item.text ? item.text : item }}</option
-                >
-              </select>
-              Rating
-              <select class="custom-select" ref="importanceSelect">
-                <option
-                  v-for="(item, key) in categoryLinks.importance"
-                  :value="key"
-                  v-bind:key="key"
-                  :selected="$route.query.importance == key"
-                  >{{ item.text ? item.text : item }}</option
-                >
-              </select>
+              <div class="card-form">
+                Quality
+                <select class="custom-select" ref="qualitySelect">
+                  <option
+                    v-for="(item, key) in categoryLinks.quality"
+                    :value="key"
+                    v-bind:key="key"
+                    :selected="$route.query.quality == key"
+                    >{{ item.text ? item.text : item }}</option
+                  >
+                </select>
+                Rating
+                <select class="custom-select" ref="importanceSelect">
+                  <option
+                    v-for="(item, key) in categoryLinks.importance"
+                    :value="key"
+                    v-bind:key="key"
+                    :selected="$route.query.importance == key"
+                    >{{ item.text ? item.text : item }}</option
+                  >
+                </select>
+              </div>
               <button v-on:click="onButtonClick()" class="btn-primary ml-4">
                 Update View
               </button>
@@ -69,6 +75,9 @@ export default {
     this.getCategoryLinks();
   },
   methods: {
+    startOpen: function() {
+      return !!this.$route.query.quality || !!this.$route.query.importance;
+    },
     getCategoryLinks: async function() {
       const response = await fetch(
         `${process.env.VUE_APP_API_URL}/projects/${this.projectId}/category_links/sorted`
@@ -93,4 +102,8 @@ export default {
 
 <style scoped>
 @import '../cards.scss';
+
+.custom-select {
+  margin: 0 0.5rem;
+}
 </style>

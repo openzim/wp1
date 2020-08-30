@@ -18,6 +18,10 @@
         :projectId="projectId"
         v-on:rating-select="onRatingSelect($event)"
       ></ArticleTableRatingSelect>
+      <ArticleTableNameFilter
+        :filterValue="articlePattern"
+        v-on:name-filter="onNameFilter($event)"
+      ></ArticleTableNameFilter>
       <div v-if="tableData.length > 0" class="my-0 row">
         <p class="pages-cont">
           Article {{ articleData.pagination.display.start }} -
@@ -101,6 +105,7 @@
 import ArticleTablePagination from './ArticleTablePagination.vue';
 import ArticleTablePageSelect from './ArticleTablePageSelect.vue';
 import ArticleTableRatingSelect from './ArticleTableRatingSelect.vue';
+import ArticleTableNameFilter from './ArticleTableNameFilter.vue';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 
 export default {
@@ -109,6 +114,7 @@ export default {
     ArticleTablePagination,
     ArticleTablePageSelect,
     ArticleTableRatingSelect,
+    ArticleTableNameFilter,
     PulseLoader
   },
   data: function() {
@@ -125,7 +131,8 @@ export default {
     importance: String,
     quality: String,
     page: String,
-    numRows: String
+    numRows: String,
+    articlePattern: String
   },
   computed: {
     tableData: function() {
@@ -157,6 +164,9 @@ export default {
     },
     numRows: async function() {
       await this.updateTable();
+    },
+    articlePattern: async function() {
+      await this.updateTable();
     }
   },
   methods: {
@@ -168,7 +178,8 @@ export default {
           quality: this.quality,
           importance: this.importance,
           page: selection.page,
-          numRows: selection.rows
+          numRows: selection.rows,
+          articlePattern: this.articlePattern
         }
       });
     },
@@ -180,7 +191,21 @@ export default {
           quality: selection.quality,
           importance: selection.importance,
           page: this.page,
-          numRows: this.numRows
+          numRows: this.numRows,
+          articlePattern: this.articlePattern
+        }
+      });
+    },
+    onNameFilter: function(selection) {
+      const projectName = this.projectId.replace(/_/g, ' ');
+      this.$router.push({
+        path: `/project/${projectName}/articles`,
+        query: {
+          quality: this.quality,
+          importance: this.importance,
+          page: this.page,
+          numRows: this.numRows,
+          articlePattern: selection
         }
       });
     },
@@ -226,6 +251,9 @@ export default {
       }
       if (this.numRows) {
         params.numRows = this.numRows;
+      }
+      if (this.articlePattern) {
+        params.articlePattern = this.articlePattern;
       }
       Object.keys(params).forEach(key =>
         url.searchParams.append(key, params[key])
