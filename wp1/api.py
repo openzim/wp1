@@ -47,10 +47,12 @@ def login():
                        pool=connection)
   if not site.logged_in:
     try:
+      logger.info('Logging into API site')
       site.login(api_creds['user'], api_creds['pass'])
+      logger.info('Saving cookies')
       cookie_jar.save(ignore_discard=True, ignore_expires=True)
     except mwclient.errors.LoginError:
-      logger.exception('Exception logging into wikipedia')
+      logger.exception('Exception logging into Wikipedia')
       return False
   return True
 
@@ -60,11 +62,13 @@ def get_page(name):
     logger.error('Could not get page %s because api site is not defined', name)
     return None
 
+  logger.info('Returning API page %s', name)
   return site.pages[name]
 
 
 def save_page(page, wikicode, msg):
   if not site or not site.logged_in:
+    logger.info('Reloading site login')
     if not login():
       logger.warning("Could not save page, no site object")
       return False
@@ -75,6 +79,7 @@ def save_page(page, wikicode, msg):
     # https://github.com/mwclient/mwclient/issues/231
     page = get_page(page.name)
 
+  logger.info('Saving API page %s', page.name)
   page.save(wikicode, msg)
 
   return True
