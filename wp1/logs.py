@@ -1,5 +1,6 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
+import logging
 import re
 
 from wp1 import api
@@ -11,6 +12,8 @@ from wp1.templates import env as jinja_env
 from wp1.time import get_current_datetime
 from wp1.wiki_db import connect as wiki_connect
 from wp1.wp10_db import connect as wp10_connect
+
+logger = logging.getLogger(__name__)
 
 config = get_conf()
 NOT_A_CLASS = config['NOT_A_CLASS'].encode('utf-8')
@@ -196,6 +199,8 @@ def generate_log_edits(wikidb, wp10db, project_name, log_map):
 def update_log_page_for_project(project_name):
   wikidb = wiki_connect()
   wp10db = wp10_connect()
+  logging.basicConfig(level=logging.INFO)
+
   try:
     log_map = calculate_logs_to_update(wikidb, wp10db, project_name)
     edits = generate_log_edits(wikidb, wp10db, project_name, log_map)
@@ -222,6 +227,7 @@ def update_log_page_for_project(project_name):
           update = (header + 'Sorry, all of the logs for this date were too '
                     'large to upload.')
 
+    logger.info('Updating logs for %s', project_name)
     api.save_page(p, update, 'Update logs for past 7 days')
   finally:
     if wikidb:
