@@ -115,10 +115,13 @@ def articles(project_name):
   if importance:
     importance = importance.encode('utf-8')
 
+  article_pattern = flask.request.args.get('articlePattern')
+
   total = logic_rating.get_project_rating_count_by_type(wp10db,
                                                         project_name_bytes,
                                                         quality=quality,
-                                                        importance=importance)
+                                                        importance=importance,
+                                                        pattern=article_pattern)
   total_pages = total // limit_int + 1 if total % limit_int != 0 else 0
 
   start = limit_int * (page_int - 1) + 1
@@ -129,6 +132,7 @@ def articles(project_name):
                                                      project_name_bytes,
                                                      quality=quality,
                                                      importance=importance,
+                                                     pattern=article_pattern,
                                                      page=page,
                                                      limit=limit_int)
 
