@@ -23,7 +23,7 @@
           <!-- Card body -->
           <div
             id="collapsePage"
-            class="collapse"
+            :class="['collapse', startOpen() ? 'show' : '']"
             role="tabpanel"
             aria-labelledby="headingOne1"
             data-parent="#accordion-ps"
@@ -87,6 +87,9 @@ export default {
     }
   },
   methods: {
+    startOpen: function() {
+      return this.numRows != 100 || this.startPage > 1;
+    },
     isValid: function() {
       return !this.errorRows && !this.errorPage;
     },
@@ -102,6 +105,7 @@ export default {
   },
   watch: {
     $route: function(to) {
+      this.rows = to.query.rows || 100;
       this.page = to.query.page || 1;
     }
   }
