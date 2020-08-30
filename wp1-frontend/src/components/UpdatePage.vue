@@ -85,6 +85,7 @@ export default {
       return (
         this.jobStatusEnum !== null &&
         this.jobStatusEnum !== 'finished' &&
+        this.progressTotal > 0 &&
         this.progressCurrent >= this.progressTotal
       );
     },
