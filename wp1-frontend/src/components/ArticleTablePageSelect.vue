@@ -29,28 +29,30 @@
             data-parent="#accordion-ps"
           >
             <div class="card-body form-inline p-2">
-              Show
-              <input
-                id="row-input"
-                :class="[
-                  'num-select',
-                  'form-control',
-                  'm-2',
-                  { 'is-invalid': errorRows }
-                ]"
-                v-model="rows"
-              />
-              rows starting with page
-              <input
-                id="page-input"
-                :class="[
-                  'num-select',
-                  'form-control',
-                  'm-2',
-                  { 'is-invalid': errorPage }
-                ]"
-                v-model="page"
-              />
+              <div class="card-form">
+                Show
+                <input
+                  id="row-input"
+                  :class="[
+                    'num-select',
+                    'form-control',
+                    'm-2',
+                    { 'is-invalid': errorRows }
+                  ]"
+                  v-model="rows"
+                />
+                rows starting with page
+                <input
+                  id="page-input"
+                  :class="[
+                    'num-select',
+                    'form-control',
+                    'm-2',
+                    { 'is-invalid': errorPage }
+                  ]"
+                  v-model="page"
+                />
+              </div>
 
               <button v-on:click="onButtonClick()" class="btn-primary ml-4">
                 Update View

@@ -27,26 +27,28 @@
             data-parent="#accordion-rs"
           >
             <div class="card-body form-inline p-2">
-              Quality
-              <select class="custom-select" ref="qualitySelect">
-                <option
-                  v-for="(item, key) in categoryLinks.quality"
-                  :value="key"
-                  v-bind:key="key"
-                  :selected="$route.query.quality == key"
-                  >{{ item.text ? item.text : item }}</option
-                >
-              </select>
-              Rating
-              <select class="custom-select" ref="importanceSelect">
-                <option
-                  v-for="(item, key) in categoryLinks.importance"
-                  :value="key"
-                  v-bind:key="key"
-                  :selected="$route.query.importance == key"
-                  >{{ item.text ? item.text : item }}</option
-                >
-              </select>
+              <div class="card-form">
+                Quality
+                <select class="custom-select" ref="qualitySelect">
+                  <option
+                    v-for="(item, key) in categoryLinks.quality"
+                    :value="key"
+                    v-bind:key="key"
+                    :selected="$route.query.quality == key"
+                    >{{ item.text ? item.text : item }}</option
+                  >
+                </select>
+                Rating
+                <select class="custom-select" ref="importanceSelect">
+                  <option
+                    v-for="(item, key) in categoryLinks.importance"
+                    :value="key"
+                    v-bind:key="key"
+                    :selected="$route.query.importance == key"
+                    >{{ item.text ? item.text : item }}</option
+                  >
+                </select>
+              </div>
               <button v-on:click="onButtonClick()" class="btn-primary ml-4">
                 Update View
               </button>
