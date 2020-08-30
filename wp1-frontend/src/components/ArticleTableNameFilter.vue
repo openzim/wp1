@@ -27,12 +27,14 @@
             data-parent="#accordion-nf"
           >
             <div class="card-body form-inline p-2">
-              Article name must contain:
-              <input
-                ref="filterInput"
-                class="form-control m-2"
-                :value="filterValue"
-              />
+              <div class="card-form">
+                Article name must contain:
+                <input
+                  ref="filterInput"
+                  class="form-control m-2"
+                  :value="filterValue"
+                />
+              </div>
               <button v-on:click="onButtonClick()" class="btn-primary ml-4">
                 Update View
               </button>
