@@ -348,9 +348,9 @@ def generate_table_data(stats, categories, table_overrides=None):
   return ans
 
 
-def generate_project_table_data(wp10db, project_name):
+def generate_project_table_data(wp10db, project_name, ignore_cache=False):
   data = get_cached_table_data(project_name)
-  if data is None:
+  if ignore_cache or data is None:
     stats = get_project_stats(wp10db, project_name)
     categories = get_project_categories(wp10db, project_name)
     project_display = project_name.decode('utf-8').replace('_', ' ')
@@ -393,7 +393,9 @@ def upload_project_table(project_name):
   try:
     logger.info('Getting table data for project: %s',
                 project_name.decode('utf-8'))
-    table_data = generate_project_table_data(wp10db, project_name)
+    table_data = generate_project_table_data(wp10db,
+                                             project_name,
+                                             ignore_cache=True)
 
     wikicode = create_wikicode(table_data)
     page_name = ('User:WP 1.0 bot/Tables/Project/%s' %
