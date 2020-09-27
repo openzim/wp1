@@ -15,6 +15,15 @@
         ></Autocomplete>
       </div>
     </div>
+    <div class="row">
+      <div class="col-xl-6">
+        <ArticleTableRatingSelect
+          :projectId="projectIdA"
+          :layout="'alternate'"
+          v-on:rating-select="onProjectARatingSelect($event)"
+        ></ArticleTableRatingSelect>
+      </div>
+    </div>
     <div class="row mt-4">
       <div class="col-xl-6">
         <Autocomplete
@@ -22,6 +31,15 @@
           :hideInstructions="true"
           v-on:select-project="projectB = $event"
         ></Autocomplete>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-xl-6">
+        <ArticleTableRatingSelect
+          :projectId="projectIdB"
+          :layout="'alternate'"
+          v-on:rating-select="onProjectBRatingSelect($event)"
+        ></ArticleTableRatingSelect>
       </div>
     </div>
     <div class="row mt-4">
@@ -37,50 +55,75 @@
         </div>
       </div>
     </div>
-    <div class="row mt-4">
+    <div v-if="projectsSelected" class="row mt-4">
       <div class="col">
-        <div v-if="projectsSelected">
-          The projects are {{ projectA }} and {{ projectB }}.
-        </div>
+        <ArticleTable
+          :hideRatingSelect="true"
+          :projectId="projectIdA"
+          :projectIdB="projectIdB"
+          :importance="projectAImportance"
+          :quality="projectAQuality"
+          :page="$route.query.page"
+          :numRows="$route.query.numRows"
+          :articlePattern="$route.query.articlePattern"
+        ></ArticleTable>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import ArticleTable from './ArticleTable.vue';
+import ArticleTableRatingSelect from './ArticleTableRatingSelect';
 import Autocomplete from './Autocomplete.vue';
 
 export default {
   name: 'updatepage',
   components: {
+    ArticleTable,
+    ArticleTableRatingSelect,
     Autocomplete
   },
   props: ['incomingSearchA', 'incomingSearchB'],
   data: function() {
     return {
       projectA: null,
-      projectB: null
+      projectB: null,
+      projectAQuality: null,
+      projectAImportance: null,
+      projectBQuality: null,
+      projectBImportance: null
     };
   },
   computed: {
-    currentProjectIdA: function() {
+    projectIdA: function() {
       if (!this.projectA) {
         return null;
       }
-      return this.currentProjectA.replace(/ /g, '_');
+      return this.projectA.replace(/ /g, '_');
     },
-    currentProjectIdB: function() {
+    projectIdB: function() {
       if (!this.projectB) {
         return null;
       }
-      return this.currentProjectB.replace(/ /g, '_');
+      return this.projectB.replace(/ /g, '_');
     },
     projectsSelected: function() {
       return !!this.projectA && !!this.projectB;
     }
   },
   methods: {
-    onCompareClick: async function() {}
+    onCompareClick: async function() {},
+    onProjectARatingSelect: function(event) {
+      window.console.log('a', event);
+      this.projectAQuality = event.quality;
+      this.projectAImportance = event.importance;
+    },
+    onProjectBRatingSelect: function(event) {
+      window.console.log('b', event);
+      this.projectBQuality = event.quality;
+      this.projectBImportance = event.importance;
+    }
   }
 };
 </script>

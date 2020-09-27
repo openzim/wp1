@@ -15,6 +15,7 @@
         v-on:page-select="onPageSelect($event)"
       ></ArticleTablePageSelect>
       <ArticleTableRatingSelect
+        v-if="!hideRatingSelect"
         :projectId="projectId"
         v-on:rating-select="onRatingSelect($event)"
       ></ArticleTableRatingSelect>
@@ -128,11 +129,13 @@ export default {
   },
   props: [
     'projectId',
+    'projectIdB',
     'importance',
     'quality',
     'page',
     'numRows',
-    'articlePattern'
+    'articlePattern',
+    'hideRatingSelect'
   ],
   computed: {
     tableData: function() {
