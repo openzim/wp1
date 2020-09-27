@@ -53,9 +53,9 @@ def _project_rating_query(project_name,
           ' FROM ' + Rating.table_name + ' as rating_a')
 
   if project_b_name is not None:
-    query += (' JOIN ' + Rating.table_name +
-              ' as rating_b ON rating_a.r_article ='
-              ' rating_b.r_article')
+    query += (' JOIN ' + Rating.table_name + ' as rating_b'
+              ' ON rating_a.r_article = rating_b.r_article'
+              ' AND rating_a.r_namespace = rating_b.r_namespace')
 
   if project_b_name is None:
     if importance is None:

@@ -1,98 +1,94 @@
 <template>
   <div class="row">
-    <div v-if="layout != 'alternate'">
-      <div class="select-cont col-7">
-        <div
-          class="accordion"
-          id="accordion-rs"
-          role="tablist"
-          aria-multiselectable="true"
-        >
-          <div class="card mb-2">
-            <div class="card-header p-0" role="tab" id="collapse-rating-select">
-              <a
-                data-toggle="collapse"
-                data-parent="#accordion-rs"
-                href="#collapseRating"
-                aria-expanded="true"
-                aria-controls="collapseRating"
-              >
-                Select Quality/Importance
-              </a>
-            </div>
-
-            <!-- Card body -->
-            <div
-              id="collapseRating"
-              :class="['collapse', startOpen() ? 'show' : '']"
+    <div v-if="layout != 'alternate'" class="select-cont col-xl-7">
+      <div
+        class="accordion"
+        id="accordion-rs"
+        role="tablist"
+        aria-multiselectable="true"
+      >
+        <div class="card mb-2">
+          <div class="card-header p-0" role="tab" id="collapse-rating-select">
+            <a
+              data-toggle="collapse"
               data-parent="#accordion-rs"
+              href="#collapseRating"
+              aria-expanded="true"
+              aria-controls="collapseRating"
             >
-              <div class="card-body form-inline p-2">
-                <div class="card-form">
-                  Quality
-                  <select class="custom-select" ref="qualitySelect">
-                    <option
-                      v-for="(item, key) in categoryLinks.quality"
-                      :value="key"
-                      v-bind:key="key"
-                      :selected="$route.query.quality == key"
-                      >{{ item.text ? item.text : item }}</option
-                    >
-                  </select>
-                  Rating
-                  <select class="custom-select" ref="importanceSelect">
-                    <option
-                      v-for="(item, key) in categoryLinks.importance"
-                      :value="key"
-                      v-bind:key="key"
-                      :selected="$route.query.importance == key"
-                      >{{ item.text ? item.text : item }}</option
-                    >
-                  </select>
-                </div>
-                <button v-on:click="onButtonClick()" class="btn-primary ml-4">
-                  Update View
-                </button>
+              Select Quality/Importance
+            </a>
+          </div>
+
+          <!-- Card body -->
+          <div
+            id="collapseRating"
+            :class="['collapse', startOpen() ? 'show' : '']"
+            data-parent="#accordion-rs"
+          >
+            <div class="card-body form-inline p-2">
+              <div class="card-form">
+                Quality
+                <select class="custom-select" ref="qualitySelect">
+                  <option
+                    v-for="(item, key) in categoryLinks.quality"
+                    :value="key"
+                    v-bind:key="key"
+                    :selected="$route.query.quality == key"
+                    >{{ item.text ? item.text : item }}</option
+                  >
+                </select>
+                Importance
+                <select class="custom-select" ref="importanceSelect">
+                  <option
+                    v-for="(item, key) in categoryLinks.importance"
+                    :value="key"
+                    v-bind:key="key"
+                    :selected="$route.query.importance == key"
+                    >{{ item.text ? item.text : item }}</option
+                  >
+                </select>
               </div>
+              <button v-on:click="onButtonClick()" class="btn-primary ml-4">
+                Update View
+              </button>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <div v-else>
-      <div class="col">
-        <div class="form-inline">
-          Quality
-          <select
-            :disabled="!projectId"
-            @change="onSelectChange()"
-            class="custom-select"
-            ref="qualitySelect"
+    <div v-else class="col">
+      <div class="form-inline">
+        Quality
+        <select
+          :disabled="!projectId"
+          @change="onSelectChange()"
+          class="custom-select"
+          ref="qualitySelect"
+        >
+          <option
+            v-for="(item, key) in categoryLinks.quality"
+            :value="key"
+            v-bind:key="key"
+            :selected="$route.query.quality == key"
+            >{{ item.text ? item.text : item }}</option
           >
-            <option
-              v-for="(item, key) in categoryLinks.quality"
-              :value="key"
-              v-bind:key="key"
-              :selected="$route.query.quality == key"
-              >{{ item.text ? item.text : item }}</option
-            >
-          </select>
-          Rating
-          <select
-            :disabled="!projectId"
-            @change="onSelectChange()"
-            class="custom-select"
-            ref="importanceSelect"
+        </select>
+        Importance
+        <select
+          :disabled="!projectId"
+          @change="onSelectChange()"
+          class="custom-select"
+          ref="importanceSelect"
+        >
+          <option
+            v-for="(item, key) in categoryLinks.importance"
+            :value="key"
+            v-bind:key="key"
+            :selected="$route.query.importance == key"
+            >{{ item.text ? item.text : item }}</option
           >
-            <option
-              v-for="(item, key) in categoryLinks.importance"
-              :value="key"
-              v-bind:key="key"
-              :selected="$route.query.importance == key"
-              >{{ item.text ? item.text : item }}</option
-            >
-          </select>
-        </div>
+        </select>
       </div>
     </div>
   </div>
@@ -107,6 +103,9 @@ export default {
       categoryLinks: {}
     };
   },
+  created: function() {
+    this.getCategoryLinks();
+  },
   watch: {
     projectId: async function() {
       await this.getCategoryLinks();
@@ -118,10 +117,16 @@ export default {
       return !!this.$route.query.quality || !!this.$route.query.importance;
     },
     getCategoryLinks: async function() {
+      if (!this.projectId) {
+        return;
+      }
       const response = await fetch(
         `${process.env.VUE_APP_API_URL}/projects/${this.projectId}/category_links/sorted`
       );
-      this.categoryLinks = await response.json();
+      const links = await response.json();
+      links.quality[''] = 'None Selected';
+      links.importance[''] = 'None Selected';
+      this.categoryLinks = links;
     },
     // Only used for alternate view on Compare pages.
     onSelectChange: function() {
