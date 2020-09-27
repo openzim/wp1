@@ -16,6 +16,8 @@
       ></ArticleTablePageSelect>
       <ArticleTableRatingSelect
         v-if="!hideRatingSelect"
+        :initialQuality="quality"
+        :initialImportance="importance"
         :projectId="projectId"
         v-on:rating-select="onRatingSelect($event)"
       ></ArticleTableRatingSelect>

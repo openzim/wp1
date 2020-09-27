@@ -131,7 +131,6 @@ export default {
         const found = this.projects.filter(project => {
           return project.name == val;
         });
-        window.console.log(found);
         if (found.length === 1) {
           this.search = val;
           this.onChange();
@@ -143,6 +142,11 @@ export default {
   watch: {
     incomingSearch: function(val) {
       this.updateFromIncomingSearch(val);
+    },
+    $route: function(to) {
+      if (to.path == '/compare') {
+        this.search = '';
+      }
     }
   }
 };

@@ -34,7 +34,7 @@
                     v-for="(item, key) in categoryLinks.quality"
                     :value="key"
                     v-bind:key="key"
-                    :selected="$route.query.quality == key"
+                    :selected="selectedQuality == key"
                     >{{ item.text ? item.text : item }}</option
                   >
                 </select>
@@ -44,7 +44,7 @@
                     v-for="(item, key) in categoryLinks.importance"
                     :value="key"
                     v-bind:key="key"
-                    :selected="$route.query.importance == key"
+                    :selected="selectedImportance == key"
                     >{{ item.text ? item.text : item }}</option
                   >
                 </select>
@@ -70,7 +70,7 @@
             v-for="(item, key) in categoryLinks.quality"
             :value="key"
             v-bind:key="key"
-            :selected="$route.query.quality == key"
+            :selected="selectedQuality == key"
             >{{ item.text ? item.text : item }}</option
           >
         </select>
@@ -85,7 +85,7 @@
             v-for="(item, key) in categoryLinks.importance"
             :value="key"
             v-bind:key="key"
-            :selected="$route.query.importance == key"
+            :selected="selectedImportance == key"
             >{{ item.text ? item.text : item }}</option
           >
         </select>
@@ -97,7 +97,7 @@
 <script>
 export default {
   name: 'articletableratingselect',
-  props: ['projectId', 'layout'],
+  props: ['initialQuality', 'initialImportance', 'projectId', 'layout'],
   data: function() {
     return {
       categoryLinks: {}
@@ -106,10 +106,23 @@ export default {
   created: function() {
     this.getCategoryLinks();
   },
+  computed: {
+    selectedQuality: function() {
+      return this.initialQuality || '';
+    },
+    selectedImportance: function() {
+      return this.initialImportance || '';
+    }
+  },
   watch: {
     projectId: async function() {
       await this.getCategoryLinks();
       this.onSelectChange();
+    },
+    $route: function(to) {
+      if (to.path == '/compare') {
+        this.categoryLinks = {};
+      }
     }
   },
   methods: {
@@ -128,6 +141,7 @@ export default {
       links.importance[''] = 'None Selected';
       this.categoryLinks = links;
     },
+
     // Only used for alternate view on Compare pages.
     onSelectChange: function() {
       const quality = this.$refs.qualitySelect.value;
