@@ -91,9 +91,11 @@ class Rating:
         'quality':
             self.r_quality.decode('utf-8'),
         'quality_updated':
-            self.r_quality_timestamp.decode('utf-8'),
+            self.r_quality_timestamp.decode('utf-8')
+            if self.r_quality_timestamp else None,
         'importance':
             self.r_importance.decode('utf-8'),
         'importance_updated':
-            self.r_importance_timestamp.decode('utf-8'),
+            self.r_importance_timestamp.decode('utf-8')
+            if self.r_importance_timestamp else None,
     }
