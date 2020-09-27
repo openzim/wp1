@@ -112,6 +112,16 @@ class ProjectTest(BaseWebTestcase):
               'r_importance': importance,
               'r_importance_timestamp': '20191226T00:00:00',
           })
+          ratings.append({
+              'r_project': 'Project 1',
+              'r_namespace': 0,
+              'r_article': '%s_%s_%s' % (quality, importance, i),
+              'r_score': 0,
+              'r_quality': quality,
+              'r_quality_timestamp': '20191225T00:00:00',
+              'r_importance': importance,
+              'r_importance_timestamp': '20191226T00:00:00',
+          })
 
     with self.wp10db.cursor() as cursor:
       cursor.executemany(
@@ -256,6 +266,56 @@ class ProjectTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       rv = client.get('/v1/projects/Project 0/articles?page=-5')
       self.assertEqual('400 BAD REQUEST', rv.status)
+
+  def test_articles_404_project_b(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get('/v1/projects/Project 0/articles?projectB=Foo')
+      self.assertEqual('404 NOT FOUND', rv.status)
+
+  def test_articles_project_b(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get('/v1/projects/Project 0/articles?projectB=Project 1')
+      self.assertEqual('200 OK', rv.status)
+
+  def test_articles_project_b_quality_left(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get(
+          '/v1/projects/Project 0/articles?quality=A-Class&projectB=Project 1')
+      self.assertEqual('200 OK', rv.status)
+
+  def test_articles_project_b_quality_right(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get(
+          '/v1/projects/Project 0/articles?qualityB=A-Class&projectB=Project 1')
+      self.assertEqual('200 OK', rv.status)
+
+  def test_articles_project_b_quality_both(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get(
+          '/v1/projects/Project 0/articles?quality=A-Class&qualityB=A-Class&projectB=Project 1'
+      )
+      self.assertEqual('200 OK', rv.status)
+
+  def test_articles_project_b_importance_left(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get(
+          '/v1/projects/Project 0/articles?importance=A-Class&projectB=Project 1'
+      )
+      self.assertEqual('200 OK', rv.status)
+
+  def test_articles_project_b_importance_right(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get(
+          '/v1/projects/Project 0/articles?importanceB=A-Class&projectB=Project 1'
+      )
+      self.assertEqual('200 OK', rv.status)
+
+  def test_articles_project_b_importance_both(self):
+    with self.override_db(self.app), self.app.test_client() as client:
+      rv = client.get(
+          '/v1/projects/Project 0/articles?importance=A-Class&importanceB=A-Class&projectB=Project 1'
+      )
+      self.assertEqual('200 OK', rv.status)
 
   @patch('wp1.queues.ENV', Environment.PRODUCTION)
   @patch('wp1.queues.utcnow', return_value=datetime(2018, 12, 25, 5, 55, 55))
