@@ -126,14 +126,14 @@ export default {
       loaderSize: '1rem'
     };
   },
-  props: {
-    projectId: String,
-    importance: String,
-    quality: String,
-    page: String,
-    numRows: String,
-    articlePattern: String
-  },
+  props: [
+    'projectId',
+    'importance',
+    'quality',
+    'page',
+    'numRows',
+    'articlePattern'
+  ],
   computed: {
     tableData: function() {
       if (this.articleData === null) {
