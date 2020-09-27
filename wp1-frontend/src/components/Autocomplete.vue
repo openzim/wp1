@@ -1,6 +1,6 @@
 <template>
   <div>
-    <p v-if="!this.$route.path.startsWith('/update')">
+    <p v-if="!hideInstructions">
       Use the autocomplete search box below to search for a project in order to
       display it's summary table.
     </p>
@@ -23,7 +23,7 @@
         type="text"
         placeholder="Project name"
       />
-      <button v-on:click="onButtonClick()" class="btn-primary">
+      <button v-on:click="onButtonClick()" class="btn btn-primary">
         Select Project
       </button>
     </div>
@@ -47,7 +47,7 @@
 <script>
 export default {
   name: 'autocomplete',
-  props: ['incomingSearch'],
+  props: ['incomingSearch', 'hideInstructions'],
   data: function() {
     return {
       isOpen: false,

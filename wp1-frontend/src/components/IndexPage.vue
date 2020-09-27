@@ -1,6 +1,6 @@
 <template>
   <div class="row">
-    <div class="col-xlg-6">
+    <div class="col-xl-6">
       <Autocomplete
         v-on:select-project="currentProject = $event"
       ></Autocomplete>

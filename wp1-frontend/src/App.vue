@@ -29,7 +29,10 @@
           <li
             :class="
               'nav-item ' +
-                (!this.$route.path.startsWith('/update') ? 'active' : '')
+                (!this.$route.path.startsWith('/update') &&
+                !this.$route.path.startsWith('/compare')
+                  ? 'active'
+                  : '')
             "
           >
             <router-link class="nav-link" to="/">Projects</router-link>
@@ -42,6 +45,16 @@
           >
             <router-link class="nav-link" to="/update"
               >Manual Update</router-link
+            >
+          </li>
+          <li
+            :class="
+              'nav-item ' +
+                (this.$route.path.startsWith('/compare') ? 'active' : '')
+            "
+          >
+            <router-link class="nav-link" to="/compare"
+              >Compare Projects</router-link
             >
           </li>
         </ul>
