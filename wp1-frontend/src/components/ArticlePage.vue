@@ -50,6 +50,10 @@
           :page="$route.query.page"
           :numRows="$route.query.numRows"
           :articlePattern="$route.query.articlePattern"
+          v-on:page-select="onPageSelect($event)"
+          v-on:rating-select="onRatingSelect($event)"
+          v-on:name-filter="onNameFilter($event)"
+          v-on:update-page="onUpdatePage($event)"
         ></ArticleTable>
       </div>
     </div>
@@ -117,6 +121,54 @@ export default {
         `${process.env.VUE_APP_API_URL}/projects/${projectId}`
       );
       this.notFound = response.status === 404;
+    },
+    onPageSelect: function(selection) {
+      this.$router.push({
+        path: `/project/${this.currentProject}/articles`,
+        query: {
+          quality: this.$route.query.quality,
+          importance: this.$route.query.importance,
+          page: selection.page,
+          numRows: selection.rows,
+          articlePattern: this.$route.query.articlePattern
+        }
+      });
+    },
+    onRatingSelect: function(selection) {
+      this.$router.push({
+        path: `/project/${this.currentProject}/articles`,
+        query: {
+          quality: selection.quality,
+          importance: selection.importance,
+          page: this.$route.query.page,
+          numRows: this.$route.query.numRows,
+          articlePattern: this.$route.query.articlePattern
+        }
+      });
+    },
+    onNameFilter: function(selection) {
+      this.$router.push({
+        path: `/project/${this.currentProject}/articles`,
+        query: {
+          quality: this.$route.query.quality,
+          importance: this.$route.query.importance,
+          page: this.$route.query.page,
+          numRows: this.$route.query.numRows,
+          articlePattern: selection
+        }
+      });
+    },
+    onUpdatePage: function(page) {
+      this.$router.push({
+        path: `/project/${this.currentProject}/articles`,
+        query: {
+          quality: this.$route.query.quality,
+          importance: this.$route.query.importance,
+          page: page.toString(),
+          numRows: this.$route.query.numRows,
+          articlePattern: this.$route.query.articlePattern
+        }
+      });
     }
   }
 };

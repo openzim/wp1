@@ -78,8 +78,18 @@ class GetProjectRatingByTypeTest(BaseWpOneDbTest):
               'r_importance': importance,
               'r_importance_timestamp': '20191226T00:00:00',
           })
+          ratings.append({
+              'r_project': 'Project 1',
+              'r_namespace': 0,
+              'r_article': '%s_%s_%s' % (quality, importance, i),
+              'r_score': 0,
+              'r_quality': quality,
+              'r_quality_timestamp': '20191225T00:00:00',
+              'r_importance': importance,
+              'r_importance_timestamp': '20191226T00:00:00',
+          })
 
-    for i in range(1, 10):
+    for i in range(2, 10):
       ratings.append({
           'r_project': 'Project %s' % i,
           'r_namespace': 0,
@@ -241,3 +251,162 @@ class GetProjectRatingByTypeTest(BaseWpOneDbTest):
                                                       limit=500)
 
     self.assertEqual(0, len(ratings))
+
+  def test_with_project_b_no_quality_importance(self):
+    self._add_ratings()
+    ratings = logic_rating.get_project_rating_by_type(
+        self.wp10db, b'Project 0', project_b_name=b'Project 1', limit=10)
+    self.assertEqual(10, len(ratings))
+    for r in ratings:
+      self.assertEqual(r[0].r_article, r[1].r_article)
+      self.assertEqual(b'Project 0', r[0].r_project)
+      self.assertEqual(b'Project 1', r[1].r_project)
+
+  def test_with_project_b_left_quality_only(self):
+    self._add_ratings()
+    ratings = logic_rating.get_project_rating_by_type(
+        self.wp10db,
+        b'Project 0',
+        quality='A-Class',
+        project_b_name=b'Project 1',
+        limit=10)
+    self.assertEqual(10, len(ratings))
+    for r in ratings:
+      self.assertEqual(r[0].r_article, r[1].r_article)
+      self.assertEqual(b'A-Class', r[0].r_quality)
+      self.assertEqual(b'Project 0', r[0].r_project)
+      self.assertEqual(b'Project 1', r[1].r_project)
+
+  def test_with_project_b_right_quality_only(self):
+    self._add_ratings()
+    ratings = logic_rating.get_project_rating_by_type(
+        self.wp10db,
+        b'Project 0',
+        project_b_name=b'Project 1',
+        quality_b='A-Class',
+        limit=10)
+    self.assertEqual(10, len(ratings))
+    for r in ratings:
+      self.assertEqual(r[0].r_article, r[1].r_article)
+      self.assertEqual(b'A-Class', r[1].r_quality)
+      self.assertEqual(b'Project 0', r[0].r_project)
+      self.assertEqual(b'Project 1', r[1].r_project)
+
+  def test_with_project_b_quality(self):
+    self._add_ratings()
+    ratings = logic_rating.get_project_rating_by_type(
+        self.wp10db,
+        b'Project 0',
+        quality='A-Class',
+        project_b_name=b'Project 1',
+        quality_b='A-Class',
+        limit=10)
+    self.assertEqual(10, len(ratings))
+    for r in ratings:
+      self.assertEqual(r[0].r_article, r[1].r_article)
+      self.assertEqual(b'A-Class', r[1].r_quality)
+      self.assertEqual(b'A-Class', r[0].r_quality)
+      self.assertEqual(b'Project 0', r[0].r_project)
+      self.assertEqual(b'Project 1', r[1].r_project)
+
+  def test_with_project_b_left_importance_only(self):
+    self._add_ratings()
+    ratings = logic_rating.get_project_rating_by_type(
+        self.wp10db,
+        b'Project 0',
+        importance='High-Class',
+        project_b_name=b'Project 1',
+        limit=10)
+    self.assertEqual(10, len(ratings))
+    for r in ratings:
+      self.assertEqual(r[0].r_article, r[1].r_article)
+      self.assertEqual(b'High-Class', r[0].r_importance)
+      self.assertEqual(b'Project 0', r[0].r_project)
+      self.assertEqual(b'Project 1', r[1].r_project)
+
+  def test_with_project_b_right_importance_only(self):
+    self._add_ratings()
+    ratings = logic_rating.get_project_rating_by_type(
+        self.wp10db,
+        b'Project 0',
+        project_b_name=b'Project 1',
+        importance_b='High-Class',
+        limit=10)
+    self.assertEqual(10, len(ratings))
+    for r in ratings:
+      self.assertEqual(r[0].r_article, r[1].r_article)
+      self.assertEqual(b'High-Class', r[1].r_importance)
+      self.assertEqual(b'Project 0', r[0].r_project)
+      self.assertEqual(b'Project 1', r[1].r_project)
+
+  def test_with_project_b_importance(self):
+    self._add_ratings()
+    ratings = logic_rating.get_project_rating_by_type(
+        self.wp10db,
+        b'Project 0',
+        importance='High-Class',
+        project_b_name=b'Project 1',
+        importance_b='High-Class',
+        limit=10)
+    self.assertEqual(10, len(ratings))
+    for r in ratings:
+      self.assertEqual(r[0].r_article, r[1].r_article)
+      self.assertEqual(b'High-Class', r[1].r_importance)
+      self.assertEqual(b'High-Class', r[0].r_importance)
+      self.assertEqual(b'Project 0', r[0].r_project)
+      self.assertEqual(b'Project 1', r[1].r_project)
+
+  def test_with_project_b_left_both(self):
+    self._add_ratings()
+    ratings = logic_rating.get_project_rating_by_type(
+        self.wp10db,
+        b'Project 0',
+        quality='A-Class',
+        importance='High-Class',
+        project_b_name=b'Project 1',
+        limit=10)
+    self.assertEqual(10, len(ratings))
+    for r in ratings:
+      self.assertEqual(r[0].r_article, r[1].r_article)
+      self.assertEqual(b'A-Class', r[0].r_quality)
+      self.assertEqual(b'High-Class', r[0].r_importance)
+      self.assertEqual(b'Project 0', r[0].r_project)
+      self.assertEqual(b'Project 1', r[1].r_project)
+
+  def test_with_project_b_right_both(self):
+    self._add_ratings()
+    ratings = logic_rating.get_project_rating_by_type(
+        self.wp10db,
+        b'Project 0',
+        project_b_name=b'Project 1',
+        quality_b='A-Class',
+        importance_b='High-Class',
+        limit=10)
+    self.assertEqual(10, len(ratings))
+    for r in ratings:
+      self.assertEqual(r[0].r_article, r[1].r_article)
+      self.assertEqual(b'High-Class', r[1].r_importance)
+      self.assertEqual(b'A-Class', r[1].r_quality)
+      self.assertEqual(b'Project 0', r[0].r_project)
+      self.assertEqual(b'Project 1', r[1].r_project)
+
+  def test_with_project_b_both(self):
+    self._add_ratings()
+    ratings = logic_rating.get_project_rating_by_type(
+        self.wp10db,
+        b'Project 0',
+        quality='A-Class',
+        importance='High-Class',
+        project_b_name=b'Project 1',
+        quality_b='A-Class',
+        importance_b='High-Class',
+        limit=10)
+    self.assertEqual(10, len(ratings))
+    for r in ratings:
+      self.assertEqual(r[0].r_article, r[1].r_article)
+      self.assertEqual(b'High-Class', r[1].r_importance)
+      self.assertEqual(b'High-Class', r[0].r_importance)
+      self.assertEqual(b'A-Class', r[1].r_quality)
+      self.assertEqual(b'A-Class', r[0].r_quality)
+      self.assertEqual(b'Project 0', r[0].r_project)
+      self.assertEqual(b'Project 1', r[1].r_project)
