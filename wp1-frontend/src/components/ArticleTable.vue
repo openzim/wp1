@@ -216,55 +216,16 @@ export default {
   },
   methods: {
     onPageSelect: function(selection) {
-      const projectName = this.projectId.replace(/_/g, ' ');
-      this.$router.push({
-        path: `/project/${projectName}/articles`,
-        query: {
-          quality: this.quality,
-          importance: this.importance,
-          page: selection.page,
-          numRows: selection.rows,
-          articlePattern: this.articlePattern
-        }
-      });
+      this.$emit('page-select', selection);
     },
     onRatingSelect: function(selection) {
-      const projectName = this.projectId.replace(/_/g, ' ');
-      this.$router.push({
-        path: `/project/${projectName}/articles`,
-        query: {
-          quality: selection.quality,
-          importance: selection.importance,
-          page: this.page,
-          numRows: this.numRows,
-          articlePattern: this.articlePattern
-        }
-      });
+      this.$emit('rating-select', selection);
     },
     onNameFilter: function(selection) {
-      const projectName = this.projectId.replace(/_/g, ' ');
-      this.$router.push({
-        path: `/project/${projectName}/articles`,
-        query: {
-          quality: this.quality,
-          importance: this.importance,
-          page: this.page,
-          numRows: this.numRows,
-          articlePattern: selection
-        }
-      });
+      this.$emit('name-filter', selection);
     },
     onUpdatePage: function(page) {
-      const projectName = this.projectId.replace(/_/g, ' ');
-      this.$router.push({
-        path: `/project/${projectName}/articles`,
-        query: {
-          quality: this.quality,
-          importance: this.importance,
-          page: page.toString(),
-          numRows: this.numRows
-        }
-      });
+      this.$emit('update-page', page);
     },
     classLabel: function(qualOrImp) {
       if (!this.categoryLinks[qualOrImp]) {
