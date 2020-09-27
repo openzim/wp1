@@ -156,5 +156,6 @@ export default {
 
 .custom-select {
   margin: 0 0.5rem;
+  max-width: 8.45rem;
 }
 </style>
