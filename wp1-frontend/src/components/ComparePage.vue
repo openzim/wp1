@@ -55,7 +55,7 @@
         </div>
       </div>
     </div>
-    <div v-if="projectsSelected" class="row mt-4">
+    <div v-if="projectsSelected && compareClicked" class="row mt-4">
       <div class="col">
         <ArticleTable
           :hideRatingSelect="true"
@@ -63,6 +63,8 @@
           :projectIdB="projectIdB"
           :importance="projectAImportance"
           :quality="projectAQuality"
+          :importanceB="projectBImportance"
+          :qualityB="projectBQuality"
           :page="$route.query.page"
           :numRows="$route.query.numRows"
           :articlePattern="$route.query.articlePattern"
@@ -92,7 +94,8 @@ export default {
       projectAQuality: null,
       projectAImportance: null,
       projectBQuality: null,
-      projectBImportance: null
+      projectBImportance: null,
+      compareClicked: false
     };
   },
   computed: {
@@ -113,14 +116,14 @@ export default {
     }
   },
   methods: {
-    onCompareClick: async function() {},
+    onCompareClick: async function() {
+      this.compareClicked = true;
+    },
     onProjectARatingSelect: function(event) {
-      window.console.log('a', event);
       this.projectAQuality = event.quality;
       this.projectAImportance = event.importance;
     },
     onProjectBRatingSelect: function(event) {
-      window.console.log('b', event);
       this.projectBQuality = event.quality;
       this.projectBImportance = event.importance;
     }
