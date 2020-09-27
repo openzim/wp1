@@ -15,6 +15,9 @@
         v-on:page-select="onPageSelect($event)"
       ></ArticleTablePageSelect>
       <ArticleTableRatingSelect
+        v-if="!hideRatingSelect"
+        :initialQuality="quality"
+        :initialImportance="importance"
         :projectId="projectId"
         v-on:rating-select="onRatingSelect($event)"
       ></ArticleTableRatingSelect>
@@ -43,7 +46,7 @@
 
       <hr class="mt-0" />
 
-      <table>
+      <table v-if="!projectIdB">
         <tr v-for="(row, index) in tableData" :key="index">
           <td>{{ articleData.pagination.display.start + index }}</td>
           <td>
@@ -76,6 +79,37 @@
               >t</a
             >
             )
+          </td>
+        </tr>
+      </table>
+
+      <table v-else-if="tableData.length">
+        <tr>
+          <th colspan="2"></th>
+          <th colspan="2">{{ projectId.replace(/_/g, ' ') }}</th>
+          <th></th>
+          <th colspan="2">{{ projectIdB.replace(/_/g, ' ') }}</th>
+        </tr>
+
+        <tr v-for="(row, index) in tableData" :key="index">
+          <td>{{ articleData.pagination.display.start + index }}</td>
+          <td>
+            <a :href="row[0].article_link">{{ row[0].article }}</a> (
+            <a :href="row[0].article_talk_link">t</a> ·
+            <a :href="row[0].article_history_link">h</a> )
+          </td>
+          <td :class="classLabel(row[0].importance)">
+            {{ classLabel(row[0].importance) }}
+          </td>
+          <td :class="classLabel(row[0].quality)">
+            {{ classLabel(row[0].quality) }}
+          </td>
+          <td class="spacer"></td>
+          <td :class="classLabel(row[1].importance)">
+            {{ classLabel(row[1].importance) }}
+          </td>
+          <td :class="classLabel(row[1].quality)">
+            {{ classLabel(row[1].quality) }}
           </td>
         </tr>
       </table>
@@ -126,14 +160,18 @@ export default {
       loaderSize: '1rem'
     };
   },
-  props: {
-    projectId: String,
-    importance: String,
-    quality: String,
-    page: String,
-    numRows: String,
-    articlePattern: String
-  },
+  props: [
+    'projectId',
+    'projectIdB',
+    'importance',
+    'quality',
+    'importanceB',
+    'qualityB',
+    'page',
+    'numRows',
+    'articlePattern',
+    'hideRatingSelect'
+  ],
   computed: {
     tableData: function() {
       if (this.articleData === null) {
@@ -153,10 +191,19 @@ export default {
       }
       await this.updateTable();
     },
+    projectIdB: async function() {
+      await this.updateTable();
+    },
     importance: async function() {
       await this.updateTable();
     },
     quality: async function() {
+      await this.updateTable();
+    },
+    importanceB: async function() {
+      await this.updateTable();
+    },
+    qualityB: async function() {
       await this.updateTable();
     },
     page: async function() {
@@ -171,55 +218,16 @@ export default {
   },
   methods: {
     onPageSelect: function(selection) {
-      const projectName = this.projectId.replace(/_/g, ' ');
-      this.$router.push({
-        path: `/project/${projectName}/articles`,
-        query: {
-          quality: this.quality,
-          importance: this.importance,
-          page: selection.page,
-          numRows: selection.rows,
-          articlePattern: this.articlePattern
-        }
-      });
+      this.$emit('page-select', selection);
     },
     onRatingSelect: function(selection) {
-      const projectName = this.projectId.replace(/_/g, ' ');
-      this.$router.push({
-        path: `/project/${projectName}/articles`,
-        query: {
-          quality: selection.quality,
-          importance: selection.importance,
-          page: this.page,
-          numRows: this.numRows,
-          articlePattern: this.articlePattern
-        }
-      });
+      this.$emit('rating-select', selection);
     },
     onNameFilter: function(selection) {
-      const projectName = this.projectId.replace(/_/g, ' ');
-      this.$router.push({
-        path: `/project/${projectName}/articles`,
-        query: {
-          quality: this.quality,
-          importance: this.importance,
-          page: this.page,
-          numRows: this.numRows,
-          articlePattern: selection
-        }
-      });
+      this.$emit('name-filter', selection);
     },
     onUpdatePage: function(page) {
-      const projectName = this.projectId.replace(/_/g, ' ');
-      this.$router.push({
-        path: `/project/${projectName}/articles`,
-        query: {
-          quality: this.quality,
-          importance: this.importance,
-          page: page.toString(),
-          numRows: this.numRows
-        }
-      });
+      this.$emit('update-page', page);
     },
     classLabel: function(qualOrImp) {
       if (!this.categoryLinks[qualOrImp]) {
@@ -245,6 +253,15 @@ export default {
       }
       if (this.quality) {
         params.quality = this.quality;
+      }
+      if (this.projectIdB) {
+        params.projectB = this.projectIdB;
+      }
+      if (this.importanceB) {
+        params.importanceB = this.importanceB;
+      }
+      if (this.qualityB) {
+        params.qualityB = this.qualityB;
       }
       if (this.page) {
         params.page = this.page;
@@ -303,6 +320,10 @@ table {
 td {
   border: 1px solid #aaa;
   padding: 0 0.5rem;
+}
+
+.spacer {
+  width: 1rem;
 }
 
 tr:nth-child(even) {

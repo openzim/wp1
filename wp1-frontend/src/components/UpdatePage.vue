@@ -1,26 +1,34 @@
 <template>
   <div>
     <div class="row">
-      <div class="col-xlg-6">
+      <div class="col-xl-6">
         <Autocomplete
           :incomingSearch="incomingSearch || $route.params.projectName"
+          :hideInstructions="true"
           v-on:select-project="currentProject = $event"
         ></Autocomplete>
       </div>
     </div>
     <div class="row">
-      <div class="col-xlg-6">
+      <div class="col-xl-4">
         <div v-if="currentProject && !updateTime">
           <label class="mt-2" for="confirm"
             >Proceed with manual update of <b>{{ currentProject }}</b
             >?</label
           >
           <div class="input-group">
-            <button v-on:click="onUpdateClick()" class="btn-primary">
+            <button
+              v-on:click="onUpdateClick()"
+              class="btn-primary form-control"
+            >
               Manual Update
             </button>
           </div>
         </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-xl-6">
         <div v-if="currentProject && updateTime">
           <p>
             Manual update of <b>{{ this.$route.params.projectName }}</b> has

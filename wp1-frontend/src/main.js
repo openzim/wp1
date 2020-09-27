@@ -6,6 +6,7 @@ import VueRouter from 'vue-router';
 
 import App from './App.vue';
 import ArticlePage from './components/ArticlePage.vue';
+import ComparePage from './components/ComparePage.vue';
 import IndexPage from './components/IndexPage.vue';
 import ProjectPage from './components/ProjectPage.vue';
 import UpdatePage from './components/UpdatePage.vue';
@@ -54,6 +55,29 @@ const routes = [
     meta: {
       title: route =>
         BASE_TITLE + ' - ' + route.params.projectName + ' articles'
+    }
+  },
+  {
+    path: '/compare/',
+    component: ComparePage,
+    meta: {
+      title: () => BASE_TITLE + ' - Comparing projects'
+    }
+  },
+  {
+    path: '/compare/:projectNameA/:projectNameB',
+    component: ComparePage,
+    props: route => ({
+      incomingSearchA: route.params.projectNameA,
+      incomingSearchB: route.params.projectNameB
+    }),
+    meta: {
+      title: route =>
+        BASE_TITLE +
+        ' - Comparing ' +
+        route.params.projectNameA +
+        ' and ' +
+        route.params.projectNameB
     }
   }
 ];
