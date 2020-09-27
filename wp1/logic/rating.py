@@ -193,17 +193,17 @@ def get_project_rating_by_type(wp10db,
     cursor.execute(query, params)
     if project_b_name is None:
       return [Rating(**db_rating) for db_rating in cursor.fetchall()]
-    else:
-      results = []
-      for res in cursor.fetchall():
-        rating_b = Rating(r_project=res.pop('rating_b.r_project'),
-                          r_article=res.pop('rating_b.r_article'),
-                          r_namespace=res.pop('rating_b.r_namespace'),
-                          r_quality=res.pop('rating_b.r_quality'),
-                          r_importance=res.pop('rating_b.r_importance'))
-        rating_a = Rating(**res)
-        results.append((rating_a, rating_b))
-      return results
+
+    results = []
+    for res in cursor.fetchall():
+      rating_b = Rating(r_project=res.pop('rating_b.r_project'),
+                        r_article=res.pop('rating_b.r_article'),
+                        r_namespace=res.pop('rating_b.r_namespace'),
+                        r_quality=res.pop('rating_b.r_quality'),
+                        r_importance=res.pop('rating_b.r_importance'))
+      rating_a = Rating(**res)
+      results.append((rating_a, rating_b))
+    return results
 
 
 def get_all_ratings_count_for_project(wp10db, project_name):
