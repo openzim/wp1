@@ -36,7 +36,7 @@ matrix:
       before_install:
         # Load cached docker images
         - if [[ -d $HOME/docker ]]; then ls $HOME/docker/*.tar.gz | xargs -I {file} sh -c "zcat {file} | docker load"; fi
-        - docker run -d -p 127.0.0.1:6300:6300 --net=bridge openzim/wp1-dev-database
+        - docker run -d -p 127.0.0.1:6300:3306 --net=bridge openzim/wp1-dev-database
         - docker run -d -p 127.0.0.1:6555:6555 --net=bridge --mount type=bind,source="$(pwd)"/wp1/credentials.py.e2e,dst=/usr/src/app/wp1/credentials.py openzim/wp1bot-web
       install:
         # Since yarn.lock isn't in the repo root, we have to install ourselves.
