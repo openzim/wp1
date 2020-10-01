@@ -3,9 +3,9 @@ python:
   - '3.7.4'
 before_install:
   - mysql -e 'CREATE DATABASE enwp10_test; CREATE DATABASE enwikip_test;'
-  - docker build -t openzim/wp1-dev-database
+  - docker build openzim/wp1-dev-database
   - docker run -d -p 127.0.0.1:80:4567 openzim/wp1-dev-database
-  - docker build -t openzim/wp1bot-web
+  - docker build openzim/wp1bot-web
   - docker run -d -p 127.0.0.1:6555:6555 openzim/wp1bot-web
 install:
   - pip install -r requirements.txt
@@ -13,7 +13,7 @@ install:
 script:
   - nosetests --with-coverage
   - cd wp1-frontend
-  - yarn serve & wait-on http://localhost:3000
+  - yarn test & wait-on http://localhost:3000
   - cypress run
 after_success:
   - codecov
