@@ -27,44 +27,76 @@ def get_project_ratings(wp10db, project_name):
 def _project_rating_query(project_name,
                           quality=None,
                           importance=None,
+                          project_b_name=None,
+                          quality_b=None,
+                          importance_b=None,
                           pattern=None,
                           page=None,
                           count=False,
                           limit=100):
   if count:
-    query = 'SELECT COUNT(*) as count FROM ' + Rating.table_name
+
+    query = 'SELECT COUNT(*) as count FROM ' + Rating.table_name + ' as rating_a'
   else:
-    query = ('SELECT r_project, r_namespace, r_article, r_score, r_quality,'
-             ' r_quality_timestamp, r_importance, r_importance_timestamp'
-             ' FROM ' + Rating.table_name)
+    if project_b_name is None:
+      query = ('SELECT r_project, r_namespace, r_article,'
+               ' r_score, r_quality, r_quality_timestamp,'
+               ' r_importance, r_importance_timestamp'
+               ' FROM ' + Rating.table_name + ' as rating_a')
+    else:
+      query = (
+          'SELECT rating_a.r_project, rating_a.r_namespace, rating_a.r_article,'
+          ' rating_a.r_score, rating_a.r_quality, rating_a.r_quality_timestamp,'
+          ' rating_a.r_importance, rating_a.r_importance_timestamp, '
+          ' rating_b.r_project, rating_b.r_article, rating_b.r_namespace,'
+          ' rating_b.r_quality, rating_b.r_importance'
+          ' FROM ' + Rating.table_name + ' as rating_a')
 
-  if importance is None:
-    query += (' JOIN global_rankings gri ON gri.gr_type = "importance" AND'
-              ' (gri.gr_rating = r_importance OR r_importance = "NotA-Class")')
-  if quality is None:
-    query += (' JOIN global_rankings grq ON grq.gr_type = "quality" AND'
-              ' grq.gr_rating = r_quality')
+  if project_b_name is not None:
+    query += (' JOIN ' + Rating.table_name + ' as rating_b'
+              ' ON rating_a.r_article = rating_b.r_article'
+              ' AND rating_a.r_namespace = rating_b.r_namespace')
 
-  query += ' WHERE r_project = %(r_project)s'
+  if project_b_name is None:
+    if importance is None:
+      query += (
+          ' JOIN global_rankings gri ON gri.gr_type = "importance" AND'
+          ' (gri.gr_rating = r_importance OR r_importance = "NotA-Class")')
+    if quality is None:
+      query += (' JOIN global_rankings grq ON grq.gr_type = "quality" AND'
+                ' grq.gr_rating = rating_a.r_quality')
+
+  query += ' WHERE rating_a.r_project = %(r_project)s'
+  if project_b_name is not None:
+    query += ' AND rating_b.r_project = %(r_project_b)s'
 
   if pattern is not None:
-    query += ' AND r_article LIKE %(article_pattern_compiled)s'
+    query += ' AND rating_a.r_article LIKE %(article_pattern_compiled)s'
 
   if quality is not None:
     if quality == b'Assessed-Class':
-      print('Assessed-Class triggered')
-      query += ' AND r_quality != "Unassessed-Class"'
+      query += ' AND rating_a.r_quality != "Unassessed-Class"'
     else:
-      query += ' AND r_quality = %(r_quality)s'
+      query += ' AND rating_a.r_quality = %(r_quality)s'
   if importance is not None:
-    query += ' AND r_importance = %(r_importance)s'
+    query += ' AND rating_a.r_importance = %(r_importance)s'
 
-  if quality is None and importance is None:
-    query += ' ORDER BY grq.gr_ranking DESC, gri.gr_ranking DESC'
-  elif quality is None:
-    query += ' ORDER BY grq.gr_ranking DESC'
-  elif importance is None:
-    query += ' ORDER BY gri.gr_ranking DESC'
+  if project_b_name is not None:
+    if quality_b is not None:
+      if quality_b == b'Assessed-Class':
+        query += ' AND rating_b.r_quality != "Unassessed-Class"'
+      else:
+        query += ' AND rating_b.r_quality = %(r_quality_b)s'
+    if importance_b is not None:
+      query += ' AND rating_b.r_importance = %(r_importance_b)s'
+
+  if project_b_name is None:
+    if quality is None and importance is None:
+      query += ' ORDER BY grq.gr_ranking DESC, gri.gr_ranking DESC'
+    elif quality is None:
+      query += ' ORDER BY grq.gr_ranking DESC'
+    elif importance is None:
+      query += ' ORDER BY gri.gr_ranking DESC'
 
   if page is not None:
     page = int(page) - 1
@@ -80,10 +112,16 @@ def get_project_rating_count_by_type(wp10db,
                                      project_name,
                                      quality=None,
                                      importance=None,
+                                     project_b_name=None,
+                                     quality_b=None,
+                                     importance_b=None,
                                      pattern=None):
   query = _project_rating_query(project_name,
                                 quality=quality,
                                 importance=importance,
+                                project_b_name=project_b_name,
+                                quality_b=quality_b,
+                                importance_b=importance_b,
                                 pattern=pattern,
                                 count=True)
 
@@ -92,8 +130,16 @@ def get_project_rating_count_by_type(wp10db,
       'r_quality': quality,
       'r_importance': importance,
   }
+
   if pattern is not None:
     params['article_pattern_compiled'] = '%' + pattern + '%'
+  if project_b_name is not None:
+    params['r_project_b'] = project_b_name
+  if quality_b is not None:
+    params['r_quality_b'] = quality_b
+  if importance_b is not None:
+    params['r_importance_b'] = importance_b
+
   with wp10db.cursor() as cursor:
     cursor.execute(query, params)
     res = cursor.fetchone()
@@ -104,6 +150,9 @@ def get_project_rating_by_type(wp10db,
                                project_name,
                                quality=None,
                                importance=None,
+                               project_b_name=None,
+                               quality_b=None,
+                               importance_b=None,
                                pattern=None,
                                page=None,
                                limit=100):
@@ -119,6 +168,9 @@ def get_project_rating_by_type(wp10db,
   query = _project_rating_query(project_name,
                                 quality=quality,
                                 importance=importance,
+                                project_b_name=project_b_name,
+                                quality_b=quality_b,
+                                importance_b=importance_b,
                                 pattern=pattern,
                                 page=page,
                                 limit=limit)
@@ -127,11 +179,31 @@ def get_project_rating_by_type(wp10db,
       'r_quality': quality,
       'r_importance': importance,
   }
+
   if pattern is not None:
     params['article_pattern_compiled'] = '%' + pattern + '%'
+  if project_b_name is not None:
+    params['r_project_b'] = project_b_name
+  if quality_b is not None:
+    params['r_quality_b'] = quality_b
+  if importance_b is not None:
+    params['r_importance_b'] = importance_b
+
   with wp10db.cursor() as cursor:
     cursor.execute(query, params)
-    return [Rating(**db_rating) for db_rating in cursor.fetchall()]
+    if project_b_name is None:
+      return [Rating(**db_rating) for db_rating in cursor.fetchall()]
+
+    results = []
+    for res in cursor.fetchall():
+      rating_b = Rating(r_project=res.pop('rating_b.r_project'),
+                        r_article=res.pop('rating_b.r_article'),
+                        r_namespace=res.pop('rating_b.r_namespace'),
+                        r_quality=res.pop('rating_b.r_quality'),
+                        r_importance=res.pop('rating_b.r_importance'))
+      rating_a = Rating(**res)
+      results.append((rating_a, rating_b))
+    return results
 
 
 def get_all_ratings_count_for_project(wp10db, project_name):

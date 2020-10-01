@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="row">
-      <div class="col-xlg-6">
+      <div class="col-xl-6">
         <Autocomplete
           :incomingSearch="incomingSearch || $route.params.projectName"
           v-on:select-project="currentProject = $event"
