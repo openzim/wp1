@@ -86,6 +86,19 @@ def articles(project_name):
   if project is None:
     return flask.abort(404)
 
+  project_b_name_bytes = None
+  quality_b = None
+  importance_b = None
+  project_b_name = flask.request.args.get('projectB')
+  if project_b_name is not None:
+    project_b_name_bytes = project_b_name.encode('utf-8')
+    project_b = logic_project.get_project_by_name(wp10db, project_b_name_bytes)
+    if project_b is None:
+      return flask.abort(404)
+
+    quality_b = flask.request.args.get('qualityB')
+    importance_b = flask.request.args.get('importanceB')
+
   quality = flask.request.args.get('quality')
   importance = flask.request.args.get('importance')
   page = flask.request.args.get('page')
@@ -117,24 +130,38 @@ def articles(project_name):
 
   article_pattern = flask.request.args.get('articlePattern')
 
-  total = logic_rating.get_project_rating_count_by_type(wp10db,
-                                                        project_name_bytes,
-                                                        quality=quality,
-                                                        importance=importance,
-                                                        pattern=article_pattern)
+  total = logic_rating.get_project_rating_count_by_type(
+      wp10db,
+      project_name_bytes,
+      quality=quality,
+      importance=importance,
+      project_b_name=project_b_name_bytes,
+      quality_b=quality_b,
+      importance_b=importance_b,
+      pattern=article_pattern)
   total_pages = total // limit_int + 1 if total % limit_int != 0 else 0
 
   start = limit_int * (page_int - 1) + 1
   end = min(limit_int - 1 + start, total)
   display = {'start': start, 'end': end, 'num_rows': limit_int}
 
-  articles = logic_rating.get_project_rating_by_type(wp10db,
-                                                     project_name_bytes,
-                                                     quality=quality,
-                                                     importance=importance,
-                                                     pattern=article_pattern,
-                                                     page=page,
-                                                     limit=limit_int)
+  articles = logic_rating.get_project_rating_by_type(
+      wp10db,
+      project_name_bytes,
+      quality=quality,
+      importance=importance,
+      project_b_name=project_b_name_bytes,
+      quality_b=quality_b,
+      importance_b=importance_b,
+      pattern=article_pattern,
+      page=page,
+      limit=limit_int)
+
+  if project_b_name is None:
+    output_articles = list(article.to_web_dict(wp10db) for article in articles)
+  else:
+    output_articles = list(
+        (a[0].to_web_dict(wp10db), a[1].to_web_dict(wp10db)) for a in articles)
 
   output = {
       'pagination': {
@@ -143,7 +170,7 @@ def articles(project_name):
           'total': total,
           'display': display,
       },
-      'articles': list(article.to_web_dict(wp10db) for article in articles),
+      'articles': output_articles,
   }
   return flask.jsonify(output)
 
