@@ -19,7 +19,7 @@
         @input="onChange"
         v-on:keyup.down="focusList()"
         ref="input"
-        class="form-control auto-input"
+        class="form-control auto-input search"
         type="text"
         placeholder="Project name"
       />
