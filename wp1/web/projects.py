@@ -139,7 +139,7 @@ def articles(project_name):
       quality_b=quality_b,
       importance_b=importance_b,
       pattern=article_pattern)
-  total_pages = total // limit_int + 1 if total % limit_int != 0 else 0
+  total_pages = total // limit_int + (1 if total % limit_int != 0 else 0)
 
   start = limit_int * (page_int - 1) + 1
   end = min(limit_int - 1 + start, total)
