@@ -123,6 +123,12 @@ export default {
       this.notFound = response.status === 404;
     },
     onPageSelect: function(selection) {
+      if (
+        this.$route.query.numRows === selection.rows &&
+        this.$route.query.page === selection.page
+      ) {
+        return;
+      }
       this.$router.push({
         path: `/project/${this.currentProject}/articles`,
         query: {
@@ -135,6 +141,12 @@ export default {
       });
     },
     onRatingSelect: function(selection) {
+      if (
+        this.$route.query.quality === selection.qualty &&
+        this.$route.query.importance === selection.importance
+      ) {
+        return;
+      }
       this.$router.push({
         path: `/project/${this.currentProject}/articles`,
         query: {
@@ -147,6 +159,9 @@ export default {
       });
     },
     onNameFilter: function(selection) {
+      if (this.$route.query.articlePattern == selection) {
+        return;
+      }
       this.$router.push({
         path: `/project/${this.currentProject}/articles`,
         query: {
@@ -159,6 +174,9 @@ export default {
       });
     },
     onUpdatePage: function(page) {
+      if (this.$route.query.page === page.toString()) {
+        return;
+      }
       this.$router.push({
         path: `/project/${this.currentProject}/articles`,
         query: {
