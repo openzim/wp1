@@ -36,7 +36,7 @@
         </p>
       </div>
       <ArticleTablePagination
-        v-if="articleData.pagination.total_pages > 1"
+        v-if="articleData && articleData.pagination.total_pages > 1"
         class="row justify-content-between my-0"
         v-on:update-page="onUpdatePage($event)"
         :page="page"
@@ -122,7 +122,7 @@
         </p>
       </div>
       <ArticleTablePagination
-        v-if="articleData.pagination.total_pages > 1"
+        v-if="articleData && articleData.pagination.total_pages > 1"
         class="row justify-content-between mb-5 mt-0"
         v-on:update-page="onUpdatePage($event)"
         :page="page"
