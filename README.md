@@ -103,6 +103,20 @@ explained above, then use the following command:
 pip3 install -r requirements.txt
 ```
 
+### Installing frontend requirements
+
+To install the requirements for the frontend server, cd into `wp1-frontend`
+and use:
+
+```bash
+yarn install
+```
+
+### Docker
+
+You will also need to have [Docker](https://www.docker.com/) on your system
+in order to run the development server.
+
 ### Running the tests
 
 The tests expect a localhost MariaDB or MySQL instance on the default
@@ -132,14 +146,56 @@ find the credentials for these on toolforge in the replica.my.cnf file in
 the tool's home directory. They need to be formatted in a way that is
 consumable by the library and pymysql. Look at `credentials.py.example`
 and create a copy called `credentials.py` with the relevant information
-filled in. The production version of this code also requires Englis Wikipedia
+filled in. The production version of this code also requires English Wikipedia
 API credentials for automatically editing and updating
 [tables like this one](https://en.wikipedia.org/wiki/User:WP_1.0_bot/Tables/Project/Catholicism).
 Currently, if your environment is DEVELOPMENT, jobs that utilize the API
 to edit Wikipedia are disabled. There is no development wiki that gets edited
 at this time.
 
-## Updating production
+# Development
+
+For development, you will need to have Docker installed as explained above.
+
+## Running docker-compose
+
+There is a Docker setup for a development database. It lives in
+`docker-compose-dev.yml`. To download the database and setup development
+MariaDB and Redis, use:
+
+```bash
+docker-compose -f docker-compose-dev.yml up -d
+```
+
+## Starting the API server
+
+Assuming you are in your Python virtualenv (described above) you can start
+the API server with:
+
+```bash
+FLASK_DEBUG=1 FLASK_APP=wp1.web.app flask run
+```
+
+## Starting the web frontend
+
+The web frontend can be started with the following command in the `wp1-frontend`
+directory:
+
+```bash
+yarn serve
+```
+
+## Development credentials.py
+
+The DEVELOPMENT section of credentials.py.example is already filled out with
+the proper values for the servers listed in docker-compose-dev.yml. You should
+be able to simply copy it to credentials.py.
+
+If you wish to connect to a wiki replica database on toolforge, you will need
+to fill out your credentials in WIKIDB section. This is not required for
+developing the frontend.
+
+# Updating production
 
 - Log in to the box that contains the production docker images. It is
   called wp1.
