@@ -89,6 +89,7 @@ def update_project_by_name(project_name, track_progress=False):
 
 
 def update_global_articles_for_project_name(wp10db, project_name):
+  logger.info('Executing global update for: %s' % project_name.decode('utf-8'))
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''
@@ -122,6 +123,7 @@ def update_global_articles_for_project_name(wp10db, project_name):
         ) as t2
         GROUP BY art
     ''', {'project': project_name})
+  wp10db.commit()
 
 
 def project_names_to_update(wikidb):
