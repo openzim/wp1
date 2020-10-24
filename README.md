@@ -6,7 +6,7 @@ found [on the Wikipedia in
 English](https://en.wikipedia.org/wiki/Wikipedia:Version_1.0_Editorial_Team).
 
 [![Build Status](https://travis-ci.com/openzim/wp1.svg?branch=master)](https://travis-ci.com/openzim/wp1)
-[![codecov](https://codecov.io/gh/openzim/wp1/branch/master/graph/badge.svg)](https://codecov.io/gh/openzim/wp1)
+[![codecov](https://codecov.io/gh/openzim/wp1/branch/main/graph/badge.svg)](https://codecov.io/gh/openzim/wp1)
 [![CodeFactor](https://www.codefactor.io/repository/github/openzim/wp1/badge)](https://www.codefactor.io/repository/github/openzim/wp1)
 [![Docker Web Build Status](https://img.shields.io/docker/cloud/build/openzim/wp1bot-web?label=docker%20web%20build)](https://cloud.docker.com/u/openzim/repository/docker/openzim/wp1bot-web)
 [![Docker Worker Build Status](https://img.shields.io/docker/cloud/build/openzim/wp1bot-workers?label=docker%20workers%20build)](https://cloud.docker.com/u/openzim/repository/docker/openzim/wp1bot-workers)
