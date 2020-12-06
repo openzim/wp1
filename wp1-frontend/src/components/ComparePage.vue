@@ -267,8 +267,6 @@ export default {
       });
     },
     reset: function() {
-      this.incomingSearchA = null;
-      this.incomingSearchB = null;
       this.projectA = null;
       this.projectB = null;
       this.projectAQuality = null;
