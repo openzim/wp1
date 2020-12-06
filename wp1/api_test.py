@@ -59,10 +59,13 @@ class ApiTest(unittest.TestCase):
     self.assertEqual(1, self.page.save.call_count)
     self.assertEqual(('<code>', 'edit summary'), self.page.save.call_args[0])
 
+  @patch('wp1.api.site', None)
+  @patch('wp1.api.get_credentials')
   @patch('wp1.api.login')
   @patch('wp1.api.get_page')
   def test_save_page_tries_login_on_none_site(self, patched_get_page,
-                                              patched_login):
+                                              patched_login,
+                                              patched_credentials):
     self.original_save_page(self.page, '<code>', 'edit summary')
     self.assertEqual(1, patched_login.call_count)
     self.assertEqual(1, patched_get_page.call_count)
