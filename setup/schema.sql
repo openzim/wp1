@@ -1,9 +1,3 @@
-CREATE TABLE `automatedselection` (
-  `as_article` varbinary(255) NOT NULL,
-  `as_revid` int(8) unsigned DEFAULT NULL,
-  PRIMARY KEY (`as_article`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
 CREATE TABLE `categories` (
   `c_project` varbinary(63) NOT NULL,
   `c_type` varbinary(16) NOT NULL,
@@ -93,6 +87,16 @@ CREATE TABLE `ratings` (
   KEY `nstitle` (`r_namespace`,`r_article`(50))
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
+
+-- These tables are unused by the current iteration of the code
+
+/*
+CREATE TABLE `automatedselection` (
+  `as_article` varbinary(255) NOT NULL,
+  `as_revid` int(8) unsigned DEFAULT NULL,
+  PRIMARY KEY (`as_article`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
 CREATE TABLE `selection_data` (
   `sd_article` varbinary(255) NOT NULL,
   `sd_langlinks` int(10) unsigned NOT NULL DEFAULT '0',
@@ -107,7 +111,7 @@ CREATE TABLE `workingselection` (
   `ws_revid` int(8) unsigned DEFAULT NULL,
   PRIMARY KEY (`ws_article`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
-
+*/
 
 -- The following tables are used by various part of the previous version of this
 -- tool, which was written in Perl. The current code in this repository neither
