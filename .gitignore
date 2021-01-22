@@ -1,6 +1,7 @@
 **/__pycache__
 venv
 
-# Don't commit credentials!
+# Don't commit credentials, credential backup files, or login cookies!
 wp1/credentials.py
+wp1/credentials.py.bak
 cookies.txt
