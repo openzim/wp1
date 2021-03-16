@@ -168,6 +168,10 @@ export default {
   overflow: auto;
   padding: 0;
   text-align: left;
+  z-index: 1;
+  background: white;
+  position: absolute;
+  width: 95%;
 }
 
 .result {
