@@ -11,7 +11,7 @@
     </div>
     <div class="row">
       <div class="col-xl-4">
-        <div v-if="currentProject && !updateTime">
+        <div v-if="currentProject && !updateTime && (!jobScheduled || jobComplete)">
           <label class="mt-2" for="confirm"
             >Proceed with manual update of <b>{{ currentProject }}</b
             >?</label
@@ -29,13 +29,18 @@
     </div>
     <div class="row">
       <div class="col-xl-6">
-        <div v-if="currentProject && updateTime">
-          <p>
+        <div v-if="currentProject && jobScheduled && !jobComplete">
+          <p v-if="updateTime">
             Manual update of <b>{{ this.$route.params.projectName }}</b> has
             been scheduled. It can take anywhere from 2 - 200 minutes, depending
             on project size. The next update can be performed at
             <b>{{ updateTime }}</b
             >.
+          </p>
+          <p v-else>
+            Manual update of <b>{{ this.$route.params.projectName }}</b> has
+            been scheduled. It can take anywhere from 2 - 200 minutes, depending
+            on project size. The next update can be performed after completion of the current update.
           </p>
           <div>
             <p>
@@ -99,6 +104,9 @@ export default {
     },
     jobNotStarted: function() {
       return this.jobStatusEnum === null || this.jobStatusEnum === 'queued';
+    },
+    jobScheduled: function() {
+      return this.jobStatusEnum === 'queued';
     },
     progressWidth: function() {
       if (this.progressCurrent !== null && this.progressTotal !== null) {
