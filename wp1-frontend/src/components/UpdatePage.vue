@@ -11,7 +11,7 @@
     </div>
     <div class="row">
       <div class="col-xl-4">
-        <div v-if="currentProject && !updateTime">
+        <div v-if="currentProject && !updateTime && (jobNotStarted || jobComplete)">
           <label class="mt-2" for="confirm"
             >Proceed with manual update of <b>{{ currentProject }}</b
             >?</label
@@ -29,7 +29,7 @@
     </div>
     <div class="row">
       <div class="col-xl-6">
-        <div v-if="currentProject && updateTime">
+        <div v-if="currentProject && updateTime && !(jobNotStarted || jobComplete)">
           <p>
             Manual update of <b>{{ this.$route.params.projectName }}</b> has
             been scheduled. It can take anywhere from 2 - 200 minutes, depending
