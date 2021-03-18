@@ -10,7 +10,7 @@
         the project you wish to update.
       </p>
       <p>
-        <b>Note: This tool can only perform manual updates once per hour only after current update is completed.</b>
+        <b>Note: This tool can only perform manual updates once per hour at most. It also cannot perform an update until all pending updates are complete.</b>
       </p>
     </div>
     <div class="input-group">

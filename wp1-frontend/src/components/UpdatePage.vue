@@ -30,17 +30,12 @@
     <div class="row">
       <div class="col-xl-6">
         <div v-if="currentProject && jobScheduled && !jobComplete">
-          <p v-if="updateTime">
+          <p>
             Manual update of <b>{{ this.$route.params.projectName }}</b> has
             been scheduled. It can take anywhere from 2 - 200 minutes, depending
-            on project size. The next update can be performed at
-            <b>{{ updateTime }}</b
-            >.
-          </p>
-          <p v-else>
-            Manual update of <b>{{ this.$route.params.projectName }}</b> has
-            been scheduled. It can take anywhere from 2 - 200 minutes, depending
-            on project size. The next update can be performed after completion of the current update.
+            on project size. The next update can be performed
+            <span v-if="updateTime">at <b>{{ updateTime }}</b>.</span>
+            <span v-else>when the current update completes.</span>
           </p>
           <div>
             <p>
