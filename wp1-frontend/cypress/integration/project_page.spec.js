@@ -14,4 +14,20 @@ describe('the project page', () => {
             cy.get('table').contains('tr', label);
         });
     });
+
+    it('displays the article detail-list', () => {
+        cy.visit('/#/project/Alien');
+
+        cy.get('tr').eq(3).find('td').eq(0).invoke('text').then((text) => {
+          cy.get('tr').eq(3).find('td').eq(0).contains(/^\d+$/).click();
+          cy.get('tr').should('have.length', text);
+        });
+        
+        cy.get('h4').should('contain.text',' Alien articles  - Top importance / FA quality');
+    
+        cy.get('tr').eq(0).find('td').then(($row) => {
+          cy.wrap($row).eq(2).contains('Top');
+          cy.wrap($row).eq(4).contains('FA');
+        });
+    });
 });
