@@ -32,6 +32,9 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y mysql-client
           mysql --host 127.0.0.1 --port 3306 -uroot -e "SHOW DATABASES"
+      - name: Create test databases
+        run: |
+          mysql --host 127.0.0.1 --port 3306 -uroot -e 'CREATE DATABASE enwp10_test; CREATE DATABASE enwikip_test;'
 
       - name: Test with nose
         run: |
