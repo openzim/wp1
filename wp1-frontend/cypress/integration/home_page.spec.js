@@ -32,5 +32,5 @@ describe('the home page', () => {
     cy.get('table').should('be.visible')
       .eq(0)
       .should('contain.text','Alien articles by quality and importance')
-    });
   });
+});
