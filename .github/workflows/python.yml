@@ -1,3 +1,4 @@
+# Run Python unit tests in continuous integration mode.
 name: Python CI
 
 on:
@@ -11,13 +12,14 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
+      # Unit test rely on a local MySQL instance with an empty root password.
       mysql:
         image: mysql:5.7
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
         ports:
           - 3306:3306
-        options: --disable_bind_address --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
 
     steps:
       - uses: actions/checkout@v2
