@@ -5,3 +5,7 @@ venv
 wp1/credentials.py
 wp1/credentials.py.bak
 cookies.txt
+
+# Don't commit test artifacts
+**/cypress/videos
+**/cypress/screenshots

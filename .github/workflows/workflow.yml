@@ -95,3 +95,13 @@ jobs:
         run: |
           cd wp1-frontend
           $(yarn bin)/cypress run
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: screenshots
+          path: wp1-frontend/cypress/screenshots/*
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: videos
+          path: wp1-frontend/cypress/videos/*
