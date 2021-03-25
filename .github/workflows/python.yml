@@ -1,0 +1,40 @@
+name: Python CI
+
+on:
+  push:
+    branches: [$default-branch]
+  pull_request:
+    branches: [$default-branch]
+
+jobs:
+  nose:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+        ports:
+          - 3306:3306
+        options: --disable_bind_address --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Verify MySQL connection from host
+        run: |
+          sudo apt-get update && sudo apt-get install -y mysql-client
+          mysql --host 127.0.0.1 --port 3306 -uroot -e "SHOW DATABASES"
+
+      - name: Test with nose
+        run: |
+          nosetests --with-coverage
