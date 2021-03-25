@@ -1,11 +1,7 @@
 # Run Python unit tests in continuous integration mode.
 name: Python CI
 
-on:
-  push:
-    branches: [$default-branch]
-  pull_request:
-    branches: [$default-branch]
+on: [push, pull-request]
 
 jobs:
   nose:
