@@ -1,6 +1,8 @@
 from datetime import datetime
 import logging
 
+import requests
+
 from wp1.constants import TS_FORMAT, GLOBAL_TIMESTAMP
 from wp1.models.wiki.page import Page
 from wp1.models.wp10.log import Log
