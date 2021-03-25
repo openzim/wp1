@@ -32,7 +32,7 @@ oauthlib==2.1.0
 pre-commit==2.11.1
 PyMySQL==0.9.3
 python-dateutil==2.8.0
-PyYAML==5.1.2
+PyYAML==5.4
 redis==3.3.6
 requests==2.21.0
 requests-oauthlib==1.0.0
