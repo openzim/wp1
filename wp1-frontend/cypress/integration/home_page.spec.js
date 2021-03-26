@@ -33,3 +33,15 @@ describe('the home page', () => {
       .should('contain.text','Alien articles by quality and importance');
   });
 });
+  it('custom pagination works', () => {
+    cy.visit('/#/project/Alien/articles');
+
+    cy.contains('Custom pagination').click();
+    cy.get('input').eq(0).clear().type('50');
+    cy.get('input').eq(1).clear().type('2');
+    cy.get('button').eq(1).click();
+
+    cy.get('tr').eq(0).find('td').eq(0).should('have.text', '51');
+    cy.get('tr').should('have.length', 50);
+  });
+});
