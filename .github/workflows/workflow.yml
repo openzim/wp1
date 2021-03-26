@@ -97,11 +97,13 @@ jobs:
           $(yarn bin)/cypress run
 
       - uses: actions/upload-artifact@v2
+        if: always()
         with:
           name: screenshots
           path: wp1-frontend/cypress/screenshots/*
 
       - uses: actions/upload-artifact@v2
+        if: always()
         with:
           name: videos
           path: wp1-frontend/cypress/videos/*
