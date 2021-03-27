@@ -26,8 +26,11 @@ describe('the home page', () => {
     cy.get('.results')
       .children('li')
       .eq(0)
-      .should('contain.text', 'Alien')
-      .click();
+      .should('contain.text', 'Alien');
+      
+    cy.intercept('/v1/projects/Alien/table').as('table');
+    cy.visit('/#/project/Alien');
+    cy.wait('@table');
 
     cy.get('table').should('be.visible')
       .eq(0)
