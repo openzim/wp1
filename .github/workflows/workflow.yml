@@ -83,7 +83,7 @@ jobs:
           python -m flask run &
           cd wp1-frontend
           $(yarn bin)/wait-on http://localhost:5000/
-          curl http://localhost:5000/v1/projects/
+          curl http://localhost:5000/v1/projects/Alien/table
 
       - name: Start frontend server
         run: |

@@ -19,8 +19,8 @@ describe('the home page', () => {
 
   it('project-table for Alien displayed', () => {
     cy.intercept('/v1/projects/Alien/table').as('table');
-    cy.wait('@table', { timeout: 15000 });
     cy.visit('/#/project/Alien');
+    cy.wait('@table', { timeout: 15000 });
 
     cy.get('table')
       .should('be.visible')
