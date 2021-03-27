@@ -30,7 +30,7 @@ describe('the home page', () => {
       
     cy.intercept('/v1/projects/Alien/table').as('table');
     cy.visit('/#/project/Alien');
-    cy.wait('@table');
+    cy.wait('@table', {timeout: 15000});
 
     cy.get('table').should('be.visible')
       .eq(0)
