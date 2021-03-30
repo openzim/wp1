@@ -24,17 +24,17 @@
   },
   "devDependencies": {
     "@babel/core": "^7.7.4",
-    "@vue/cli-plugin-babel": "~4.5.11",
-    "@vue/cli-plugin-eslint": "~4.5.11",
-    "@vue/cli-service": "~4.5.11",
-    "babel-eslint": "^10.0.3",
+    "@vue/cli-plugin-babel": "~4.5.12",
+    "@vue/cli-plugin-eslint": "~4.5.12",
+    "@vue/cli-service": "~4.5.12",
+    "babel-eslint": "^10.1.0",
     "babel-loader": "^8.0.6",
     "babel-preset-vue": "^2.0.2",
     "cli-highlight": "^2.1.5",
     "cypress": "^6.8.0",
-    "eslint": "^5.16.0",
+    "eslint": "^6.7.2",
     "eslint-loader": "^3.0.2",
-    "eslint-plugin-vue": "^5.0.0",
+    "eslint-plugin-vue": "^6.2.2",
     "fetch-mock": "^8.0.0",
     "vue-template-compiler": "^2.6.10",
     "wait-on": "^5.2.0",
@@ -64,6 +64,7 @@
     "last 2 versions"
   ],
   "resolutions": {
-    "**/**/prismjs": "^1.21.0"
+    "**/**/prismjs": "^1.21.0",
+    "**/**/ssri": "^8.0.1"
   }
 }
