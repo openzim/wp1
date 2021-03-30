@@ -64,6 +64,7 @@
     "last 2 versions"
   ],
   "resolutions": {
-    "**/**/prismjs": "^1.21.0"
+    "**/**/prismjs": "^1.21.0",
+    "**/**/ssri": "^8.0.1"
   }
 }
