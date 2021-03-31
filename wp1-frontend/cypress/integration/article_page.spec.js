@@ -10,7 +10,7 @@ describe('the article page', () => {
         cy.get('button').eq(3).click();
 
         cy.get('table').find('tr').each(($el) => {
-            cy.wrap($el).contains('Predator');
+            cy.wrap($el).should('contain.text', 'Predator');
         });
     });
 });
