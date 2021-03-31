@@ -1,3 +1,13 @@
+'''Development overrides for the /v1/projects endpoints.
+
+The functions provided in this file are API compatible with the normal
+path as far as the frontend is concerned. However this blueprint has the following features:
+
+- The "lockout" time between updates is 5 minutes instead of 1 hour.
+- All updates take 60 seconds, with the progress being 1/60, 2/60 etc as the seconds pass.
+- If the update is for the project 'Water', it will fail after 10 seconds.
+'''
+
 from datetime import datetime, timedelta
 
 import flask
