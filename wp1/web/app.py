@@ -13,7 +13,7 @@ from wp1 import environment
 from wp1.web.db import get_db, has_db
 from wp1.web.articles import articles
 from wp1.web.projects import projects
-from wp1.web.dev.projects import projects as dev_projects
+from wp1.web.dev.projects import dev_projects
 
 try:
   # The credentials module isn't checked in and may be missing
