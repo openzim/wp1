@@ -78,10 +78,13 @@ def get_project_queue_status(redis, project_name):
   progress, work = get_project_progress(redis, project_name)
   if not progress:
     return None
-  elif progress < 5:
+
+  if progress < 5:
     return 'queued'
-  elif progress > 10 and project_name == b'Water':
+
+  if progress > 10 and project_name == b'Water':
     return 'failed'
+
   if progress > 50:
     return 'finished'
 
