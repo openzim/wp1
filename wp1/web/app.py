@@ -9,9 +9,19 @@ import rq_dashboard
 from rq_dashboard.cli import add_basic_auth
 
 import wp1.logic.project as logic_project
+from wp1 import environment
 from wp1.web.db import get_db, has_db
 from wp1.web.articles import articles
 from wp1.web.projects import projects
+from wp1.web.dev.projects import projects as dev_projects
+
+try:
+  # The credentials module isn't checked in and may be missing
+  from wp1.credentials import ENV
+except ImportError:
+  print(
+      'No credentials.py file found, Development overlay will not be enabled.')
+  ENV = None
 
 
 def get_redis_creds():
@@ -73,6 +83,13 @@ def create_app():
   @nocache
   def swagger_api_docs_yml():
     return flask.send_from_directory(".", "openapi.yml")
+
+  if ENV == environment.Environment.DEVELOPMENT:
+    # In development, override some project endpoints, mostly manual
+    # update, to provide an easier env for developing the frontend.
+    print('DEVELOPMENT: overlaying dev_projects blueprint. '
+          'Some endpoints will be replaced with development versions')
+    app.register_blueprint(dev_projects, url_prefix='/v1/projects')
 
   app.register_blueprint(projects, url_prefix='/v1/projects')
   app.register_blueprint(articles, url_prefix='/v1/articles')
