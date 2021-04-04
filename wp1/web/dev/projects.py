@@ -16,8 +16,8 @@ from wp1.environment import Environment
 from wp1.timestamp import utcnow
 from wp1.web.redis import get_redis
 
-UPDATE_DURATION_SECS = 5 * 60
-ELAPSED_TIME_SECS = 60
+UPDATE_DURATION_SECS = 5 * 30
+ELAPSED_TIME_SECS = 30
 BI_DURATION_SECS = UPDATE_DURATION_SECS + ELAPSED_TIME_SECS // 2
 
 try:
@@ -30,7 +30,6 @@ try:
   BI_DURATION_SECS = overlay_settings.get('basic_income_total_time_seconds',
                                           BI_DURATION_SECS)
 except (ImportError, KeyError):
-  print(CREDENTIALS)
   # The default values were already set before the attempted import so nothing to do
   pass
 
