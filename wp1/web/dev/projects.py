@@ -39,8 +39,9 @@ def _project_progress_key(project_name):
 
 def mark_project_manual_update_time(redis, project_name):
   key = _manual_key(project_name)
-  ts = (utcnow() +
-        timedelta(minutes=UPDATE_DURATION_MINS)).strftime('%Y-%m-%d %H:%M UTC')
+  ts = (
+      utcnow() +
+      timedelta(minutes=UPDATE_DURATION_MINS)).strftime('%Y-%m-%d %H:%M:%S UTC')
   redis.setex(key, timedelta(minutes=UPDATE_DURATION_MINS), value=ts)
   return ts
 
@@ -66,7 +67,7 @@ def get_project_progress(redis, project_name):
   if ts is None:
     return None, None
 
-  dt = datetime.strptime(ts, '%Y-%m-%d %H:%M UTC')
+  dt = datetime.strptime(ts, '%Y-%m-%d %H:%M:%S UTC')
   progress = _progress_secs(dt)
 
   if project_name == b'Water' and progress > 10:
