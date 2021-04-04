@@ -76,9 +76,9 @@ def _progress_secs(dt, project_name):
     secs = (dt + timedelta(minutes=2)) - utcnow()
     bi = BI_DURATION_SECS - secs.seconds
     return bi if bi > 0 else BI_DURATION_SECS
-  else:
-    secs = (dt - timedelta(seconds=UPDATE_DURATION_SECS -
-                           ELAPSED_TIME_SECS)) - utcnow()
+
+  secs = (dt - timedelta(seconds=UPDATE_DURATION_SECS -
+                         ELAPSED_TIME_SECS)) - utcnow()
   if project_name == b'Aesthetics' and secs.seconds >= ELAPSED_TIME_SECS:
     if secs.seconds >= ELAPSED_TIME_SECS * 2 or secs.seconds < 0:
       return ELAPSED_TIME_SECS * 2
