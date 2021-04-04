@@ -80,15 +80,15 @@ def get_project_queue_status(redis, project_name):
     return None
 
   if progress < 5:
-    return 'queued'
+    return {'status': 'queued'}
 
   if progress > 10 and project_name == b'Water':
-    return 'failed'
+    return {'status': 'failed'}
 
   if progress > 50:
-    return 'finished'
+    return {'status': 'finished'}
 
-  return 'started'
+  return {'status': 'started'}
 
 
 @dev_projects.route('/<project_name>/update', methods=['POST'])
