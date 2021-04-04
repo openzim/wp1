@@ -86,7 +86,7 @@ def get_project_queue_status(redis, project_name):
     return {'status': 'failed'}
 
   if progress > 50:
-    return {'status': 'finished', 'ended_at': datetime.now()}
+    return {'status': 'finished', 'ended_at': utcnow()}
 
   return {'status': 'started'}
 
