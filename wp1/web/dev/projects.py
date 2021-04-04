@@ -70,7 +70,7 @@ def get_project_progress(redis, project_name):
   dt = datetime.strptime(ts, '%Y-%m-%d %H:%M:%S UTC')
   progress = _progress_secs(dt)
 
-  if project_name == b'Water' and progress > 10:
+  if project_name == b'Water' and progress >= 10:
     return 10, 60
   return progress, 60
 
@@ -83,11 +83,16 @@ def get_project_queue_status(redis, project_name):
   if progress < 5:
     return {'status': 'queued'}
 
-  if progress > 10 and project_name == b'Water':
+  if progress >= 10 and project_name == b'Water':
     return {'status': 'failed'}
 
   if progress > 50:
-    return {'status': 'finished', 'ended_at': utcnow()}
+    ts = next_update_time(redis, project_name)
+    if ts is None:
+      end = utcnow()
+
+    dt = datetime.strptime(ts, '%Y-%m-%d %H:%M:%S UTC')
+    return {'status': 'finished', 'ended_at': dt - timedelta(minutes=4)}
 
   return {'status': 'started'}
 
