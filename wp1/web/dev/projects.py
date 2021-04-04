@@ -12,12 +12,29 @@ from datetime import datetime, timedelta
 
 import flask
 
+from wp1.environment import Environment
 from wp1.timestamp import utcnow
 from wp1.web.redis import get_redis
 
-dev_projects = flask.Blueprint('dev_projects', __name__)
+UPDATE_DURATION_SECS = 5 * 60
+ELAPSED_TIME_SECS = 60
+BI_DURATION_SECS = UPDATE_DURATION_SECS + ELAPSED_TIME_SECS // 2
 
-UPDATE_DURATION_MINS = 5
+try:
+  from wp1.credentials import CREDENTIALS
+  overlay_settings = CREDENTIALS[Environment.DEVELOPMENT]['OVERLAY']
+  UPDATE_DURATION_SECS = overlay_settings.get('update_wait_time_seconds',
+                                              UPDATE_DURATION_SECS)
+  ELAPSED_TIME_SECS = overlay_settings.get('job_elapsed_time_seconds',
+                                           ELAPSED_TIME_SECS)
+  BI_DURATION_SECS = overlay_settings.get('basic_income_total_time_seconds',
+                                          BI_DURATION_SECS)
+except (ImportError, KeyError):
+  print(CREDENTIALS)
+  # The default values were already set before the attempted import so nothing to do
+  pass
+
+dev_projects = flask.Blueprint('dev_projects', __name__)
 
 
 def clear_project_progress(redis, project_name):
@@ -41,8 +58,8 @@ def mark_project_manual_update_time(redis, project_name):
   key = _manual_key(project_name)
   ts = (
       utcnow() +
-      timedelta(minutes=UPDATE_DURATION_MINS)).strftime('%Y-%m-%d %H:%M:%S UTC')
-  redis.setex(key, timedelta(minutes=UPDATE_DURATION_MINS), value=ts)
+      timedelta(seconds=UPDATE_DURATION_SECS)).strftime('%Y-%m-%d %H:%M:%S UTC')
+  redis.setex(key, timedelta(seconds=UPDATE_DURATION_SECS), value=ts)
   return ts
 
 
@@ -54,12 +71,22 @@ def next_update_time(redis, project_name):
   return ts
 
 
-def _progress_secs(dt):
+def _progress_secs(dt, project_name):
   # The progress is the number of seconds that have passed in the first minute of update time
-  secs = (dt - timedelta(minutes=UPDATE_DURATION_MINS - 1)) - utcnow()
-  if secs.seconds > 60 or secs.seconds < 0:
-    return 60
-  return 60 - secs.seconds
+  if project_name == b'Basic_Income':
+    secs = (dt + timedelta(minutes=2)) - utcnow()
+    bi = BI_DURATION_SECS - secs.seconds
+    return bi if bi > 0 else BI_DURATION_SECS
+  else:
+    secs = (dt - timedelta(seconds=UPDATE_DURATION_SECS -
+                           ELAPSED_TIME_SECS)) - utcnow()
+  if project_name == b'Aesthetics' and secs.seconds >= ELAPSED_TIME_SECS:
+    if secs.seconds >= ELAPSED_TIME_SECS * 2 or secs.seconds < 0:
+      return ELAPSED_TIME_SECS * 2
+    return secs.seconds
+  if secs.seconds > ELAPSED_TIME_SECS or secs.seconds < 0:
+    return ELAPSED_TIME_SECS
+  return ELAPSED_TIME_SECS - secs.seconds
 
 
 def get_project_progress(redis, project_name):
@@ -68,11 +95,14 @@ def get_project_progress(redis, project_name):
     return None, None
 
   dt = datetime.strptime(ts, '%Y-%m-%d %H:%M:%S UTC')
-  progress = _progress_secs(dt)
+  progress = _progress_secs(dt, project_name)
 
-  if project_name == b'Water' and progress >= 10:
-    return 10, 60
-  return progress, 60
+  if project_name == b'Water' and progress >= ELAPSED_TIME_SECS // 4:
+    return ELAPSED_TIME_SECS // 4, ELAPSED_TIME_SECS
+
+  if project_name == b'Aesthetics' and progress >= ELAPSED_TIME_SECS:
+    return int(ELAPSED_TIME_SECS * 1.2), ELAPSED_TIME_SECS
+  return progress, ELAPSED_TIME_SECS
 
 
 def get_project_queue_status(redis, project_name):
@@ -80,18 +110,24 @@ def get_project_queue_status(redis, project_name):
   if not progress:
     return None
 
-  if progress < 5:
+  if progress < ELAPSED_TIME_SECS // 4:
     return {'status': 'queued'}
 
-  if progress >= 10 and project_name == b'Water':
+  if progress >= ELAPSED_TIME_SECS // 4 and project_name == b'Water':
     return {'status': 'failed'}
 
-  if progress > 50:
+  if progress > ELAPSED_TIME_SECS * 3 // 4:
     ts = next_update_time(redis, project_name)
     if ts is None:
       end = utcnow()
 
     dt = datetime.strptime(ts, '%Y-%m-%d %H:%M:%S UTC')
+
+    if (project_name == b'Aesthetics' and
+        progress < int(ELAPSED_TIME_SECS * 1.2)) or (
+            project_name == b'Basic_Income' and progress < BI_DURATION_SECS):
+      return {'status': 'started'}
+
     return {'status': 'finished', 'ended_at': dt - timedelta(minutes=4)}
 
   return {'status': 'started'}
