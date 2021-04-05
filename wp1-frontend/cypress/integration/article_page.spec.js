@@ -61,6 +61,10 @@ describe('the article page', () => {
   describe('Select Quality/Importance', () => {
     it('displays articles with selected quality and importance', () => {
         cy.visit('/#/project/Alien/articles');
+        cy.intercept('v1/projects/Alien/articles?importance=Top-Class&quality=B-Class').as(
+          'TopBArticles'
+        );
+
         cy.contains('Select Quality/Importance')
           .click();
         
@@ -75,6 +79,8 @@ describe('the article page', () => {
         cy.get('button')
           .eq(2)
           .click();
+        
+          cy.wait('@TopBArticles');
         
         cy.get('table')
           .find('tr')
