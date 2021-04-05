@@ -29,6 +29,22 @@ describe('the article page', () => {
       });
   });
 
+  it('displays article on wikipedia', () => {
+    cy.visit('/#/project/Alien/articles');
+
+    cy.get('tr')
+      .eq(0)  
+      .find('td')
+      .find('a')
+      .eq(0)
+      .invoke('text')
+      .then(($text) => {
+        cy.get('tr').eq(0).find('td').find('a').eq(0).click();
+        cy.get('#firstHeading')
+          .should('contain.text', $text);
+      });
+  });
+
   describe('custom pagination', () => {
     it('shows 50 rows in article-table', () => {
       cy.visit('/#/project/Alien/articles');
