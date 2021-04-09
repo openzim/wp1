@@ -16,7 +16,11 @@ describe('the article page', () => {
       .eq(3)
       .click();
 
+    // Don't continue until the table has been updated.
     cy.wait('@predatorArticles');
+    cy.get('tr')
+      .contains('Prometheus')
+      .should('not.exist');
 
     cy.get('table')
       .find('tr')
@@ -26,33 +30,31 @@ describe('the article page', () => {
   });
 
   describe('custom pagination', () => {
-      it('shows 50 rows in article-table', () => {
-          cy.visit('/#/project/Alien/articles');
-          cy.contains('Custom pagination')
-            .click();
+    it('shows 50 rows in article-table', () => {
+      cy.visit('/#/project/Alien/articles');
+      cy.contains('Custom pagination').click();
 
-          cy.get('input')
-            .eq(0)
-            .clear()
-            .type('50');
+      cy.get('input')
+        .eq(0)
+        .clear()
+        .type('50');
 
-          cy.get('input')
-            .eq(1)
-            .clear()
-            .type('2');
+      cy.get('input')
+        .eq(1)
+        .clear()
+        .type('2');
 
-          cy.get('button')
-            .eq(1)
-            .click();
-      
-          cy.get('tr')
-            .eq(0)
-            .find('td')
-            .eq(0)
-            .should('have.text', '51');
+      cy.get('button')
+        .eq(1)
+        .click();
 
-          cy.get('tr')
-            .should('have.length', 50);
-      });
+      cy.get('tr')
+        .eq(0)
+        .find('td')
+        .eq(0)
+        .should('have.text', '51');
+
+      cy.get('tr').should('have.length', 50);
+    });
   });
 });
