@@ -29,9 +29,29 @@ describe('the article page', () => {
       });
   });
 
+  it('displays article on wikipedia', () => {
+    cy.visit('/#/project/Alien/articles');
+
+    cy.get('tr')
+      .eq(0)  
+      .find('td')
+      .find('a')
+      .eq(0)
+      .invoke('text')
+      .then(($text) => {
+        cy.get('tr').eq(0).find('td').find('a').eq(0).click();
+        cy.get('#firstHeading')
+          .should('contain.text', $text);
+      });
+  });
+
   describe('custom pagination', () => {
     it('shows 50 rows in article-table', () => {
       cy.visit('/#/project/Alien/articles');
+      cy.intercept('/v1/projects/Alien/articles?page=2&numRows=50').as(
+        'Pagination'
+      );
+
       cy.contains('Custom pagination').click();
 
       cy.get('input')
@@ -47,6 +67,11 @@ describe('the article page', () => {
       cy.get('button')
         .eq(1)
         .click();
+
+      cy.wait('@Pagination');
+      cy.get('tr')
+        .contains('Prometheus')
+        .should('not.exist');
 
       cy.get('tr')
         .eq(0)
