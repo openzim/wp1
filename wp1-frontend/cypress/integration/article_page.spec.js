@@ -80,8 +80,12 @@ describe('the article page', () => {
           .eq(2)
           .click();
         
-          cy.wait('@TopBArticles');
+        cy.wait('@TopBArticles');
         
+        cy.get('tr')
+        .contains('Prometheus')
+        .should('not.exist');
+
         cy.get('table')
           .find('tr')
           .each($el => {
