@@ -82,4 +82,41 @@ describe('the article page', () => {
       cy.get('tr').should('have.length', 50);
     });
   });
+
+  describe('Select Quality/Importance', () => {
+    it('displays articles with selected quality and importance', () => {
+        cy.visit('/#/project/Alien/articles');
+        cy.intercept('v1/projects/Alien/articles?importance=Top-Class&quality=B-Class').as(
+          'TopBArticles'
+        );
+
+        cy.contains('Select Quality/Importance')
+          .click();
+        
+        cy.get('.custom-select')
+        .eq(0)
+        .select('B');
+
+        cy.get('.custom-select')
+        .eq(1)
+        .select('Top');
+
+        cy.get('button')
+          .eq(2)
+          .click();
+        
+        cy.wait('@TopBArticles');
+        
+        cy.get('tr')
+        .contains('Prometheus')
+        .should('not.exist');
+
+        cy.get('table')
+          .find('tr')
+          .each($el => {
+            cy.wrap($el).should('contain.text', 'Top');
+            cy.wrap($el).should('contain.text', 'B');
+          });
+    });
+  });
 });
