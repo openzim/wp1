@@ -73,7 +73,7 @@ interfaces with. They are used for unit testing.
 
 ## Installation
 
-This code is targeted to and tested on Python 3.7.5.
+This code is targeted to and tested on Python 3.9.4.
 
 ### Creating your virtualenv
 
