@@ -1,6 +1,6 @@
 <template>
   <div class="row">
-    <div v-if="layout != 'alternate'" class="select-cont col-xl-7">
+    <div v-if="layout != 'alternate'" class="select-cont col-8">
       <div
         class="accordion"
         id="accordion-rs"
@@ -27,9 +27,9 @@
             data-parent="#accordion-rs"
           >
             <div class="card-body form-inline p-2">
-              <div class="card-form">
+              <div>
                 Quality
-                <select class="custom-select" ref="qualitySelect">
+                <select class="custom-select m-2" ref="qualitySelect">
                   <option
                     v-for="(item, key) in categoryLinks.quality"
                     :value="key"
@@ -38,8 +38,10 @@
                     >{{ item.text ? item.text : item }}</option
                   >
                 </select>
+              </div>
+              <div>
                 Importance
-                <select class="custom-select" ref="importanceSelect">
+                <select class="custom-select m-2 mr-4" ref="importanceSelect">
                   <option
                     v-for="(item, key) in categoryLinks.importance"
                     :value="key"
@@ -49,7 +51,7 @@
                   >
                 </select>
               </div>
-              <button v-on:click="onButtonClick()" class="btn-primary ml-4">
+              <button v-on:click="onButtonClick()" class="btn btn-primary">
                 Update View
               </button>
             </div>
@@ -59,36 +61,40 @@
     </div>
     <div v-else class="col">
       <div class="form-inline">
-        Quality
-        <select
-          :disabled="!projectId"
-          @change="onSelectChange()"
-          class="custom-select"
-          ref="qualitySelect"
-        >
-          <option
-            v-for="(item, key) in categoryLinks.quality"
-            :value="key"
-            v-bind:key="key"
-            :selected="selectedQuality == key"
-            >{{ item.text ? item.text : item }}</option
+        <div class="m-2"> 
+          Quality
+          <select
+            :disabled="!projectId"
+            @change="onSelectChange()"
+            class="custom-select"
+            ref="qualitySelect"
           >
-        </select>
-        Importance
-        <select
-          :disabled="!projectId"
-          @change="onSelectChange()"
-          class="custom-select"
-          ref="importanceSelect"
-        >
-          <option
-            v-for="(item, key) in categoryLinks.importance"
-            :value="key"
-            v-bind:key="key"
-            :selected="selectedImportance == key"
-            >{{ item.text ? item.text : item }}</option
+            <option
+              v-for="(item, key) in categoryLinks.quality"
+              :value="key"
+              v-bind:key="key"
+              :selected="selectedQuality == key"
+              >{{ item.text ? item.text : item }}</option
+            >
+          </select>
+        </div>
+        <div class="m-2">
+          Importance
+          <select
+            :disabled="!projectId"
+            @change="onSelectChange()"
+            class="custom-select"
+            ref="importanceSelect"
           >
-        </select>
+            <option
+              v-for="(item, key) in categoryLinks.importance"
+              :value="key"
+              v-bind:key="key"
+              :selected="selectedImportance == key"
+              >{{ item.text ? item.text : item }}</option
+            >
+          </select>
+        </div>
       </div>
     </div>
   </div>
