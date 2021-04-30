@@ -61,7 +61,7 @@
     </div>
     <div v-else class="col">
       <div class="form-inline">
-        <div class="m-2"> 
+        <div class="m-2">
           Quality
           <select
             :disabled="!projectId"
