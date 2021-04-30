@@ -1,6 +1,6 @@
 <template>
   <div class="row">
-    <div class="select-cont col-7">
+    <div class="select-cont col-8">
       <div
         class="accordion"
         id="accordion-nf"
@@ -27,15 +27,15 @@
             data-parent="#accordion-nf"
           >
             <div class="card-body form-inline p-2">
-              <div class="card-form">
+              <div>
                 Article name must contain:
                 <input
                   ref="filterInput"
-                  class="form-control m-2"
+                  class="form-control m-2 mr-4"
                   :value="filterValue"
                 />
               </div>
-              <button v-on:click="onButtonClick()" class="btn-primary ml-4">
+              <button v-on:click="onButtonClick()" class="btn btn-primary">
                 Update View
               </button>
             </div>
