@@ -33,15 +33,19 @@ describe('the article page', () => {
     cy.visit('/#/project/Alien/articles');
 
     cy.get('tr')
-      .eq(0)  
+      .eq(0)
       .find('td')
       .find('a')
       .eq(0)
       .invoke('text')
-      .then(($text) => {
-        cy.get('tr').eq(0).find('td').find('a').eq(0).click();
-        cy.get('#firstHeading')
-          .should('contain.text', $text);
+      .then($text => {
+        cy.get('tr')
+          .eq(0)
+          .find('td')
+          .find('a')
+          .eq(0)
+          .click();
+        cy.get('#firstHeading').should('contain.text', $text);
       });
   });
 
@@ -85,38 +89,37 @@ describe('the article page', () => {
 
   describe('Select Quality/Importance', () => {
     it('displays articles with selected quality and importance', () => {
-        cy.visit('/#/project/Alien/articles');
-        cy.intercept('v1/projects/Alien/articles?importance=Top-Class&quality=B-Class').as(
-          'TopBArticles'
-        );
+      cy.visit('/#/project/Alien/articles');
+      cy.intercept(
+        'v1/projects/Alien/articles?importance=Top-Class&quality=B-Class'
+      ).as('TopBArticles');
 
-        cy.contains('Select Quality/Importance')
-          .click();
-        
-        cy.get('.custom-select')
+      cy.contains('Select Quality/Importance').click();
+
+      cy.get('.custom-select')
         .eq(0)
         .select('B');
 
-        cy.get('.custom-select')
+      cy.get('.custom-select')
         .eq(1)
         .select('Top');
 
-        cy.get('button')
-          .eq(2)
-          .click();
-        
-        cy.wait('@TopBArticles');
-        
-        cy.get('tr')
+      cy.get('button')
+        .eq(2)
+        .click();
+
+      cy.wait('@TopBArticles');
+
+      cy.get('tr')
         .contains('Prometheus')
         .should('not.exist');
 
-        cy.get('table')
-          .find('tr')
-          .each($el => {
-            cy.wrap($el).should('contain.text', 'Top');
-            cy.wrap($el).should('contain.text', 'B');
-          });
+      cy.get('table')
+        .find('tr')
+        .each($el => {
+          cy.wrap($el).should('contain.text', 'Top');
+          cy.wrap($el).should('contain.text', 'B');
+        });
     });
   });
 });

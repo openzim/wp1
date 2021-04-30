@@ -29,7 +29,8 @@ describe('the home page', () => {
       .should('contain.text', 'Alien')
       .click();
 
-    cy.get('table').should('be.visible')
-      .should('contain.text','Alien articles by quality and importance');
+    cy.get('table')
+      .should('be.visible')
+      .should('contain.text', 'Alien articles by quality and importance');
   });
 });
