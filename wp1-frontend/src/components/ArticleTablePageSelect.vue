@@ -1,6 +1,6 @@
 <template>
   <div class="row">
-    <div class="select-cont col-7">
+    <div class="select-cont col-8">
       <div
         class="accordion"
         id="accordion-ps"
@@ -29,7 +29,7 @@
             data-parent="#accordion-ps"
           >
             <div class="card-body form-inline p-2">
-              <div class="card-form">
+              <div>
                 Show
                 <input
                   id="row-input"
@@ -41,6 +41,8 @@
                   ]"
                   v-model="rows"
                 />
+              </div>
+              <div>
                 rows starting with page
                 <input
                   id="page-input"
@@ -48,13 +50,13 @@
                     'num-select',
                     'form-control',
                     'm-2',
+                    'mr-4',
                     { 'is-invalid': errorPage }
                   ]"
                   v-model="page"
                 />
               </div>
-
-              <button v-on:click="onButtonClick()" class="btn-primary ml-4">
+              <button v-on:click="onButtonClick()" class="btn btn-primary">
                 Update View
               </button>
             </div>
