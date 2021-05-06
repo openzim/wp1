@@ -13,7 +13,7 @@ distlib==0.3.1
 fakeredis==1.4.1
 filelock==3.0.12
 Flask==1.1.1
-Flask-Cors==3.0.8
+Flask-Cors==3.0.9
 Flask-gzip==0.2
 gunicorn==19.9.0
 identify==1.4.6
