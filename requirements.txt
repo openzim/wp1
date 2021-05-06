@@ -32,7 +32,7 @@ oauthlib==2.1.0
 pre-commit==2.11.1
 PyMySQL==0.9.3
 python-dateutil==2.8.0
-PyYAML==5.4
+PyYAML==5.4.1
 redis==3.3.6
 requests==2.21.0
 requests-oauthlib==1.0.0
@@ -40,7 +40,7 @@ rq==1.1.0
 rq-dashboard==0.5.2
 six==1.12.0
 sortedcontainers==2.1.0
-supervisor==4.0.4
+supervisor==4.2.2
 toml==0.10.0
 urllib3==1.24.2
 virtualenv==20.4.3
