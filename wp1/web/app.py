@@ -1,17 +1,20 @@
 from datetime import datetime
 from functools import wraps, update_wrapper
+from flask_session import Session
 import os
-
 import flask
 import flask_cors
 import flask_gzip
+import redis
 import rq_dashboard
 from rq_dashboard.cli import add_basic_auth
 
 import wp1.logic.project as logic_project
 from wp1 import environment
+from wp1.credentials import ENV, CREDENTIALS
 from wp1.web.db import get_db, has_db
 from wp1.web.articles import articles
+from wp1.web.oauth import oauth
 from wp1.web.projects import projects
 from wp1.web.dev.projects import dev_projects
 
@@ -26,7 +29,6 @@ except ImportError:
 
 def get_redis_creds():
   try:
-    from wp1.credentials import ENV, CREDENTIALS
     return CREDENTIALS[ENV]['REDIS']
   except ImportError:
     print('No REDIS_CREDS found, using defaults.')
@@ -52,6 +54,7 @@ def nocache(view):
 
 def create_app():
   app = flask.Flask(__name__)
+
   cors = flask_cors.CORS(app)
   gzip = flask_gzip.Gzip(app, minimum_size=256)
 
@@ -68,6 +71,14 @@ def create_app():
     app.register_blueprint(rq_dashboard.blueprint, url_prefix="/rq")
   else:
     print('No RQ_USER/RQ_PASS found in env. RQ dashboard not created.')
+
+  app.config['SESSION_TYPE'] = 'redis'
+  app.config['SESSION_REDIS'] = redis.from_url('redis://{}:{}'.format(
+      redis_creds['host'], redis_creds['port']))
+  app.config['SECRET_KEY'] = CREDENTIALS[ENV]['SESSION']['secret_key']
+  app.config['SESSION_COOKIE_DOMAIN'] = CREDENTIALS[ENV]['SESSION']['domain']
+  app.config.from_object(__name__)
+  Session(app)
 
   @app.teardown_request
   def close_dbs(ex):
@@ -93,4 +104,5 @@ def create_app():
 
   app.register_blueprint(projects, url_prefix='/v1/projects')
   app.register_blueprint(articles, url_prefix='/v1/articles')
+  app.register_blueprint(oauth, url_prefix='/v1/oauth')
   return app

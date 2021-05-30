@@ -56,6 +56,15 @@
             >
           </li>
         </ul>
+        <div>
+          <div v-if="this.token">
+            <button @click="logout">Logout</button>
+            <span>Username</span>
+          </div>
+          <a v-else href="http://127.0.0.1:5000/v1/oauth/initiate"
+            ><button>Login</button></a
+          >
+        </div>
       </div>
     </nav>
     <div id="app" class="container">
@@ -66,7 +75,38 @@
 
 <script>
 export default {
-  name: 'app'
+  name: 'app',
+  data: function() {
+    return {
+      token: null
+    };
+  },
+  methods: {
+    logout: async function() {
+      localStorage.removeItem('token');
+      window.location.href = 'http://localhost:3000/#/';
+      await fetch(`${process.env.VUE_APP_API_URL}/oauth/logout`, {
+        method: 'POST',
+        body: JSON.stringify(this.token)
+      });
+      this.token = null;
+      localStorage.removeItem('token', this.token);
+    }
+  },
+  created: async function() {
+    if (!window.location.hash.split('?')[1]) {
+      return;
+    }
+    this.token = window.location.hash.split('?')[1];
+    console.log(this.token);
+    const response = await fetch(`${process.env.VUE_APP_API_URL}/oauth/token`, {
+      credentials: 'include',
+      method: 'GET',
+      body: JSON.stringify(this.token)
+    });
+    this.token = await response.json();
+    localStorage.setItem('token', this.token);
+  }
 };
 </script>
 
