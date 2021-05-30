@@ -11,7 +11,6 @@ from rq_dashboard.cli import add_basic_auth
 
 import wp1.logic.project as logic_project
 from wp1 import environment
-from wp1.credentials import ENV, CREDENTIALS
 from wp1.web.db import get_db, has_db
 from wp1.web.articles import articles
 from wp1.web.oauth import oauth
@@ -20,7 +19,7 @@ from wp1.web.dev.projects import dev_projects
 
 try:
   # The credentials module isn't checked in and may be missing
-  from wp1.credentials import ENV
+  from wp1.credentials import ENV, CREDENTIALS
 except ImportError:
   print(
       'No credentials.py file found, Development overlay will not be enabled.')
