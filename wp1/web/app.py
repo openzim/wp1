@@ -28,6 +28,7 @@ except ImportError:
 
 def get_redis_creds():
   try:
+    from wp1.credentials import ENV, CREDENTIALS
     return CREDENTIALS[ENV]['REDIS']
   except ImportError:
     print('No REDIS_CREDS found, using defaults.')
@@ -66,16 +67,21 @@ def create_app():
     if redis_creds is not None:
       app.config.update({'RQ_DASHBOARD_REDIS_HOST': redis_creds['host']})
       app.config.update({'RQ_DASHBOARD_REDIS_PORT': redis_creds['port']})
+      app.config['SESSION_REDIS'] = redis.from_url('redis://{}:{}'.format(
+          redis_creds['host'], redis_creds['port']))
     add_basic_auth(rq_dashboard.blueprint, rq_user, rq_pass)
     app.register_blueprint(rq_dashboard.blueprint, url_prefix="/rq")
   else:
     print('No RQ_USER/RQ_PASS found in env. RQ dashboard not created.')
 
+  try:
+    from wp1.credentials import ENV, CREDENTIALS
+    app.config['SECRET_KEY'] = CREDENTIALS[ENV]['SESSION']['secret_key']
+  except ImportError:
+    print('No secret_key found, using defaults.')
+    app.config['SECRET_KEY'] = 'WP1'
+
   app.config['SESSION_TYPE'] = 'redis'
-  app.config['SESSION_REDIS'] = redis.from_url('redis://{}:{}'.format(
-      redis_creds['host'], redis_creds['port']))
-  app.config['SECRET_KEY'] = CREDENTIALS[ENV]['SESSION']['secret_key']
-  app.config['SESSION_COOKIE_DOMAIN'] = CREDENTIALS[ENV]['SESSION']['domain']
   app.config.from_object(__name__)
   Session(app)
 
