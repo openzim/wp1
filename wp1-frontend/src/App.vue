@@ -57,13 +57,11 @@
           </li>
         </ul>
         <div>
-          <div v-if="this.token">
+          <div v-if="this.username">
             <button @click="logout">Logout</button>
-            <span>Username</span>
+            <span> {{ this.username }} </span>
           </div>
-          <a v-else href="http://127.0.0.1:5000/v1/oauth/initiate"
-            ><button>Login</button></a
-          >
+          <a v-else @click="login"><button>Login</button> </a>
         </div>
       </div>
     </nav>
@@ -78,34 +76,45 @@ export default {
   name: 'app',
   data: function() {
     return {
-      token: null
+      username: null
     };
   },
   methods: {
     logout: async function() {
-      localStorage.removeItem('token');
-      window.location.href = 'http://localhost:3000/#/';
-      await fetch(`${process.env.VUE_APP_API_URL}/oauth/logout`, {
-        method: 'POST',
-        body: JSON.stringify(this.token)
+      await fetch(`${process.env.VUE_APP_API_URL}/oauth/logout`);
+      this.username = null;
+    },
+    login: async function() {
+      await fetch(`${process.env.VUE_APP_API_URL}/oauth/initiate`, {
+        credentials: 'include'
       });
-      this.token = null;
-      localStorage.removeItem('token', this.token);
+      this.identify();
+    },
+    identify: async function() {
+      if (this.username) {
+        return;
+      }
+      const response = await fetch(
+        `${process.env.VUE_APP_API_URL}/oauth/identify`
+      )
+        .then(response => {
+          if (response.status === 200) {
+            return response.json();
+          } else {
+            throw new Error(response.status);
+          }
+        })
+        .then(data => {
+          return data;
+        })
+        .catch(err => {
+          console.error(err);
+        });
+      this.username = response;
     }
   },
-  created: async function() {
-    if (!window.location.hash.split('?')[1]) {
-      return;
-    }
-    this.token = window.location.hash.split('?')[1];
-    console.log(this.token);
-    const response = await fetch(`${process.env.VUE_APP_API_URL}/oauth/token`, {
-      credentials: 'include',
-      method: 'GET',
-      body: JSON.stringify(this.token)
-    });
-    this.token = await response.json();
-    localStorage.setItem('token', this.token);
+  created: function() {
+    this.identify();
   }
 };
 </script>
