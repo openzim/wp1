@@ -59,9 +59,10 @@
         <div>
           <div v-if="this.username">
             <button @click="logout">Logout</button>
+            <span style="font-size:20px"> | </span>
             <span> {{ this.username }} </span>
           </div>
-          <a v-else @click="login"><button>Login</button> </a>
+          <a v-else :href="this.loginInitiateUrl"><button>Login</button> </a>
         </div>
       </div>
     </nav>
@@ -76,41 +77,40 @@ export default {
   name: 'app',
   data: function() {
     return {
-      username: null
+      username: null,
+      loginInitiateUrl: `${process.env.VUE_APP_API_URL}/oauth/initiate`
     };
   },
   methods: {
     logout: async function() {
-      await fetch(`${process.env.VUE_APP_API_URL}/oauth/logout`);
-      this.username = null;
-    },
-    login: async function() {
-      await fetch(`${process.env.VUE_APP_API_URL}/oauth/initiate`, {
+      await fetch(`${process.env.VUE_APP_API_URL}/oauth/logout`, {
         credentials: 'include'
       });
-      this.identify();
+      this.username = null;
     },
     identify: async function() {
       if (this.username) {
         return;
       }
-      const response = await fetch(
-        `${process.env.VUE_APP_API_URL}/oauth/identify`
+      const data = await fetch(
+        `${process.env.VUE_APP_API_URL}/oauth/identify`,
+        {
+          credentials: 'include'
+        }
       )
         .then(response => {
-          if (response.status === 200) {
+          if (response.ok) {
             return response.json();
           } else {
             throw new Error(response.status);
           }
         })
-        .then(data => {
-          return data;
-        })
         .catch(err => {
           console.error(err);
         });
-      this.username = response;
+      if (data) {
+        this.username = data.username;
+      }
     }
   },
   created: function() {

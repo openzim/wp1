@@ -1,6 +1,7 @@
 import flask
 from flask import jsonify, session
 from mwoauth import ConsumerToken, Handshaker
+from oauthlib.oauth1.rfc5849 import Client
 
 oauth = flask.Blueprint('oauth', __name__)
 
@@ -11,6 +12,7 @@ try:
                                  CREDENTIALS[ENV]['MWOAUTH']['consumer_secret'])
   handshaker = Handshaker("https://en.wikipedia.org/w/index.php",
                           consumer_token)
+  client_url = CREDENTIALS[ENV]['CLIENT_URL']
 except ImportError:
   print(
       'No credentials.py file found, Please add your mwoauth credentials in credentials.py'
@@ -19,6 +21,8 @@ except ImportError:
 
 @oauth.route('/initiate')
 def initiate():
+  if session.get('user'):
+    return flask.redirect(client_url)
   redirect, request_token = handshaker.initiate()
   session['request_token'] = request_token
   return flask.redirect(redirect)
@@ -26,29 +30,29 @@ def initiate():
 
 @oauth.route('/complete')
 def complete():
-  try:
-    query_string = str(flask.request.query_string.decode('utf-8'))
-    access_token = handshaker.complete(session['request_token'], query_string)
-    session.pop('request_token')
-    session['access_token'] = access_token
-    return {'status:': '200'}
-  except KeyError:
+  if 'request_token' not in session:
     flask.abort(404, 'User does not exist')
+
+  query_string = str(flask.request.query_string.decode('utf-8'))
+  access_token = handshaker.complete(session['request_token'], query_string)
+  session.pop('request_token')
+  identity = handshaker.identify(access_token)
+  session['user'] = {'access_token': access_token, 'identity': identity}
+  return flask.redirect(client_url)
 
 
 @oauth.route('/identify')
 def identify():
-  try:
-    username = handshaker.identify(session['access_token'])['username']
-    return jsonify(username)
-  except KeyError:
+  user = session.get('user')
+  if user is None:
     flask.abort(401, 'Unauthorized')
+    return
+  return jsonify({'username': user['identity']['username']})
 
 
 @oauth.route('/logout')
 def logout():
-  try:
-    session.pop('access_token')
-    return {'status': '200'}
-  except KeyError:
+  if session.get('user') is None:
     flask.abort(404, 'User does not exist')
+  session.pop('user')
+  return {'status': '204'}
