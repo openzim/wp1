@@ -1,7 +1,6 @@
 import flask
 from flask import jsonify, session
 from mwoauth import ConsumerToken, Handshaker
-from oauthlib.oauth1.rfc5849 import Client
 
 oauth = flask.Blueprint('oauth', __name__)
 
