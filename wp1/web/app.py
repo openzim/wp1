@@ -79,6 +79,8 @@ def create_app():
   except ImportError:
     print('No secret_key found, using defaults.')
     app.config['SECRET_KEY'] = 'WP1'
+    ENV = None
+    CREDENTIALS = None
 
   app.config['SESSION_TYPE'] = 'redis'
   Session(app)
