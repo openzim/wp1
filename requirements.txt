@@ -34,7 +34,7 @@ PyMySQL==0.9.3
 python-dateutil==2.8.0
 PyYAML==5.4.1
 redis==3.3.6
-requests==2.21.0
+requests==2.25.1
 requests-oauthlib==1.0.0
 rq==1.1.0
 rq-dashboard==0.5.2
