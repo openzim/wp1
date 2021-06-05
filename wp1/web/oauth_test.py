@@ -9,15 +9,12 @@ except ImportError:
   ENV = None
   CREDENTIALS = None
 
-if (CREDENTIALS is None or CREDENTIALS[ENV].get('MWOAUTH') is None or
-    CREDENTIALS[ENV]['MWOAUTH'].get('consumer_key') is None or
-    CREDENTIALS[ENV]['MWOAUTH'].get('consumer_secret') is None):
-  Skip = True
-else:
-  Skip = False
+skip = bool(CREDENTIALS is None or CREDENTIALS[ENV].get('MWOAUTH') is None or
+            CREDENTIALS[ENV]['MWOAUTH'].get('consumer_key') is None or
+            CREDENTIALS[ENV]['MWOAUTH'].get('consumer_secret') is None)
 
 
-@unittest.skipIf(Skip, 'Cannot find Credentials.py')
+@unittest.skipIf(skip, 'Cannot find Credentials.py')
 class IdentifyTest(BaseWebTestcase):
 
   def test_identify(self):
