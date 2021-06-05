@@ -26,6 +26,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        # Don't need lfs because we're not referencing the dev-db in this workflow.
       - name: Set up Python 3.9
         uses: actions/setup-python@v2
         with:
@@ -55,21 +56,10 @@ jobs:
   frontend-cypress:
     runs-on: ubuntu-latest
 
-    services:
-      wp1-dev-db:
-        image: openzim/wp1-dev-database
-        ports:
-          - 6300:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
-
-      redis:
-        image: redis
-        ports:
-          - 6379:6379
-        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
-
     steps:
       - uses: actions/checkout@v2
+        with:
+          lfs: true
 
       - name: Install Python dependencies
         run: |
@@ -79,6 +69,14 @@ jobs:
       - name: Install Javascript dependencies
         run: |
           cd wp1-frontend && yarn
+
+      - name: Start Docker dev services
+        run: docker-compose -f docker-compose-dev.yml up -d --build
+
+      - name: Wait for dev services to be up
+        uses: jakejarvis/wait-action@master
+        with:
+          time: '45s'
 
       - name: Start web API server
         env:
@@ -101,6 +99,10 @@ jobs:
         run: |
           cd wp1-frontend
           $(yarn bin)/cypress run
+
+      - name: Stop containers
+        if: always()
+        run: docker-compose -f "docker-compose-dev.yml" down
 
       - uses: actions/upload-artifact@v2
         if: always()
