@@ -20,8 +20,8 @@ try:
   # The credentials module isn't checked in and may be missing
   from wp1.credentials import ENV, CREDENTIALS
 except ImportError:
-  print('''No credentials.py file found, Development overlay
-         will not be enabled.''')
+  print('No credentials.py file found. Development overlay will '
+        'not be enabled.')
   ENV = None
 
 
