@@ -16,6 +16,8 @@ except ImportError:
   print(
       'No credentials.py file found, Please add your mwoauth credentials in credentials.py'
   )
+  ENV = None
+  CREDENTIALS = None
 
 
 @oauth.route('/initiate')
