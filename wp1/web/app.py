@@ -23,6 +23,7 @@ except ImportError:
   print('No credentials.py file found. Development overlay will '
         'not be enabled.')
   ENV = None
+  CREDENTIALS = None
 
 
 def get_redis_creds():
@@ -32,6 +33,15 @@ def get_redis_creds():
   except ImportError:
     print('No REDIS_CREDS found, using defaults.')
     return None
+
+
+def get_secret_key():
+  try:
+    from wp1.credentials import ENV, CREDENTIALS
+    return CREDENTIALS[ENV]['SESSION']['secret_key']
+  except ImportError:
+    print('No secret_key found, using defaults.')
+    return 'WP1'
 
 
 # We use this to prevent caching of `/swagger.yml`
@@ -73,15 +83,7 @@ def create_app():
   else:
     print('No RQ_USER/RQ_PASS found in env. RQ dashboard not created.')
 
-  try:
-    from wp1.credentials import ENV, CREDENTIALS
-    app.config['SECRET_KEY'] = CREDENTIALS[ENV]['SESSION']['secret_key']
-  except ImportError:
-    print('No secret_key found, using defaults.')
-    app.config['SECRET_KEY'] = 'WP1'
-    ENV = None
-    CREDENTIALS = None
-
+  app.config['SECRET_KEY'] = get_secret_key()
   app.config['SESSION_TYPE'] = 'redis'
   Session(app)
 

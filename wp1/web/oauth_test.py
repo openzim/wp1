@@ -1,26 +1,14 @@
-from wp1.web.app import create_app
-from wp1.web.base_web_testcase import BaseWebTestcase
 import unittest
-
-try:
-  from wp1.credentials import ENV, CREDENTIALS
-except ImportError:
-  ENV = None
-  CREDENTIALS = None
-
-missing_credentials = CREDENTIALS is None or ENV is None
-if not missing_credentials:
-  mwoauth = CREDENTIALS.get("ENV", {}).get("MWOAUTH", {})
-if missing_credentials or mwoauth.get('consumer_key') is None or mwoauth.get(
-    'consumer_secret') is None:
-  mwoauth = {
-      'consumer_key': 'consumer_key',
-      'consumer_secret': 'consumer_secret'
-  }
+from wp1.web.app import create_app
+from wp1.environment import Environment
+from wp1.base_db_test import get_test_connect_creds
+from unittest.mock import patch
 
 
-class IdentifyTest(BaseWebTestcase):
+class IdentifyTest(unittest.TestCase):
 
+  @patch('wp1.web.app.CREDENTIALS', get_test_connect_creds())
+  @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
   def test_identify_authorized_user(self):
     self.app = create_app()
     with self.app.test_client() as client:
@@ -34,12 +22,16 @@ class IdentifyTest(BaseWebTestcase):
       rv = client.get('/v1/oauth/identify')
       self.assertEqual({"username": 'WP1_user'}, rv.get_json())
 
+  @patch('wp1.web.app.CREDENTIALS', get_test_connect_creds())
+  @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
   def test_identify_unauthorized_user(self):
     self.app = create_app()
     with self.app.test_client() as client:
       rv = client.get('/v1/oauth/identify')
       self.assertEqual('401 UNAUTHORIZED', rv.status)
 
+  @patch('wp1.web.app.CREDENTIALS', get_test_connect_creds())
+  @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
   def test_logout_authorized_user(self):
     self.app = create_app()
     with self.app.test_client() as client:
@@ -53,6 +45,8 @@ class IdentifyTest(BaseWebTestcase):
       rv = client.get('/v1/oauth/logout')
       self.assertEqual({'status': '204'}, rv.get_json())
 
+  @patch('wp1.web.app.CREDENTIALS', get_test_connect_creds())
+  @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
   def test_logout_unauthorized_user(self):
     self.app = create_app()
     with self.app.test_client() as client:
