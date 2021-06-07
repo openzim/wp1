@@ -120,15 +120,6 @@ def get_test_connect_creds():
               'host': 'localhost',
               'port': 55555
           },
-          'API': {},
-          'MWOAUTH': {
-              'consumer_key': 'consumer_key',
-              'consumer_secret': 'consumer_secret'
-          },
-          'SESSION': {
-              'secret_key': 'wp1_secret'
-          },
-          'CLIENT_URL': 'http://localhost:3000/#/'
       },
       Environment.PRODUCTION: {}
   }
