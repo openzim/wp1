@@ -13,8 +13,8 @@ try:
                           consumer_token)
   client_url = CREDENTIALS[ENV]['CLIENT_URL']
 except ImportError:
-  print('''No credentials.py file found,
-       Please add your mwoauth credentials in credentials.py''')
+  print('No credentials.py file found, Please add your '
+        'mwoauth credentials in credentials.py')
   ENV = None
   CREDENTIALS = None
   handshaker = None
