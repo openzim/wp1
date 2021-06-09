@@ -39,7 +39,14 @@ def complete():
   access_token = handshaker.complete(session['request_token'], query_string)
   session.pop('request_token')
   identity = handshaker.identify(access_token)
-  session['user'] = {'access_token': access_token, 'identity': identity}
+
+  session['user'] = {
+      'access_token': access_token,
+      'identity': {
+          'username': identity['username'],
+          'sub': identity['sub']
+      }
+  }
   return flask.redirect(client_url)
 
 
