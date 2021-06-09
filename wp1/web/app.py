@@ -112,12 +112,12 @@ def create_app():
   app.register_blueprint(projects, url_prefix='/v1/projects')
   app.register_blueprint(articles, url_prefix='/v1/articles')
 
-  if CREDENTIALS is None or CREDENTIALS[ENV].get(
-      'MWOAUTH') is None or CREDENTIALS[ENV]['MWOAUTH'].get(
-          'consumer_key') is None or CREDENTIALS[ENV]['MWOAUTH'].get(
-              'consumer_secret') is None:
-    print('No MWOAUTH credentials, not attaching OAuth endpoints')
-  else:
+  missing_credentials = CREDENTIALS is None or ENV is None
+  if not missing_credentials:
+    mwoauth = CREDENTIALS.get(ENV, {}).get('MWOAUTH', {})
+  if not (missing_credentials or mwoauth.get('consumer_key') is None or
+          mwoauth.get('consumer_secret') is None):
     from wp1.web.oauth import oauth
     app.register_blueprint(oauth, url_prefix='/v1/oauth')
+
   return app
