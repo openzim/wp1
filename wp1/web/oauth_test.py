@@ -22,7 +22,13 @@ class IdentifyTest(unittest.TestCase):
       Environment.PRODUCTION: {}
   }
   REDIRECT = 'https://en.wikipedia.org/w/index.php?oauth_token=token&oauth_consumer_key=key'
-  USER = {'access_token': 'access_token', 'identity': {'username': 'WP1_user'}}
+  USER = {
+      'access_token': 'access_token',
+      'identity': {
+          'username': 'WP1_user',
+          'sub': '1234'
+      }
+  }
   REQUEST_TOKEN = {'key': 'request_token', 'secret': 'request_token_secret'}
   handshaker = Mock(
       **{
