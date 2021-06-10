@@ -51,7 +51,11 @@
                   >
                 </select>
               </div>
-              <button v-on:click="onButtonClick()" class="btn btn-primary">
+              <button
+                v-on:click="onButtonClick()"
+                id="updateRating"
+                class="btn btn-primary"
+              >
                 Update View
               </button>
             </div>
