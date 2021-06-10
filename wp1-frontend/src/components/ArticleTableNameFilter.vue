@@ -35,7 +35,11 @@
                   :value="filterValue"
                 />
               </div>
-              <button v-on:click="onButtonClick()" class="btn btn-primary">
+              <button
+                v-on:click="onButtonClick()"
+                id="updateName"
+                class="btn btn-primary"
+              >
                 Update View
               </button>
             </div>
