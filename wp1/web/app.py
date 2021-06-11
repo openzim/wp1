@@ -1,10 +1,11 @@
 from datetime import datetime
 from functools import wraps, update_wrapper
+from flask_session import Session
 import os
-
 import flask
 import flask_cors
 import flask_gzip
+import redis
 import rq_dashboard
 from rq_dashboard.cli import add_basic_auth
 
@@ -17,11 +18,12 @@ from wp1.web.dev.projects import dev_projects
 
 try:
   # The credentials module isn't checked in and may be missing
-  from wp1.credentials import ENV
+  from wp1.credentials import ENV, CREDENTIALS
 except ImportError:
-  print(
-      'No credentials.py file found, Development overlay will not be enabled.')
+  print('No credentials.py file found. Development overlay will '
+        'not be enabled.')
   ENV = None
+  CREDENTIALS = None
 
 
 def get_redis_creds():
@@ -31,6 +33,15 @@ def get_redis_creds():
   except ImportError:
     print('No REDIS_CREDS found, using defaults.')
     return None
+
+
+def get_secret_key():
+  try:
+    from wp1.credentials import ENV, CREDENTIALS
+    return CREDENTIALS[ENV]['SESSION']['secret_key']
+  except ImportError:
+    print('No secret_key found, using defaults.')
+    return 'WP1'
 
 
 # We use this to prevent caching of `/swagger.yml`
@@ -52,6 +63,7 @@ def nocache(view):
 
 def create_app():
   app = flask.Flask(__name__)
+
   cors = flask_cors.CORS(app)
   gzip = flask_gzip.Gzip(app, minimum_size=256)
 
@@ -68,6 +80,14 @@ def create_app():
     app.register_blueprint(rq_dashboard.blueprint, url_prefix="/rq")
   else:
     print('No RQ_USER/RQ_PASS found in env. RQ dashboard not created.')
+
+  if redis_creds is not None:
+    app.config['SESSION_REDIS'] = redis.from_url('redis://{}:{}'.format(
+        redis_creds['host'], redis_creds['port']))
+
+  app.config['SECRET_KEY'] = get_secret_key()
+  app.config['SESSION_TYPE'] = 'redis'
+  Session(app)
 
   @app.teardown_request
   def close_dbs(ex):
@@ -93,4 +113,13 @@ def create_app():
 
   app.register_blueprint(projects, url_prefix='/v1/projects')
   app.register_blueprint(articles, url_prefix='/v1/articles')
+
+  missing_credentials = CREDENTIALS is None or ENV is None
+  if not missing_credentials:
+    mwoauth = CREDENTIALS.get(ENV, {}).get('MWOAUTH', {})
+  if not (missing_credentials or mwoauth.get('consumer_key') is None or
+          mwoauth.get('consumer_secret') is None):
+    from wp1.web.oauth import oauth
+    app.register_blueprint(oauth, url_prefix='/v1/oauth')
+
   return app

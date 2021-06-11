@@ -12,9 +12,7 @@ describe('the article page', () => {
     cy.get('input')
       .eq(2)
       .type('Predator');
-    cy.get('button')
-      .eq(3)
-      .click();
+    cy.get('#updateName').click();
 
     // Don't continue until the table has been updated.
     cy.wait('@predatorArticles');
@@ -68,9 +66,7 @@ describe('the article page', () => {
         .clear()
         .type('2');
 
-      cy.get('button')
-        .eq(1)
-        .click();
+      cy.get('#updatePagination').click();
 
       cy.wait('@Pagination');
       cy.get('tr')
@@ -104,9 +100,7 @@ describe('the article page', () => {
         .eq(1)
         .select('Top');
 
-      cy.get('button')
-        .eq(2)
-        .click();
+      cy.get('#updateRating').click();
 
       cy.wait('@TopBArticles');
 
