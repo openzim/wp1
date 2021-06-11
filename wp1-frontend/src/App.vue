@@ -56,6 +56,14 @@
             >
           </li>
         </ul>
+        <div>
+          <div v-if="this.username">
+            <button @click="logout">Logout</button>
+            <span style="font-size:20px"> | </span>
+            <span> {{ this.username }} </span>
+          </div>
+          <a v-else :href="this.loginInitiateUrl"><button>Login</button> </a>
+        </div>
       </div>
     </nav>
     <div id="app" class="container">
@@ -66,7 +74,48 @@
 
 <script>
 export default {
-  name: 'app'
+  name: 'app',
+  data: function() {
+    return {
+      username: null,
+      loginInitiateUrl: `${process.env.VUE_APP_API_URL}/oauth/initiate`
+    };
+  },
+  methods: {
+    logout: async function() {
+      await fetch(`${process.env.VUE_APP_API_URL}/oauth/logout`, {
+        credentials: 'include'
+      });
+      this.username = null;
+    },
+    identify: async function() {
+      if (this.username) {
+        return;
+      }
+      const data = await fetch(
+        `${process.env.VUE_APP_API_URL}/oauth/identify`,
+        {
+          credentials: 'include'
+        }
+      )
+        .then(response => {
+          if (response.ok) {
+            return response.json();
+          } else {
+            throw new Error(response.status);
+          }
+        })
+        .catch(err => {
+          console.error(err);
+        });
+      if (data) {
+        this.username = data.username;
+      }
+    }
+  },
+  created: function() {
+    this.identify();
+  }
 };
 </script>
 

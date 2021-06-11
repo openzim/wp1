@@ -56,7 +56,11 @@
                   v-model="page"
                 />
               </div>
-              <button v-on:click="onButtonClick()" class="btn btn-primary">
+              <button
+                v-on:click="onButtonClick()"
+                id="updatePagination"
+                class="btn btn-primary"
+              >
                 Update View
               </button>
             </div>
