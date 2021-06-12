@@ -17,7 +17,10 @@ class IdentifyTest(unittest.TestCase):
           'SESSION': {
               'secret_key': 'wp1_secret'
           },
-          'CLIENT_URL': 'http://localhost:3000/#/'
+          'CLIENT_URL': {
+              'domain': 'localhost:3000',
+              'homepage': 'http://localhost:3000/#/'
+          }
       },
       Environment.PRODUCTION: {}
   }
