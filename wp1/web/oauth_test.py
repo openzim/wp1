@@ -45,15 +45,17 @@ class IdentifyTest(unittest.TestCase):
 
   @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
   @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
-  @patch('wp1.web.oauth.client_url', TEST_OAUTH_CREDS[ENV]['CLIENT_URL'])
+  @patch('wp1.web.oauth.homepage_url',
+         TEST_OAUTH_CREDS[ENV]['CLIENT_URL']['homepage'])
   def test_initiate_authorized_user(self):
     self.app = create_app()
     with self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['user'] = self.USER
       rv = client.get('/v1/oauth/initiate')
-      self.assertEqual(self.TEST_OAUTH_CREDS[self.ENV]['CLIENT_URL'],
-                       rv.location)
+      self.assertEqual(
+          self.TEST_OAUTH_CREDS[self.ENV]['CLIENT_URL']['homepage'],
+          rv.location)
 
   @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
   @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
@@ -76,7 +78,8 @@ class IdentifyTest(unittest.TestCase):
 
   @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
   @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
-  @patch('wp1.web.oauth.client_url', TEST_OAUTH_CREDS[ENV]['CLIENT_URL'])
+  @patch('wp1.web.oauth.homepage_url',
+         TEST_OAUTH_CREDS[ENV]['CLIENT_URL']['homepage'])
   @patch('wp1.web.oauth.handshaker', handshaker)
   def test_complete_authorized_user(self):
     self.app = create_app()
@@ -84,8 +87,9 @@ class IdentifyTest(unittest.TestCase):
       with client.session_transaction() as sess:
         sess['request_token'] = self.REQUEST_TOKEN
       rv = client.get('/v1/oauth/complete?query_string')
-      self.assertEqual(self.TEST_OAUTH_CREDS[self.ENV]['CLIENT_URL'],
-                       rv.location)
+      self.assertEqual(
+          self.TEST_OAUTH_CREDS[self.ENV]['CLIENT_URL']['homepage'],
+          rv.location)
 
   @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
   @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)

@@ -73,7 +73,7 @@ def create_app():
 
   cors = flask_cors.CORS(app,
                          resources='*',
-                         origins=cors_origin,
+                         origins=cors_origins,
                          supports_credentials=True)
   gzip = flask_gzip.Gzip(app, minimum_size=256)
 
