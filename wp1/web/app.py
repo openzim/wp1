@@ -63,8 +63,18 @@ def nocache(view):
 
 def create_app():
   app = flask.Flask(__name__)
+  missing_credentials = CREDENTIALS is None or ENV is None
 
-  cors = flask_cors.CORS(app)
+  cors_origins = None
+  if not missing_credentials:
+    cors_origins = CREDENTIALS[ENV].get('CLIENT_URL', {}).get('domains')
+  if cors_origins is None:
+    cors_origins = '*'
+
+  cors = flask_cors.CORS(app,
+                         resources='*',
+                         origins=cors_origins,
+                         supports_credentials=True)
   gzip = flask_gzip.Gzip(app, minimum_size=256)
 
   rq_user = os.environ.get('RQ_USER')
@@ -114,7 +124,6 @@ def create_app():
   app.register_blueprint(projects, url_prefix='/v1/projects')
   app.register_blueprint(articles, url_prefix='/v1/articles')
 
-  missing_credentials = CREDENTIALS is None or ENV is None
   if not missing_credentials:
     mwoauth = CREDENTIALS.get(ENV, {}).get('MWOAUTH', {})
   if not (missing_credentials or mwoauth.get('consumer_key') is None or
