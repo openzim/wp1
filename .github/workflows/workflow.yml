@@ -79,6 +79,7 @@ jobs:
           time: '45s'
 
       - name: Start web API server
+        timeout-minutes: 2
         env:
           FLASK_APP: wp1.web.app
           FLASK_DEBUG: 1
