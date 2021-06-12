@@ -10,6 +10,13 @@ from wp1.environment import Environment
 
 
 class ProjectTest(BaseWebTestcase):
+  USER = {
+      'access_token': 'access_token',
+      'identity': {
+          'username': 'WP1_user',
+          'sub': '1234'
+      }
+  }
   EXPECTED_CATEGORY_LINKS = {
       'A-Class': {
           'href':
@@ -321,6 +328,8 @@ class ProjectTest(BaseWebTestcase):
   @patch('wp1.queues.utcnow', return_value=datetime(2018, 12, 25, 5, 55, 55))
   def test_update(self, patched_now):
     with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
       rv = client.post('/v1/projects/Project 0/update')
       self.assertEqual('200 OK', rv.status)
 
@@ -328,9 +337,17 @@ class ProjectTest(BaseWebTestcase):
       self.assertEqual('2018-12-25 06:55 UTC', data['next_update_time'])
 
   @patch('wp1.queues.ENV', Environment.PRODUCTION)
+  def test_update_unauthorized_user(self):
+    with self.app.test_client() as client:
+      rv = client.post('/v1/projects/Project 0/update')
+    self.assertEqual('401 UNAUTHORIZED', rv.status)
+
+  @patch('wp1.queues.ENV', Environment.PRODUCTION)
   @patch('wp1.queues.utcnow', return_value=datetime(2018, 12, 25, 5, 55, 55))
   def test_update_404(self, patched_now):
     with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
       rv = client.post('/v1/projects/Foo Bar Baz/update')
       self.assertEqual('404 NOT FOUND', rv.status)
 
@@ -339,6 +356,8 @@ class ProjectTest(BaseWebTestcase):
   def test_update_second_time_fails(self, patched_now):
     with self.override_db(self.app):
       with self.app.test_client() as client:
+        with client.session_transaction() as sess:
+          sess['user'] = self.USER
         rv = client.post('/v1/projects/Project 0/update')
         self.assertEqual('200 OK', rv.status)
 
@@ -373,6 +392,8 @@ class ProjectTest(BaseWebTestcase):
   def test_update_time_active(self, patched_now):
     with self.override_db(self.app):
       with self.app.test_client() as client:
+        with client.session_transaction() as sess:
+          sess['user'] = self.USER
         rv = client.post('/v1/projects/Project 0/update')
         self.assertEqual('200 OK', rv.status)
 
@@ -397,6 +418,8 @@ class ProjectTest(BaseWebTestcase):
   @patch('wp1.queues.ENV', Environment.PRODUCTION)
   def test_update_progress(self):
     with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
       rv = client.post('/v1/projects/Project 0/update')
       self.assertEqual('200 OK', rv.status)
 

@@ -9,6 +9,7 @@ path as far as the frontend is concerned. However this blueprint has the followi
 '''
 
 from datetime import datetime, timedelta
+from wp1.web import authenticate
 
 import flask
 
@@ -133,6 +134,7 @@ def get_project_queue_status(redis, project_name):
 
 
 @dev_projects.route('/<project_name>/update', methods=['POST'])
+@authenticate
 def update(project_name):
   project_name_bytes = project_name.encode('utf-8')
   redis = get_redis()
