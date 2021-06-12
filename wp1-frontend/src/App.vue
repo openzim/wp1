@@ -41,7 +41,7 @@
                 (this.$route.path.startsWith('/update') ? 'active' : '')
             "
           >
-            <router-link class="nav-link" to="/update"
+            <router-link v-if="this.username" class="nav-link" to="/update"
               >Manual Update</router-link
             >
           </li>
@@ -87,6 +87,8 @@ export default {
         credentials: 'include'
       });
       this.username = null;
+      this.$store.state.isLoggedIn = false;
+      this.$router.push({ path: `/` });
     },
     identify: async function() {
       if (this.username) {
@@ -110,6 +112,7 @@ export default {
         });
       if (data) {
         this.username = data.username;
+        this.$store.state.isLoggedIn = true;
       }
     }
   },

@@ -1,3 +1,4 @@
+from wp1.web import authenticate
 import attr
 import flask
 
@@ -176,6 +177,7 @@ def articles(project_name):
 
 
 @projects.route('/<project_name>/update', methods=['POST'])
+@authenticate
 def update(project_name):
   wp10db = get_db('wp10db')
   project_name_bytes = project_name.encode('utf-8')

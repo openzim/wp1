@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div v-if="isLoggedIn">
     <div class="row">
       <div class="col-xl-6">
         <Autocomplete
@@ -113,6 +113,9 @@ export default {
         return ((this.progressCurrent * 100) / this.progressTotal).toFixed(4);
       }
       return null;
+    },
+    isLoggedIn: function() {
+      return this.$store.state.isLoggedIn;
     }
   },
   watch: {
@@ -156,6 +159,9 @@ export default {
       this.updateTime = data.next_update_time;
     },
     pollForProgress: async function() {
+      if (!this.isLoggedIn) {
+        return;
+      }
       const response = await fetch(
         `${process.env.VUE_APP_API_URL}/projects/${this.currentProjectId}/update/progress`
       );
