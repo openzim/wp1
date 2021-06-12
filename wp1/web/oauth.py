@@ -11,20 +11,20 @@ try:
                                  CREDENTIALS[ENV]['MWOAUTH']['consumer_secret'])
   handshaker = Handshaker("https://en.wikipedia.org/w/index.php",
                           consumer_token)
-  client_url = CREDENTIALS[ENV]['CLIENT_URL']
+  homepage_url = CREDENTIALS[ENV]['CLIENT_URL']['homepage']
 except ImportError:
   print('No credentials.py file found, Please add your '
         'mwoauth credentials in credentials.py')
   ENV = None
   CREDENTIALS = None
   handshaker = None
-  client_url = None
+  homepage_url = None
 
 
 @oauth.route('/initiate')
 def initiate():
   if session.get('user'):
-    return flask.redirect(client_url)
+    return flask.redirect(homepage_url)
   redirect, request_token = handshaker.initiate()
   session['request_token'] = request_token
   return flask.redirect(redirect)
@@ -47,7 +47,7 @@ def complete():
           'sub': identity['sub']
       }
   }
-  return flask.redirect(client_url)
+  return flask.redirect(homepage_url)
 
 
 @oauth.route('/identify')
