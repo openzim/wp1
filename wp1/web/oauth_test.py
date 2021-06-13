@@ -116,6 +116,7 @@ class IdentifyTest(unittest.TestCase):
     with self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['user'] = self.USER
+        sess['next_path'] = '/'
       rv = client.get('/v1/oauth/logout')
       self.assertEqual({'status': '204'}, rv.get_json())
 
