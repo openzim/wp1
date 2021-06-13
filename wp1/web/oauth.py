@@ -23,6 +23,7 @@ except ImportError:
 
 @oauth.route('/initiate')
 def initiate():
+  session['next_path'] = flask.request.args.get('next')
   if session.get('user'):
     return flask.redirect(homepage_url)
   redirect, request_token = handshaker.initiate()
@@ -63,4 +64,5 @@ def logout():
   if session.get('user') is None:
     flask.abort(404, 'User does not exist')
   session.pop('user')
+  session.pop('next_path')
   return {'status': '204'}

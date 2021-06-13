@@ -5,7 +5,6 @@ import Vue from 'vue';
 import VueRouter from 'vue-router';
 
 import App from './App.vue';
-import { store } from './store/store';
 import ArticlePage from './components/ArticlePage.vue';
 import ComparePage from './components/ComparePage.vue';
 import IndexPage from './components/IndexPage.vue';
@@ -100,7 +99,9 @@ router.beforeEach((to, from, next) => {
 });
 
 new Vue({
-  store,
+  data: {
+    isLoggedIn: false
+  },
   el: '#app',
   render: h => h(App),
   router,

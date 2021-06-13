@@ -41,7 +41,7 @@
                 (this.$route.path.startsWith('/update') ? 'active' : '')
             "
           >
-            <router-link v-if="this.username" class="nav-link" to="/update"
+            <router-link class="nav-link" to="/update"
               >Manual Update</router-link
             >
           </li>
@@ -87,7 +87,7 @@ export default {
         credentials: 'include'
       });
       this.username = null;
-      this.$store.state.isLoggedIn = false;
+      this.$root.$data.isLoggedIn = false;
       this.$router.push({ path: `/` });
     },
     identify: async function() {
@@ -112,8 +112,15 @@ export default {
         });
       if (data) {
         this.username = data.username;
-        this.$store.state.isLoggedIn = true;
+        this.$root.$data.isLoggedIn = true;
       }
+    }
+  },
+  watch: {
+    $route: function() {
+      this.loginInitiateUrl =
+        `${process.env.VUE_APP_API_URL}/oauth/initiate?next=` +
+        this.$route.path.toString().substr(1);
     }
   },
   created: function() {

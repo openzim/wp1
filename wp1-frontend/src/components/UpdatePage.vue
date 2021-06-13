@@ -61,6 +61,17 @@
       </div>
     </div>
   </div>
+  <div v-else>
+    <h2 class="content-style" style="padding-top: 250px">
+      Please Log In To Continue
+    </h2>
+    <a
+      class="content-style"
+      :href="this.loginInitiateUrl"
+      style="padding-top: 10px;"
+      ><button>Login</button></a
+    >
+  </div>
 </template>
 
 <script>
@@ -79,7 +90,8 @@ export default {
       pollingId: 0,
       progressCurrent: null,
       progressTotal: null,
-      jobStatusEnum: null
+      jobStatusEnum: null,
+      loginInitiateUrl: `${process.env.VUE_APP_API_URL}/oauth/initiate?next=update`
     };
   },
   computed: {
@@ -115,7 +127,7 @@ export default {
       return null;
     },
     isLoggedIn: function() {
-      return this.$store.state.isLoggedIn;
+      return this.$root.$data.isLoggedIn;
     }
   },
   watch: {
@@ -199,4 +211,9 @@ export default {
 };
 </script>
 
-<style></style>
+<style scoped>
+.content-style {
+  display: flex;
+  justify-content: center;
+}
+</style>
