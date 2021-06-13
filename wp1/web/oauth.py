@@ -25,6 +25,8 @@ except ImportError:
 def initiate():
   session['next_path'] = flask.request.args.get('next')
   if session.get('user'):
+    if session.get('next_path'):
+      return flask.redirect(f"{homepage_url}{str(session['next_path'])}")
     return flask.redirect(homepage_url)
   redirect, request_token = handshaker.initiate()
   session['request_token'] = request_token
@@ -48,6 +50,10 @@ def complete():
           'sub': identity['sub']
       }
   }
+  next_path = session.get('next_path')
+  session.pop('next_path')
+  if next_path:
+    return flask.redirect(f"{homepage_url}{str(next_path)}")
   return flask.redirect(homepage_url)
 
 
@@ -64,5 +70,4 @@ def logout():
   if session.get('user') is None:
     flask.abort(404, 'User does not exist')
   session.pop('user')
-  session.pop('next_path')
   return {'status': '204'}
