@@ -62,12 +62,12 @@
     </div>
   </div>
   <div v-else>
-    <h2 class="content-style" style="padding-top: 250px">
+    <h2 class="row justify-content-center pt-5">
       Please Log In To Continue
     </h2>
     <a
-      class="content-style"
-      :href="this.loginInitiateUrl"
+      class="row justify-content-center"
+      :href="this.loginUrl"
       style="padding-top: 10px;"
       ><button>Login</button></a
     >
@@ -91,7 +91,7 @@ export default {
       progressCurrent: null,
       progressTotal: null,
       jobStatusEnum: null,
-      loginInitiateUrl: `${process.env.VUE_APP_API_URL}/oauth/initiate?next=update`
+      loginUrl: `${process.env.VUE_APP_API_URL}/oauth/initiate?next=update`
     };
   },
   computed: {
@@ -211,9 +211,4 @@ export default {
 };
 </script>
 
-<style scoped>
-.content-style {
-  display: flex;
-  justify-content: center;
-}
-</style>
+<style></style>
