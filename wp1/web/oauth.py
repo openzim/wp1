@@ -51,7 +51,6 @@ def complete():
       }
   }
   next_path = session.pop('next_path')
-  print(next_path)
   if next_path:
     return flask.redirect(f"{homepage_url}{str(next_path)}")
   return flask.redirect(homepage_url)
