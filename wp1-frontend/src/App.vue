@@ -70,6 +70,7 @@
         </div>
       </div>
     </nav>
+    <SecondaryNav></SecondaryNav>
     <div id="app" class="container">
       <router-view></router-view>
     </div>
@@ -77,7 +78,9 @@
 </template>
 
 <script>
+import SecondaryNav from './components/SecondaryNav.vue';
 export default {
+  components: { SecondaryNav },
   name: 'app',
   data: function() {
     return {
