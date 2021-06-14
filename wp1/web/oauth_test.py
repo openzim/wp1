@@ -70,6 +70,20 @@ class IdentifyTest(unittest.TestCase):
 
   @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
   @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
+  @patch('wp1.web.oauth.homepage_url',
+         TEST_OAUTH_CREDS[ENV]['CLIENT_URL']['homepage'])
+  def test_initiate_authorized_user_with_next_path(self):
+    self.app = create_app()
+    with self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.get('/v1/oauth/initiate?next=update')
+      self.assertEqual(
+          f"{self.TEST_OAUTH_CREDS[self.ENV]['CLIENT_URL']['homepage']}update",
+          rv.location)
+
+  @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
+  @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
   def test_complete_unauthorized_user(self):
     self.app = create_app()
     with self.app.test_client() as client:
@@ -86,9 +100,26 @@ class IdentifyTest(unittest.TestCase):
     with self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['request_token'] = self.REQUEST_TOKEN
+        sess['next_path'] = ''
       rv = client.get('/v1/oauth/complete?query_string')
       self.assertEqual(
           self.TEST_OAUTH_CREDS[self.ENV]['CLIENT_URL']['homepage'],
+          rv.location)
+
+  @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
+  @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
+  @patch('wp1.web.oauth.homepage_url',
+         TEST_OAUTH_CREDS[ENV]['CLIENT_URL']['homepage'])
+  @patch('wp1.web.oauth.handshaker', handshaker)
+  def test_complete_authorized_user_with_next_path(self):
+    self.app = create_app()
+    with self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['request_token'] = self.REQUEST_TOKEN
+        sess['next_path'] = 'update'
+      rv = client.get('/v1/oauth/complete?query_string')
+      self.assertEqual(
+          f"{self.TEST_OAUTH_CREDS[self.ENV]['CLIENT_URL']['homepage']}update",
           rv.location)
 
   @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
@@ -116,6 +147,7 @@ class IdentifyTest(unittest.TestCase):
     with self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['user'] = self.USER
+        sess['next_path'] = '/'
       rv = client.get('/v1/oauth/logout')
       self.assertEqual({'status': '204'}, rv.get_json())
 
