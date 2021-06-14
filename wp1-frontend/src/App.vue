@@ -58,11 +58,15 @@
         </ul>
         <div>
           <div v-if="this.username">
-            <button @click="logout">Logout</button>
+            <button type="button" class="btn btn-secondary" @click="logout">
+              Logout
+            </button>
             <span style="font-size:20px"> | </span>
             <span> {{ this.username }} </span>
           </div>
-          <a v-else :href="this.loginInitiateUrl"><button>Login</button> </a>
+          <a v-else :href="this.loginInitiateUrl"
+            ><button type="button" class="btn btn-primary">Login</button>
+          </a>
         </div>
       </div>
     </nav>

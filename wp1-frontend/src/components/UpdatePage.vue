@@ -65,11 +65,8 @@
     <h2 class="row justify-content-center pt-5">
       Please Log In To Continue
     </h2>
-    <a
-      class="row justify-content-center"
-      :href="this.loginUrl"
-      style="padding-top: 10px;"
-      ><button>Login</button></a
+    <a class="row justify-content-center pt-2" :href="this.loginUrl"
+      ><button type="button" class="btn btn-primary">Login</button></a
     >
   </div>
 </template>
