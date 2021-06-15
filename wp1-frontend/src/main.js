@@ -11,7 +11,6 @@ import ComparePage from './components/ComparePage.vue';
 import IndexPage from './components/IndexPage.vue';
 import MyLists from './components/MyLists.vue';
 import ProjectPage from './components/ProjectPage.vue';
-import SecondaryNav from './components/SecondaryNav.vue';
 import UpdatePage from './components/UpdatePage.vue';
 
 Vue.config.productionTip = false;
@@ -84,21 +83,14 @@ const routes = [
     }
   },
   {
-    path: '/selection/',
-    component: SecondaryNav,
-    meta: {
-      title: () => BASE_TITLE + ' - Secondary Nav'
-    }
-  },
-  {
-    path: '/selection/myLists',
+    path: '/selection/user',
     component: MyLists,
     meta: {
       title: () => BASE_TITLE + ' - My Lists'
     }
   },
   {
-    path: '/selection/createSimpleList',
+    path: '/selection/lists/simple/new',
     component: CreateSimpleList,
     meta: {
       title: () => BASE_TITLE + ' - Create Simple List'
