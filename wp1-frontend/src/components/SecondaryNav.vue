@@ -19,24 +19,22 @@
           <li
             :class="
               'nav-item ' +
-                (this.$route.path.startsWith('/selection/myLists')
-                  ? 'active'
-                  : '')
+                (this.$route.path.startsWith('/selection/user') ? 'active' : '')
             "
           >
-            <router-link class="nav-link" to="/selection/myLists"
+            <router-link class="nav-link" to="/selection/user"
               >My Lists</router-link
             >
           </li>
           <li
             :class="
               'nav-item ' +
-                (this.$route.path.startsWith('/selection/createSimpleList')
+                (this.$route.path.startsWith('/selection/lists/simple/new')
                   ? 'active'
                   : '')
             "
           >
-            <router-link class="nav-link" to="/selection/createSimpleList"
+            <router-link class="nav-link" to="/selection/lists/simple/new"
               >Create Simple List</router-link
             >
           </li>

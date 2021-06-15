@@ -1,5 +1,5 @@
 <template>
-  <div class="container">
+  <div>
     <p v-if="!hideInstructions">
       Use the autocomplete search box below to search for a project in order to
       display it's summary table.

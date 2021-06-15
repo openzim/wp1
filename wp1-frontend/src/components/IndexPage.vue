@@ -1,9 +1,11 @@
 <template>
-  <div class="row">
-    <div class="col-xl-6">
-      <Autocomplete
-        v-on:select-project="currentProject = $event"
-      ></Autocomplete>
+  <div class="container">
+    <div class="row">
+      <div class="col-xl-6">
+        <Autocomplete
+          v-on:select-project="currentProject = $event"
+        ></Autocomplete>
+      </div>
     </div>
   </div>
 </template>
