@@ -1,5 +1,5 @@
 <template>
-  <div v-if="isLoggedIn">
+  <div class="container" v-if="isLoggedIn">
     <div class="row">
       <div class="col-xl-6">
         <Autocomplete
