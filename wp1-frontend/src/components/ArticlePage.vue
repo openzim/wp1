@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="container">
     <div class="row">
       <div class="col" v-if="notFound">
         <h4>The project with the name {{ currentProject }} was not found.</h4>

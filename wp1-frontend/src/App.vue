@@ -70,7 +70,7 @@
         </div>
       </div>
     </nav>
-    <div id="app" class="container">
+    <div id="app">
       <router-view></router-view>
     </div>
   </div>
