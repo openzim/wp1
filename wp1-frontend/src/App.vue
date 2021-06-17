@@ -58,15 +58,19 @@
         </ul>
         <div>
           <div v-if="this.username">
-            <button @click="logout">Logout</button>
+            <button type="button" class="btn btn-secondary" @click="logout">
+              Logout
+            </button>
             <span style="font-size:20px"> | </span>
             <span> {{ this.username }} </span>
           </div>
-          <a v-else :href="this.loginInitiateUrl"><button>Login</button> </a>
+          <a v-else :href="this.loginInitiateUrl"
+            ><button type="button" class="btn btn-primary">Login</button>
+          </a>
         </div>
       </div>
     </nav>
-    <div id="app" class="container">
+    <div id="app">
       <router-view></router-view>
     </div>
   </div>
@@ -87,6 +91,8 @@ export default {
         credentials: 'include'
       });
       this.username = null;
+      this.$root.$data.isLoggedIn = false;
+      this.$router.push({ path: `/` });
     },
     identify: async function() {
       if (this.username) {
@@ -110,7 +116,15 @@ export default {
         });
       if (data) {
         this.username = data.username;
+        this.$root.$data.isLoggedIn = true;
       }
+    }
+  },
+  watch: {
+    $route: function() {
+      this.loginInitiateUrl =
+        `${process.env.VUE_APP_API_URL}/oauth/initiate?next=` +
+        this.$route.path.toString().substr(1);
     }
   },
   created: function() {

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="container" v-if="isLoggedIn">
     <div class="row">
       <div class="col-xl-6">
         <Autocomplete
@@ -61,6 +61,14 @@
       </div>
     </div>
   </div>
+  <div v-else>
+    <h2 class="row justify-content-center pt-5">
+      Please Log In To Continue
+    </h2>
+    <a class="row justify-content-center pt-2" :href="this.loginUrl"
+      ><button type="button" class="btn btn-primary">Login</button></a
+    >
+  </div>
 </template>
 
 <script>
@@ -79,7 +87,8 @@ export default {
       pollingId: 0,
       progressCurrent: null,
       progressTotal: null,
-      jobStatusEnum: null
+      jobStatusEnum: null,
+      loginUrl: `${process.env.VUE_APP_API_URL}/oauth/initiate?next=update`
     };
   },
   computed: {
@@ -113,6 +122,9 @@ export default {
         return ((this.progressCurrent * 100) / this.progressTotal).toFixed(4);
       }
       return null;
+    },
+    isLoggedIn: function() {
+      return this.$root.$data.isLoggedIn;
     }
   },
   watch: {
@@ -156,6 +168,9 @@ export default {
       this.updateTime = data.next_update_time;
     },
     pollForProgress: async function() {
+      if (!this.isLoggedIn) {
+        return;
+      }
       const response = await fetch(
         `${process.env.VUE_APP_API_URL}/projects/${this.currentProjectId}/update/progress`
       );

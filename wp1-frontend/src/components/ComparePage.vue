@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="container">
     <div class="row">
       <div clas="col-xl-6">
         Select two projects to compare the articles that are in both, with

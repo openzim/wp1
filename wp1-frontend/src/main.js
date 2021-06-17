@@ -6,8 +6,10 @@ import VueRouter from 'vue-router';
 
 import App from './App.vue';
 import ArticlePage from './components/ArticlePage.vue';
+import CreateSimpleList from './components/CreateSimpleList.vue';
 import ComparePage from './components/ComparePage.vue';
 import IndexPage from './components/IndexPage.vue';
+import MyLists from './components/MyLists.vue';
 import ProjectPage from './components/ProjectPage.vue';
 import UpdatePage from './components/UpdatePage.vue';
 
@@ -79,6 +81,20 @@ const routes = [
         ' and ' +
         route.params.projectNameB
     }
+  },
+  {
+    path: '/selection/user',
+    component: MyLists,
+    meta: {
+      title: () => BASE_TITLE + ' - My Lists'
+    }
+  },
+  {
+    path: '/selection/lists/simple/new',
+    component: CreateSimpleList,
+    meta: {
+      title: () => BASE_TITLE + ' - Create Simple List'
+    }
   }
 ];
 
@@ -99,6 +115,9 @@ router.beforeEach((to, from, next) => {
 });
 
 new Vue({
+  data: {
+    isLoggedIn: false
+  },
   el: '#app',
   render: h => h(App),
   router,
