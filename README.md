@@ -167,6 +167,27 @@ MariaDB and Redis, use:
 docker-compose -f docker-compose-dev.yml up -d
 ```
 
+## Migrating the dev database
+
+The dev database will need to be migrated in the following circumstances:
+
+1. In a clean checkout, the first time you run the `docker-compose` command above.
+1. Anytime you remove/recreate the docker image
+1. Anytime you or a team member adds a new migration
+
+To migrate, cd to the `db/dev` directory and run the following command:
+
+```bash
+yoyo apply
+```
+
+The YoYo Migrations application will read the data in `db/dev/yoyo.ini` and attempt
+to apply any necessary migrations to your database. If there are migrations to apply,
+you will be prompted to confirm. If there are none, there will be no output.
+
+More information on YoYo Migrations is available
+[here](https://ollycope.com/software/yoyo/latest/).
+
 ## Starting the API server
 
 Assuming you are in your Python virtualenv (described above) you can start
@@ -230,6 +251,11 @@ to something like:
   called wp1.
 - `cd /data/code/wp1/`
 - `sudo git pull origin main`
+- Activate the venv for production code and install any new dependencies
+  - `source venv/bin/activate`
+  - `sudo pip install -r requirements.txt`
+- Run the production database migrations
+  - `yoyo -c /data/wp1bot/db/yoyo.ini apply`
 - Pull the docker images from docker hub:
   - `docker pull openzim/wp1bot-workers`
   - `docker pull openzim/wp1bot-web`
