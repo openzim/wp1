@@ -87,6 +87,11 @@ CREATE TABLE `global_rankings` (
   PRIMARY KEY (`gr_type`,`gr_rating`)
 );
 
+CREATE TABLE `users` (
+  `u_id` int(8) unsigned NOT NULL,
+  `u_username` varchar(255) DEFAULT NULL
+);
+
 INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'Unknown-Class', 0);
 INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'NA-Class', 50);
 INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'Low-Class', 100);
