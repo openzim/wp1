@@ -162,7 +162,7 @@ export default {
     onUpdateClick: async function() {
       const response = await fetch(
         `${process.env.VUE_APP_API_URL}/projects/${this.currentProjectId}/update`,
-        { method: 'POST' }
+        { method: 'POST', credentials: 'include' }
       );
       const data = await response.json();
       this.updateTime = data.next_update_time;
