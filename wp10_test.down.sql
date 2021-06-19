@@ -7,3 +7,4 @@ DROP TABLE IF EXISTS `namespacename`;
 DROP TABLE IF EXISTS `releases`;
 DROP TABLE IF EXISTS `global_articles`;
 DROP TABLE IF EXISTS `global_rankings`;
+DROP TABLE IF EXISTS `users`;
