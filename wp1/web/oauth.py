@@ -58,7 +58,7 @@ def complete():
     cursor.execute(
         '''INSERT INTO users (u_id, u_username)
                       VALUES (%(u_id)s, %(u_username)s)
-                      ON DUPLICATE KEY UPDATE u_id= %(u_id)s, u_username= %(u_username)s;''',
+                      ON DUPLICATE KEY UPDATE u_id= %(u_id)s, u_username= %(u_username)s''',
         {
             'u_id': identity['sub'],
             'u_username': identity['username']
