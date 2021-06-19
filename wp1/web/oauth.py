@@ -57,11 +57,12 @@ def complete():
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''INSERT INTO users (u_id, u_username)
-                      VALUES (%(u_id)s, "%(u_username)s")
-                      ON DUPLICATE KEY UPDATE u_id= %(u_id)s, u_username= "%(u_username)s";''',
-        attr.asdict(
-            User(u_id=session['user']['identity'].get('sub'),
-                 u_username=session['user']['identity'].get('username'))))
+                      VALUES (%(u_id)s, %(u_username)s)
+                      ON DUPLICATE KEY UPDATE u_id= %(u_id)s, u_username= %(u_username)s;''',
+        {
+            'u_id': identity['sub'],
+            'u_username': identity['username']
+        })
     wp10db.commit()
   next_path = session.pop('next_path')
   if next_path:
