@@ -1,6 +1,9 @@
+import attr
 import flask
 from flask import jsonify, session
 from mwoauth import ConsumerToken, Handshaker
+from wp1.web.db import get_db
+from wp1.models.wp10.user import User
 
 oauth = flask.Blueprint('oauth', __name__)
 
@@ -50,6 +53,17 @@ def complete():
           'sub': identity['sub']
       }
   }
+  wp10db = get_db('wp10db')
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        '''INSERT INTO users (u_id, u_username)
+                      VALUES (%(u_id)s, %(u_username)s)
+                      ON DUPLICATE KEY UPDATE u_id= %(u_id)s, u_username= %(u_username)s''',
+        {
+            'u_id': identity['sub'],
+            'u_username': identity['username']
+        })
+    wp10db.commit()
   next_path = session.pop('next_path')
   if next_path:
     return flask.redirect(f"{homepage_url}{str(next_path)}")

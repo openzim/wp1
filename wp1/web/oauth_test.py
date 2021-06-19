@@ -1,10 +1,12 @@
 import unittest
-from wp1.web.app import create_app
 from wp1.environment import Environment
 from unittest.mock import patch, Mock
+from wp1.web.app import create_app
+from wp1.web.base_web_testcase import BaseWebTestcase
+from wp1.web.db import get_db
 
 
-class IdentifyTest(unittest.TestCase):
+class IdentifyTest(BaseWebTestcase):
 
   ENV = Environment.DEVELOPMENT
   TEST_OAUTH_CREDS = {
@@ -97,7 +99,7 @@ class IdentifyTest(unittest.TestCase):
   @patch('wp1.web.oauth.handshaker', handshaker)
   def test_complete_authorized_user(self):
     self.app = create_app()
-    with self.app.test_client() as client:
+    with self.override_db(self.app), self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['request_token'] = self.REQUEST_TOKEN
         sess['next_path'] = ''
@@ -105,6 +107,10 @@ class IdentifyTest(unittest.TestCase):
       self.assertEqual(
           self.TEST_OAUTH_CREDS[self.ENV]['CLIENT_URL']['homepage'],
           rv.location)
+      wp10db = get_db('wp10db')
+      with wp10db.cursor() as cursor:
+        cursor.execute('SELECT * FROM users WHERE u_id = 1234')
+        self.assertNotEqual(None, cursor.fetchone())
 
   @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
   @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
@@ -113,7 +119,7 @@ class IdentifyTest(unittest.TestCase):
   @patch('wp1.web.oauth.handshaker', handshaker)
   def test_complete_authorized_user_with_next_path(self):
     self.app = create_app()
-    with self.app.test_client() as client:
+    with self.override_db(self.app), self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['request_token'] = self.REQUEST_TOKEN
         sess['next_path'] = 'update'
@@ -121,6 +127,10 @@ class IdentifyTest(unittest.TestCase):
       self.assertEqual(
           f"{self.TEST_OAUTH_CREDS[self.ENV]['CLIENT_URL']['homepage']}update",
           rv.location)
+      wp10db = get_db('wp10db')
+      with wp10db.cursor() as cursor:
+        cursor.execute('SELECT * FROM users WHERE u_id = 1234')
+        self.assertNotEqual(None, cursor.fetchone())
 
   @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
   @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
