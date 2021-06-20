@@ -12,6 +12,7 @@ services:
     container_name: wp1bot-workers
     volumes:
       - /data/wp1bot/credentials.py:/usr/src/app/wp1/credentials.py
+      - /data/wp1bot/db/yoyo.ini:/usr/src/app/db/production/yoyo.ini
       - /srv/log/wp1bot/:/var/log/wp1bot/
     links:
       - redis
