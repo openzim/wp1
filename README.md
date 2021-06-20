@@ -251,15 +251,12 @@ to something like:
   called wp1.
 - `cd /data/code/wp1/`
 - `sudo git pull origin main`
-- Activate the venv for production code and install any new dependencies
-  - `source venv/bin/activate`
-  - `sudo pip install -r requirements.txt`
-- Run the production database migrations
-  - `yoyo -c /data/wp1bot/db/yoyo.ini apply`
 - Pull the docker images from docker hub:
   - `docker pull openzim/wp1bot-workers`
   - `docker pull openzim/wp1bot-web`
   - `docker pull openzim/wp1bot-frontend`
+- Run the production database migrations in the worker container:
+  - `docker exec -ti wp1bot-workers yoyo -c /usr/src/app/db/production/yoyo.ini apply`
 - Re-run docker-compose: `docker-compose up -d`
 
 # Pre-commit hooks
