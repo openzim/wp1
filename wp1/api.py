@@ -6,7 +6,7 @@ import mwclient
 import requests
 
 logger = logging.getLogger(__name__)
-_ua = 'WP1.0Bot/3.0. Run by User:Audiodude. Using mwclient/0.9.1'
+MW_USER_AGENT = 'WP1.0Bot/3.0. Run by User:Audiodude. Using mwclient/0.9.1'
 
 
 def get_credentials():
@@ -43,7 +43,7 @@ def login():
   connection.cookies = cookie_jar
 
   site = mwclient.Site('en.wikipedia.org',
-                       clients_useragent=_ua,
+                       clients_useragent=MW_USER_AGENT,
                        pool=connection)
   if not site.logged_in:
     try:
