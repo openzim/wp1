@@ -8,44 +8,44 @@ class IdentifyTest(BaseWebTestcase):
 
   result = {
       'sitematrix': {
-          "count":
+          'count':
               2,
-          "0": {
-              "code": "aa",
-              "name": "Qaf\u00e1r af",
-              "site": [{
-                  "url": "https://aa.wikipedia.org",
-                  "dbname": "aawiki",
-                  "code": "wiki",
-                  "sitename": "Wikipedia",
-                  "closed": ""
+          '0': {
+              'code': 'aa',
+              'name': 'Qaf\u00e1r af',
+              'site': [{
+                  'url': 'https://aa.wikipedia.org',
+                  'dbname': 'aawiki',
+                  'code': 'wiki',
+                  'sitename': 'Wikipedia',
+                  'closed': ''
               },],
-              "dir": "ltr",
-              "localname": "Afar"
+              'dir': 'ltr',
+              'localname': 'Afar'
           },
-          "1": {
-              "code": "ab",
-              "name": "\u0410\u04a7\u0441\u0448\u04d9\u0430",
-              "site": [{
-                  "url":
-                      "https://ab.wikipedia.org",
-                  "dbname":
-                      "abwiki",
-                  "code":
-                      "wiki",
-                  "sitename":
-                      "\u0410\u0432\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0430"
+          '1': {
+              'code': 'ab',
+              'name': '\u0410\u04a7\u0441\u0448\u04d9\u0430',
+              'site': [{
+                  'url':
+                      'https://ab.wikipedia.org',
+                  'dbname':
+                      'abwiki',
+                  'code':
+                      'wiki',
+                  'sitename':
+                      '\u0410\u0432\u0438\u043a\u0438\u043f\u0435\u0434\u0438\u0430'
               },],
-              "dir": "ltr",
-              "localname": "Abkhazian"
+              'dir': 'ltr',
+              'localname': 'Abkhazian'
           },
-          "specials": [{
-              "url": "https://advisors.wikimedia.org",
-              "dbname": "advisorswiki",
-              "code": "advisors",
-              "lang": "advisors",
-              "sitename": "Advisors",
-              "private": ""
+          'specials': [{
+              'url': 'https://advisors.wikimedia.org',
+              'dbname': 'advisorswiki',
+              'code': 'advisors',
+              'lang': 'advisors',
+              'sitename': 'Advisors',
+              'private': ''
           },]
       },
   }
