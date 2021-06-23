@@ -326,6 +326,22 @@ paths:
         description: 'The name of the project, with spaces replaced by "_"'
         schema:
           type: string
+  /sites:
+    get:
+      summary: 'Get lists of mediawiki projects through mediawiki API'
+      operationId: getWikiProjects
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sites:
+                    type: array
+                    items:
+                      type: string
 components:
   schemas:
     Project:
