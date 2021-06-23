@@ -61,9 +61,8 @@ class IdentifyTest(BaseWebTestcase):
       self.assertEqual({'sites': self.sites}, rv.get_json())
       self.assertEqual(patched_site.called, False)
 
-  @patch('wp1.web.sites.site')
   @patch('wp1.web.sites.mwclient.Site')
-  def test_get_uncached_sites(self, patched_site, patched_mwsite):
+  def test_get_uncached_sites(self, patched_site):
     patched_site.return_value.api.return_value = self.result
     self.app = create_app()
     with self.override_db(self.app), self.app.test_client() as client:
