@@ -338,8 +338,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  sites_data:
+                  sites:
                     type: array
+                    items:
+                      type: string
 components:
   schemas:
     Project:

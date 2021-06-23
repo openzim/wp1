@@ -7,7 +7,7 @@ from wp1.web.base_web_testcase import BaseWebTestcase
 class IdentifyTest(BaseWebTestcase):
 
   result = {
-      "sitematrix": {
+      'sitematrix': {
           "count":
               2,
           "0": {
@@ -49,15 +49,17 @@ class IdentifyTest(BaseWebTestcase):
           },]
       },
   }
-  sites = ["https://aa.wikipedia.org", "https://ab.wikipedia.org"]
+  sites = ['https://aa.wikipedia.org', 'https://ab.wikipedia.org']
 
-  def test_get_cached_sites(self):
+  @patch('wp1.web.sites.site')
+  def test_get_cached_sites(self, patched_site):
     self.app = create_app()
     with self.override_db(self.app), self.app.test_client() as client:
       self.redis.setex('sites', timedelta(days=1), value=','.join(self.sites))
       rv = client.get('/v1/sites/')
       print(rv.get_json())
-      self.assertEqual({'sites_data': self.sites}, rv.get_json())
+      self.assertEqual({'sites': self.sites}, rv.get_json())
+      self.assertEqual(patched_site.called, False)
 
   @patch('wp1.web.sites.site')
   @patch('wp1.web.sites.mwclient.Site')
@@ -66,4 +68,4 @@ class IdentifyTest(BaseWebTestcase):
     self.app = create_app()
     with self.override_db(self.app), self.app.test_client() as client:
       rv = client.get('/v1/sites/')
-      self.assertEqual({'sites_data': self.sites}, rv.get_json())
+      self.assertEqual({'sites': self.sites}, rv.get_json())
