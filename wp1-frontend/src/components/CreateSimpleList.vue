@@ -18,7 +18,7 @@
               <select class="custom-select my-list">
                 <option selected>en.wikipedia.org</option>
                 <option v-for="item in wikiProjects" v-bind:key="item">
-                  {{ item.replace('https://', '') }}
+                  {{ item }}
                 </option>
               </select>
             </div>
@@ -34,7 +34,9 @@
             <div class="form-group m-4">
               <label for="Items">Items</label>
               <textarea
-                placeholder="Article names with either 'Spaces between words' or 'Underscores_between_words'"
+                :placeholder="
+                  'Eiffel_Tower\nStatue_of_Liberty\nFreedom_Monument_(Baghdad)\nGeorge-Étienne_Cartier_Monument'
+                "
                 class="form-control my-list"
                 rows="13"
                 required="true"
@@ -66,8 +68,15 @@ export default {
   methods: {
     getWikiProjects: async function() {
       const response = await fetch(`${process.env.VUE_APP_API_URL}/sites/`);
-      const data = await response.json();
+      var data = await response.json();
       this.wikiProjects = data.sites;
+      this.wikiProjects.forEach((element, index) => {
+        if (element === 'https://en.wikipedia.org') {
+          this.wikiProjects.splice(index, 1);
+          return;
+        }
+        this.wikiProjects[index] = element.replace('https://', '');
+      });
     }
   }
 };
