@@ -1,8 +1,11 @@
 /// <reference types="Cypress" />
 
 describe('the createList page', () => {
-  it('successfully loads', () => {
+  beforeEach(() => {
     cy.intercept('v1/sites/', { fixture: 'sites.json' });
+  });
+
+  it('successfully loads', () => {
     cy.visit('/#/selection/lists/simple/new');
   });
 
@@ -12,20 +15,28 @@ describe('the createList page', () => {
     cy.get('select').contains('en.wikipedia.org');
   });
 
-  it('displays list name', () => {
+  it('list name validation', () => {
     cy.get('#saveListButton').click();
-    cy.on('window:alert', txt => {
-      expect(txt).to.contains('Please fill in this field');
-    });
+    cy.get('#listName').contains('Please provide a valid List Name.');
     cy.get('#listName')
       .click()
       .type('My List');
   });
 
-  it('displays textbox', () => {
+  it('textbox item validation', () => {
     cy.get('#saveListButton').click();
-    cy.on('window:alert', txt => {
-      expect(txt).to.contains('Please fill in this field');
-    });
+    cy.get('#items').contains('Please provide valid items.');
+  });
+
+  it('list name validation on blur', () => {
+    cy.visit('/#/selection/lists/simple/new');
+    cy.get('#listName > .form-control').click();
+    cy.get('#listName').contains('Please provide a valid List Name.');
+  });
+
+  it('textbox item validation on blur', () => {
+    cy.visit('/#/selection/lists/simple/new');
+    cy.get('#items > .form-control').click();
+    cy.get('#items').contains('Please provide valid items.');
   });
 });
