@@ -18,9 +18,6 @@ describe('the createList page', () => {
   it('list name validation', () => {
     cy.get('#saveListButton').click();
     cy.get('#listName').contains('Please provide a valid List Name.');
-    cy.get('#listName')
-      .click()
-      .type('My List');
   });
 
   it('textbox item validation', () => {

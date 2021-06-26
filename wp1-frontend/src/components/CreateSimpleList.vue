@@ -5,7 +5,7 @@
     </div>
     <div class="row">
       <div class="col-lg-6 col-md-9 m-4">
-        <div class="m-4" style="font-weight: 550;">
+        <div class="m-4">
           Use this tool to create an article selection list for the Wikipedia
           project of your choice. Your selection will be saved in public cloud
           storage and can be accessed through URLs that will be provided once it
@@ -70,7 +70,7 @@ export default {
   name: 'MyLists',
   data: function() {
     return {
-      wikiProjects: ['en.wikipedia.org']
+      wikiProjects: []
     };
   },
   created: function() {
@@ -114,8 +114,4 @@ export default {
 };
 </script>
 
-<style scoped>
-.my-list {
-  border: 1px solid #000;
-}
-</style>
+<style scoped></style>
