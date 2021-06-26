@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div style="position:abosolte">
+    <div>
       <SecondaryNav></SecondaryNav>
     </div>
     <div class="container">
