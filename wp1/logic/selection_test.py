@@ -24,8 +24,13 @@ George-%C3%89tienne_Cartier_Monument'''
         'Eiffel_Tower', 'Statue_of_Liberty', 'Liberty_(personification)',
         'Libertas', '∞', 'George-Étienne_Cartier_Monument'
     ], [
-        'This_is_supposedly_an_article_name_but_its_way_too_long_to_actually_be_one_because_it_contains_more_than_256_characters_which_is_not_allowed_in_article_titles_and_it_just_runs_on_forever,_it_doesnt_even_have_underscores_and_looks_more_like_a_long_paragraph_of_text_than_an_actual_article_name.',
-        'Not_an_<article_name>',
+        'This_is_supposedly_an_article_name_but_'
+        'its_way_too_long_to_actually_be_one_'
+        'because_it_contains_more_than_256_characters'
+        '_which_is_not_allowed_in_article_titles_and_'
+        'it_just_runs_on_forever,_it_doesnt_even_have_'
+        'underscores_and_looks_more_like_a_long_paragraph'
+        '_of_text_than_an_actual_article_name.', 'Not_an_<article_name>',
         'https://en.wikipedia.org/wiki/Liberty#Philosophy'
     ])
     actual = selection.validate_list(self.items)
