@@ -4,10 +4,23 @@ from wp1.logic import selection
 
 class ValidateArticleNameTest(unittest.TestCase):
 
-  items = "Eiffel_Tower \nStatue of Liberty\nThis is supposedly an article name but its way too long to actually be one because it contains more than 256 characters which is not allowed in article titles and it just runs on forever, it doesnt even have underscores and looks more like a long paragraph of text than an actual article name.\nNot_an_<article_name>\nhttps://en.wikipedia.org/wiki/Liberty#Philosophy\nhttps://en.wikipedia.org/wiki/Liberty_(personification)\nhttps://en.wikipedia.org/w/index.php?title=Libertas\nhttps://en.wikipedia.org/w/index.php?title=%E2%88%9E\nGeorge-%C3%89tienne_Cartier_Monument"
+  items = '''Eiffel_Tower     \nStatue of Liberty
+This is supposedly an article \
+name but its way too long to actually be \
+one because it contains more than 256 characters \
+which is not allowed in article titles and \
+it just runs on forever, it doesnt even have \
+underscores and looks more like a long paragraph \
+of text than an actual article name.
+Not_an_<article_name>
+https://en.wikipedia.org/wiki/Liberty#Philosophy
+https://en.wikipedia.org/wiki/Liberty_(personification)
+https://en.wikipedia.org/w/index.php?title=Libertas
+https://en.wikipedia.org/w/index.php?title=%E2%88%9E
+George-%C3%89tienne_Cartier_Monument'''
 
   def test_validate_items(self):
-    item_list = ([
+    expected = ([
         'Eiffel_Tower', 'Statue_of_Liberty', 'Liberty_(personification)',
         'Libertas', '∞', 'George-Étienne_Cartier_Monument'
     ], [
@@ -15,5 +28,5 @@ class ValidateArticleNameTest(unittest.TestCase):
         'Not_an_<article_name>',
         'https://en.wikipedia.org/wiki/Liberty#Philosophy'
     ])
-    article_names = selection.validate_list(self.items)
-    self.assertEqual(item_list, article_names)
+    actual = selection.validate_list(self.items)
+    self.assertEqual(expected, actual)
