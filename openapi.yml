@@ -342,6 +342,66 @@ paths:
                     type: array
                     items:
                       type: string
+  /selection/:
+    post:
+      summary: 'Get response from sending acticle names'
+      operationId: getResponse
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                article_name:
+                  type: string
+                list_name:
+                  type: string
+                project_name:
+                  type: string
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    default: '200'
+                  success:
+                    type: boolean
+                  items:
+                    type: object
+        403:
+          description: 'Unuccessful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    default: '403'
+                  success:
+                    type: boolean
+                    default: false
+                  items:
+                    type: object
+                    properties:
+                      valid:
+                        type: array
+                        items:
+                          type: string
+                      invalid:
+                        type: array
+                        items:
+                          type: string
+                      forbidden:
+                        type: array
+                        items:
+                          type: string
 components:
   schemas:
     Project:

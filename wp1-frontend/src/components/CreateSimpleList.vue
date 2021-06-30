@@ -13,8 +13,8 @@
         </div>
         <form class="needs-validation" novalidate>
           <div class="m-4">
-            <label for="Project">Project</label>
-            <select class="custom-select my-list">
+            <label>Project</label>
+            <select ref="select" class="custom-select my-list">
               <option selected>en.wikipedia.org</option>
               <option v-for="item in wikiProjects" v-bind:key="item">
                 {{ item }}
@@ -26,6 +26,7 @@
             <input
               v-on:blur="validationOnBlur"
               type="text"
+              ref="list_name"
               placeholder="My List"
               class="form-control my-list"
               required
@@ -43,11 +44,26 @@
               "
               class="form-control my-list"
               rows="13"
+              ref="article_name"
+              v-model="valid_article_names"
               required
             ></textarea>
             <div class="invalid-feedback">
               Please provide valid items.
             </div>
+          </div>
+          <div
+            v-if="this.success == false"
+            id="invalid_articles"
+            class="form-group m-4"
+          >
+            Following items are not valid for selection lists beacuse they have
+            {{ forbidden_chars }}
+            <textarea
+              class="form-control my-list is-invalid"
+              rows="6"
+              v-model="invalid_article_names"
+            ></textarea>
           </div>
           <button
             v-on:click="validateForm"
@@ -70,7 +86,11 @@ export default {
   name: 'MyLists',
   data: function() {
     return {
-      wikiProjects: []
+      wikiProjects: [],
+      success: true,
+      valid_article_names: '',
+      invalid_article_names: '',
+      forbidden_chars: ''
     };
   },
   created: function() {
@@ -88,20 +108,47 @@ export default {
       });
     },
     validateForm: function() {
-      var forms = document.querySelectorAll('.needs-validation');
-      Array.prototype.slice.call(forms).forEach(function(form) {
-        form.addEventListener(
-          'submit',
-          function(event) {
-            if (!form.checkValidity()) {
-              event.preventDefault();
-              event.stopPropagation();
-            }
+      let parent = this;
+      const form = document.querySelectorAll('.needs-validation')[0];
+      form.addEventListener(
+        'submit',
+        async function(event) {
+          if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
             form.classList.add('was-validated');
-          },
-          false
-        );
-      });
+            return;
+          }
+          const article_detail = {
+            article_name: parent.$refs.article_name.value,
+            list_name: parent.$refs.list_name.value,
+            project_name: parent.$refs.select.value
+          };
+          const response = await fetch(
+            `${process.env.VUE_APP_API_URL}/selection/`,
+            {
+              headers: { 'Content-Type': 'application/json' },
+              method: 'post',
+              body: JSON.stringify(article_detail)
+            }
+          );
+          var data = await response.json();
+          parent.success = data.success;
+          if (parent.success) {
+            parent.$router.push('/selection/user');
+            return;
+          }
+          event.preventDefault();
+          event.stopPropagation();
+          form.classList.remove('was-validated');
+          parent.valid_article_names = data.items.valid.join('\n');
+          parent.invalid_article_names = data.items.invalid.join('\n');
+          parent.forbidden_chars = [...new Set(data.items.forbiden_chars)].join(
+            ' , '
+          );
+        },
+        false
+      );
     },
     validationOnBlur: function(event) {
       if (event.target.value) {
