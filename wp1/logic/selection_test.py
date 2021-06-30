@@ -32,6 +32,6 @@ George-%C3%89tienne_Cartier_Monument'''
         'underscores_and_looks_more_like_a_long_paragraph'
         '_of_text_than_an_actual_article_name.', 'Not_an_<article_name>',
         'https://en.wikipedia.org/wiki/Liberty#Philosophy'
-    ])
+    ], ['length greater than 256 bytes', '<', '>', '#'])
     actual = selection.validate_list(self.items)
     self.assertEqual(expected, actual)
