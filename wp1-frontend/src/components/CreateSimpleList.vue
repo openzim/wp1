@@ -11,10 +11,15 @@
           storage and can be accessed through URLs that will be provided once it
           has been saved.
         </div>
-        <form class="needs-validation" novalidate>
+        <form
+          class="needs-validation"
+          :action="getAction()"
+          method="POST"
+          novalidate
+        >
           <div class="m-4">
             <label for="Project">Project</label>
-            <select class="custom-select my-list">
+            <select name="project" class="custom-select my-list">
               <option selected>en.wikipedia.org</option>
               <option v-for="item in wikiProjects" v-bind:key="item">
                 {{ item }}
@@ -24,6 +29,7 @@
           <div id="listName" class="m-4">
             <label for="listName">List Name</label>
             <input
+              name="name"
               v-on:blur="validationOnBlur"
               type="text"
               placeholder="My List"
@@ -37,6 +43,7 @@
           <div id="items" class="form-group m-4">
             <label for="Items">Items</label>
             <textarea
+              name="items"
               v-on:blur="validationOnBlur"
               :placeholder="
                 'Eiffel_Tower\nStatue_of_Liberty\nFreedom_Monument_(Baghdad)\nGeorge-Étienne_Cartier_Monument'
@@ -77,6 +84,9 @@ export default {
     this.getWikiProjects();
   },
   methods: {
+    getAction: function() {
+      return `${process.env.VUE_APP_API_URL}/selection/`;
+    },
     getWikiProjects: async function() {
       const response = await fetch(`${process.env.VUE_APP_API_URL}/sites/`);
       var data = await response.json();

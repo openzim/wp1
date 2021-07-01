@@ -14,6 +14,7 @@ from wp1 import environment
 from wp1.web.db import get_db, has_db
 from wp1.web.articles import articles
 from wp1.web.projects import projects
+from wp1.web.selection import selection
 from wp1.web.sites import sites
 from wp1.web.dev.projects import dev_projects
 
@@ -124,6 +125,7 @@ def create_app():
 
   app.register_blueprint(projects, url_prefix='/v1/projects')
   app.register_blueprint(articles, url_prefix='/v1/articles')
+  app.register_blueprint(selection, url_prefix='/v1/selection')
   app.register_blueprint(sites, url_prefix='/v1/sites')
 
   if not missing_credentials:
