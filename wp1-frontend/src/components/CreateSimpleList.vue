@@ -11,10 +11,10 @@
           storage and can be accessed through URLs that will be provided once it
           has been saved.
         </div>
-        <form class="needs-validation" novalidate>
+        <form v-on:submit.prevent class="needs-validation" novalidate>
           <div class="m-4">
             <label>Project</label>
-            <select ref="select" class="custom-select my-list">
+            <select ref="project" class="custom-select my-list">
               <option selected>en.wikipedia.org</option>
               <option v-for="item in wikiProjects" v-bind:key="item">
                 {{ item }}
@@ -44,7 +44,7 @@
               "
               class="form-control my-list"
               rows="13"
-              ref="article_name"
+              ref="articles"
               v-model="valid_article_names"
               required
             ></textarea>
@@ -66,7 +66,7 @@
             ></textarea>
           </div>
           <button
-            v-on:click="saveForm"
+            v-on:click="save"
             id="saveListButton"
             type="submit"
             class="btn-primary ml-4"
@@ -107,48 +107,37 @@ export default {
         this.wikiProjects[index] = element.replace('https://', '');
       });
     },
-    saveForm: function() {
+    save: async function() {
       let parent = this;
       const form = document.querySelectorAll('.needs-validation')[0];
-      form.addEventListener(
-        'submit',
-        async function(event) {
-          if (!form.checkValidity()) {
-            event.preventDefault();
-            event.stopPropagation();
-            form.classList.add('was-validated');
-            return;
-          }
-          const article_detail = {
-            article_name: parent.$refs.article_name.value,
-            list_name: parent.$refs.list_name.value,
-            project_name: parent.$refs.select.value
-          };
-          this.success = false;
-          const response = await fetch(
-            `${process.env.VUE_APP_API_URL}/selection/simple`,
-            {
-              headers: { 'Content-Type': 'application/json' },
-              method: 'post',
-              body: JSON.stringify(article_detail)
-            }
-          );
-          var data = await response.json();
-          parent.success = data.success;
-          if (parent.success) {
-            parent.$router.push('/selection/user');
-            return;
-          }
-          event.preventDefault();
-          event.stopPropagation();
-          form.classList.remove('was-validated');
-          parent.valid_article_names = data.items.valid.join('\n');
-          parent.invalid_article_names = data.items.invalid.join('\n');
-          parent.forbidden_chars = [...new Set(data.items.forbiden_chars)].join(
-            ' , '
-          );
-        },
-        false
+      if (!form.checkValidity()) {
+        form.classList.add('was-validated');
+        return;
+      }
+      const article_detail = {
+        article_name: parent.$refs.articles.value,
+        list_name: parent.$refs.list_name.value,
+        project_name: parent.$refs.project.value
+      };
+      const response = await fetch(
+        `${process.env.VUE_APP_API_URL}/selection/simple`,
+        {
+          headers: { 'Content-Type': 'application/json' },
+          method: 'post',
+          body: JSON.stringify(article_detail)
+        }
+      );
+      var data = await response.json();
+      parent.success = data.success;
+      if (parent.success) {
+        parent.$router.push('/selection/user');
+        return;
+      }
+      form.classList.remove('was-validated');
+      parent.valid_article_names = data.items.valid.join('\n');
+      parent.invalid_article_names = data.items.invalid.join('\n');
+      parent.forbidden_chars = [...new Set(data.items.forbiden_chars)].join(
+        ' , '
       );
     },
     validationOnBlur: function(event) {

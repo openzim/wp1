@@ -353,15 +353,15 @@ paths:
             schema:
               type: object
               properties:
-                article_name:
+                articles:
                   type: string
-                list_name:
+                project:
                   type: string
                 project_name:
                   type: string
       responses:
         200:
-          description: 'If article names does not contain {"#", "<", ">", "[", "]", "{", "}", "|"}, success is true, list would be saved and the response would return an empty "items" object'
+          description: 'Successful operation'
           content:
             application/json:
               schema:
@@ -369,20 +369,24 @@ paths:
                 properties:
                   success:
                     type: boolean
-                    default: false
+                    description: True when article name doesnot contain forbidden chars {"#", "<", ">", "[", "]", "{", "}", "|"}, false otherwise.
                   items:
                     type: object
+                    description: Empty in case of success being true
                     properties:
                       valid:
                         type: array
+                        description: List of valid article names
                         items:
                           type: string
                       invalid:
                         type: array
+                        description: List of invalid article names
                         items:
                           type: string
                       forbidden:
                         type: array
+                        description: List of forbidden characters present in article names
                         items:
                           type: string
 components:
