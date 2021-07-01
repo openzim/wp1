@@ -66,7 +66,7 @@
             ></textarea>
           </div>
           <button
-            v-on:click="validateForm"
+            v-on:click="saveForm"
             id="saveListButton"
             type="submit"
             class="btn-primary ml-4"
@@ -107,7 +107,7 @@ export default {
         this.wikiProjects[index] = element.replace('https://', '');
       });
     },
-    validateForm: function() {
+    saveForm: function() {
       let parent = this;
       const form = document.querySelectorAll('.needs-validation')[0];
       form.addEventListener(
@@ -124,8 +124,9 @@ export default {
             list_name: parent.$refs.list_name.value,
             project_name: parent.$refs.select.value
           };
+          this.success = false;
           const response = await fetch(
-            `${process.env.VUE_APP_API_URL}/selection/`,
+            `${process.env.VUE_APP_API_URL}/selection/simple`,
             {
               headers: { 'Content-Type': 'application/json' },
               method: 'post',

@@ -342,7 +342,7 @@ paths:
                     type: array
                     items:
                       type: string
-  /selection/:
+  /selection/simple:
     post:
       summary: 'Get response from sending acticle names'
       operationId: getResponse
@@ -361,29 +361,12 @@ paths:
                   type: string
       responses:
         200:
-          description: 'Successful operation'
+          description: 'If article names does not contain {"#", "<", ">", "[", "]", "{", "}", "|"}, success is true, list would be saved and the response would return an empty "items" object'
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  status:
-                    type: string
-                    default: '200'
-                  success:
-                    type: boolean
-                  items:
-                    type: object
-        403:
-          description: 'Unuccessful operation'
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    default: '403'
                   success:
                     type: boolean
                     default: false
