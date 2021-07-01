@@ -37,7 +37,7 @@ describe('the createList page', () => {
     cy.get('#items').contains('Please provide valid items.');
   });
 
-  it.only('unsucessful response', () => {
+  it('unsucessful response', () => {
     cy.visit('/#/selection/lists/simple/new');
     cy.get('.needs-validation').then(form$ => {
       form$.on('submit', e => {
@@ -65,6 +65,11 @@ describe('the createList page', () => {
 
   it('successful response', () => {
     cy.visit('/#/selection/lists/simple/new');
+    cy.get('.needs-validation').then(form$ => {
+      form$.on('submit', e => {
+        e.preventDefault();
+      });
+    });
     cy.get('#listName > .form-control')
       .click()
       .type('List Name');
@@ -74,6 +79,6 @@ describe('the createList page', () => {
     cy.intercept('v1/selection/').as('selection');
     cy.get('#saveListButton').click();
     cy.wait('@selection');
-    cy.url().should('eq', 'http://localhost:3000/?#/selection/user');
+    cy.url().should('eq', 'http://localhost:3000/#/selection/user');
   });
 });
