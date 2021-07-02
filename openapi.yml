@@ -355,9 +355,9 @@ paths:
               properties:
                 articles:
                   type: string
-                project:
+                list_name:
                   type: string
-                project_name:
+                project:
                   type: string
       responses:
         200:
