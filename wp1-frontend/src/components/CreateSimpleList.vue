@@ -11,7 +11,12 @@
           storage and can be accessed through URLs that will be provided once it
           has been saved.
         </div>
-        <form v-on:submit.prevent class="needs-validation" novalidate>
+        <form
+          ref="form"
+          v-on:submit.prevent="save"
+          class="needs-validation"
+          novalidate
+        >
           <div class="m-4">
             <label>Project</label>
             <select ref="project" class="custom-select my-list">
@@ -57,11 +62,12 @@
             id="invalid_articles"
             class="form-group m-4"
           >
-            Following items are not valid for selection lists beacuse they have
+            Following items are not valid for selection lists because they have
             {{ forbidden_chars }}
             <textarea
               class="form-control my-list is-invalid"
               rows="6"
+              ref="invalid"
               v-model="invalid_article_names"
             ></textarea>
           </div>
@@ -83,7 +89,7 @@
 import SecondaryNav from './SecondaryNav.vue';
 export default {
   components: { SecondaryNav },
-  name: 'MyLists',
+  name: 'CreateSimpleLists',
   data: function() {
     return {
       wikiProjects: [],
@@ -101,23 +107,18 @@ export default {
       const response = await fetch(`${process.env.VUE_APP_API_URL}/sites/`);
       var data = await response.json();
       this.wikiProjects = data.sites;
-      var index = this.wikiProjects.indexOf('https://en.wikipedia.org');
-      this.wikiProjects.splice(index, 1);
-      this.wikiProjects.forEach((element, index) => {
-        this.wikiProjects[index] = element.replace('https://', '');
-      });
     },
     save: async function() {
       let parent = this;
-      const form = document.querySelectorAll('.needs-validation')[0];
+      const form = parent.$refs.form;
       if (!form.checkValidity()) {
         form.classList.add('was-validated');
         return;
       }
       const article_detail = {
-        article_name: parent.$refs.articles.value,
+        articles: parent.$refs.articles.value,
         list_name: parent.$refs.list_name.value,
-        project_name: parent.$refs.project.value
+        project: parent.$refs.project.value
       };
       const response = await fetch(
         `${process.env.VUE_APP_API_URL}/selection/simple`,

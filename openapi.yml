@@ -1,8 +1,8 @@
 openapi: 3.0.0
 servers:
-  - url: https://api.wp1.openzim.org/v1
+  - url: http://localhost:5000/v1
     description: Production server HTTPS
-  - url: http://api.wp1.openzim.org/v1
+  - url: http://localhost:5000/v1
     description: Production server HTTP
 info:
   description: 'Wikipedia 1.0 is an editing project on Wikipedia. It includes a bot, called the WP 1.0 bot, and a frontend web interface for that bot which lives at https://wp1.openzim.org. This document describes the server that acts as the API backend for that frontend server. Generally speaking, it contains only features which are useful to that frontend. However it is documented here and made available without restriction in the hopes that it may be useful.'
@@ -344,8 +344,8 @@ paths:
                       type: string
   /selection/simple:
     post:
-      summary: 'Get response from sending acticle names'
-      operationId: getResponse
+      summary: 'Save a new Simple list, validating it first and returning invalid items if they exist'
+      operationId: createSimpleList
       requestBody:
         required: true
         content:
@@ -369,7 +369,7 @@ paths:
                 properties:
                   success:
                     type: boolean
-                    description: True when article name doesnot contain forbidden chars {"#", "<", ">", "[", "]", "{", "}", "|"}, false otherwise.
+                    description: True when article name does not contain forbidden chars {"#", "<", ">", "[", "]", "{", "}", "|"}, false otherwise.
                   items:
                     type: object
                     description: Empty in case of success being true
@@ -389,6 +389,9 @@ paths:
                         description: List of forbidden characters present in article names
                         items:
                           type: string
+        400:
+          description: 'Request with either empty list_name or project or articles'
+
 components:
   schemas:
     Project:

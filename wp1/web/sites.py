@@ -23,7 +23,9 @@ def get_sites():
   sites_data = []
   for i in sitematrix:
     for j in sitematrix[i]['site']:
-      sites_data.append(j['url'])
+      project = j['url'].replace('https://', '')
+      sites_data.append(project)
 
   redis.setex('sites_data', timedelta(days=1), value=','.join(sites_data))
+  print(sites_data)
   return {'sites': sites_data}
