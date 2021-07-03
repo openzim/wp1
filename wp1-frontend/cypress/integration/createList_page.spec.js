@@ -9,7 +9,7 @@ describe('the CreateSimpleList page', () => {
     cy.visit('/#/selection/lists/simple/new');
   });
 
-  it('wiki projects displayed', () => {
+  it('displays wiki projects', () => {
     cy.get('select').contains('aa.wikipedia.org');
     cy.get('select').contains('en.wiktionary.org');
     cy.get('select').contains('en.wikipedia.org');
@@ -25,19 +25,19 @@ describe('the CreateSimpleList page', () => {
     cy.get('#items').contains('Please provide valid items.');
   });
 
-  it('validates list name on loosing focus', () => {
+  it('validates list name on losing focus', () => {
     cy.visit('/#/selection/lists/simple/new');
     cy.get('#listName > .form-control').click();
     cy.get('#listName').contains('Please provide a valid List Name.');
   });
 
-  it('validates textbox on loosing focus', () => {
+  it('validates textbox on losing focus', () => {
     cy.visit('/#/selection/lists/simple/new');
     cy.get('#items > .form-control').click();
     cy.get('#items').contains('Please provide valid items.');
   });
 
-  it('textbox displayed with invalid article names', () => {
+  it('displays a textbox with invalid article names', () => {
     cy.visit('/#/selection/lists/simple/new');
     cy.get('#listName > .form-control')
       .click()

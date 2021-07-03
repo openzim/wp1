@@ -17,44 +17,46 @@
           class="needs-validation"
           novalidate
         >
-          <div class="m-4">
-            <label>Project</label>
-            <select ref="project" class="custom-select my-list">
-              <option selected>en.wikipedia.org</option>
-              <option v-for="item in wikiProjects" v-bind:key="item">
-                {{ item }}
-              </option>
-            </select>
-          </div>
-          <div id="listName" class="m-4">
-            <label for="listName">List Name</label>
-            <input
-              v-on:blur="validationOnBlur"
-              type="text"
-              ref="list_name"
-              placeholder="My List"
-              class="form-control my-list"
-              required
-            />
-            <div class="invalid-feedback">
-              Please provide a valid List Name.
+          <div ref="form_group" class="form-group">
+            <div class="m-4">
+              <label>Project</label>
+              <select ref="project" class="custom-select my-list">
+                <option selected>en.wikipedia.org</option>
+                <option v-for="item in wikiProjects" v-bind:key="item">
+                  {{ item }}
+                </option>
+              </select>
             </div>
-          </div>
-          <div id="items" class="form-group m-4">
-            <label for="Items">Items</label>
-            <textarea
-              v-on:blur="validationOnBlur"
-              :placeholder="
-                'Eiffel_Tower\nStatue_of_Liberty\nFreedom_Monument_(Baghdad)\nGeorge-Étienne_Cartier_Monument'
-              "
-              class="form-control my-list"
-              rows="13"
-              ref="articles"
-              v-model="valid_article_names"
-              required
-            ></textarea>
-            <div class="invalid-feedback">
-              Please provide valid items.
+            <div id="listName" class="m-4">
+              <label for="listName">List Name</label>
+              <input
+                v-on:blur="validationOnBlur"
+                type="text"
+                ref="list_name"
+                placeholder="My List"
+                class="form-control my-list"
+                required
+              />
+              <div class="invalid-feedback">
+                Please provide a valid List Name.
+              </div>
+            </div>
+            <div id="items" class="form-group m-4">
+              <label for="Items">Items</label>
+              <textarea
+                v-on:blur="validationOnBlur"
+                :placeholder="
+                  'Eiffel_Tower\nStatue_of_Liberty\nFreedom_Monument_(Baghdad)\nGeorge-Étienne_Cartier_Monument'
+                "
+                class="form-control my-list"
+                rows="13"
+                ref="articles"
+                v-model="valid_article_names"
+                required
+              ></textarea>
+              <div class="invalid-feedback">
+                Please provide valid items.
+              </div>
             </div>
           </div>
           <div
@@ -112,7 +114,7 @@ export default {
       let parent = this;
       const form = parent.$refs.form;
       if (!form.checkValidity()) {
-        form.classList.add('was-validated');
+        parent.$refs.form_group.classList.add('was-validated');
         return;
       }
       const article_detail = {
@@ -134,7 +136,7 @@ export default {
         parent.$router.push('/selection/user');
         return;
       }
-      form.classList.remove('was-validated');
+      parent.$refs.form_group.classList.add('was-validated');
       parent.valid_article_names = data.items.valid.join('\n');
       parent.invalid_article_names = data.items.invalid.join('\n');
       parent.forbidden_chars = [...new Set(data.items.forbiden_chars)].join(
