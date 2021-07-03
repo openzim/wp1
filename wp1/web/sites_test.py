@@ -49,7 +49,7 @@ class IdentifyTest(BaseWebTestcase):
           },]
       },
   }
-  sites = ['https://aa.wikipedia.org', 'https://ab.wikipedia.org']
+  sites = ['aa.wikipedia.org', 'ab.wikipedia.org']
 
   @patch('wp1.web.sites.site')
   def test_get_cached_sites(self, patched_site):

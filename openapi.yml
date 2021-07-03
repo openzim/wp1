@@ -342,6 +342,56 @@ paths:
                     type: array
                     items:
                       type: string
+  /selection/simple:
+    post:
+      summary: 'Save a new Simple list, validating it first and returning invalid items if they exist'
+      operationId: createSimpleList
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                articles:
+                  type: string
+                list_name:
+                  type: string
+                project:
+                  type: string
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: True when article name does not contain forbidden chars {"#", "<", ">", "[", "]", "{", "}", "|"}, false otherwise.
+                  items:
+                    type: object
+                    description: Empty in case of success being true
+                    properties:
+                      valid:
+                        type: array
+                        description: List of valid article names
+                        items:
+                          type: string
+                      invalid:
+                        type: array
+                        description: List of invalid article names
+                        items:
+                          type: string
+                      forbidden:
+                        type: array
+                        description: List of forbidden characters present in article names
+                        items:
+                          type: string
+        400:
+          description: 'Request with either empty list_name or project or articles'
+
 components:
   schemas:
     Project:
