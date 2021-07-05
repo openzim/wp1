@@ -9,7 +9,7 @@ __depends__ = {'20210528_01_xt830-add-users-table'}
 steps = [
     step(
         "CREATE TABLE selections ("
-        "s_id INTEGER NOT NULL PRIMARY KEY, "
+        "s_id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT, "
         "s_name VARBINARY(255) NOT NULL, "
         "s_user_id INTEGER NOT NULL, "
         "s_hash VARBINARY(255), "
