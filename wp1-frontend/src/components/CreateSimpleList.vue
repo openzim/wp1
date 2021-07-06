@@ -67,22 +67,11 @@
             Following items are not valid for selection lists because they have
             {{ forbidden_chars }}
             <textarea
-              name="items"
-              v-on:blur="validationOnBlur"
-              :placeholder="
-                'Eiffel_Tower\nStatue_of_Liberty\nFreedom_Monument_(Baghdad)\nGeorge-Étienne_Cartier_Monument'
-              "
-              class="form-control my-list"
-              rows="13"
-              required
-            >
-            <textarea>
               class="form-control my-list is-invalid"
               rows="6"
               ref="invalid"
               v-model="invalid_article_names"
-            ></textarea
-            >
+            ></textarea>
           </div>
           <button
             v-on:click="save"
@@ -116,9 +105,6 @@ export default {
     this.getWikiProjects();
   },
   methods: {
-    getAction: function() {
-      return `${process.env.VUE_APP_API_URL}/selection/`;
-    },
     getWikiProjects: async function() {
       const response = await fetch(`${process.env.VUE_APP_API_URL}/sites/`);
       var data = await response.json();
