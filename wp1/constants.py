@@ -34,3 +34,5 @@ WIKI_BASE = 'https://en.wikipedia.org/wiki/'
 FRONTEND_WIKI_BASE = 'https://en.wikipedia.org/w/'
 
 PAGE_SIZE = 100
+
+SIMPLE_LIST_MODEL = 'org.openzim.wp1.simple'

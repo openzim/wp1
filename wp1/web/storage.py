@@ -21,10 +21,11 @@ def has_storage():
 def get_storage():
   if not has_storage():
     creds = CREDENTIALS[ENV]['STORAGE']
-    s3 = KiwixStorage(
+    connect_str = (
         'https://s3.us-west-1.wasabisys.com/'
         '?keyId=%(key)s&secretAccessKey=%(secret)s&bucketName=%(bucket)s' %
         creds)
+    s3 = KiwixStorage(connect_str)
     s3.check_credentials(list_buckets=True, bucket=True, write=True, read=True)
     setattr(flask.g, 'storage', s3)
   return getattr(flask.g, 'storage')

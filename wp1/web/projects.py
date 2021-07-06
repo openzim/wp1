@@ -1,8 +1,8 @@
-from wp1.web import authenticate
 import attr
 import flask
 
 from wp1.constants import PAGE_SIZE
+from wp1.web import authenticate
 from wp1.web.db import get_db
 from wp1.web.redis import get_redis
 import wp1.logic.project as logic_project
