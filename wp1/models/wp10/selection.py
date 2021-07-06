@@ -37,3 +37,20 @@ class Selection:
   def set_last_generated_now(self):
     """Sets the last_generated field to a timestamp that is equal to now"""
     self.set_last_generated_dt(utcnow())
+
+  # The timestamp parsed into a datetime.datetime object.
+  @property
+  def created_at_dt(self):
+    return datetime.datetime.strptime(self.s_created_at.decode('utf-8'),
+                                      TS_FORMAT_WP10)
+
+  def set_created_at_dt(self, dt):
+    """Sets the created_at field using a datetime.datetime object"""
+    if dt is None:
+      logger.warning('Attempt to set selection created_at to None ignored')
+      return
+    self.s_created_at = dt.strftime(TS_FORMAT_WP10).encode('utf-8')
+
+  def set_created_at_now(self):
+    """Sets the created_at field to a timestamp that is equal to now"""
+    self.set_created_at_dt(utcnow())

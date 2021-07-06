@@ -35,3 +35,25 @@ class ModelsSelectionTest(BaseWpOneDbTest):
     self.selection.set_last_generated_now()
 
     self.assertEqual(b'20181225055555', self.selection.s_last_generated)
+
+  def test_created_at_dt(self):
+    dt = self.selection.created_at_dt
+    self.assertEqual(2018, dt.year)
+    self.assertEqual(9, dt.month)
+    self.assertEqual(29, dt.day)
+    self.assertEqual(12, dt.hour)
+    self.assertEqual(30, dt.minute)
+    self.assertEqual(55, dt.second)
+
+  def test_set_created_at_dt(self):
+    dt = datetime.datetime(2020, 12, 15, 9, 30, 55)
+    self.selection.set_created_at_dt(dt)
+
+    self.assertEqual(b'20201215093055', self.selection.s_created_at)
+
+  @patch('wp1.models.wp10.selection.utcnow',
+         return_value=datetime.datetime(2018, 12, 25, 5, 55, 55))
+  def test_set_created_at_now(self, patched_now):
+    self.selection.set_created_at_now()
+
+    self.assertEqual(b'20181225055555', self.selection.s_created_at)
