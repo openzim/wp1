@@ -1,6 +1,6 @@
 /// <reference types="Cypress" />
 
-describe('the createList page', () => {
+describe('the CreateSimpleList page', () => {
   beforeEach(() => {
     cy.intercept('v1/sites/', { fixture: 'sites.json' });
   });
@@ -15,25 +15,60 @@ describe('the createList page', () => {
     cy.get('select').contains('en.wikipedia.org');
   });
 
-  it('list name validation', () => {
+  it('validates list name on clicking save', () => {
     cy.get('#saveListButton').click();
     cy.get('#listName').contains('Please provide a valid List Name.');
   });
 
-  it('textbox item validation', () => {
+  it('validates textbox on clicking save', () => {
     cy.get('#saveListButton').click();
     cy.get('#items').contains('Please provide valid items.');
   });
 
-  it('list name validation on blur', () => {
+  it('validates list name on losing focus', () => {
     cy.visit('/#/selection/lists/simple/new');
     cy.get('#listName > .form-control').click();
     cy.get('#listName').contains('Please provide a valid List Name.');
   });
 
-  it('textbox item validation on blur', () => {
+  it('validates textbox on losing focus', () => {
     cy.visit('/#/selection/lists/simple/new');
     cy.get('#items > .form-control').click();
     cy.get('#items').contains('Please provide valid items.');
+  });
+
+  it('displays a textbox with invalid article names', () => {
+    cy.visit('/#/selection/lists/simple/new');
+    cy.get('#listName > .form-control')
+      .click()
+      .type('List Name');
+    cy.get('#items > .form-control')
+      .click()
+      .type('Eiffel_Tower\nStatue of#Liberty');
+    cy.intercept('v1/selection/').as('selection');
+    cy.get('#saveListButton').click();
+    cy.wait('@selection');
+    cy.get('#items > .form-control').should('have.value', 'Eiffel_Tower');
+    cy.get('#invalid_articles').contains(
+      'Following items are not valid for selection lists because they have #'
+    );
+    cy.get('#invalid_articles > .form-control').should(
+      'have.value',
+      'Statue_of#Liberty'
+    );
+  });
+
+  it('redirects on saving valid article names', () => {
+    cy.visit('/#/selection/lists/simple/new');
+    cy.get('#listName > .form-control')
+      .click()
+      .type('List Name');
+    cy.get('#items > .form-control')
+      .click()
+      .type('Eiffel_Tower\nStatue of Liberty');
+    cy.intercept('v1/selection/').as('selection');
+    cy.get('#saveListButton').click();
+    cy.wait('@selection');
+    cy.url().should('eq', 'http://localhost:3000/#/selection/user');
   });
 });

@@ -127,6 +127,7 @@ def create_app():
   app.register_blueprint(articles, url_prefix='/v1/articles')
   app.register_blueprint(selection, url_prefix='/v1/selection')
   app.register_blueprint(sites, url_prefix='/v1/sites')
+  app.register_blueprint(selection, url_prefix='/v1/selection')
 
   if not missing_credentials:
     mwoauth = CREDENTIALS.get(ENV, {}).get('MWOAUTH', {})

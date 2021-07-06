@@ -2,33 +2,32 @@ import io
 
 import flask
 
-from wp1.logic.selection import validate_list
+from wp1.web import authenticate
 from wp1.web.storage import get_storage
+import wp1.logic.selection as logic_selection
 
 selection = flask.Blueprint('selection', __name__)
 
 
-@selection.route('/', methods=['POST'])
-def index():
-  name = flask.request.form.get('name')
-  if name is None:
-    print('name is none')
+@selection.route('/simple', methods=['POST'])
+def create():
+  data = flask.request.get_json()
+  list_name = data['list_name']
+  articles = data['articles']
+  project = data['project']
+  if not articles or not list_name or not project:
     flask.abort(400)
-
-  project = flask.request.form.get('project')
-  if project is None:
-    print('project is none')
-    flask.abort(400)
-
-  items = flask.request.form.get('items')
-  if items is None:
-    print('items is none')
-    flask.abort(400)
-
-  valid, invalid = validate_list(items)
-  if invalid:
-    print('has invalid')
-    flask.abort(400)
+  valid_names, invalid_names, forbiden_chars = logic_selection.validate_list(
+      articles)
+  if invalid_names:
+    return {
+        "success": False,
+        "items": {
+            'valid': valid_names,
+            'invalid': invalid_names,
+            "forbiden_chars": forbiden_chars
+        }
+    }
 
   s3 = get_storage()
 
@@ -37,4 +36,5 @@ def index():
   data.write(tsv)
   data.seek(0)
   s3.upload_fileobj(data, key="test_selection.tsv")
-  return 'It worked!', 200
+
+  return {"success": True, "items": {}}
