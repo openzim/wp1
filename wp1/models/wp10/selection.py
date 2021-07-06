@@ -1,9 +1,12 @@
 import datetime
+import logging
 
 import attr
 
 from wp1.constants import TS_FORMAT_WP10
 from wp1.timestamp import utcnow
+
+logger = logging.getLogger(__name__)
 
 
 @attr.s
