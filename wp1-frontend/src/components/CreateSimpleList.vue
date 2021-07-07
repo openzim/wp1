@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div v-if="isLoggedIn">
     <div>
       <SecondaryNav></SecondaryNav>
     </div>
@@ -85,12 +85,17 @@
       </div>
     </div>
   </div>
+  <div v-else>
+    <loginRequired></loginRequired>
+  </div>
 </template>
 
 <script>
 import SecondaryNav from './SecondaryNav.vue';
+import loginRequired from './loginRequired';
+
 export default {
-  components: { SecondaryNav },
+  components: { SecondaryNav, loginRequired },
   name: 'CreateSimpleLists',
   data: function() {
     return {
@@ -100,6 +105,11 @@ export default {
       invalid_article_names: '',
       forbidden_chars: ''
     };
+  },
+  computed: {
+    isLoggedIn: function() {
+      return this.$root.$data.isLoggedIn;
+    }
   },
   created: function() {
     this.getWikiProjects();
@@ -127,6 +137,7 @@ export default {
         {
           headers: { 'Content-Type': 'application/json' },
           method: 'post',
+          credentials: 'include',
           body: JSON.stringify(article_detail)
         }
       );

@@ -62,22 +62,19 @@
     </div>
   </div>
   <div v-else>
-    <h2 class="row justify-content-center pt-5">
-      Please Log In To Continue
-    </h2>
-    <a class="row justify-content-center pt-2" :href="this.loginUrl"
-      ><button type="button" class="btn btn-primary">Login</button></a
-    >
+    <loginRequired></loginRequired>
   </div>
 </template>
 
 <script>
 import Autocomplete from './Autocomplete.vue';
+import loginRequired from './loginRequired.vue';
 
 export default {
   name: 'updatepage',
   components: {
-    Autocomplete
+    Autocomplete,
+    loginRequired
   },
   props: ['incomingSearch'],
   data: function() {
@@ -87,8 +84,7 @@ export default {
       pollingId: 0,
       progressCurrent: null,
       progressTotal: null,
-      jobStatusEnum: null,
-      loginUrl: `${process.env.VUE_APP_API_URL}/oauth/initiate?next=update`
+      jobStatusEnum: null
     };
   },
   computed: {
