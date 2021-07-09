@@ -1,14 +1,24 @@
-.card-header {
+.card-header-select {
   background-color: transparent;
   border: none;
 }
 
-.card {
+.card-select {
   border: none;
 }
 
-.card-body {
+.card-body-select {
   border-bottom: 1px solid rgba(0, 0, 0, 0.125);
   border-top: 1px solid rgba(0, 0, 0, 0.125);
   display: flex;
+}
+
+.input {
+  width: 276px;
+}
+
+@media (max-width: 443px) {
+  .input {
+    width: 80%;
+  }
 }
