@@ -4,7 +4,7 @@ import logging
 
 import attr
 
-from wp1.constants import TS_FORMAT_WP10
+from wp1.constants import TS_FORMAT
 from wp1.timestamp import utcnow
 
 logger = logging.getLogger(__name__)
@@ -40,14 +40,14 @@ class Selection:
   @property
   def last_generated_dt(self):
     return datetime.datetime.strptime(self.s_last_generated.decode('utf-8'),
-                                      TS_FORMAT_WP10)
+                                      TS_FORMAT)
 
   def set_last_generated_dt(self, dt):
     """Sets the last_generated field using a datetime.datetime object"""
     if dt is None:
       logger.warning('Attempt to set selection last_generated to None ignored')
       return
-    self.s_last_generated = dt.strftime(TS_FORMAT_WP10).encode('utf-8')
+    self.s_last_generated = dt.strftime(TS_FORMAT).encode('utf-8')
 
   def set_last_generated_now(self):
     """Sets the last_generated field to a timestamp that is equal to now"""
@@ -57,14 +57,14 @@ class Selection:
   @property
   def created_at_dt(self):
     return datetime.datetime.strptime(self.s_created_at.decode('utf-8'),
-                                      TS_FORMAT_WP10)
+                                      TS_FORMAT)
 
   def set_created_at_dt(self, dt):
     """Sets the created_at field using a datetime.datetime object"""
     if dt is None:
       logger.warning('Attempt to set selection created_at to None ignored')
       return
-    self.s_created_at = dt.strftime(TS_FORMAT_WP10).encode('utf-8')
+    self.s_created_at = dt.strftime(TS_FORMAT).encode('utf-8')
 
   def set_created_at_now(self):
     """Sets the created_at field to a timestamp that is equal to now"""
@@ -73,9 +73,11 @@ class Selection:
   def calculate_from_id(self, id_):
     """Sets the s_id and the derived s_hash and s_object_key for this selection."""
     if id_ is None:
-      raise ValueError('Cannot calculate Selection values with None id')
+      raise ValueError('Cannot calculate Selection values if given id is None')
     if self.s_user_id is None:
       raise ValueError('Cannot calculate Selection values if s_user_id is None')
+    if self.s_model is None:
+      raise ValueError('Cannot calculate Selection values if s_model is None')
 
     self.s_id = id_
     self.s_hash = hashlib.md5(

@@ -6,7 +6,7 @@ from flask import appcontext_pushed, g
 import fakeredis
 import pymysql
 
-from wp1.base_db_test import parse_sql
+from wp1.base_db_test import parse_sql, get_storage_mock
 from wp1.web.app import create_app
 
 
@@ -106,11 +106,7 @@ class BaseWebTestcase(unittest.TestCase):
     def set_storage():
 
       def handler(sender, **kwargs):
-        mock_storage = MagicMock()
-        mock_storage.bucket_name.encode = MagicMock(
-            return_value=b'test-bucket-name')
-        mock_storage.region.encode = MagicMock(return_value=b'test-region')
-        g.storage = mock_storage
+        g.storage = get_storage_mock()
 
       with appcontext_pushed.connected_to(handler, app):
         yield

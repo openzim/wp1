@@ -1,5 +1,6 @@
 import importlib
 import unittest
+from unittest.mock import MagicMock
 import sys
 
 import pymysql
@@ -123,3 +124,10 @@ def get_test_connect_creds():
       },
       Environment.PRODUCTION: {}
   }
+
+
+def get_storage_mock():
+  mock_storage = MagicMock()
+  mock_storage.bucket_name.encode = MagicMock(return_value=b'test-bucket-name')
+  mock_storage.region.encode = MagicMock(return_value=b'test-region')
+  return mock_storage

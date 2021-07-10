@@ -82,7 +82,7 @@ def _upload_to_storage(s3, selection):
 
 def persist_simple_list(wp10db, s3, name, user_id, project, article_names):
   selection = Selection(name.encode('utf-8'),
-                        user_id,
+                        int(user_id),
                         project.encode('utf-8'),
                         s_model=SIMPLE_LIST_MODEL.encode('utf-8'))
   selection.set_last_generated_now()
