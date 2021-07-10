@@ -86,16 +86,16 @@
     </div>
   </div>
   <div v-else>
-    <loginRequired></loginRequired>
+    <LoginRequired></LoginRequired>
   </div>
 </template>
 
 <script>
 import SecondaryNav from './SecondaryNav.vue';
-import loginRequired from './loginRequired';
+import LoginRequired from './LoginRequired';
 
 export default {
-  components: { SecondaryNav, loginRequired },
+  components: { SecondaryNav, LoginRequired },
   name: 'CreateSimpleLists',
   data: function() {
     return {
