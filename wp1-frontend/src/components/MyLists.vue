@@ -10,7 +10,8 @@
             {{ item.name }}
           </div>
           <div class="card-body ">
-            <div class="input-group input mx-auto mb-3">
+            <h5 class="card-title">{{ item.project }}</h5>
+            <div class="input-group col-sm-5 mx-auto mb-3">
               <input :id="item.name" :value="item.link" class="form-control" />
               <div class="input-group-append">
                 <button
@@ -21,13 +22,14 @@
                 </button>
               </div>
             </div>
-
-            <a :href="item.link" class="btn btn-primary m-2" download
-              >Download .TSV</a
-            >
-            <a :href="item.link" class="btn btn-secondary" download
-              >Download .XLS</a
-            >
+            <div class="col-sm-8 mx-auto">
+              <a :href="item.link" class="btn btn-primary m-2" download
+                >Download .TSV</a
+              >
+              <a :href="item.link" class="btn btn-secondary" download
+                >Download .XLS</a
+              >
+            </div>
           </div>
           <div class="card-footer text-muted">
             {{ item.timstamp }}
@@ -43,35 +45,45 @@
 
 <script>
 import SecondaryNav from './SecondaryNav.vue';
+import LoginRequired from './LoginRequired.vue';
 
 export default {
-  components: { SecondaryNav },
+  components: { SecondaryNav, LoginRequired },
   name: 'MyLists',
   data: function() {
     return {
       list: [
         {
           name: 'My-List1',
+          project: 'Project1',
           link: '<URL1>',
           timstamp: '2 days ago '
         },
         {
           name: 'My-List2',
+          project: 'Project2',
           link: '<URL2>',
           timstamp: '2 days ago'
         },
         {
           name: 'My-List3',
+          project: 'Project3',
           link: '<URL3>',
           timstamp: '2 days ago'
         },
         {
           name: 'My-List4',
+          project: 'Project4',
           link: '<URL4>',
           timstamp: '2 days ago'
         }
       ]
     };
+  },
+  computed: {
+    isLoggedIn: function() {
+      return this.$root.$data.isLoggedIn;
+    }
   },
   methods: {
     copyText: function(id) {
