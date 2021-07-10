@@ -135,7 +135,6 @@ export default {
       const response = await fetch(
         `${process.env.VUE_APP_API_URL}/selection/simple`,
         {
-          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           method: 'post',
           credentials: 'include',

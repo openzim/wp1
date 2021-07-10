@@ -80,7 +80,7 @@ class Selection:
       raise ValueError('Cannot calculate Selection values if s_model is None')
 
     self.s_id = id_
-    self.s_hash = hashlib.md5(
+    self.s_hash = hashlib.sha256(
         ('%s%s' %
          (SECRET_OBJECT_SALT, id_)).encode('utf-8')).hexdigest().encode('utf-8')
     self.s_object_key = b'selections/%s/%s/%s.tsv' % (
