@@ -4,6 +4,13 @@ from wp1.web.app import create_app
 
 class ProjectTest(unittest.TestCase):
 
+  USER = {
+      'access_token': 'access_token',
+      'identity': {
+          'username': 'WP1_user',
+          'sub': '1234'
+      }
+  }
   invalid_article_name = "Eiffel_Tower\nStatue of#Liberty"
   unsuccessful_response = {
       "success": False,
@@ -19,6 +26,8 @@ class ProjectTest(unittest.TestCase):
   def test_create_unsuccessful(self):
     self.app = create_app()
     with self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
       rv = client.post('/v1/selection/simple',
                        json={
                            'articles': self.invalid_article_name,
@@ -30,6 +39,8 @@ class ProjectTest(unittest.TestCase):
   def test_create_successful(self):
     self.app = create_app()
     with self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
       rv = client.post('/v1/selection/simple',
                        json={
                            'articles': self.valid_article_name,
@@ -41,26 +52,43 @@ class ProjectTest(unittest.TestCase):
   def test_empty_article(self):
     self.app = create_app()
     with self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
       rv = client.post('/v1/selection/simple',
                        json={
                            'articles': '',
                            'list_name': 'my_list',
                            'project': 'my_project'
                        })
-    self.assertEqual(rv.status, '400 BAD REQUEST')
+      self.assertEqual(rv.status, '400 BAD REQUEST')
 
   def test_empty_list(self):
     self.app = create_app()
     with self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
       rv = client.post('/v1/selection/simple',
                        json={
                            'articles': self.valid_article_name,
                            'list_name': '',
                            'project': 'my_project'
                        })
-    self.assertEqual(rv.status, '400 BAD REQUEST')
+      self.assertEqual(rv.status, '400 BAD REQUEST')
 
   def test_empty_project(self):
+    self.app = create_app()
+    with self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/selection/simple',
+                       json={
+                           'articles': self.valid_article_name,
+                           'list_name': 'my_list',
+                           'project': ''
+                       })
+      self.assertEqual(rv.status, '400 BAD REQUEST')
+
+  def test_selection_unauthorized_user(self):
     self.app = create_app()
     with self.app.test_client() as client:
       rv = client.post('/v1/selection/simple',
@@ -69,4 +97,4 @@ class ProjectTest(unittest.TestCase):
                            'list_name': 'my_list',
                            'project': ''
                        })
-    self.assertEqual(rv.status, '400 BAD REQUEST')
+    self.assertEqual('401 UNAUTHORIZED', rv.status)

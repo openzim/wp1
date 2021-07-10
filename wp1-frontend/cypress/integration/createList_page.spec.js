@@ -1,8 +1,9 @@
 /// <reference types="Cypress" />
 
-describe('the CreateSimpleList page', () => {
+describe('when the user is logged in', () => {
   beforeEach(() => {
     cy.intercept('v1/sites/', { fixture: 'sites.json' });
+    cy.intercept('v1/oauth/identify', { fixture: 'identity.json' });
   });
 
   it('successfully loads', () => {
@@ -45,9 +46,8 @@ describe('the CreateSimpleList page', () => {
     cy.get('#items > .form-control')
       .click()
       .type('Eiffel_Tower\nStatue of#Liberty');
-    cy.intercept('v1/selection/').as('selection');
+    cy.intercept('v1/selection/simple', { fixture: 'save_list_failure.json' });
     cy.get('#saveListButton').click();
-    cy.wait('@selection');
     cy.get('#items > .form-control').should('have.value', 'Eiffel_Tower');
     cy.get('#invalid_articles').contains(
       'Following items are not valid for selection lists because they have #'
@@ -66,9 +66,19 @@ describe('the CreateSimpleList page', () => {
     cy.get('#items > .form-control')
       .click()
       .type('Eiffel_Tower\nStatue of Liberty');
-    cy.intercept('v1/selection/').as('selection');
+    cy.intercept('v1/selection/simple', { fixture: 'save_list_success.json' });
     cy.get('#saveListButton').click();
-    cy.wait('@selection');
     cy.url().should('eq', 'http://localhost:3000/#/selection/user');
   });
-});
+}),
+  describe('when the user is not logged in', () => {
+    beforeEach(() => {
+      cy.intercept('v1/sites/', { fixture: 'sites.json' });
+    });
+
+    it('opens login page', () => {
+      cy.visit('/#/selection/lists/simple/new');
+      cy.contains('Please Log In To Continue');
+      cy.get('.pt-2 > .btn');
+    });
+  });
