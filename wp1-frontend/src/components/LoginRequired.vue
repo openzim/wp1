@@ -11,7 +11,7 @@
 
 <script>
 export default {
-  name: 'loginRequired',
+  name: 'LoginRequired',
   data: function() {
     return {
       loginInitiateUrl:

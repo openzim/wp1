@@ -62,19 +62,19 @@
     </div>
   </div>
   <div v-else>
-    <loginRequired></loginRequired>
+    <LoginRequired></LoginRequired>
   </div>
 </template>
 
 <script>
 import Autocomplete from './Autocomplete.vue';
-import loginRequired from './loginRequired.vue';
+import LoginRequired from './LoginRequired';
 
 export default {
   name: 'updatepage',
   components: {
     Autocomplete,
-    loginRequired
+    LoginRequired
   },
   props: ['incomingSearch'],
   data: function() {
