@@ -91,6 +91,14 @@ class PersistSelectionTest(BaseWpOneDbTest):
     key = args[1]['key']
     self.assertEqual('selections/1234/abcd.tsv', key)
 
+  def test_persist_simple_list_deletes_selection_on_error(self):
+    self.s3_mock.upload_fileobj.side_effect = ValueError()
+    self.assertRaises(
+        ValueError,
+        lambda: logic_selection.persist_simple_list(*self.persist_args))
+    actual = self.get_first_selection()
+    self.assertIsNone(actual)
+
   @patch('wp1.models.wp10.selection.utcnow',
          return_value=datetime(2018, 12, 25, 5, 55, 55))
   def test_persist_simple_list_sets_last_generated(self, mock_utcnow):
