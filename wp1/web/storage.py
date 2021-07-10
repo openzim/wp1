@@ -20,6 +20,9 @@ def has_storage():
 
 def get_storage():
   if not has_storage():
+    if CREDENTIALS is None or ENV is None or CREDENTIALS[ENV].get(
+        'STORAGE') is None:
+      raise ValueError('storage (s3) credentials in ENV=%s are None' % ENV)
     creds = CREDENTIALS[ENV]['STORAGE']
     connect_str = (
         'https://s3.us-west-1.wasabisys.com/'

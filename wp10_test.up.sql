@@ -88,8 +88,22 @@ CREATE TABLE `global_rankings` (
 );
 
 CREATE TABLE `users` (
-  `u_id` int(8) unsigned NOT NULL,
+  `u_id` INTEGER PRIMARY KEY,
   `u_username` varchar(255) DEFAULT NULL
+);
+
+CREATE TABLE `selections` (
+  `s_id` INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
+  `s_name` VARBINARY(255) NOT NULL,
+  `s_user_id` INTEGER NOT NULL,
+  `s_hash` VARBINARY(255),
+  `s_project` VARBINARY(255) NOT NULL,
+  `s_model` VARBINARY(255),
+  `s_region` VARBINARY(255),
+  `s_bucket` VARBINARY(255),
+  `s_object_key` VARBINARY(255),
+  `s_last_generated` BINARY(20),
+  `s_created_at` BINARY(20)
 );
 
 INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'Unknown-Class', 0);

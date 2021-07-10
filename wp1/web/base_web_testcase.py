@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 import unittest
+from unittest.mock import MagicMock
 
 from flask import appcontext_pushed, g
 import fakeredis
@@ -101,5 +102,18 @@ class BaseWebTestcase(unittest.TestCase):
       with appcontext_pushed.connected_to(handler, app):
         yield
 
-    with set_wiki_db(), set_wp10_db(), set_redis():
+    @contextmanager
+    def set_storage():
+
+      def handler(sender, **kwargs):
+        mock_storage = MagicMock()
+        mock_storage.bucket_name.encode = MagicMock(
+            return_value=b'test-bucket-name')
+        mock_storage.region.encode = MagicMock(return_value=b'test-region')
+        g.storage = mock_storage
+
+      with appcontext_pushed.connected_to(handler, app):
+        yield
+
+    with set_wiki_db(), set_wp10_db(), set_redis(), set_storage():
       yield

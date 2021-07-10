@@ -22,7 +22,8 @@ RETRY_TIME_SECONDS = 5
 def connect(db_name):
   creds = CREDENTIALS[ENV].get(db_name)
   if creds is None:
-    raise ValueError('db credentials for %r in ENV=%s are None')
+    raise ValueError('db credentials for db_name=%s in ENV=%s are None' %
+                     (db_name, ENV))
 
   kwargs = {
       'charset': None,

@@ -12,7 +12,8 @@ class ModelsSelectionTest(BaseWpOneDbTest):
     self.selection = Selection(s_name='My List',
                                s_user_id=100,
                                s_project='en.wikipedia.org',
-                               s_last_generated=b'20180929123055')
+                               s_last_generated=b'20180929123055',
+                               s_created_at=b'20180929123055')
 
   def test_last_generated_dt(self):
     dt = self.selection.last_generated_dt

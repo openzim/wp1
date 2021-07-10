@@ -4,7 +4,8 @@ from wp1.logic import selection
 
 class ValidateArticleNameTest(unittest.TestCase):
 
-  items = '''Eiffel_Tower     \nStatue of Liberty
+  items = '''Eiffel_Tower
+Statue of Liberty
 This is supposedly an article \
 name but its way too long to actually be \
 one because it contains more than 256 characters \
