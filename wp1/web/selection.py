@@ -6,6 +6,7 @@ selection = flask.Blueprint('selection', __name__)
 
 
 @selection.route('/simple', methods=['POST'])
+@authenticate
 def create():
   data = flask.request.get_json()
   list_name = data['list_name']
