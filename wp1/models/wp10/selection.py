@@ -18,9 +18,9 @@ class Selection:
   s_content_type = attr.ib()
   s_updated_at = attr.ib()
 
-  # The timestamp parsed into a datetime.datetime object.
   @property
   def updated_at_dt(self):
+    """The timestamp parsed into a datetime.datetime object."""
     return datetime.datetime.strptime(self.s_updated_at.decode('utf-8'),
                                       TS_FORMAT_WP10)
 
