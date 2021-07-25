@@ -32,7 +32,7 @@
             </div>
           </div>
           <div class="card-footer text-muted">
-            {{ item.timstamp }}
+            {{ item.timestamp }}
           </div>
         </div>
       </div>
@@ -57,25 +57,25 @@ export default {
           name: 'My-List1',
           project: 'Project1',
           link: '<URL1>',
-          timstamp: '2 days ago '
+          timestamp: '2 days ago '
         },
         {
           name: 'My-List2',
           project: 'Project2',
           link: '<URL2>',
-          timstamp: '2 days ago'
+          timestamp: '2 days ago'
         },
         {
           name: 'My-List3',
           project: 'Project3',
           link: '<URL3>',
-          timstamp: '2 days ago'
+          timestamp: '2 days ago'
         },
         {
           name: 'My-List4',
           project: 'Project4',
           link: '<URL4>',
-          timstamp: '2 days ago'
+          timestamp: '2 days ago'
         }
       ]
     };
