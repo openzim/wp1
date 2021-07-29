@@ -7,8 +7,12 @@
         role="tablist"
         aria-multiselectable="true"
       >
-        <div class="card mb-2">
-          <div class="card-header p-0" role="tab" id="collapse-page-select">
+        <div class="card card-select mb-2">
+          <div
+            class="card-header card-header-select p-0"
+            role="tab"
+            id="collapse-page-select"
+          >
             <a
               data-toggle="collapse"
               data-parent="#accordion-ps"
@@ -28,7 +32,7 @@
             aria-labelledby="headingOne1"
             data-parent="#accordion-ps"
           >
-            <div class="card-body form-inline p-2">
+            <div class="card-body card-body-select form-inline p-2">
               <div>
                 Show
                 <input

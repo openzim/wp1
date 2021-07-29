@@ -7,8 +7,12 @@
         role="tablist"
         aria-multiselectable="true"
       >
-        <div class="card mb-2">
-          <div class="card-header p-0" role="tab" id="collapse-rating-select">
+        <div class="card card-select mb-2">
+          <div
+            class="card-header card-header-select p-0"
+            role="tab"
+            id="collapse-rating-select"
+          >
             <a
               data-toggle="collapse"
               data-parent="#accordion-nf"
@@ -26,7 +30,7 @@
             :class="['collapse', startOpen() ? 'show' : '']"
             data-parent="#accordion-nf"
           >
-            <div class="card-body form-inline p-2">
+            <div class="card-body card-body-select form-inline p-2">
               <div>
                 Article name must contain:
                 <input
