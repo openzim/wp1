@@ -16,6 +16,7 @@ class Builder:
   b_name = attr.ib()
   b_user_id = attr.ib()
   b_project = attr.ib()
+  b_model = attr.ib()
   b_params = attr.ib()
   # The ID for Builders can be auto-assigned, so it is not required. See the migration file.
   b_id = attr.ib(default=None)

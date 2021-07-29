@@ -34,3 +34,7 @@ WIKI_BASE = 'https://en.wikipedia.org/wiki/'
 FRONTEND_WIKI_BASE = 'https://en.wikipedia.org/w/'
 
 PAGE_SIZE = 100
+
+CONTENT_TYPE_TO_EXT = {
+    'text/tab-seperated-values': 'tsv',
+}
