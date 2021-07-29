@@ -12,6 +12,7 @@ class ModelsBuilderTest(BaseWpOneDbTest):
     self.builder = Builder(b_name='My List',
                            b_user_id=100,
                            b_project='en.wikipedia.org',
+                           b_model='wp1.selection.models.simple',
                            b_params='{}',
                            b_created_at=b'20180929123055',
                            b_updated_at=b'20190830112844')
