@@ -41,7 +41,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
     self.assertEqual(actual.s_builder_id, 100)
 
   @patch('wp1.models.wp10.selection.uuid.uuid4', return_value='abcd-1234')
-  def test_materialize_selection_id(self, mock_setid):
+  def test_materialize_selection_id(self, mock_uuid4):
     self.test_builder.materialize(self.s3, self.wp10db, self.builder,
                                   'text/tab-separated-values')
     actual = _get_first_selection(self.wp10db)
