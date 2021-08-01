@@ -92,6 +92,24 @@ CREATE TABLE `users` (
   `u_username` varchar(255) DEFAULT NULL
 );
 
+CREATE TABLE `builders` (
+  s_id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
+  s_name VARBINARY(255) NOT NULL,
+  s_user_id INTEGER NOT NULL,
+  s_project VARBINARY(255) NOT NULL,
+  s_model VARBINARY(255) NOT NULL,
+  s_params BLOB,
+  s_created_at BINARY(20),
+  s_updated_at BINARY(20)
+);
+
+CREATE TABLE `selections` (
+  s_id VARBINARY(255) NOT NULL PRIMARY KEY,
+  s_builder_id INTEGER NOT NULL,
+  s_content_type VARBINARY(255) NOT NULL,
+  s_updated_at BINARY(20) NOT NULL
+);
+
 INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'Unknown-Class', 0);
 INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'NA-Class', 50);
 INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'Low-Class', 100);
