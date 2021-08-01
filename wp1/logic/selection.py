@@ -1,5 +1,7 @@
 import urllib.parse
 
+import attr
+
 
 def validate_list(items):
   item_list = items.split("\n")
@@ -29,3 +31,13 @@ def validate_list(items):
           "").replace("https://en.wikipedia.org/w/index.php?title=", "")
       valid_article_names.append(article_name)
   return (valid_article_names, invalid_article_names, forbiden_chars)
+
+
+def insert_selection(wp10db, selection):
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        '''INSERT INTO selections
+      (s_id, s_builder_id, s_content_type, s_updated_at)
+      VALUES (%(s_id)s, %(s_builder_id)s, %(s_content_type)s, %(s_updated_at)s)
+    ''', attr.asdict(selection))
+  wp10db.commit()

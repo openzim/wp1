@@ -1,5 +1,6 @@
 import datetime
 import logging
+import uuid
 
 import attr
 
@@ -13,10 +14,13 @@ logger = logging.getLogger(__name__)
 class Selection:
   table_name = 'selections'
 
-  s_id = attr.ib()
   s_builder_id = attr.ib()
   s_content_type = attr.ib()
-  s_updated_at = attr.ib()
+  # This is required, but is set by the set_id method below.
+  s_id = attr.ib(default=None)
+  s_updated_at = attr.ib(default=None)
+  # The data that is stored in the backend s3-like storage. Not saved to the database.
+  data = attr.ib(default=None)
 
   @property
   def updated_at_dt(self):
@@ -34,3 +38,6 @@ class Selection:
   def set_updated_at_now(self):
     """Sets the updated_at field to a timestamp that is equal to now"""
     self.set_updated_at_dt(utcnow())
+
+  def set_id(self):
+    self.s_id = str(uuid.uuid4()).encode()
