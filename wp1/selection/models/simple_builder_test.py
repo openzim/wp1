@@ -1,8 +1,8 @@
 import unittest
-from wp1.selection.simple_builder import SimpleBuilder
+from wp1.selection.models.simple_builder import SimpleBuilder
 
 
-class ValidateArticleNameTest(unittest.TestCase):
+class SimpleBuilderTest(unittest.TestCase):
 
   params = {
       'list': [
@@ -37,8 +37,8 @@ of text than an actual article name.', 'Not_an_<article_name>',
         '_of_text_than_an_actual_article_name.', 'Not_an_<article_name>',
         'https://en.wikipedia.org/wiki/Liberty#Philosophy'
     ], [
-        'The list contained the following invalid characters: ',
-        'length greater than 256 bytes', '<', '>', '#'
+        'The list contained an item longer than 256 bytes',
+        'The list contained the following invalid characters: <, >, #'
     ])
     actual = simple_builder_test.validate(**self.params)
     self.assertEqual(expected, actual)
@@ -55,11 +55,18 @@ of text than an actual article name.', 'Not_an_<article_name>',
     actual = simple_test_builder.build('text/tab-separated-values', **params)
     self.assertEqual(b'Eiffel_Tower\nStatue#of_Liberty\nLibertas', actual)
 
+  def test_build_unrecognized_content_type(self):
+    simple_test_builder = SimpleBuilder()
+    actual = simple_test_builder.build('text/tab-separated-values',
+                                       **self.params)
+    with self.assertRaises(ValueError):
+      simple_test_builder.build('invalid_content_type', **self.params)
+
   def test_build_incorrect_params(self):
     simple_test_builder = SimpleBuilder()
     params = {'items': ['Eiffel_Tower', 'Statue#of_Liberty', 'Libertas']}
-    actual = simple_test_builder.build('text/tab-separated-values', **params)
-    self.assertRaises(KeyError)
+    with self.assertRaises(ValueError):
+      simple_test_builder.build('text/tab-separated-values', **params)
 
   def test_build_unwanted_params(self):
     simple_test_builder = SimpleBuilder()
@@ -67,5 +74,5 @@ of text than an actual article name.', 'Not_an_<article_name>',
         'list': ['Eiffel_Tower', 'Statue#of_Liberty', 'Libertas'],
         'project': 'project_name'
     }
-    actual = simple_test_builder.build('text/tab-separated-values', **params)
-    self.assertRaises(ValueError)
+    with self.assertRaises(ValueError):
+      simple_test_builder.build('text/tab-separated-values', **params)
