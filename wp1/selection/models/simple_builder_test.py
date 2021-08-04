@@ -22,6 +22,32 @@ of text than an actual article name.', 'Not_an_<article_name>',
       ]
   }
 
+  def test_build(self):
+    simple_test_builder = SimpleBuilder()
+    params = {'list': ['Eiffel_Tower', 'Statue#of_Liberty', 'Libertas']}
+    actual = simple_test_builder.build('text/tab-separated-values', **params)
+    self.assertEqual(b'Eiffel_Tower\nStatue#of_Liberty\nLibertas', actual)
+
+  def test_build_unrecognized_content_type(self):
+    simple_test_builder = SimpleBuilder()
+    with self.assertRaises(ValueError):
+      simple_test_builder.build('invalid_content_type', **self.params)
+
+  def test_build_incorrect_params(self):
+    simple_test_builder = SimpleBuilder()
+    params = {'items': ['Eiffel_Tower', 'Statue#of_Liberty', 'Libertas']}
+    with self.assertRaises(ValueError):
+      simple_test_builder.build('text/tab-separated-values', **params)
+
+  def test_build_unwanted_params(self):
+    simple_test_builder = SimpleBuilder()
+    params = {
+        'list': ['Eiffel_Tower', 'Statue#of_Liberty', 'Libertas'],
+        'project': 'project_name'
+    }
+    with self.assertRaises(ValueError):
+      simple_test_builder.build('text/tab-separated-values', **params)
+
   def test_validate_items(self):
     simple_builder_test = SimpleBuilder()
     expected = ([
@@ -48,29 +74,3 @@ of text than an actual article name.', 'Not_an_<article_name>',
     params = {'list': []}
     actual = simple_test_builder.validate(**params)
     self.assertEqual(([], [], ['Empty List']), actual)
-
-  def test_build(self):
-    simple_test_builder = SimpleBuilder()
-    params = {'list': ['Eiffel_Tower', 'Statue#of_Liberty', 'Libertas']}
-    actual = simple_test_builder.build('text/tab-separated-values', **params)
-    self.assertEqual(b'Eiffel_Tower\nStatue#of_Liberty\nLibertas', actual)
-
-  def test_build_unrecognized_content_type(self):
-    simple_test_builder = SimpleBuilder()
-    with self.assertRaises(ValueError):
-      simple_test_builder.build('invalid_content_type', **self.params)
-
-  def test_build_incorrect_params(self):
-    simple_test_builder = SimpleBuilder()
-    params = {'items': ['Eiffel_Tower', 'Statue#of_Liberty', 'Libertas']}
-    with self.assertRaises(ValueError):
-      simple_test_builder.build('text/tab-separated-values', **params)
-
-  def test_build_unwanted_params(self):
-    simple_test_builder = SimpleBuilder()
-    params = {
-        'list': ['Eiffel_Tower', 'Statue#of_Liberty', 'Libertas'],
-        'project': 'project_name'
-    }
-    with self.assertRaises(ValueError):
-      simple_test_builder.build('text/tab-separated-values', **params)
