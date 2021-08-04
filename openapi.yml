@@ -384,7 +384,7 @@ paths:
                         description: List of invalid article names
                         items:
                           type: string
-                      forbidden:
+                      errors:
                         type: array
                         description: List of forbidden characters present in article names
                         items:
