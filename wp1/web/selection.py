@@ -16,14 +16,14 @@ def create():
   if not articles or not list_name or not project:
     flask.abort(400)
   simple_builder = SimpleBuilder()
-  valid_names, invalid_names, forbiden_chars = simple_builder.validate(**params)
+  valid_names, invalid_names, errors = simple_builder.validate(**params)
   if invalid_names:
     return {
         "success": False,
         "items": {
             'valid': valid_names,
             'invalid': invalid_names,
-            "forbiden_chars": forbiden_chars
+            "errors": errors
         }
     }
   return {"success": True, "items": {}}
