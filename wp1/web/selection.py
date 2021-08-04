@@ -12,7 +12,7 @@ def create():
   list_name = data['list_name']
   articles = data['articles']
   project = data['project']
-  params = {'list': articles}
+  params = {'list': articles.split('\n')}
   if not articles or not list_name or not project:
     flask.abort(400)
   simple_builder = SimpleBuilder()
