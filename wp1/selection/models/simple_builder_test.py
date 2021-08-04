@@ -57,8 +57,6 @@ of text than an actual article name.', 'Not_an_<article_name>',
 
   def test_build_unrecognized_content_type(self):
     simple_test_builder = SimpleBuilder()
-    actual = simple_test_builder.build('text/tab-separated-values',
-                                       **self.params)
     with self.assertRaises(ValueError):
       simple_test_builder.build('invalid_content_type', **self.params)
 

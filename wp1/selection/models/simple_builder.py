@@ -1,11 +1,21 @@
 import urllib.parse
-from wp1.constants import CONTENT_TYPE_TO_EXT
 from wp1.selection.abstract_builder import AbstractBuilder
 
 
 class SimpleBuilder(AbstractBuilder):
 
-  def _validate_list(self, **params):
+  def build(self, content_type, **params):
+    if content_type != 'text/tab-separated-values':
+      raise ValueError('Unrecognized content type')
+    if len(params) == 1:
+      if 'list' in params:
+        return '\n'.join(params['list']).encode('utf-8')
+      raise ValueError(
+          f'Missing required param: list, unnecessary argument given: {list(params.keys())[0]}'
+      )
+    raise ValueError('Additional unnecessary params present')
+
+  def validate(self, **params):
     if not params['list']:
       return ([], [], ['Empty List'])
     invalid_article_names = []
@@ -37,17 +47,3 @@ class SimpleBuilder(AbstractBuilder):
       error_msg.append('The list contained the following invalid characters: ' +
                        ', '.join(forbidden_chars))
     return (valid_article_names, invalid_article_names, error_msg)
-
-  def build(self, content_type, **params):
-    if content_type != 'text/tab-separated-values':
-      raise ValueError('Unrecognized content type')
-    if len(params) == 1:
-      if 'list' in params:
-        return '\n'.join(params['list']).encode('utf-8')
-      raise ValueError(
-          f'Missing required param: list, unnecessary argument given: {list(params.keys())[0]}'
-      )
-    raise ValueError('Additional unnecessary params present')
-
-  def validate(self, **params):
-    return self._validate_list(**params)

@@ -1,6 +1,6 @@
+from wp1.selection.models.simple_builder import SimpleBuilder
 import flask
 from wp1.web import authenticate
-import wp1.logic.selection as selections
 
 selection = flask.Blueprint('selection', __name__)
 
@@ -12,10 +12,11 @@ def create():
   list_name = data['list_name']
   articles = data['articles']
   project = data['project']
+  params = {'list': articles}
   if not articles or not list_name or not project:
     flask.abort(400)
-  valid_names, invalid_names, forbiden_chars = selections.validate_list(
-      articles)
+  simple_builder = SimpleBuilder()
+  valid_names, invalid_names, forbiden_chars = simple_builder.validate(**params)
   if invalid_names:
     return {
         "success": False,
