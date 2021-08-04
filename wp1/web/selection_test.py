@@ -17,7 +17,9 @@ class ProjectTest(unittest.TestCase):
       "items": {
           'valid': ['Eiffel_Tower'],
           'invalid': ['Statue_of#Liberty'],
-          'forbiden_chars': ['#']
+          'forbiden_chars': [
+              'The list contained the following invalid characters: #'
+          ]
       }
   }
   valid_article_name = "Eiffel_Tower\nStatue of Liberty"
