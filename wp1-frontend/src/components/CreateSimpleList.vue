@@ -64,8 +64,7 @@
             id="invalid_articles"
             class="form-group m-4"
           >
-            Following items are not valid for selection lists because they have
-            {{ forbidden_chars }}
+            {{ errors }}
             <textarea
               class="form-control my-list is-invalid"
               rows="6"
@@ -103,7 +102,7 @@ export default {
       success: true,
       valid_article_names: '',
       invalid_article_names: '',
-      forbidden_chars: ''
+      errors: ''
     };
   },
   computed: {
@@ -150,9 +149,7 @@ export default {
       parent.$refs.form_group.classList.add('was-validated');
       parent.valid_article_names = data.items.valid.join('\n');
       parent.invalid_article_names = data.items.invalid.join('\n');
-      parent.forbidden_chars = [...new Set(data.items.forbiden_chars)].join(
-        ' , '
-      );
+      parent.errors = data.items.errors.join(', ');
     },
     validationOnBlur: function(event) {
       if (event.target.value) {
