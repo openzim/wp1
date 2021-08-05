@@ -50,7 +50,7 @@ describe('when the user is logged in', () => {
     cy.get('#saveListButton').click();
     cy.get('#items > .form-control').should('have.value', 'Eiffel_Tower');
     cy.get('#invalid_articles').contains(
-      'Following items are not valid for selection lists because they have #'
+      'The list contained the following invalid characters: #'
     );
     cy.get('#invalid_articles > .form-control').should(
       'have.value',
