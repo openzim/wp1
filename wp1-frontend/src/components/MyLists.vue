@@ -90,7 +90,21 @@ export default {
       var copyText = document.getElementById(id);
       copyText.select();
       document.execCommand('copy');
+    },
+    getLists: async function() {
+      const response = await fetch(
+        `${process.env.VUE_APP_API_URL}/selection/simple/lists`,
+        {
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include'
+        }
+      );
+      var data = await response.json();
+      console.log(data);
     }
+  },
+  created: function() {
+    this.getLists();
   }
 };
 </script>

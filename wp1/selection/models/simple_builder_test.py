@@ -1,5 +1,11 @@
+from datetime import datetime
 import unittest
+from unittest.mock import patch
+from wp1.web.app import create_app
 from wp1.selection.models.simple_builder import SimpleBuilder
+from flask import session
+from wp1.models.wp10.builder import Builder
+from wp1.base_db_test import BaseWpOneDbTest
 
 
 class SimpleBuilderTest(unittest.TestCase):
@@ -74,3 +80,37 @@ of text than an actual article name.', 'Not_an_<article_name>',
     params = {'list': []}
     actual = simple_test_builder.validate(**params)
     self.assertEqual(([], [], ['Empty List']), actual)
+
+
+class BuilderDbUpdateTest(BaseWpOneDbTest):
+
+  USER = {
+      'access_token': 'access_token',
+      'identity': {
+          'username': 'WP1_user',
+          'sub': '1234'
+      }
+  }
+
+  def setUp(self):
+    super().setUp()
+
+  @patch('wp1.models.wp10.selection.utcnow',
+         return_value=datetime(2020, 12, 25, 10, 55, 44))
+  def test_insert(self, mock_utcnow):
+    self.app = create_app()
+    data = {
+        'articles': 'article1 \narticle2',
+        'list_name': 'list_name',
+        'project': 'en.wikipedia.org'
+    }
+    with self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+    simple_test_builder = SimpleBuilder()
+    simple_test_builder.insert_builder(data, self.wp10db)
+    with self.wp10db.cursor as cursor:
+      cursor.execute('SELECT * FROM builders')
+      builder = cursor.fetchone()
+      print(builder)
+    self.assertEqual(1, 1)

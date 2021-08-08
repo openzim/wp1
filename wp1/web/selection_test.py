@@ -1,4 +1,6 @@
 import unittest
+from wp1.base_db_test import BaseWpOneDbTest
+from wp1.selection.models.simple_builder import SimpleBuilder
 from wp1.web.app import create_app
 
 
@@ -98,3 +100,26 @@ class ProjectTest(unittest.TestCase):
                            'project': ''
                        })
     self.assertEqual('401 UNAUTHORIZED', rv.status)
+
+
+class BuilderDbUpdateTest(BaseWpOneDbTest):
+
+  data = {
+      'articles': 'article1 \narticle2',
+      'list_name': 'list_name',
+      'project': 'en.wikipedia.org'
+  }
+
+  def setUp(self):
+    super().setUp()
+
+  def test_get_list_data(self):
+    self.app = create_app()
+    simple_builder = SimpleBuilder()
+    simple_builder.insert_builder(self.data, self.wp10db)
+    with self.app.test_client as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.get('/v1/selection/simple/lists')
+      print(rv)
+    self.asserEqual('', rv.get_json())
