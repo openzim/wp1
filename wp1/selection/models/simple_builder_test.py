@@ -1,8 +1,8 @@
-from wp1.base_db_test import BaseWpOneDbTest
+import unittest
 from wp1.selection.models.simple_builder import SimpleBuilder
 
 
-class SimpleBuilderTest(BaseWpOneDbTest):
+class SimpleBuilderTest(unittest.TestCase):
 
   params = {
       'list': [
