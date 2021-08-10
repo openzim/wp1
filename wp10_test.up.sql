@@ -93,14 +93,14 @@ CREATE TABLE `users` (
 );
 
 CREATE TABLE `builders` (
-  s_id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
-  s_name VARBINARY(255) NOT NULL,
-  s_user_id INTEGER NOT NULL,
-  s_project VARBINARY(255) NOT NULL,
-  s_model VARBINARY(255) NOT NULL,
-  s_params BLOB,
-  s_created_at BINARY(20),
-  s_updated_at BINARY(20)
+  b_id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
+  b_name VARBINARY(255) NOT NULL,
+  b_user_id INTEGER NOT NULL,
+  b_project VARBINARY(255) NOT NULL,
+  b_model VARBINARY(255) NOT NULL,
+  b_params BLOB,
+  b_created_at BINARY(20),
+  b_updated_at BINARY(20)
 );
 
 CREATE TABLE `selections` (

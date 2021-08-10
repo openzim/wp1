@@ -1,8 +1,8 @@
-import unittest
 from wp1.web.app import create_app
+from wp1.web.base_web_testcase import BaseWebTestcase
 
 
-class ProjectTest(unittest.TestCase):
+class SelectionTest(BaseWebTestcase):
 
   USER = {
       'access_token': 'access_token',
@@ -38,7 +38,7 @@ class ProjectTest(unittest.TestCase):
 
   def test_create_successful(self):
     self.app = create_app()
-    with self.app.test_client() as client:
+    with self.app.test_client() as client, self.override_db(self.app):
       with client.session_transaction() as sess:
         sess['user'] = self.USER
       rv = client.post('/v1/selection/simple',

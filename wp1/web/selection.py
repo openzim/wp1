@@ -1,6 +1,10 @@
-from wp1.selection.models.simple_builder import SimpleBuilder
 import flask
+from flask import session
+
 from wp1.web import authenticate
+from wp1.web.db import get_db
+from wp1.logic.builder import save_builder
+from wp1.selection.models.simple_builder import SimpleBuilder
 
 selection = flask.Blueprint('selection', __name__)
 
@@ -26,4 +30,7 @@ def create():
             "errors": errors
         }
     }
+  user_id = session['user']['identity']['sub']
+  wp10db = get_db('wp10db')
+  save_builder(wp10db, list_name, user_id, project, articles)
   return {"success": True, "items": {}}
