@@ -1,5 +1,6 @@
 import flask
 from flask import session
+
 from wp1.web import authenticate
 from wp1.web.db import get_db
 from wp1.logic.builder import save_builder
