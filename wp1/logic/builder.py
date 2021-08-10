@@ -1,5 +1,7 @@
-import attr
 import json
+
+import attr
+
 from wp1.models.wp10.builder import Builder
 from wp1.wp10_db import connect as wp10_connect
 
