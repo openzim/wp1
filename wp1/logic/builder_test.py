@@ -1,6 +1,6 @@
 import datetime
 from unittest.mock import patch
-from wp1.logic.builder import save_builder, insert_builder
+from wp1.logic.builder import get_lists, save_builder, insert_builder
 from wp1.models.wp10.builder import Builder
 from wp1.base_db_test import BaseWpOneDbTest
 
@@ -49,3 +49,19 @@ class BuilderDbUpdateTest(BaseWpOneDbTest):
     insert_builder(self.wp10db, self.builder)
     db_lists = self._get_builder_by_user_id()
     self.assertEqual(self.expected, db_lists)
+
+  @patch('wp1.models.wp10.builder.utcnow',
+         return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
+  def test_get_lists(self, mock_utcnow):
+    save_builder(self.wp10db, 'My Builder', '1234', 'en.wikipedia.fake',
+                 'a\nb\nc')
+    db_lists = get_lists(self.wp10db, '1234')
+    self.assertEqual([self.expected], db_lists)
+
+  @patch('wp1.models.wp10.builder.utcnow',
+         return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
+  def test_get_empty_lists(self, mock_utcnow):
+    save_builder(self.wp10db, 'My Builder', '1234', 'en.wikipedia.fake',
+                 'a\nb\nc')
+    db_lists = get_lists(self.wp10db, '0000')
+    self.assertEqual(None, db_lists)

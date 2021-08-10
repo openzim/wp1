@@ -1,3 +1,4 @@
+from wp1.logic.builder import save_builder
 from wp1.web.app import create_app
 from wp1.web.base_web_testcase import BaseWebTestcase
 
@@ -22,6 +23,18 @@ class SelectionTest(BaseWebTestcase):
   }
   valid_article_name = "Eiffel_Tower\nStatue of Liberty"
   successful_response = {"success": True, "items": {}}
+
+  expected = {
+      'list_data': [{
+          'content_type': {
+              'text/tab-seperated-values': 'tsv'
+          },
+          'extension': ['tsv'],
+          'name': 'list_name',
+          'project': 'project_name',
+          'url': 'https://www.example.com/<id>'
+      }]
+  }
 
   def test_create_unsuccessful(self):
     self.app = create_app()
@@ -98,3 +111,13 @@ class SelectionTest(BaseWebTestcase):
                            'project': ''
                        })
     self.assertEqual('401 UNAUTHORIZED', rv.status)
+
+  def test_get_list_data(self):
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      save_builder(self.wp10db, 'list_name', '1234', 'project_name',
+                   'articles_name')
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.get('/v1/selection/simple/lists')
+      self.assertEqual(rv.get_json(), self.expected)

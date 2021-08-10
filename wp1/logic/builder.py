@@ -26,3 +26,13 @@ def insert_builder(wp10db, builder):
         VALUES (%(b_name)s, %(b_user_id)s, %(b_project)s, %(b_params)s, %(b_model)s, %(b_created_at)s, %(b_updated_at)s)
       ''', attr.asdict(builder))
   wp10db.commit()
+
+
+def get_lists(wp10db, user_id):
+  with wp10db.cursor() as cursor:
+    cursor.execute('SELECT * FROM builders WHERE b_user_id=%(b_user_id)s',
+                   {'b_user_id': user_id})
+    db_lists = cursor.fetchall()
+    if not db_lists:
+      return None
+    return db_lists
