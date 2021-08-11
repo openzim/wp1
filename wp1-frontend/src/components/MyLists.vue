@@ -5,11 +5,7 @@
     </div>
     <div class="row">
       <div class=" col-lg-6">
-        <div
-          v-for="item in list"
-          :key="item.project_name"
-          class="card text-center m-5"
-        >
+        <div v-for="item in list" :key="item.id" class="card text-center m-5">
           <div class="card-header">
             {{ item.name }}
           </div>
@@ -29,7 +25,7 @@
                   Copy
                 </button>
               </div>
-              <a :href="item.link" class="btn btn-primary ml-3" download
+              <a :href="item.url" class="btn btn-primary ml-3" download
                 >Download {{ extension }}</a
               >
             </div>

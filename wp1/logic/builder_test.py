@@ -18,6 +18,10 @@ class BuilderDbUpdateTest(BaseWpOneDbTest):
   )
 
   expected = {
+      's_id': 1,
+      's_builder_id': 1,
+      's_content_type': 'tsv',
+      's_updated_at': b'20191225044444\x00\x00\x00\x00\x00\x00',
       'b_id': 1,
       'b_name': b'My Builder',
       'b_user_id': 1234,
@@ -55,6 +59,9 @@ class BuilderDbUpdateTest(BaseWpOneDbTest):
   def test_get_lists(self, mock_utcnow):
     save_builder(self.wp10db, 'My Builder', '1234', 'en.wikipedia.fake',
                  'a\nb\nc')
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+          '''INSERT INTO selections VALUES (1, 1, 'tsv', b'20191225044444')''')
     db_lists = get_lists(self.wp10db, '1234')
     self.assertEqual([self.expected], db_lists)
 
@@ -63,5 +70,8 @@ class BuilderDbUpdateTest(BaseWpOneDbTest):
   def test_get_empty_lists(self, mock_utcnow):
     save_builder(self.wp10db, 'My Builder', '1234', 'en.wikipedia.fake',
                  'a\nb\nc')
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+          '''INSERT INTO selections VALUES (1, 1, "tsv", b'20191225044444')''')
     db_lists = get_lists(self.wp10db, '0000')
     self.assertEqual(None, db_lists)

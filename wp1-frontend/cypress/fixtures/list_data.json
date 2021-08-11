@@ -1,0 +1,11 @@
+{
+  "list_data": [
+    {
+      "id": "123",
+      "name": "list_name",
+      "project": "en.wikipedia.org",
+      "extension": ["tsv"],
+      "url": "https://www.example.com/<id>"
+    }
+  ]
+}

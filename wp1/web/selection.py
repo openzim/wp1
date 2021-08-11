@@ -46,10 +46,12 @@ def get_list_data():
   article_lists = get_lists(wp10db, user_id)
   for article_data in article_lists:
     list_data.append({
+        'id': article_data['b_id'],
         'name': article_data['b_name'].decode('utf-8'),
         'project': article_data['b_project'].decode('utf-8'),
-        'content_type': CONTENT_TYPE_TO_EXT,
+        'content_type': article_data['s_content_type'].decode('utf-8'),
         'extension': list(CONTENT_TYPE_TO_EXT.values()),
         'url': 'https://www.example.com/<id>'
     })
+    print(list_data)
   return {'list_data': list_data}

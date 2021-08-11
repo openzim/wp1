@@ -30,8 +30,10 @@ def insert_builder(wp10db, builder):
 
 def get_lists(wp10db, user_id):
   with wp10db.cursor() as cursor:
-    cursor.execute('SELECT * FROM builders WHERE b_user_id=%(b_user_id)s',
-                   {'b_user_id': user_id})
+    cursor.execute(
+        '''SELECT * FROM selections
+                      INNER JOIN builders ON selections.s_builder_id=builders.b_id
+                      WHERE b_user_id=%(b_user_id)s''', {'b_user_id': user_id})
     db_lists = cursor.fetchall()
     if not db_lists:
       return None
