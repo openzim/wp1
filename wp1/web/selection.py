@@ -53,5 +53,4 @@ def get_list_data():
         'extension': list(CONTENT_TYPE_TO_EXT.values()),
         'url': 'https://www.example.com/<id>'
     })
-    print(list_data)
   return {'list_data': list_data}
