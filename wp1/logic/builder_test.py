@@ -17,10 +17,21 @@ class BuilderDbUpdateTest(BaseWpOneDbTest):
       b_updated_at=b'20191225044444',
   )
 
-  expected = {
-      's_id': 1,
+  expected_builder = {
+      'b_id': 1,
+      'b_name': b'My Builder',
+      'b_user_id': 1234,
+      'b_project': b'en.wikipedia.fake',
+      'b_model': b'wp1.selection.models.simple',
+      'b_params': b'{"list": ["a", "b", "c"]}',
+      'b_created_at': b'20191225044444\x00\x00\x00\x00\x00\x00',
+      'b_updated_at': b'20191225044444\x00\x00\x00\x00\x00\x00',
+  }
+
+  expected_lists = {
+      's_id': b'1',
       's_builder_id': 1,
-      's_content_type': 'tsv',
+      's_content_type': b'tsv',
       's_updated_at': b'20191225044444\x00\x00\x00\x00\x00\x00',
       'b_id': 1,
       'b_name': b'My Builder',
@@ -45,14 +56,14 @@ class BuilderDbUpdateTest(BaseWpOneDbTest):
     save_builder(self.wp10db, 'My Builder', '1234', 'en.wikipedia.fake',
                  'a\nb\nc')
     db_lists = self._get_builder_by_user_id()
-    self.assertEqual(self.expected, db_lists)
+    self.assertEqual(self.expected_builder, db_lists)
 
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
   def test_insert_builder(self, mock_utcnow):
     insert_builder(self.wp10db, self.builder)
     db_lists = self._get_builder_by_user_id()
-    self.assertEqual(self.expected, db_lists)
+    self.assertEqual(self.expected_builder, db_lists)
 
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
@@ -61,9 +72,9 @@ class BuilderDbUpdateTest(BaseWpOneDbTest):
                  'a\nb\nc')
     with self.wp10db.cursor() as cursor:
       cursor.execute(
-          '''INSERT INTO selections VALUES (1, 1, 'tsv', b'20191225044444')''')
+          '''INSERT INTO selections VALUES (1, 1, 'tsv', '20191225044444')''')
     db_lists = get_lists(self.wp10db, '1234')
-    self.assertEqual([self.expected], db_lists)
+    self.assertEqual([self.expected_lists], db_lists)
 
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
@@ -72,6 +83,6 @@ class BuilderDbUpdateTest(BaseWpOneDbTest):
                  'a\nb\nc')
     with self.wp10db.cursor() as cursor:
       cursor.execute(
-          '''INSERT INTO selections VALUES (1, 1, "tsv", b'20191225044444')''')
+          '''INSERT INTO selections VALUES (1, 1, 'tsv', '20191225044444')''')
     db_lists = get_lists(self.wp10db, '0000')
     self.assertEqual(None, db_lists)
