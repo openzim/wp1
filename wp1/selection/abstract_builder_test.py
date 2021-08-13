@@ -53,7 +53,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
     self.test_builder.materialize(self.s3, self.wp10db, self.builder,
                                   'text/tab-separated-values')
     actual = _get_first_selection(self.wp10db)
-    self.assertEqual(actual.s_updated_at, b'20201225105544\00\00\00\00\00\00')
+    self.assertEqual(actual.s_updated_at, b'20201225105544')
 
   def test_materialize_uploads_to_s3(self):
     self.test_builder.materialize(self.s3, self.wp10db, self.builder,
