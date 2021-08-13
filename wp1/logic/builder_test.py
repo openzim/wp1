@@ -24,8 +24,8 @@ class BuilderDbUpdateTest(BaseWpOneDbTest):
       'b_project': b'en.wikipedia.fake',
       'b_model': b'wp1.selection.models.simple',
       'b_params': b'{"list": ["a", "b", "c"]}',
-      'b_created_at': b'20191225044444\x00\x00\x00\x00\x00\x00',
-      'b_updated_at': b'20191225044444\x00\x00\x00\x00\x00\x00',
+      'b_created_at': b'20191225044444',
+      'b_updated_at': b'20191225044444',
   }
 
   def _get_builder_by_user_id(self):
