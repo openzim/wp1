@@ -99,15 +99,15 @@ CREATE TABLE `builders` (
   b_project VARBINARY(255) NOT NULL,
   b_model VARBINARY(255) NOT NULL,
   b_params BLOB,
-  b_created_at BINARY(20),
-  b_updated_at BINARY(20)
+  b_created_at BINARY(14),
+  b_updated_at BINARY(14)
 );
 
 CREATE TABLE `selections` (
   s_id VARBINARY(255) NOT NULL PRIMARY KEY,
   s_builder_id INTEGER NOT NULL,
   s_content_type VARBINARY(255) NOT NULL,
-  s_updated_at BINARY(20) NOT NULL
+  s_updated_at BINARY(14) NOT NULL
 );
 
 INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'Unknown-Class', 0);
