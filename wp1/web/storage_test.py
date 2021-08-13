@@ -111,7 +111,7 @@ class StorageTest(BaseWebTestcase):
   @patch('wp1.web.storage.ENV', Environment.DEVELOPMENT)
   @patch('wp1.web.storage.KiwixStorage')
   def test_get_storage_sets_storage(self, patched_kiwixstorage):
-    with self.app.app_context() as ctx:
+    with self.app.app_context():
       actual = get_storage()
       self.assertTrue(hasattr(flask.g, 'storage'))
 
@@ -130,6 +130,6 @@ class StorageTest(BaseWebTestcase):
   def test_get_storage_returns_s3_from_kiwixstorage(self, patched_kiwixstorage):
     s3_mock = MagicMock()
     patched_kiwixstorage.return_value = s3_mock
-    with self.app.app_context() as ctx:
+    with self.app.app_context():
       actual = get_storage()
       self.assertEqual(s3_mock, actual)
