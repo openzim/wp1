@@ -7,6 +7,7 @@ from rq.job import Job
 
 from wp1 import constants
 from wp1.environment import Environment
+import wp1.logic.builder as logic_builder
 import wp1.logic.project as logic_project
 from wp1.wiki_db import connect as wiki_connect
 from wp1 import logs
@@ -30,6 +31,10 @@ def _get_queues(redis, manual=False):
   upload_q = Queue('%supload' % prefix, connection=redis)
 
   return update_q, upload_q
+
+
+def _get_materializer_queue(redis):
+  return Queue('wp1-materializer', connection=redis)
 
 
 def enqueue_all_projects(redis):
@@ -146,3 +151,13 @@ def enqueue_project(project_name,
   else:
     logger.warning('Skipping enqueuing the upload job because environment is '
                    'not PRODUCTION')
+
+
+def enqueue_materialize(redis, builder_id, builder_cls, content_type):
+  materialize_q = _get_materializer_queue(redis)
+  materialize_q.enqueue(logic_builder.materialize_builder,
+                        builder_cls,
+                        builder_id,
+                        content_type,
+                        job_timeout=constants.JOB_TIMEOUT,
+                        failure_ttl=constants.JOB_FAILURE_TTL)

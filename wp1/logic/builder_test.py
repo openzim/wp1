@@ -1,18 +1,22 @@
 import datetime
-from unittest.mock import patch
-from wp1.logic.builder import save_builder, insert_builder
-from wp1.models.wp10.builder import Builder
+from unittest.mock import patch, MagicMock, ANY
+
+import attr
+
 from wp1.base_db_test import BaseWpOneDbTest
+from wp1.logic.builder import save_builder, insert_builder, get_builder, materialize_builder
+from wp1.models.wp10.builder import Builder
+from wp1.selection.models.simple_builder import SimpleBuilder
 
 
-class BuilderDbUpdateTest(BaseWpOneDbTest):
+class BuilderTest(BaseWpOneDbTest):
 
   builder = Builder(
-      b_name='My Builder',
+      b_name=b'My Builder',
       b_user_id=1234,
-      b_project='en.wikipedia.fake',
-      b_model='wp1.selection.models.simple',
-      b_params='{"list": ["a", "b", "c"]}',
+      b_project=b'en.wikipedia.fake',
+      b_model=b'wp1.selection.models.simple',
+      b_params=b'{"list": ["a", "b", "c"]}',
       b_created_at=b'20191225044444',
       b_updated_at=b'20191225044444',
   )
@@ -27,6 +31,17 @@ class BuilderDbUpdateTest(BaseWpOneDbTest):
       'b_created_at': b'20191225044444',
       'b_updated_at': b'20191225044444',
   }
+
+  def _insert_builder(self):
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+          '''INSERT INTO builders
+         (b_name, b_user_id, b_project, b_params, b_model, b_created_at, b_updated_at)
+         VALUES (%(b_name)s, %(b_user_id)s, %(b_project)s, %(b_params)s, %(b_model)s, %(b_created_at)s, %(b_updated_at)s)
+        ''', attr.asdict(self.builder))
+      id_ = cursor.lastrowid
+    self.wp10db.commit()
+    return id_
 
   def _get_builder_by_user_id(self):
     with self.wp10db.cursor() as cursor:
@@ -49,3 +64,29 @@ class BuilderDbUpdateTest(BaseWpOneDbTest):
     insert_builder(self.wp10db, self.builder)
     db_lists = self._get_builder_by_user_id()
     self.assertEqual(self.expected, db_lists)
+
+  def test_get_builder(self):
+    id_ = self._insert_builder()
+
+    actual = get_builder(self.wp10db, id_)
+    self.builder.b_id = id_
+    self.assertEqual(self.builder, actual)
+
+  @patch('wp1.logic.builder.wp10_connect')
+  @patch('wp1.logic.builder.connect_storage')
+  def test_materialize(self, patched_connect_storage, patched_connect_wp10):
+    patched_connect_wp10.return_value = self.wp10db
+    TestBuilderClass = MagicMock()
+    materialize_mock = MagicMock()
+    TestBuilderClass.return_value = materialize_mock
+
+    orig_close = self.wp10db.close
+    try:
+      self.wp10db.close = lambda: True
+      id_ = self._insert_builder()
+
+      materialize_builder(TestBuilderClass, id_, 'text/tab-separated-values')
+      materialize_mock.materialize.assert_called_once_with(
+          ANY, ANY, self.builder, 'text/tab-separated-values')
+    finally:
+      self.wp10db.close = orig_close

@@ -5,6 +5,7 @@ from wp1.base_redis_test import BaseRedisTest
 from wp1 import constants
 from wp1.environment import Environment
 from wp1 import queues
+from wp1.selection.models.simple_builder import SimpleBuilder
 
 
 class QueuesTest(BaseRedisTest):
@@ -141,3 +142,20 @@ class QueuesTest(BaseRedisTest):
 
     actual = queues.get_project_queue_status(self.redis, b'Water')
     self.assertEqual({'status': 'finished', 'ended_at': expected_end}, actual)
+
+  @patch('wp1.queues.Queue')
+  @patch('wp1.queues.logic_builder.materialize_builder')
+  def test_enqueue_materialize(self, patched_materialize_builder,
+                               patched_queue):
+    materialize_q_mock = MagicMock()
+    patched_queue.return_value = materialize_q_mock
+
+    queues.enqueue_materialize(self.redis, 1234, SimpleBuilder,
+                               'text/tab-separated-values')
+    materialize_q_mock.enqueue.assert_called_once_with(
+        patched_materialize_builder,
+        SimpleBuilder,
+        1234,
+        'text/tab-separated-values',
+        job_timeout=constants.JOB_TIMEOUT,
+        failure_ttl=constants.JOB_FAILURE_TTL)
