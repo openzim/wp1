@@ -16,11 +16,11 @@
               :key="extension"
               class="input-group col-sm-9 mx-auto mb-3"
             >
-              <input :id="item.name" :value="item.url" class="form-control" />
+              <input :id="item.id" :value="item.url" class="form-control" />
               <div class="input-group-append">
                 <button
                   class="btn btn-outline-secondary"
-                  v-on:click="copyText(item.name)"
+                  v-on:click="copyText(item.id)"
                 >
                   Copy
                 </button>

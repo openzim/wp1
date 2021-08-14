@@ -40,17 +40,19 @@ def create():
 @selection.route('/simple/lists')
 @authenticate
 def get_list_data():
-  list_data = []
+  result = {}
   wp10db = get_db('wp10db')
   user_id = session['user']['identity']['sub']
   article_lists = get_lists(wp10db, user_id)
-  for article_data in article_lists:
-    list_data.append({
-        'id': article_data['b_id'],
-        'name': article_data['b_name'].decode('utf-8'),
-        'project': article_data['b_project'].decode('utf-8'),
-        'content_type': article_data['s_content_type'].decode('utf-8'),
-        'extension': list(CONTENT_TYPE_TO_EXT.values()),
-        'url': 'https://www.example.com/<id>'
+  for data in article_lists:
+    if not data['b_id'] in result:
+      result[data['b_id']] = {
+          'name': data['b_name'].decode('utf-8'),
+          'project': data['b_project'].decode('utf-8'),
+          'selections_data': []
+      }
+    result[data['b_id']]['selections_data'].append({
+        'content_type': data['s_content_type'].decode('utf-8'),
+        'selection_url': 'https://www.example.com/<id>'
     })
-  return {'list_data': list_data}
+  return {'list_data': result}

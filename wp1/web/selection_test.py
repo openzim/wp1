@@ -25,14 +25,36 @@ class SelectionTest(BaseWebTestcase):
   successful_response = {"success": True, "items": {}}
 
   expected = {
-      'list_data': [{
-          'content_type': "tsv",
-          'extension': ['tsv'],
-          'name': 'list_name',
-          'project': 'project_name',
-          'url': 'https://www.example.com/<id>',
-          'id': 11
-      }]
+      'list_data': {
+          '1': {
+              'name':
+                  'list_name',
+              'project':
+                  'project_name',
+              'selections_data': [{
+                  'content_type': "tsv",
+                  'selection_url': 'https://www.example.com/<id>'
+              }]
+          }
+      }
+  }
+
+  expected_lists_with_multiple_selections = {
+      'list_data': {
+          '1': {
+              'name':
+                  'list_name',
+              'project':
+                  'project_name',
+              'selections_data': [{
+                  'content_type': "xls",
+                  'selection_url': 'https://www.example.com/<id>'
+              }, {
+                  'content_type': "tsv",
+                  'selection_url': 'https://www.example.com/<id>'
+              }]
+          }
+      }
   }
 
   def test_create_unsuccessful(self):
@@ -111,25 +133,37 @@ class SelectionTest(BaseWebTestcase):
                        })
     self.assertEqual('401 UNAUTHORIZED', rv.status)
 
-  @patch('wp1.web.selection.get_lists',
-         return_value=[{
-             'b_id': 11,
-             'b_name': b'list_name',
-             'b_project': b'project_name',
-             's_content_type': b"tsv",
-         }])
-  def test_get_list_data(self, mockes_utcnow):
+  def test_get_list_data(self):
     self.app = create_app()
     with self.override_db(self.app), self.app.test_client() as client:
       with self.wp10db.cursor() as cursor:
         cursor.execute('''INSERT INTO builders
         (b_name, b_user_id, b_project, b_model)
-        VALUES ('list_name', '11', 'project_name', 'model')
+        VALUES ('list_name', '1234', 'project_name', 'model')
       ''')
         cursor.execute(
             '''INSERT INTO selections VALUES (1, 1, "tsv", '20201225105544')''')
+      self.wp10db.commit()
       with client.session_transaction() as sess:
         sess['user'] = self.USER
       rv = client.get('/v1/selection/simple/lists')
-      print(rv.get_json())
-      self.assertEqual(rv.get_json(), self.expected)
+      self.assertEqual(self.expected, rv.get_json())
+
+  def test_list_with_multiple_selections(self):
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with self.wp10db.cursor() as cursor:
+        cursor.execute('''INSERT INTO builders
+        (b_name, b_user_id, b_project, b_model)
+        VALUES ('list_name', '1234', 'project_name', 'model')
+      ''')
+        cursor.execute(
+            '''INSERT INTO selections VALUES (1, 1, "tsv", '20201225105544')''')
+        cursor.execute(
+            '''INSERT INTO selections VALUES (2, 1, "xls", '20201225105544')''')
+      self.wp10db.commit()
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.get('/v1/selection/simple/lists')
+      self.assertEqual(self.expected_lists_with_multiple_selections,
+                       rv.get_json())
