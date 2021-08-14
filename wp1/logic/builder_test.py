@@ -1,3 +1,4 @@
+import attr
 import datetime
 from unittest.mock import patch
 from wp1.logic.builder import get_lists, save_builder, insert_builder
@@ -68,21 +69,27 @@ class BuilderDbUpdateTest(BaseWpOneDbTest):
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
   def test_get_lists(self, mock_utcnow):
-    save_builder(self.wp10db, 'My Builder', '1234', 'en.wikipedia.fake',
-                 'a\nb\nc')
     with self.wp10db.cursor() as cursor:
       cursor.execute(
           '''INSERT INTO selections VALUES (1, 1, 'tsv', '20191225044444')''')
+      cursor.execute(
+          '''INSERT INTO builders
+        (b_name, b_user_id, b_project, b_params, b_model, b_created_at, b_updated_at)
+        VALUES (%(b_name)s, %(b_user_id)s, %(b_project)s, %(b_params)s, %(b_model)s, %(b_created_at)s, %(b_updated_at)s)
+      ''', attr.asdict(self.builder))
     db_lists = get_lists(self.wp10db, '1234')
     self.assertEqual([self.expected_lists], db_lists)
 
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
   def test_get_empty_lists(self, mock_utcnow):
-    save_builder(self.wp10db, 'My Builder', '1234', 'en.wikipedia.fake',
-                 'a\nb\nc')
     with self.wp10db.cursor() as cursor:
       cursor.execute(
           '''INSERT INTO selections VALUES (1, 1, 'tsv', '20191225044444')''')
+      cursor.execute(
+          '''INSERT INTO builders
+        (b_name, b_user_id, b_project, b_params, b_model, b_created_at, b_updated_at)
+        VALUES (%(b_name)s, %(b_user_id)s, %(b_project)s, %(b_params)s, %(b_model)s, %(b_created_at)s, %(b_updated_at)s)
+      ''', attr.asdict(self.builder))
     db_lists = get_lists(self.wp10db, '0000')
-    self.assertEqual(None, db_lists)
+    self.assertEqual([], db_lists)
