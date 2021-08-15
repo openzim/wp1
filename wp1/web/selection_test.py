@@ -49,12 +49,12 @@ class SelectionTest(BaseWebTestcase):
           'project':
               'project_name',
           'selections': [{
-              's_id': '2',
-              'content_type': 'xls',
-              'selection_url': 'https://www.example.com/<id>'
-          }, {
               's_id': '1',
               'content_type': 'tsv',
+              'selection_url': 'https://www.example.com/<id>'
+          }, {
+              's_id': '2',
+              'content_type': 'xls',
               'selection_url': 'https://www.example.com/<id>'
           }]
       }]
