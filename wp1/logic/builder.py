@@ -35,6 +35,28 @@ def get_lists(wp10db, user_id):
                       RIGHT JOIN builders ON selections.s_builder_id=builders.b_id
                       WHERE b_user_id=%(b_user_id)s''', {'b_user_id': user_id})
     db_lists = cursor.fetchall()
-    if not db_lists:
+    result = {}
+    article_data = []
+    for data in db_lists:
+      if not data['b_id'] in result:
+        result[data['b_id']] = {
+            'name': data['b_name'].decode('utf-8'),
+            'project': data['b_project'].decode('utf-8'),
+            'selections': []
+        }
+      if data['s_id']:
+        result[data['b_id']]['selections'].append({
+            's_id': data['s_id'].decode('utf-8'),
+            'content_type': data['s_content_type'].decode('utf-8'),
+            'selection_url': 'https://www.example.com/<id>'
+        })
+    for list_data, value in result.items():
+      article_data.append({
+          'id': list_data,
+          'name': value['name'],
+          'project': value['project'],
+          'selections': value['selections']
+      })
+    if not article_data:
       return []
-    return db_lists
+    return article_data
