@@ -14,14 +14,13 @@ describe('when the user is logged in', () => {
     cy.get('.row').contains('list_name');
     cy.get('.row').contains('en.wikipedia.org');
     cy.get('.btn-primary').contains('Download tsv');
-    cy.get('#list_name');
   });
 
   it('copy button works', () => {
     cy.get('.input-group-append > .btn')
       .contains('Copy')
       .click();
-    cy.get('#list_name')
+    cy.get('#1')
       .invoke('val')
       .should(val => expect(val).to.eql('https://www.example.com/<id>'));
   });

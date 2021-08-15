@@ -12,21 +12,25 @@
           <div class="card-body ">
             <h5 class="card-title">{{ item.project }}</h5>
             <div
-              v-for="extension in item.extension"
-              :key="extension"
+              v-for="selection in item.selections"
+              :key="selection.s_id"
               class="input-group col-sm-9 mx-auto mb-3"
             >
-              <input :id="item.id" :value="item.url" class="form-control" />
+              <input
+                :id="selection.s_id"
+                :value="selection.selection_url"
+                class="form-control"
+              />
               <div class="input-group-append">
                 <button
                   class="btn btn-outline-secondary"
-                  v-on:click="copyText(item.id)"
+                  v-on:click="copyText(selection.s_id)"
                 >
                   Copy
                 </button>
               </div>
               <a :href="item.url" class="btn btn-primary ml-3" download
-                >Download {{ extension }}</a
+                >Download {{ selection.content_type }}</a
               >
             </div>
           </div>
@@ -71,7 +75,7 @@ export default {
         }
       );
       var data = await response.json();
-      this.list = data.list_data;
+      this.list = data.builders;
     }
   },
   created: function() {
