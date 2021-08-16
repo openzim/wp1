@@ -114,7 +114,8 @@ class BuilderDbUpdateTest(BaseWpOneDbTest):
           '''INSERT INTO selections VALUES (2, 1, "xls", '20201225105544')''')
       cursor.execute(
           '''INSERT INTO builders
-        (b_name, b_user_id, b_project, b_params, b_model, b_created_at, b_updated_at)
+        (b_name, b_user_id, b_project, b_params,
+         b_model, b_created_at, b_updated_at)
         VALUES (%(b_name)s, %(b_user_id)s, %(b_project)s,
                 %(b_params)s, %(b_model)s, %(b_created_at)s, %(b_updated_at)s)
       ''', attr.asdict(self.builder))
@@ -127,7 +128,8 @@ class BuilderDbUpdateTest(BaseWpOneDbTest):
     with self.wp10db.cursor() as cursor:
       cursor.execute(
           '''INSERT INTO builders
-        (b_name, b_user_id, b_project, b_params, b_model, b_created_at, b_updated_at)
+        (b_name, b_user_id, b_project, b_params,
+         b_model, b_created_at, b_updated_at)
         VALUES (%(b_name)s, %(b_user_id)s, %(b_project)s,
                 %(b_params)s, %(b_model)s, %(b_created_at)s, %(b_updated_at)s)
       ''', attr.asdict(self.builder))

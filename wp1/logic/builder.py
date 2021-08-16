@@ -50,13 +50,11 @@ def get_lists(wp10db, user_id):
             'content_type': data['s_content_type'].decode('utf-8'),
             'selection_url': 'https://www.example.com/<id>'
         })
-    for list_data, value in result.items():
+    for id_, value in result.items():
       article_data.append({
-          'id': list_data,
+          'id': id_,
           'name': value['name'],
           'project': value['project'],
           'selections': value['selections']
       })
-    if not article_data:
-      return []
     return article_data
