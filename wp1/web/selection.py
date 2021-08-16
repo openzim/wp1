@@ -1,10 +1,11 @@
 import flask
 from flask import session
 
+from wp1.constants import CONTENT_TYPE_TO_EXT
+from wp1.logic.builder import get_lists, save_builder
+from wp1.selection.models.simple_builder import SimpleBuilder
 from wp1.web import authenticate
 from wp1.web.db import get_db
-from wp1.logic.builder import save_builder
-from wp1.selection.models.simple_builder import SimpleBuilder
 
 selection = flask.Blueprint('selection', __name__)
 
@@ -34,3 +35,12 @@ def create():
   wp10db = get_db('wp10db')
   save_builder(wp10db, list_name, user_id, project, articles)
   return {"success": True, "items": {}}
+
+
+@selection.route('/simple/lists')
+@authenticate
+def get_list_data():
+  wp10db = get_db('wp10db')
+  user_id = session['user']['identity']['sub']
+  article_lists = get_lists(wp10db, user_id)
+  return {'builders': article_lists}
