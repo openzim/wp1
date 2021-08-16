@@ -1,0 +1,16 @@
+{
+  "builders": [
+    {
+      "id": 1,
+      "name": "list_name",
+      "project": "en.wikipedia.org",
+      "selections": [
+        {
+          "s_id": "1",
+          "content_type": "tsv",
+          "selection_url": "https://www.example.com/<id>"
+        }
+      ]
+    }
+  ]
+}

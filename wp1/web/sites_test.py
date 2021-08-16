@@ -57,7 +57,6 @@ class IdentifyTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       self.redis.setex('sites', timedelta(days=1), value=','.join(self.sites))
       rv = client.get('/v1/sites/')
-      print(rv.get_json())
       self.assertEqual({'sites': self.sites}, rv.get_json())
       self.assertEqual(patched_site.called, False)
 
