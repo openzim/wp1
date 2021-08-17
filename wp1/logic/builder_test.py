@@ -1,4 +1,3 @@
-import attr
 import datetime
 from unittest.mock import patch, MagicMock, ANY
 
