@@ -1,6 +1,6 @@
 from collections import defaultdict
 from datetime import datetime
-from unittest.mock import patch, ANY
+from unittest.mock import patch
 
 import attr
 
