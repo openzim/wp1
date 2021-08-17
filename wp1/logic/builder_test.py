@@ -102,7 +102,7 @@ class BuilderTest(BaseWpOneDbTest):
   def test_insert_builder(self, mock_utcnow):
     insert_builder(self.wp10db, self.builder)
     db_lists = self._get_builder_by_user_id()
-    self.assertEqual(self.expected, db_lists)
+    self.assertEqual(self.expected_builder, db_lists)
 
   def test_get_builder(self):
     id_ = self._insert_builder()
@@ -137,7 +137,7 @@ class BuilderTest(BaseWpOneDbTest):
   def test_get_lists(self, mock_utcnow):
     with self.wp10db.cursor() as cursor:
       cursor.execute(
-          '''INSERT INTO selections VALUES (1, 1, 'tsv', '20191225044444')''')
+          'INSERT INTO selections VALUES (1, 1, "tsv", "20191225044444")')
       cursor.execute(
           '''INSERT INTO builders
         (b_name, b_user_id, b_project, b_params, b_model, b_created_at, b_updated_at)
@@ -152,9 +152,9 @@ class BuilderTest(BaseWpOneDbTest):
   def test_get_lists_with_multiple_selections(self, mock_utcnow):
     with self.wp10db.cursor() as cursor:
       cursor.execute(
-          '''INSERT INTO selections VALUES (1, 1, 'tsv', '20191225044444')''')
+          'INSERT INTO selections VALUES (1, 1, "tsv", "20191225044444")')
       cursor.execute(
-          '''INSERT INTO selections VALUES (2, 1, "xls", '20201225105544')''')
+          'INSERT INTO selections VALUES (2, 1, "xls", "20201225105544")')
       cursor.execute(
           '''INSERT INTO builders
         (b_name, b_user_id, b_project, b_params,
@@ -184,7 +184,7 @@ class BuilderTest(BaseWpOneDbTest):
   def test_get_empty_lists(self, mock_utcnow):
     with self.wp10db.cursor() as cursor:
       cursor.execute(
-          '''INSERT INTO selections VALUES (1, 1, 'tsv', '20191225044444')''')
+          'INSERT INTO selections VALUES (1, 1, "tsv", "20191225044444")')
       cursor.execute(
           '''INSERT INTO builders
         (b_name, b_user_id, b_project, b_params, b_model, b_created_at, b_updated_at)
@@ -199,6 +199,6 @@ class BuilderTest(BaseWpOneDbTest):
   def test_get_lists_with_no_builders(self, mock_utcnow):
     with self.wp10db.cursor() as cursor:
       cursor.execute(
-          '''INSERT INTO selections VALUES (1, 1, 'tsv', '20191225044444')''')
+          'INSERT INTO selections VALUES (1, 1, "tsv", "20191225044444")')
     article_data = get_lists(self.wp10db, '0000')
     self.assertEqual([], article_data)
