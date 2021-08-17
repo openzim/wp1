@@ -391,6 +391,40 @@ paths:
                           type: string
         400:
           description: 'Request with either empty list_name or project or articles'
+  /selection/simple/lists:
+    get:
+      summary: 'Return list details from database'
+      operationId: getLists
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  builders:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        project:
+                          items:
+                          type: string
+                        selections:
+                          type: object
+                          description: Empty when selections are missing
+                          properties:
+                            s_id:
+                              type: string
+                            content_type:
+                              type: string
+                            selection_url:
+                              type: string
 
 components:
   schemas:
