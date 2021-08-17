@@ -52,3 +52,35 @@ def materialize_builder(builder_cls, builder_id, content_type):
     materializer.materialize(s3, wp10db, builder, content_type)
   finally:
     wp10db.close()
+
+
+def get_lists(wp10db, user_id):
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        '''SELECT * FROM selections
+                      RIGHT JOIN builders ON selections.s_builder_id=builders.b_id
+                      WHERE b_user_id=%(b_user_id)s''', {'b_user_id': user_id})
+    db_lists = cursor.fetchall()
+    result = {}
+    article_data = []
+    for data in db_lists:
+      if not data['b_id'] in result:
+        result[data['b_id']] = {
+            'name': data['b_name'].decode('utf-8'),
+            'project': data['b_project'].decode('utf-8'),
+            'selections': []
+        }
+      if data['s_id']:
+        result[data['b_id']]['selections'].append({
+            's_id': data['s_id'].decode('utf-8'),
+            'content_type': data['s_content_type'].decode('utf-8'),
+            'selection_url': 'https://www.example.com/<id>'
+        })
+    for id_, value in result.items():
+      article_data.append({
+          'id': id_,
+          'name': value['name'],
+          'project': value['project'],
+          'selections': value['selections']
+      })
+    return article_data

@@ -72,12 +72,7 @@
               v-model="invalid_article_names"
             ></textarea>
           </div>
-          <button
-            v-on:click="save"
-            id="saveListButton"
-            type="submit"
-            class="btn-primary ml-4"
-          >
+          <button id="saveListButton" type="submit" class="btn-primary ml-4">
             Save List
           </button>
         </form>
