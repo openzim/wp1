@@ -17,7 +17,7 @@ services:
   dev-workers:
     build:
       context: .
-      dockerfile: workers.Dockerfile
+      dockerfile: docker/dev-workers/Dockerfile
     container_name: wp1bot-workers-dev
     volumes:
       - ./wp1/credentials.py:/usr/src/app/wp1/credentials.py
