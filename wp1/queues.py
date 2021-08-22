@@ -34,7 +34,7 @@ def _get_queues(redis, manual=False):
 
 
 def _get_materializer_queue(redis):
-  return Queue('wp1-materializer', connection=redis)
+  return Queue('materializer', connection=redis)
 
 
 def enqueue_all_projects(redis):
@@ -153,7 +153,7 @@ def enqueue_project(project_name,
                    'not PRODUCTION')
 
 
-def enqueue_materialize(redis, builder_id, builder_cls, content_type):
+def enqueue_materialize(redis, builder_cls, builder_id, content_type):
   materialize_q = _get_materializer_queue(redis)
   materialize_q.enqueue(logic_builder.materialize_builder,
                         builder_cls,
