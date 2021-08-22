@@ -62,7 +62,8 @@ def get_builders_with_selections(wp10db, user_id):
     cursor.execute(
         '''SELECT * FROM selections
                       RIGHT JOIN builders ON selections.s_builder_id=builders.b_id
-                      WHERE b_user_id=%(b_user_id)s''', {'b_user_id': user_id})
+                      WHERE b_user_id=%(b_user_id)s
+                      ORDER BY selections.s_id ASC''', {'b_user_id': user_id})
     data = cursor.fetchall()
 
     builders = {}
@@ -79,7 +80,7 @@ def get_builders_with_selections(wp10db, user_id):
         builders[b['b_id']]['selections'].append({
             'id': b['s_id'].decode('utf-8'),
             'content_type': content_type,
-            'extension': CONTENT_TYPE_TO_EXT[content_type],
+            'extension': CONTENT_TYPE_TO_EXT.get(content_type, '???'),
             'selection_url': 'https://www.example.com/<id>',
         })
     for id_, value in builders.items():
