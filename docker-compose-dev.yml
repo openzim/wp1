@@ -20,13 +20,16 @@ services:
       dockerfile: docker/dev-workers/Dockerfile
     container_name: wp1bot-workers-dev
     volumes:
-      - ./wp1/credentials.py:/usr/src/app/wp1/credentials.py
+      - ./wp1:/usr/src/app/wp1/
+      - ./wp1/credentials.py.dev:/usr/src/app/wp1/credentials.py
       - ./log/:/var/log/wp1bot/
     links:
       - redis
+      - dev-database
     restart: always
     depends_on:
       - redis
+      - dev-database
 
 networks:
   default:
