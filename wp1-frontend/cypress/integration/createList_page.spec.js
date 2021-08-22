@@ -7,7 +7,7 @@ describe('when the user is logged in', () => {
   });
 
   it('successfully loads', () => {
-    cy.visit('/#/selection/lists/simple/new');
+    cy.visit('/#/selections/simple');
   });
 
   it('displays wiki projects', () => {
@@ -27,19 +27,19 @@ describe('when the user is logged in', () => {
   });
 
   it('validates list name on losing focus', () => {
-    cy.visit('/#/selection/lists/simple/new');
+    cy.visit('/#/selections/simple');
     cy.get('#listName > .form-control').click();
     cy.get('#listName').contains('Please provide a valid List Name.');
   });
 
   it('validates textbox on losing focus', () => {
-    cy.visit('/#/selection/lists/simple/new');
+    cy.visit('/#/selections/simple');
     cy.get('#items > .form-control').click();
     cy.get('#items').contains('Please provide valid items.');
   });
 
   it('displays a textbox with invalid article names', () => {
-    cy.visit('/#/selection/lists/simple/new');
+    cy.visit('/#/selections/simple');
     cy.get('#listName > .form-control')
       .click()
       .type('List Name');
@@ -59,7 +59,7 @@ describe('when the user is logged in', () => {
   });
 
   it('redirects on saving valid article names', () => {
-    cy.visit('/#/selection/lists/simple/new');
+    cy.visit('/#/selections/simple');
     cy.get('#listName > .form-control')
       .click()
       .type('List Name');
@@ -77,7 +77,7 @@ describe('when the user is logged in', () => {
     });
 
     it('opens login page', () => {
-      cy.visit('/#/selection/lists/simple/new');
+      cy.visit('/#/selections/simple');
       cy.contains('Please Log In To Continue');
       cy.get('.pt-2 > .btn');
     });
