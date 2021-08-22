@@ -150,7 +150,7 @@ class QueuesTest(BaseRedisTest):
     materialize_q_mock = MagicMock()
     patched_queue.return_value = materialize_q_mock
 
-    queues.enqueue_materialize(self.redis, 1234, SimpleBuilder,
+    queues.enqueue_materialize(self.redis, SimpleBuilder, 1234,
                                'text/tab-separated-values')
     materialize_q_mock.enqueue.assert_called_once_with(
         patched_materialize_builder,
