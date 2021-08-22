@@ -104,6 +104,12 @@ class BuilderTest(BaseWpOneDbTest):
     db_lists = self._get_builder_by_user_id()
     self.assertEqual(self.expected_builder, db_lists)
 
+  @patch('wp1.models.wp10.builder.utcnow',
+         return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
+  def test_insert_builder_returns_id(self, mock_utcnow):
+    actual = insert_builder(self.wp10db, self.builder)
+    self.assertEqual(1, actual)
+
   def test_get_builder(self):
     id_ = self._insert_builder()
 
