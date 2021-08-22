@@ -19,7 +19,7 @@ def save_builder(wp10db, name, user_id, project, articles):
                     b_params=params)
   builder.set_created_at_now()
   builder.set_updated_at_now()
-  insert_builder(wp10db, builder)
+  return insert_builder(wp10db, builder)
 
 
 def insert_builder(wp10db, builder):
@@ -29,7 +29,9 @@ def insert_builder(wp10db, builder):
         (b_name, b_user_id, b_project, b_params, b_model, b_created_at, b_updated_at)
         VALUES (%(b_name)s, %(b_user_id)s, %(b_project)s, %(b_params)s, %(b_model)s, %(b_created_at)s, %(b_updated_at)s)
       ''', attr.asdict(builder))
+    id_ = cursor.lastrowid
   wp10db.commit()
+  return id_
 
 
 def get_builder(wp10db, id_):
