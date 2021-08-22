@@ -1,9 +1,12 @@
 import io
 import json
+import logging
 
 from wp1.constants import CONTENT_TYPE_TO_EXT
 import wp1.logic.selection as logic_selection
 from wp1.models.wp10.selection import Selection
+
+logger = logging.getLogger(__name__)
 
 
 class AbstractBuilder:
@@ -12,7 +15,7 @@ class AbstractBuilder:
     ext = CONTENT_TYPE_TO_EXT.get(selection.s_content_type, '').encode('utf-8')
     object_key = b'selection/%(model)s/%(user_id)s/%(id)s.%(ext)s' % {
         b'model': builder.b_model,
-        b'user_id': bytes(builder.b_user_id),
+        b'user_id': str(builder.b_user_id).encode('utf-8'),
         b'id': selection.s_id,
         b'ext': ext,
     }
@@ -20,6 +23,7 @@ class AbstractBuilder:
     upload_data = io.BytesIO()
     upload_data.write(selection.data)
     upload_data.seek(0)
+    logger.info('Uploading to path: %s ' % object_key.decode('utf-8'))
     s3.upload_fileobj(upload_data, key=object_key.decode('utf-8'))
 
   def materialize(self, s3, wp10db, builder, content_type):
@@ -32,6 +36,8 @@ class AbstractBuilder:
     selection.set_updated_at_now()
     self._upload_to_storage(s3, selection, builder)
 
+    logger.info('Saving selection %s to database' %
+                selection.s_id.decode('utf-8'))
     logic_selection.insert_selection(wp10db, selection)
 
   def build(self, content_type, **params):
