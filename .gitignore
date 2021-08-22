@@ -4,6 +4,8 @@ venv
 # Don't commit credentials, credential backup files, or login cookies!
 wp1/credentials.py
 wp1/credentials.py.bak
+wp1/credentials.py.dev
+wp1/credentials.py.dev.bak
 cookies.txt
 
 # Don't commit test artifacts
