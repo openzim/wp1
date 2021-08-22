@@ -9,8 +9,8 @@ class SelectionTest(BaseWebTestcase):
       'access_token': 'access_token',
       'identity': {
           'username': 'WP1_user',
-          'sub': '1234'
-      }
+          'sub': '1234',
+      },
   }
   invalid_article_name = "Eiffel_Tower\nStatue of#Liberty"
   unsuccessful_response = {
@@ -18,8 +18,8 @@ class SelectionTest(BaseWebTestcase):
       "items": {
           'valid': ['Eiffel_Tower'],
           'invalid': ['Statue_of#Liberty'],
-          'errors': ['The list contained the following invalid characters: #']
-      }
+          'errors': ['The list contained the following invalid characters: #'],
+      },
   }
   valid_article_name = "Eiffel_Tower\nStatue of Liberty"
   successful_response = {"success": True, "items": {}}
@@ -33,11 +33,12 @@ class SelectionTest(BaseWebTestcase):
           'project':
               'project_name',
           'selections': [{
-              's_id': '1',
-              'content_type': 'tsv',
+              'id': '1',
+              'content_type': 'text/tab-separated-values',
+              'extension': 'tsv',
               'selection_url': 'https://www.example.com/<id>'
-          }]
-      }]
+          }],
+      }],
   }
 
   expected_lists_with_multiple_selections = {
@@ -49,12 +50,14 @@ class SelectionTest(BaseWebTestcase):
           'project':
               'project_name',
           'selections': [{
-              's_id': '1',
-              'content_type': 'tsv',
+              'id': '1',
+              'content_type': 'text/tab-separated-values',
+              'extension': 'tsv',
               'selection_url': 'https://www.example.com/<id>'
           }, {
-              's_id': '2',
-              'content_type': 'xls',
+              'id': '2',
+              'content_type': 'application/vnd.ms-excel',
+              'extension': 'xls',
               'selection_url': 'https://www.example.com/<id>'
           }]
       }]
@@ -154,7 +157,8 @@ class SelectionTest(BaseWebTestcase):
         VALUES ('list_name', '1234', 'project_name', 'model')
       ''')
         cursor.execute(
-            '''INSERT INTO selections VALUES (1, 1, "tsv", '20201225105544')''')
+            'INSERT INTO selections VALUES (1, 1, "text/tab-separated-values", "20201225105544")'
+        )
       self.wp10db.commit()
       with client.session_transaction() as sess:
         sess['user'] = self.USER
@@ -170,9 +174,11 @@ class SelectionTest(BaseWebTestcase):
         VALUES ('list_name', '1234', 'project_name', 'model')
       ''')
         cursor.execute(
-            '''INSERT INTO selections VALUES (1, 1, "tsv", '20201225105544')''')
+            'INSERT INTO selections VALUES (1, 1, "text/tab-separated-values", "20201225105544")'
+        )
         cursor.execute(
-            '''INSERT INTO selections VALUES (2, 1, "xls", '20201225105544')''')
+            'INSERT INTO selections VALUES (2, 1, "application/vnd.ms-excel", "20201225105544")'
+        )
       self.wp10db.commit()
       with client.session_transaction() as sess:
         sess['user'] = self.USER
@@ -199,7 +205,8 @@ class SelectionTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       with self.wp10db.cursor() as cursor:
         cursor.execute(
-            '''INSERT INTO selections VALUES (2, 1, "xls", '20201225105544')''')
+            '''INSERT INTO selections VALUES (2, 1, "application/vnd.ms-excel", '20201225105544')'''
+        )
       self.wp10db.commit()
       with client.session_transaction() as sess:
         sess['user'] = self.USER
