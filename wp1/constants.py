@@ -37,4 +37,5 @@ PAGE_SIZE = 100
 
 CONTENT_TYPE_TO_EXT = {
     'text/tab-separated-values': 'tsv',
+    'application/vnd.ms-excel': 'xls',
 }
