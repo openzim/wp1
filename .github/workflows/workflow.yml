@@ -73,6 +73,7 @@ jobs:
       - name: Copy credentials
         run: |
           cp wp1/credentials.py.e2e wp1/credentials.py
+          cp wp1/credentials.py.dev.e2e wp1/credentials.py.dev
 
       - name: Start Docker dev services
         run: docker-compose -f docker-compose-dev.yml up -d --build
