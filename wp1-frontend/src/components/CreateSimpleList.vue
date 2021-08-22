@@ -138,7 +138,7 @@ export default {
       var data = await response.json();
       parent.success = data.success;
       if (parent.success) {
-        parent.$router.push('/selection/user');
+        parent.$router.push('/selections/user');
         return;
       }
       parent.$refs.form_group.classList.add('was-validated');

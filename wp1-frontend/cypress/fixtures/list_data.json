@@ -6,8 +6,9 @@
       "project": "en.wikipedia.org",
       "selections": [
         {
-          "s_id": "1",
-          "content_type": "tsv",
+          "id": "1",
+          "content_type": "text/tab-separated-values",
+          "extension": "tsv",
           "selection_url": "https://www.example.com/<id>"
         }
       ]
