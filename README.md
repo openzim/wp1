@@ -160,8 +160,14 @@ For development, you will need to have Docker installed as explained above.
 ## Running docker-compose
 
 There is a Docker setup for a development database. It lives in
-`docker-compose-dev.yml`. To download the database and setup development
-MariaDB and Redis, use:
+`docker-compose-dev.yml`.
+
+Before you run the docker-compose command below, you must copy the file
+`wp1/credentials.py.dev.example` to `wp1/credentials.py.dev` and fill out the
+section for `STORAGE`, if you wish to properly materialize builder lists into
+backend selections.
+
+After that is done, use the following command to run the dev environment:
 
 ```bash
 docker-compose -f docker-compose-dev.yml up -d
