@@ -7,7 +7,7 @@ describe('when the user is logged in', () => {
   });
 
   it('successfully loads', () => {
-    cy.visit('/#/selection/user');
+    cy.visit('/#/selections/user');
   });
 
   it('displays list and its contents', () => {
@@ -28,7 +28,7 @@ describe('when the user is logged in', () => {
 
 describe('when the user is not logged in', () => {
   it('opens login page', () => {
-    cy.visit('/#/selection/user');
+    cy.visit('/#/selections/user');
     cy.contains('Please Log In To Continue');
     cy.get('.pt-2 > .btn');
   });

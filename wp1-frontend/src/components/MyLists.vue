@@ -17,7 +17,7 @@
               class="input-group col-sm-9 mx-auto mb-3"
             >
               <input
-                :id="selection.s_id"
+                :id="selection.id"
                 :value="selection.selection_url"
                 class="form-control"
               />
@@ -30,7 +30,7 @@
                 </button>
               </div>
               <a :href="item.url" class="btn btn-primary ml-3" download
-                >Download {{ selection.content_type }}</a
+                >Download {{ selection.extension }}</a
               >
             </div>
           </div>

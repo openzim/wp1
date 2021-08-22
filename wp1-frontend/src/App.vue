@@ -28,12 +28,23 @@
             :class="
               'nav-item ' +
                 (!this.$route.path.startsWith('/update') &&
-                !this.$route.path.startsWith('/compare')
+                !this.$route.path.startsWith('/compare') &&
+                !this.$route.path.startsWith('/selections')
                   ? 'active'
                   : '')
             "
           >
             <router-link class="nav-link" to="/">Projects</router-link>
+          </li>
+          <li
+            :class="
+              'nav-item ' +
+                (this.$route.path.startsWith('/selections') ? 'active' : '')
+            "
+          >
+            <router-link class="nav-link" to="/selections/user"
+              >Selections</router-link
+            >
           </li>
           <li
             :class="
@@ -58,11 +69,10 @@
         </ul>
         <div>
           <div v-if="this.username">
+            <span class="username"> {{ this.username }} </span>
             <button type="button" class="btn btn-secondary" @click="logout">
               Logout
             </button>
-            <span style="font-size:20px"> | </span>
-            <span> {{ this.username }} </span>
           </div>
           <a v-else :href="this.loginInitiateUrl"
             ><button type="button" class="btn btn-primary">Login</button>
@@ -150,5 +160,11 @@ a:visited {
 
 .row {
   margin-top: 10px;
+}
+
+.username {
+  /* Center the username vertically */
+  position: relative;
+  top: 2px;
 }
 </style>
