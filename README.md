@@ -253,6 +253,11 @@ to something like:
 
 # Updating production
 
+- Since Docker Hub no longer auto builds images, you must build the images yourself.
+  From the wp1 directory, run the following commands to build and push the images:
+  - `git checkout main`
+  - `git pull origin main`
+  - `./build_production_images.sh`
 - Log in to the box that contains the production docker images. It is
   called wp1.
 - `cd /data/code/wp1/`
