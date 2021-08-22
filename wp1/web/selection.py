@@ -50,5 +50,5 @@ def create():
 def get_list_data():
   wp10db = get_db('wp10db')
   user_id = flask.session['user']['identity']['sub']
-  builders = logic_builder.get_lists(wp10db, user_id)
+  builders = logic_builder.get_builders_with_selections(wp10db, user_id)
   return flask.jsonify({'builders': builders})

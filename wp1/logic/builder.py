@@ -3,6 +3,7 @@ import logging
 
 import attr
 
+from wp1.constants import CONTENT_TYPE_TO_EXT
 from wp1.models.wp10.builder import Builder
 from wp1.storage import connect_storage
 from wp1.wp10_db import connect as wp10_connect
@@ -56,33 +57,36 @@ def materialize_builder(builder_cls, builder_id, content_type):
     wp10db.close()
 
 
-def get_lists(wp10db, user_id):
+def get_builders_with_selections(wp10db, user_id):
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''SELECT * FROM selections
                       RIGHT JOIN builders ON selections.s_builder_id=builders.b_id
                       WHERE b_user_id=%(b_user_id)s''', {'b_user_id': user_id})
-    db_lists = cursor.fetchall()
-    result = {}
-    article_data = []
-    for data in db_lists:
-      if not data['b_id'] in result:
-        result[data['b_id']] = {
-            'name': data['b_name'].decode('utf-8'),
-            'project': data['b_project'].decode('utf-8'),
-            'selections': []
+    data = cursor.fetchall()
+
+    builders = {}
+    result = []
+    for b in data:
+      if not b['b_id'] in builders:
+        builders[b['b_id']] = {
+            'name': b['b_name'].decode('utf-8'),
+            'project': b['b_project'].decode('utf-8'),
+            'selections': [],
         }
-      if data['s_id']:
-        result[data['b_id']]['selections'].append({
-            's_id': data['s_id'].decode('utf-8'),
-            'content_type': data['s_content_type'].decode('utf-8'),
-            'selection_url': 'https://www.example.com/<id>'
+      if b['s_id']:
+        content_type = b['s_content_type'].decode('utf-8')
+        builders[b['b_id']]['selections'].append({
+            'id': b['s_id'].decode('utf-8'),
+            'content_type': content_type,
+            'extension': CONTENT_TYPE_TO_EXT[content_type],
+            'selection_url': 'https://www.example.com/<id>',
         })
-    for id_, value in result.items():
-      article_data.append({
+    for id_, value in builders.items():
+      result.append({
           'id': id_,
           'name': value['name'],
           'project': value['project'],
-          'selections': value['selections']
+          'selections': value['selections'],
       })
-    return article_data
+    return result

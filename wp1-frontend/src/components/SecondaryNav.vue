@@ -1,7 +1,6 @@
 <template>
   <div>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
-      <a class="navbar-brand" href="/">Selection</a>
       <button
         class="navbar-toggler"
         type="button"
@@ -19,23 +18,25 @@
           <li
             :class="
               'nav-item ' +
-                (this.$route.path.startsWith('/selection/user') ? 'active' : '')
+                (this.$route.path.startsWith('/selections/user')
+                  ? 'active'
+                  : '')
             "
           >
-            <router-link class="nav-link" to="/selection/user"
-              >My Lists</router-link
+            <router-link class="nav-link" to="/selections/user"
+              >My Selections</router-link
             >
           </li>
           <li
             :class="
               'nav-item ' +
-                (this.$route.path.startsWith('/selection/lists/simple/new')
+                (this.$route.path.startsWith('/selections/simple')
                   ? 'active'
                   : '')
             "
           >
-            <router-link class="nav-link" to="/selection/lists/simple/new"
-              >Create Simple List</router-link
+            <router-link class="nav-link" to="/selections/simple"
+              >Create Simple Selection</router-link
             >
           </li>
         </ul>
