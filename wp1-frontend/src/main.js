@@ -83,17 +83,17 @@ const routes = [
     }
   },
   {
-    path: '/selection/user',
+    path: '/selections/user',
     component: MyLists,
     meta: {
-      title: () => BASE_TITLE + ' - My Lists'
+      title: () => BASE_TITLE + ' - My Selections'
     }
   },
   {
-    path: '/selection/lists/simple/new',
+    path: '/selections/simple',
     component: CreateSimpleList,
     meta: {
-      title: () => BASE_TITLE + ' - Create Simple List'
+      title: () => BASE_TITLE + ' - Create Simple Selection'
     }
   }
 ];

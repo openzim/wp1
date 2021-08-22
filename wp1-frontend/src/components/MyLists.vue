@@ -30,7 +30,7 @@
                 </button>
               </div>
               <a :href="item.url" class="btn btn-primary ml-3" download
-                >Download {{ selection.content_type }}</a
+                >Download {{ selection.extension }}</a
               >
             </div>
           </div>

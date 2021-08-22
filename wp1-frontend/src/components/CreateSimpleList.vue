@@ -5,7 +5,7 @@
     </div>
     <div class="row">
       <div class="col-lg-6 col-md-9 m-4">
-        <div class="m-4">
+        <div class="ml-4 mb-4">
           Use this tool to create an article selection list for the Wikipedia
           project of your choice. Your selection will be saved in public cloud
           storage and can be accessed through URLs that will be provided once it
