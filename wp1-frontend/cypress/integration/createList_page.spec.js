@@ -68,7 +68,7 @@ describe('when the user is logged in', () => {
       .type('Eiffel_Tower\nStatue of Liberty');
     cy.intercept('v1/selection/simple', { fixture: 'save_list_success.json' });
     cy.get('#saveListButton').click();
-    cy.url().should('eq', 'http://localhost:3000/#/selection/user');
+    cy.url().should('eq', 'http://localhost:3000/#/selections/user');
   });
 }),
   describe('when the user is not logged in', () => {
