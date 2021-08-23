@@ -55,8 +55,12 @@ class AbstractBuilderTest(BaseWpOneDbTest):
     actual = _get_first_selection(self.wp10db)
     self.assertEqual(actual.s_updated_at, b'20201225105544')
 
-  def test_materialize_uploads_to_s3(self):
+  @patch('wp1.models.wp10.selection.uuid.uuid4', return_value='abcd-1234')
+  def test_materialize_uploads_to_s3(self, mock_uuid4):
     self.test_builder.materialize(self.s3, self.wp10db, self.builder,
                                   'text/tab-separated-values')
     data = self.s3.upload_fileobj.call_args[0][0]
+    object_key = self.s3.upload_fileobj.call_args[1]['key']
     self.assertEqual(b'a\nb\nc', data.read())
+    self.assertEqual('selections/wp1.selection.models.simple/abcd-1234.tsv',
+                     object_key)

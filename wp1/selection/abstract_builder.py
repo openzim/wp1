@@ -12,19 +12,14 @@ logger = logging.getLogger(__name__)
 class AbstractBuilder:
 
   def _upload_to_storage(self, s3, selection, builder):
-    ext = CONTENT_TYPE_TO_EXT.get(selection.s_content_type, '').encode('utf-8')
-    object_key = b'selection/%(model)s/%(user_id)s/%(id)s.%(ext)s' % {
-        b'model': builder.b_model,
-        b'user_id': str(builder.b_user_id).encode('utf-8'),
-        b'id': selection.s_id,
-        b'ext': ext,
-    }
+    object_key = logic_selection.object_key_for_selection(
+        selection, builder.b_model.decode('utf-8'))
 
     upload_data = io.BytesIO()
     upload_data.write(selection.data)
     upload_data.seek(0)
-    logger.info('Uploading to path: %s ' % object_key.decode('utf-8'))
-    s3.upload_fileobj(upload_data, key=object_key.decode('utf-8'))
+    logger.info('Uploading to path: %s ' % object_key)
+    s3.upload_fileobj(upload_data, key=object_key)
 
   def materialize(self, s3, wp10db, builder, content_type):
     params = json.loads(builder.b_params)

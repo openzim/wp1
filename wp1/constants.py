@@ -35,7 +35,10 @@ FRONTEND_WIKI_BASE = 'https://en.wikipedia.org/w/'
 
 PAGE_SIZE = 100
 
+# Put both bytes and str as keys for convenience.
 CONTENT_TYPE_TO_EXT = {
     'text/tab-separated-values': 'tsv',
+    b'text/tab-separated-values': 'tsv',
     'application/vnd.ms-excel': 'xls',
+    b'application/vnd.ms-excel': 'xls',
 }
