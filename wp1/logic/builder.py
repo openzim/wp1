@@ -4,6 +4,7 @@ import logging
 import attr
 
 from wp1.constants import CONTENT_TYPE_TO_EXT
+import wp1.logic.selection as logic_selection
 from wp1.models.wp10.builder import Builder
 from wp1.storage import connect_storage
 from wp1.wp10_db import connect as wp10_connect
@@ -77,11 +78,17 @@ def get_builders_with_selections(wp10db, user_id):
         }
       if b['s_id']:
         content_type = b['s_content_type'].decode('utf-8')
+        selection_id = b['s_id'].decode('utf-8')
         builders[b['b_id']]['selections'].append({
-            'id': b['s_id'].decode('utf-8'),
-            'content_type': content_type,
-            'extension': CONTENT_TYPE_TO_EXT.get(content_type, '???'),
-            'selection_url': 'https://www.example.com/<id>',
+            'id':
+                selection_id,
+            'content_type':
+                content_type,
+            'extension':
+                CONTENT_TYPE_TO_EXT.get(content_type, '???'),
+            'selection_url':
+                logic_selection.url_for(selection_id, content_type,
+                                        b['b_model'].decode('utf-8')),
         })
     for id_, value in builders.items():
       result.append({
