@@ -28,3 +28,11 @@ class SelectionTest(BaseWpOneDbTest):
     actual = logic_selection.object_key_for_selection(self.selection,
                                                       'foo.bar.model')
     self.assertEqual('selections/foo.bar.model/deadbeef.tsv', actual)
+
+  def test_object_key_for_selection_none_selection(self):
+    with self.assertRaises(ValueError):
+      logic_selection.object_key_for_selection(None, 'foo.bar.model')
+
+  def test_object_key_for_selection_none_model(self):
+    with self.assertRaises(ValueError):
+      logic_selection.object_key_for_selection(self.selection, None)
