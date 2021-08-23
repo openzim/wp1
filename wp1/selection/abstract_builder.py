@@ -24,7 +24,7 @@ class AbstractBuilder:
   def materialize(self, s3, wp10db, builder, content_type):
     params = json.loads(builder.b_params)
 
-    selection = Selection(s_content_type=content_type,
+    selection = Selection(s_content_type=content_type.encode('utf-8'),
                           s_builder_id=builder.b_id)
     selection.set_id()
     selection.data = self.build(content_type, **params)
