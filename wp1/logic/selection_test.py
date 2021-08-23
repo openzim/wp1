@@ -29,6 +29,12 @@ class SelectionTest(BaseWpOneDbTest):
                                                       'foo.bar.model')
     self.assertEqual('selections/foo.bar.model/deadbeef.tsv', actual)
 
+  def test_object_key_for_selection_unknown_content_type(self):
+    self.selection.s_content_type = b'foo/bar-baz'
+    actual = logic_selection.object_key_for_selection(self.selection,
+                                                      'foo.bar.model')
+    self.assertEqual('selections/foo.bar.model/deadbeef.???', actual)
+
   def test_object_key_for_selection_none_selection(self):
     with self.assertRaises(ValueError):
       logic_selection.object_key_for_selection(None, 'foo.bar.model')
@@ -36,3 +42,23 @@ class SelectionTest(BaseWpOneDbTest):
   def test_object_key_for_selection_none_model(self):
     with self.assertRaises(ValueError):
       logic_selection.object_key_for_selection(self.selection, None)
+
+  def test_object_key_for(self):
+    actual = logic_selection.object_key_for('abcd-1234',
+                                            'text/tab-separated-values',
+                                            'foo.bar.model')
+    self.assertEqual('selections/foo.bar.model/abcd-1234.tsv', actual)
+
+  def test_object_key_for_none_selection_id(self):
+    with self.assertRaises(ValueError):
+      logic_selection.object_key_for(None, 'text/tab-separated-values',
+                                     'foo.bar.model')
+
+  def test_object_key_for_none_content_type(self):
+    actual = logic_selection.object_key_for('abcd-1234', None, 'foo.bar.model')
+    self.assertEqual('selections/foo.bar.model/abcd-1234.???', actual)
+
+  def test_object_key_for_none_model(self):
+    with self.assertRaises(ValueError):
+      logic_selection.object_key_for('abcd-1234', 'text/tab-separated-values',
+                                     None)
