@@ -86,7 +86,7 @@ def get_builders_with_selections(wp10db, user_id):
                 content_type,
             'extension':
                 CONTENT_TYPE_TO_EXT.get(content_type, '???'),
-            'selection_url':
+            'url':
                 logic_selection.url_for(selection_id, content_type,
                                         b['b_model'].decode('utf-8')),
         })
