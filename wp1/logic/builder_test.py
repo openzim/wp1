@@ -40,10 +40,14 @@ class BuilderTest(BaseWpOneDbTest):
       'project':
           'en.wikipedia.fake',
       'selections': [{
-          'id': '1',
-          'content_type': 'text/tab-separated-values',
-          'extension': 'tsv',
-          'selection_url': 'https://www.example.com/<id>'
+          'id':
+              '1',
+          'content_type':
+              'text/tab-separated-values',
+          'extension':
+              'tsv',
+          'url':
+              'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1.tsv'
       }]
   }]
 
@@ -55,15 +59,23 @@ class BuilderTest(BaseWpOneDbTest):
       'project':
           'en.wikipedia.fake',
       'selections': [{
-          'id': '1',
-          'content_type': 'text/tab-separated-values',
-          'extension': 'tsv',
-          'selection_url': 'https://www.example.com/<id>',
+          'id':
+              '1',
+          'content_type':
+              'text/tab-separated-values',
+          'extension':
+              'tsv',
+          'url':
+              'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1.tsv',
       }, {
-          'id': '2',
-          'content_type': 'application/vnd.ms-excel',
-          'extension': 'xls',
-          'selection_url': 'https://www.example.com/<id>',
+          'id':
+              '2',
+          'content_type':
+              'application/vnd.ms-excel',
+          'extension':
+              'xls',
+          'url':
+              'http://credentials.not.found.fake/selections/wp1.selection.models.simple/2.xls',
       }]
   }]
 
@@ -82,10 +94,14 @@ class BuilderTest(BaseWpOneDbTest):
       'project':
           'en.wikipedia.fake',
       'selections': [{
-          'id': '1',
-          'content_type': 'foo/bar-baz',
-          'extension': '???',
-          'selection_url': 'https://www.example.com/<id>',
+          'id':
+              '1',
+          'content_type':
+              'foo/bar-baz',
+          'extension':
+              '???',
+          'url':
+              'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1.???',
       }],
   }]
 

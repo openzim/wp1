@@ -18,18 +18,18 @@
             >
               <input
                 :id="selection.id"
-                :value="selection.selection_url"
+                :value="selection.url"
                 class="form-control"
               />
               <div class="input-group-append">
                 <button
                   class="btn btn-outline-secondary"
-                  v-on:click="copyText(selection.s_id)"
+                  v-on:click="copyText(selection.id)"
                 >
                   Copy
                 </button>
               </div>
-              <a :href="item.url" class="btn btn-primary ml-3" download
+              <a :href="selection.url" class="btn btn-primary ml-3" download
                 >Download {{ selection.extension }}</a
               >
             </div>
@@ -65,6 +65,7 @@ export default {
       var copyText = document.getElementById(id);
       copyText.select();
       document.execCommand('copy');
+      copyText.blur();
     },
     getLists: async function() {
       const response = await fetch(
