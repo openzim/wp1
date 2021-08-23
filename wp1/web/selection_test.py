@@ -33,14 +33,10 @@ class SelectionTest(BaseWebTestcase):
           'project':
               'project_name',
           'selections': [{
-              'id':
-                  '1',
-              'content_type':
-                  'text/tab-separated-values',
-              'extension':
-                  'tsv',
-              'selection_url':
-                  'http://credentials.not.found.fake/selections/model/1.tsv'
+              'id': '1',
+              'content_type': 'text/tab-separated-values',
+              'extension': 'tsv',
+              'url': 'http://credentials.not.found.fake/selections/model/1.tsv'
           }],
       }],
   }
@@ -54,23 +50,15 @@ class SelectionTest(BaseWebTestcase):
           'project':
               'project_name',
           'selections': [{
-              'id':
-                  '1',
-              'content_type':
-                  'text/tab-separated-values',
-              'extension':
-                  'tsv',
-              'selection_url':
-                  'http://credentials.not.found.fake/selections/model/1.tsv'
+              'id': '1',
+              'content_type': 'text/tab-separated-values',
+              'extension': 'tsv',
+              'url': 'http://credentials.not.found.fake/selections/model/1.tsv'
           }, {
-              'id':
-                  '2',
-              'content_type':
-                  'application/vnd.ms-excel',
-              'extension':
-                  'xls',
-              'selection_url':
-                  'http://credentials.not.found.fake/selections/model/2.xls'
+              'id': '2',
+              'content_type': 'application/vnd.ms-excel',
+              'extension': 'xls',
+              'url': 'http://credentials.not.found.fake/selections/model/2.xls'
           }]
       }]
   }

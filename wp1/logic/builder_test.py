@@ -46,7 +46,7 @@ class BuilderTest(BaseWpOneDbTest):
               'text/tab-separated-values',
           'extension':
               'tsv',
-          'selection_url':
+          'url':
               'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1.tsv'
       }]
   }]
@@ -65,7 +65,7 @@ class BuilderTest(BaseWpOneDbTest):
               'text/tab-separated-values',
           'extension':
               'tsv',
-          'selection_url':
+          'url':
               'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1.tsv',
       }, {
           'id':
@@ -74,7 +74,7 @@ class BuilderTest(BaseWpOneDbTest):
               'application/vnd.ms-excel',
           'extension':
               'xls',
-          'selection_url':
+          'url':
               'http://credentials.not.found.fake/selections/wp1.selection.models.simple/2.xls',
       }]
   }]
@@ -100,7 +100,7 @@ class BuilderTest(BaseWpOneDbTest):
               'foo/bar-baz',
           'extension':
               '???',
-          'selection_url':
+          'url':
               'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1.???',
       }],
   }]
