@@ -266,9 +266,10 @@ to something like:
   - `docker pull openzim/wp1bot-workers`
   - `docker pull openzim/wp1bot-web`
   - `docker pull openzim/wp1bot-frontend`
+- Run docker-compose to bring the production images online.
+  - `docker-compose up -d`
 - Run the production database migrations in the worker container:
   - `docker exec -ti wp1bot-workers yoyo -c /usr/src/app/db/production/yoyo.ini apply`
-- Re-run docker-compose: `docker-compose up -d`
 
 # Pre-commit hooks
 
