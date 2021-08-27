@@ -3,46 +3,37 @@
     <div>
       <SecondaryNav></SecondaryNav>
     </div>
-    <div class="row">
+    <div class="row ml-4">
       <div>
-        <div v-for="item in list" :key="item.id" class="card text-center m-5">
-          <div class="card-header">
-            {{ item.name }}
-          </div>
-          <div class="card-body ">
-            <h5 class="card-title">{{ item.project }}</h5>
-            <table v-if="item.selections.length" class="card-table table">
-              <thead>
-                <tr>
-                  <th scope="col">Name</th>
-                  <th scope="col">Created At</th>
-                  <th scope="col">Updated At</th>
-                  <th scope="col">Generated At</th>
-                  <th scope="col">Update</th>
-                  <th scope="col">Download</th>
-                </tr>
-              </thead>
-              <tbody v-for="selection in item.selections" :key="selection.s_id">
-                <tr>
-                  <td>selection_name</td>
-                  <td>created at</td>
-                  <td>updated at</td>
-                  <td>generated at</td>
-                  <td>
-                    <button class="btn btn-primary ml-3">
-                      Update
-                    </button>
-                  </td>
-                  <td>
-                    <a :href="item.url" class="btn btn-primary ml-3" download
-                      >Download {{ selection.content_type }}</a
-                    >
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Created At</th>
+              <th scope="col">Updated At</th>
+              <th scope="col">Generated At</th>
+              <th scope="col">Download</th>
+            </tr>
+          </thead>
+          <tbody v-for="item in list" :key="item.id">
+            <tr v-if="item.selections.length < 1">
+              <td>{{ item.name }}</td>
+              <td>{{ item.created_at }}</td>
+              <td>{{ item.updated_at }}</td>
+            </tr>
+            <tr v-else v-for="selection in item.selections" :key="selection.id">
+              <td>{{ item.name }}</td>
+              <td>{{ item.created_at }}</td>
+              <td>{{ item.updated_at }}</td>
+              <td>{{ selection.s_updated_at }}</td>
+              <td>
+                <a class="btn btn-primary mb-2 mr-2" download
+                  >Download {{ selection.content_type }}</a
+                >
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -85,6 +76,7 @@ export default {
       );
       var data = await response.json();
       this.list = data.builders;
+      console.log(this.list);
     }
   },
   created: function() {

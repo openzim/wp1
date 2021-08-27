@@ -1,9 +1,10 @@
+import datetime
 import json
 import logging
 
 import attr
 
-from wp1.constants import CONTENT_TYPE_TO_EXT
+from wp1.constants import CONTENT_TYPE_TO_EXT, TS_FORMAT_WP10
 import wp1.logic.selection as logic_selection
 from wp1.models.wp10.builder import Builder
 from wp1.storage import connect_storage
@@ -74,11 +75,14 @@ def get_builders_with_selections(wp10db, user_id):
         builders[b['b_id']] = {
             'name': b['b_name'].decode('utf-8'),
             'project': b['b_project'].decode('utf-8'),
+            'created_at': b['b_created_at'].decode('utf-8'),
+            'updated_at': b['b_updated_at'].decode('utf-8'),
             'selections': [],
         }
       if b['s_id']:
         content_type = b['s_content_type'].decode('utf-8')
         selection_id = b['s_id'].decode('utf-8')
+        s_updated_at = b['s_updated_at'].decode('utf-8')
         builders[b['b_id']]['selections'].append({
             'id':
                 selection_id,
@@ -89,12 +93,19 @@ def get_builders_with_selections(wp10db, user_id):
             'url':
                 logic_selection.url_for(selection_id, content_type,
                                         b['b_model'].decode('utf-8')),
+            's_updated_at':
+                s_updated_at,
+            # 's_updated_at': datetime.datetime.strptime(s_updated_at, TS_FORMAT_WP10)
         })
     for id_, value in builders.items():
       result.append({
           'id': id_,
           'name': value['name'],
           'project': value['project'],
+          'created_at': value['created_at'],
+          'updated_at': value['updated_at'],
+          # 'created_at': datetime.datetime.strptime(value['created_at'], TS_FORMAT_WP10),
+          # 'updated_at': datetime.datetime.strptime(value['updated_at'], TS_FORMAT_WP10),
           'selections': value['selections'],
       })
     return result
