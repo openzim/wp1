@@ -16,19 +16,36 @@
             </tr>
           </thead>
           <tbody v-for="item in list" :key="item.id">
-            <tr v-if="item.selections.length < 1">
-              <td>{{ item.name }}</td>
-              <td>{{ item.created_at }}</td>
-              <td>{{ item.updated_at }}</td>
-            </tr>
-            <tr v-else v-for="selection in item.selections" :key="selection.id">
-              <td>{{ item.name }}</td>
-              <td>{{ item.created_at }}</td>
-              <td>{{ item.updated_at }}</td>
-              <td>{{ selection.s_updated_at }}</td>
-              <td>
+            <tr>
+              <td :rowspan="item.selections.length || 1">{{ item.name }}</td>
+              <td :rowspan="item.selections.length || 1">
+                {{ item.created_at }}
+              </td>
+              <td :rowspan="item.selections.length || 1">
+                {{ item.updated_at }}
+              </td>
+              <td v-if="item.selections.length">
+                {{ item.selections[0].s_updated_at }}
+              </td>
+              <td v-if="item.selections.length">
                 <a class="btn btn-primary mb-2 mr-2" download
-                  >Download {{ selection.content_type }}</a
+                  >Download {{ item.selections[0].extension }}</a
+                >
+              </td>
+            </tr>
+            <tr
+              v-for="selection in item.selections.slice(1)"
+              :key="selection.id"
+            >
+              <td v-if="item.selections.length">
+                {{ selection.s_updated_at }}
+              </td>
+              <td v-if="item.selections.length">
+                <a
+                  :href="selection.url"
+                  class="btn btn-primary mb-2 mr-2"
+                  download
+                  >Download {{ selection.extension }}</a
                 >
               </td>
             </tr>
@@ -76,7 +93,6 @@ export default {
       );
       var data = await response.json();
       this.list = data.builders;
-      console.log(this.list);
     }
   },
   created: function() {

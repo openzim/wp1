@@ -95,7 +95,6 @@ def get_builders_with_selections(wp10db, user_id):
                                         b['b_model'].decode('utf-8')),
             's_updated_at':
                 s_updated_at,
-            # 's_updated_at': datetime.datetime.strptime(s_updated_at, TS_FORMAT_WP10)
         })
     for id_, value in builders.items():
       result.append({
@@ -104,8 +103,6 @@ def get_builders_with_selections(wp10db, user_id):
           'project': value['project'],
           'created_at': value['created_at'],
           'updated_at': value['updated_at'],
-          # 'created_at': datetime.datetime.strptime(value['created_at'], TS_FORMAT_WP10),
-          # 'updated_at': datetime.datetime.strptime(value['updated_at'], TS_FORMAT_WP10),
           'selections': value['selections'],
       })
     return result
