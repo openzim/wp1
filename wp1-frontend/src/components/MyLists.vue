@@ -28,7 +28,10 @@
                 {{ item.selections[0].s_updated_at }}
               </td>
               <td v-if="item.selections.length">
-                <a class="btn btn-primary mb-2 mr-2" download
+                <a
+                  :href="item.selections[0].url"
+                  class="btn btn-primary mb-2 mr-2"
+                  download
                   >Download {{ item.selections[0].extension }}</a
                 >
               </td>
