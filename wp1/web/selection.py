@@ -16,7 +16,7 @@ selection = flask.Blueprint('selection', __name__)
 @authenticate
 def create():
   data = flask.request.get_json()
-  list_name = data['list_name']
+  list_name = data['name']
   articles = data['articles']
   project = data['project']
   params = {'list': articles.split('\n')}
