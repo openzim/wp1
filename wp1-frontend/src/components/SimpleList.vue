@@ -20,8 +20,10 @@
           <div ref="form_group" class="form-group">
             <div class="m-4">
               <label>Project</label>
-              <select ref="project" class="custom-select my-list">
-                <option selected>en.wikipedia.org</option>
+              <select v-model="builder.project" class="custom-select my-list">
+                <option v-if="wikiProjects.length == 0" selected
+                  >en.wikipedia.org</option
+                >
                 <option v-for="item in wikiProjects" v-bind:key="item">
                   {{ item }}
                 </option>
@@ -31,8 +33,8 @@
               <label for="listName">List Name</label>
               <input
                 v-on:blur="validationOnBlur"
+                v-model="builder.list_name"
                 type="text"
-                ref="list_name"
                 placeholder="My List"
                 class="form-control my-list"
                 required
@@ -45,13 +47,12 @@
               <label for="Items">Items</label>
               <textarea
                 v-on:blur="validationOnBlur"
+                v-model="builder.articles"
                 :placeholder="
                   'Eiffel_Tower\nStatue_of_Liberty\nFreedom_Monument_(Baghdad)\nGeorge-Étienne_Cartier_Monument'
                 "
                 class="form-control my-list"
                 rows="13"
-                ref="articles"
-                v-model="valid_article_names"
                 required
               ></textarea>
               <div class="invalid-feedback">
@@ -97,7 +98,12 @@ export default {
       success: true,
       valid_article_names: '',
       invalid_article_names: '',
-      errors: ''
+      errors: '',
+      builder: {
+        articles: '',
+        list_name: '',
+        project: 'en.wikipedia.org'
+      }
     };
   },
   computed: {
@@ -121,18 +127,13 @@ export default {
         parent.$refs.form_group.classList.add('was-validated');
         return;
       }
-      const article_detail = {
-        articles: parent.$refs.articles.value,
-        list_name: parent.$refs.list_name.value,
-        project: parent.$refs.project.value
-      };
       const response = await fetch(
         `${process.env.VUE_APP_API_URL}/selection/simple`,
         {
           headers: { 'Content-Type': 'application/json' },
           method: 'post',
           credentials: 'include',
-          body: JSON.stringify(article_detail)
+          body: JSON.stringify(this.builder)
         }
       );
       var data = await response.json();
@@ -142,7 +143,7 @@ export default {
         return;
       }
       parent.$refs.form_group.classList.add('was-validated');
-      parent.valid_article_names = data.items.valid.join('\n');
+      this.builder.articles = data.items.valid.join('\n');
       parent.invalid_article_names = data.items.invalid.join('\n');
       parent.errors = data.items.errors.join(', ');
     },
