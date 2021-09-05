@@ -95,6 +95,13 @@ const routes = [
     meta: {
       title: () => BASE_TITLE + ' - Create Simple Selection'
     }
+  },
+  {
+    path: '/selections/simple/:builder_id',
+    component: SimpleList,
+    meta: {
+      title: () => BASE_TITLE + ' - Edit Simple Selection'
+    }
   }
 ];
 
