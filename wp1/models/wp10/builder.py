@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 
 import attr
@@ -56,3 +57,11 @@ class Builder:
   def set_updated_at_now(self):
     """Sets the updated_at field to a timestamp that is equal to now"""
     self.set_updated_at_dt(utcnow())
+
+  def to_web_dict(self):
+    articles = '\n'.join(json.loads(self.b_params.decode('utf-8'))['list'])
+    return {
+        'name': self.b_name.decode('utf-8'),
+        'project': self.b_project.decode('utf-8'),
+        'articles': articles,
+    }
