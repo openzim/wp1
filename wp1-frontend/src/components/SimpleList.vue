@@ -13,7 +13,7 @@
         </div>
         <form
           ref="form"
-          v-on:submit.prevent="save"
+          v-on:submit.prevent="onSubmit"
           class="needs-validation"
           novalidate
         >
@@ -33,7 +33,7 @@
               <label for="listName">List Name</label>
               <input
                 v-on:blur="validationOnBlur"
-                v-model="builder.list_name"
+                v-model="builder.name"
                 type="text"
                 placeholder="My List"
                 class="form-control my-list"
@@ -73,7 +73,20 @@
               v-model="invalid_article_names"
             ></textarea>
           </div>
-          <button id="saveListButton" type="submit" class="btn-primary ml-4">
+          <button
+            v-if="isEditing"
+            id="updateListButton"
+            type="submit"
+            class="btn-primary ml-4"
+          >
+            Update List
+          </button>
+          <button
+            v-else
+            id="saveListButton"
+            type="submit"
+            class="btn-primary ml-4"
+          >
             Save List
           </button>
         </form>
@@ -94,6 +107,7 @@ export default {
   name: 'SimpleList',
   data: function() {
     return {
+      isEditing: false,
       wikiProjects: [],
       success: true,
       valid_article_names: '',
@@ -101,7 +115,7 @@ export default {
       errors: '',
       builder: {
         articles: '',
-        list_name: '',
+        name: '',
         project: 'en.wikipedia.org'
       }
     };
@@ -113,6 +127,10 @@ export default {
   },
   created: function() {
     this.getWikiProjects();
+    this.isEditing = !!this.$route.params.builder_id;
+    if (this.isEditing) {
+      this.getBuilder();
+    }
   },
   methods: {
     getWikiProjects: async function() {
@@ -120,32 +138,47 @@ export default {
       var data = await response.json();
       this.wikiProjects = data.sites;
     },
-    save: async function() {
-      let parent = this;
-      const form = parent.$refs.form;
-      if (!form.checkValidity()) {
-        parent.$refs.form_group.classList.add('was-validated');
-        return;
-      }
+    getBuilder: async function() {
+      window.console.log(this.$route.params.builder_id);
       const response = await fetch(
-        `${process.env.VUE_APP_API_URL}/selection/simple`,
+        `${process.env.VUE_APP_API_URL}/builders/${this.$route.params.builder_id}`,
         {
           headers: { 'Content-Type': 'application/json' },
-          method: 'post',
-          credentials: 'include',
-          body: JSON.stringify(this.builder)
+          credentials: 'include'
         }
       );
-      var data = await response.json();
-      parent.success = data.success;
-      if (parent.success) {
-        parent.$router.push('/selections/user');
+      this.builder = await response.json();
+    },
+    onSubmit: async function() {
+      const form = this.$refs.form;
+      if (!form.checkValidity()) {
+        this.$refs.form_group.classList.add('was-validated');
         return;
       }
-      parent.$refs.form_group.classList.add('was-validated');
+
+      let postUrl = '';
+      if (this.isEditing) {
+        postUrl = `${process.env.VUE_APP_API_URL}/builders/${this.$route.params.builder_id}`;
+      } else {
+        postUrl = `${process.env.VUE_APP_API_URL}/selections/simple`;
+      }
+
+      const response = await fetch(postUrl, {
+        headers: { 'Content-Type': 'application/json' },
+        method: 'post',
+        credentials: 'include',
+        body: JSON.stringify(this.builder)
+      });
+      var data = await response.json();
+      this.success = data.success;
+      if (this.success) {
+        this.$router.push('/selections/user');
+        return;
+      }
+      this.$refs.form_group.classList.add('was-validated');
       this.builder.articles = data.items.valid.join('\n');
-      parent.invalid_article_names = data.items.invalid.join('\n');
-      parent.errors = data.items.errors.join(', ');
+      this.invalid_article_names = data.items.invalid.join('\n');
+      this.errors = data.items.errors.join(', ');
     },
     validationOnBlur: function(event) {
       if (event.target.value) {
