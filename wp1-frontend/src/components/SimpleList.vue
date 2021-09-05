@@ -90,7 +90,7 @@ import LoginRequired from './LoginRequired';
 
 export default {
   components: { SecondaryNav, LoginRequired },
-  name: 'CreateSimpleLists',
+  name: 'SimpleList',
   data: function() {
     return {
       wikiProjects: [],

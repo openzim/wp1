@@ -6,7 +6,7 @@ import VueRouter from 'vue-router';
 
 import App from './App.vue';
 import ArticlePage from './components/ArticlePage.vue';
-import CreateSimpleList from './components/CreateSimpleList.vue';
+import SimpleList from './components/SimpleList.vue';
 import ComparePage from './components/ComparePage.vue';
 import IndexPage from './components/IndexPage.vue';
 import MyLists from './components/MyLists.vue';
@@ -91,7 +91,7 @@ const routes = [
   },
   {
     path: '/selections/simple',
-    component: CreateSimpleList,
+    component: SimpleList,
     meta: {
       title: () => BASE_TITLE + ' - Create Simple Selection'
     }
