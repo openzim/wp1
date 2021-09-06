@@ -5,12 +5,15 @@
     </div>
     <div class="row">
       <div class="col-lg-6 col-md-9 m-4">
-        <div class="ml-4 mb-4">
+        <h2 v-if="!isEditing" class="ml-4">New Simple Selection</h2>
+        <h2 v-else class="ml-4">Editing Simple Selection</h2>
+        <div v-if="!isEditing" class="ml-4 mb-4">
           Use this tool to create an article selection list for the Wikipedia
           project of your choice. Your selection will be saved in public cloud
           storage and can be accessed through URLs that will be provided once it
           has been saved.
         </div>
+
         <form
           ref="form"
           v-on:submit.prevent="onSubmit"
@@ -40,7 +43,7 @@
                 required
               />
               <div class="invalid-feedback">
-                Please provide a valid List Name.
+                Please provide a valid list name.
               </div>
             </div>
             <div id="items" class="form-group m-4">
@@ -107,7 +110,6 @@ export default {
   name: 'SimpleList',
   data: function() {
     return {
-      isEditing: false,
       wikiProjects: [],
       success: true,
       valid_article_names: '',
@@ -123,11 +125,16 @@ export default {
   computed: {
     isLoggedIn: function() {
       return this.$root.$data.isLoggedIn;
+    },
+    isEditing: function() {
+      return !!this.builderId;
+    },
+    builderId: function() {
+      return this.$route.params.builder_id;
     }
   },
   created: function() {
     this.getWikiProjects();
-    this.isEditing = !!this.$route.params.builder_id;
     if (this.isEditing) {
       this.getBuilder();
     }
@@ -139,7 +146,6 @@ export default {
       this.wikiProjects = data.sites;
     },
     getBuilder: async function() {
-      window.console.log(this.$route.params.builder_id);
       const response = await fetch(
         `${process.env.VUE_APP_API_URL}/builders/${this.$route.params.builder_id}`,
         {
@@ -160,7 +166,7 @@ export default {
       if (this.isEditing) {
         postUrl = `${process.env.VUE_APP_API_URL}/builders/${this.$route.params.builder_id}`;
       } else {
-        postUrl = `${process.env.VUE_APP_API_URL}/selections/simple`;
+        postUrl = `${process.env.VUE_APP_API_URL}/builders/`;
       }
 
       const response = await fetch(postUrl, {
@@ -187,6 +193,12 @@ export default {
         event.target.classList.add('is-invalid');
       }
     }
+  },
+  beforeRouteUpdate(to, from, next) {
+    if (to.params.builder_id) {
+      this.getBuilder();
+    }
+    next();
   }
 };
 </script>
