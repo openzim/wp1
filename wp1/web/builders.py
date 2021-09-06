@@ -33,10 +33,16 @@ def _create_or_update_builder(data, builder_id=None):
   redis = get_redis()
 
   user_id = flask.session['user']['identity']['sub']
+  print('user id: %s' % user_id)
   is_update = builder_id is not None
   builder_id = logic_builder.create_or_update_builder(wp10db, list_name,
                                                       user_id, project,
                                                       articles, builder_id)
+  # Either the builder was not found or the user ID was not correct. Nothing was
+  # updated, return 404.
+  if builder_id is None:
+    flask.abort(404)
+
   if not is_update:
     queues.enqueue_materialize(redis, SimpleBuilder, builder_id,
                                'text/tab-separated-values')
