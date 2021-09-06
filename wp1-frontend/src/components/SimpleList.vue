@@ -3,7 +3,14 @@
     <div>
       <SecondaryNav></SecondaryNav>
     </div>
-    <div class="row">
+    <div v-if="notFound">
+      <div class="col-lg-6 m-4">
+        <h2>404 Not Found</h2>
+        Sorry, the builder (simple list) with that ID either doesn't exist or
+        isn't owned by you.
+      </div>
+    </div>
+    <div v-else class="row">
       <div class="col-lg-6 col-md-9 m-4">
         <h2 v-if="!isEditing" class="ml-4">New Simple Selection</h2>
         <h2 v-else class="ml-4">Editing Simple Selection</h2>
@@ -110,6 +117,7 @@ export default {
   name: 'SimpleList',
   data: function() {
     return {
+      notFound: false,
       wikiProjects: [],
       success: true,
       valid_article_names: '',
@@ -139,6 +147,11 @@ export default {
       this.getBuilder();
     }
   },
+  watch: {
+    builderId: function() {
+      this.getBuilder();
+    }
+  },
   methods: {
     getWikiProjects: async function() {
       const response = await fetch(`${process.env.VUE_APP_API_URL}/sites/`);
@@ -153,7 +166,12 @@ export default {
           credentials: 'include'
         }
       );
-      this.builder = await response.json();
+      if (!response.ok) {
+        this.notFound = true;
+      } else {
+        this.notFound = false;
+        this.builder = await response.json();
+      }
     },
     onSubmit: async function() {
       const form = this.$refs.form;
@@ -193,12 +211,6 @@ export default {
         event.target.classList.add('is-invalid');
       }
     }
-  },
-  beforeRouteUpdate(to, from, next) {
-    if (to.params.builder_id) {
-      this.getBuilder();
-    }
-    next();
   }
 };
 </script>
