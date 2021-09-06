@@ -2,7 +2,7 @@
   <div>
     <p v-if="!hideInstructions">
       Use the autocomplete search box below to search for a project in order to
-      display it's summary table.
+      display its summary table.
     </p>
     <div v-if="this.$route.path.startsWith('/update')">
       <p>
