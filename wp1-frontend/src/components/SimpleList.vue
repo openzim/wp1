@@ -4,7 +4,7 @@
       <SecondaryNav></SecondaryNav>
     </div>
     <div v-if="notFound">
-      <div class="col-lg-6 m-4">
+      <div id="404" class="col-lg-6 m-4">
         <h2>404 Not Found</h2>
         Sorry, the builder (simple list) with that ID either doesn't exist or
         isn't owned by you.
@@ -28,7 +28,7 @@
           novalidate
         >
           <div ref="form_group" class="form-group">
-            <div class="m-4">
+            <div id="project" class="m-4">
               <label>Project</label>
               <select v-model="builder.project" class="custom-select my-list">
                 <option v-if="wikiProjects.length == 0" selected
@@ -50,7 +50,7 @@
                 required
               />
               <div class="invalid-feedback">
-                Please provide a valid list name.
+                Please provide a valid list name
               </div>
             </div>
             <div id="items" class="form-group m-4">
@@ -66,7 +66,7 @@
                 required
               ></textarea>
               <div class="invalid-feedback">
-                Please provide valid items.
+                Please provide valid items
               </div>
             </div>
           </div>
