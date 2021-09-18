@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "acorn": "^6.4.1",
-    "axios": "^0.21.1",
+    "axios": "^0.21.2",
     "bootstrap": "^4.4.1",
     "core-js": "^3.3.2",
     "jquery": "^3.5.1",
