@@ -253,6 +253,8 @@ paths:
                   next_update_time:
                     type: string
                     description: 'A string representing the UTC timestamp of when the next manual update can be performed.'
+        401:
+          description: 'Unauthorized. You must be logged in to perform a project update.'
         404:
           description: 'No project with that projectId was found'
     parameters:
@@ -342,7 +344,7 @@ paths:
                     type: array
                     items:
                       type: string
-  /selection/simple:
+  /builders:
     post:
       summary: 'Save a new Simple list, validating it first and returning invalid items if they exist'
       operationId: createSimpleList
@@ -355,7 +357,7 @@ paths:
               properties:
                 articles:
                   type: string
-                list_name:
+                name:
                   type: string
                 project:
                   type: string
@@ -365,32 +367,75 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    description: True when article name does not contain forbidden chars {"#", "<", ">", "[", "]", "{", "}", "|"}, false otherwise.
-                  items:
-                    type: object
-                    description: Empty in case of success being true
-                    properties:
-                      valid:
-                        type: array
-                        description: List of valid article names
-                        items:
-                          type: string
-                      invalid:
-                        type: array
-                        description: List of invalid article names
-                        items:
-                          type: string
-                      errors:
-                        type: array
-                        description: List of forbidden characters present in article names
-                        items:
-                          type: string
+                $ref: '#/components/schemas/CreateOrUpdateListResponse'
+        401:
+          description: 'Unauthorized. You must be logged in to save a list.'
         400:
           description: 'Request with either empty list_name or project or articles'
+  /builders/{builderId}:
+    get:
+      summary: 'Return the builder (Simple list) with the given id'
+      operationId: getSimpleList
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  project:
+                    type: string
+                  articles:
+                    type: string
+                    description: 'A newline separated list of articles that make up this Simple list.'
+        401:
+          description: 'Unauthorized. You must be logged in to retrieve builders.'
+        404:
+          description: 'Not found. The logged in user does not own a builder with the given ID.'
+      parameters:
+        - name: builderId
+          in: path
+          required: true
+          description: 'The id of the builder to retrieve.'
+          schema:
+            type: string
+    post:
+      summary: 'Update the builder (Simple list) with the given id'
+      operationId: updateSimpleList
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                articles:
+                  type: string
+                name:
+                  type: string
+                project:
+                  type: string
+      responses:
+        401:
+          description: 'Unauthorized. You must be logged in to update a builder.'
+        404:
+          description: 'Not found. No builder with the given ID was found for the logged in user.'
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateOrUpdateListResponse'
+      parameters:
+        - name: builderId
+          in: path
+          required: true
+          description: 'The id of the builder to update.'
+          schema:
+            type: string
   /selection/simple/lists:
     get:
       summary: 'Return list details from database'
@@ -413,7 +458,6 @@ paths:
                         name:
                           type: string
                         project:
-                          items:
                           type: string
                         selections:
                           type: object
@@ -428,6 +472,31 @@ paths:
 
 components:
   schemas:
+    CreateOrUpdateListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: True when article name does not contain forbidden chars {"#", "<", ">", "[", "]", "{", "}", "|"}, false otherwise.
+        items:
+          type: object
+          description: Empty in case of success being true
+          properties:
+            valid:
+              type: array
+              description: List of valid article names
+              items:
+                type: string
+            invalid:
+              type: array
+              description: List of invalid article names
+              items:
+                type: string
+            errors:
+              type: array
+              description: List of forbidden characters present in article names
+              items:
+                type: string
     Project:
       type: object
       properties:

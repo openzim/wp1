@@ -132,18 +132,33 @@ class BuilderTest(BaseWpOneDbTest):
 
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
-  def test_save_builder(self, mock_utcnow):
-    logic_builder.save_builder(self.wp10db, 'My Builder', '1234',
-                               'en.wikipedia.fake', 'a\nb\nc')
-    db_lists = self._get_builder_by_user_id()
-    self.assertEqual(self.expected_builder, db_lists)
+  def test_create_or_update_builder_create(self, mock_utcnow):
+    logic_builder.create_or_update_builder(self.wp10db, 'My Builder', '1234',
+                                           'en.wikipedia.fake', 'a\nb\nc')
+    actual = self._get_builder_by_user_id()
+    self.assertEqual(self.expected_builder, actual)
+
+  @patch('wp1.models.wp10.builder.utcnow',
+         return_value=datetime.datetime(2020, 1, 1, 5, 55, 55))
+  def test_create_or_update_builder_update(self, mock_utcnow):
+    id_ = self._insert_builder()
+    logic_builder.create_or_update_builder(self.wp10db, 'Builder 2', '1234',
+                                           'zz.wikipedia.fake', 'a\nb\nc\nd',
+                                           id_)
+    expected = dict(**self.expected_builder)
+    expected['b_name'] = b'Builder 2'
+    expected['b_project'] = b'zz.wikipedia.fake'
+    expected['b_params'] = b'{"list": ["a", "b", "c", "d"]}'
+    expected['b_updated_at'] = b'20200101055555'
+    actual = self._get_builder_by_user_id()
+    self.assertEqual(expected, actual)
 
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
   def test_insert_builder(self, mock_utcnow):
     logic_builder.insert_builder(self.wp10db, self.builder)
-    db_lists = self._get_builder_by_user_id()
-    self.assertEqual(self.expected_builder, db_lists)
+    actual = self._get_builder_by_user_id()
+    self.assertEqual(self.expected_builder, actual)
 
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
@@ -153,7 +168,6 @@ class BuilderTest(BaseWpOneDbTest):
 
   def test_get_builder(self):
     id_ = self._insert_builder()
-
     actual = logic_builder.get_builder(self.wp10db, id_)
     self.builder.b_id = id_
     self.assertEqual(self.builder, actual)
@@ -232,3 +246,67 @@ class BuilderTest(BaseWpOneDbTest):
     article_data = logic_builder.get_builders_with_selections(
         self.wp10db, '1234')
     self.assertEqual(self.expected_lists_with_unmapped_selections, article_data)
+
+  def test_update_builder_doesnt_exist(self):
+    actual = logic_builder.update_builder(self.wp10db, self.builder)
+    self.assertFalse(actual)
+
+  def test_update_builder_user_id_doesnt_match(self):
+    self._insert_builder()
+    builder = Builder(
+        b_id=1,
+        b_name=b'My Builder',
+        b_user_id=5555,  # Different user_id
+        b_project=b'en.wikipedia.fake',
+        b_model=b'wp1.selection.models.simple',
+        b_params=b'{"list": ["a", "b", "c"]}',
+    )
+    actual = logic_builder.update_builder(self.wp10db, builder)
+    self.assertFalse(actual)
+
+  def test_update_builder_wrong_id(self):
+    self._insert_builder()
+    builder = Builder(
+        b_id=100,  # Wrong ID
+        b_name=b'My Builder',
+        b_user_id=1234,
+        b_project=b'en.wikipedia.fake',
+        b_model=b'wp1.selection.models.simple',
+        b_params=b'{"list": ["a", "b", "c"]}',
+    )
+    actual = logic_builder.update_builder(self.wp10db, builder)
+    self.assertFalse(actual)
+
+  def test_update_builder_success(self):
+    self._insert_builder()
+    builder = Builder(
+        b_id=1,
+        b_name=b'My Builder',
+        b_user_id=1234,
+        b_project=b'en.wikipedia.fake',
+        b_model=b'wp1.selection.models.simple',
+        b_params=b'{"list": ["a", "b", "c"]}',
+    )
+    actual = logic_builder.update_builder(self.wp10db, builder)
+    self.assertTrue(actual)
+
+  def test_update_builder_updates_fields(self):
+    self._insert_builder()
+    builder = Builder(
+        b_id=1,
+        b_name=b'Builder 2',
+        b_user_id=1234,
+        b_project=b'zz.wikipedia.fake',
+        b_model=b'wp1.selection.models.complex',
+        b_params=b'{"list": ["1", "b", "c"]}',
+        b_created_at=b'20191225044444',
+        b_updated_at=b'20211111044444',
+    )
+    actual = logic_builder.update_builder(self.wp10db, builder)
+    self.assertTrue(actual)
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT * FROM builders where b_id = %s', (1,))
+      db_builder = cursor.fetchone()
+      actual_builder = Builder(**db_builder)
+    self.assertEqual(builder, actual_builder)

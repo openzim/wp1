@@ -36,7 +36,7 @@
             "
           >
             <router-link class="nav-link" to="/selections/simple"
-              >Create Simple Selection</router-link
+              >Simple Selection</router-link
             >
           </li>
         </ul>
