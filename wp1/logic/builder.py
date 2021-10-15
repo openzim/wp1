@@ -12,16 +12,28 @@ from wp1.wp10_db import connect as wp10_connect
 logger = logging.getLogger(__name__)
 
 
-def save_builder(wp10db, name, user_id, project, articles):
+def create_or_update_builder(wp10db,
+                             name,
+                             user_id,
+                             project,
+                             articles,
+                             builder_id=None):
   params = json.dumps({'list': articles.split('\n')}).encode('utf-8')
   builder = Builder(b_name=name,
                     b_user_id=user_id,
                     b_model='wp1.selection.models.simple',
                     b_project=project,
                     b_params=params)
-  builder.set_created_at_now()
   builder.set_updated_at_now()
-  return insert_builder(wp10db, builder)
+  if builder_id is None:
+    builder.set_created_at_now()
+    return insert_builder(wp10db, builder)
+
+  builder.b_id = int(builder_id)
+  if update_builder(wp10db, builder):
+    return builder_id
+
+  return None
 
 
 def insert_builder(wp10db, builder):
@@ -36,11 +48,24 @@ def insert_builder(wp10db, builder):
   return id_
 
 
+def update_builder(wp10db, builder):
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        '''UPDATE builders
+      SET b_name = %(b_name)s, b_project = %(b_project)s, b_params = %(b_params)s, b_model = %(b_model)s,
+          b_updated_at = %(b_updated_at)s
+      WHERE b_id = %(b_id)s AND b_user_id = %(b_user_id)s
+      ''', attr.asdict(builder))
+    rowcount = cursor.rowcount
+  wp10db.commit()
+  return rowcount > 0
+
+
 def get_builder(wp10db, id_):
   with wp10db.cursor() as cursor:
     cursor.execute('SELECT * FROM builders WHERE b_id = %s', id_)
     db_builder = cursor.fetchone()
-    return Builder(**db_builder)
+    return Builder(**db_builder) if db_builder else None
 
 
 def materialize_builder(builder_cls, builder_id, content_type):

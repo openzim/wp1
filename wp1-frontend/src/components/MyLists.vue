@@ -7,7 +7,12 @@
       <div class=" col-lg-6">
         <div v-for="item in list" :key="item.id" class="card text-center m-5">
           <div class="card-header">
-            {{ item.name }}
+            <router-link
+              :to="{
+                path: `/selections/simple/${item.id}`
+              }"
+              >{{ item.name }} {{ item.id }}</router-link
+            >
           </div>
           <div class="card-body ">
             <h5 class="card-title">{{ item.project }}</h5>
