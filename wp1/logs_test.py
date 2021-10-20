@@ -582,9 +582,7 @@ class LogsTest(BaseCombinedDbTest):
                                                patched_api, patched_wp10,
                                                patched_wiki):
     project_name = b'Catholicism'
-    header = ('{{Log}}\n'
-              '<noinclude>[[Category:%s articles by quality]]</noinclude>\n' %
-              project_name.decode('utf-8').replace('_', ' '))
+    header = '{{Log}}\n'
     no_logs_msg = ("'''There were no logs for this project from December 21, "
                    "2018 - December 28, 2018.'''")
     logs.update_log_page_for_project(project_name)
@@ -599,9 +597,7 @@ class LogsTest(BaseCombinedDbTest):
                                                  patched_api, patched_wp10,
                                                  patched_wiki):
     project_name = b'Catholicism'
-    header = ('{{Log}}\n'
-              '<noinclude>[[Category:%s articles by quality]]</noinclude>\n' %
-              project_name.decode('utf-8'))
+    header = '{{Log}}\n'
     text = 'a' * 1000 * 1024
     patched_generate.return_value = [text, text, text]
     logs.update_log_page_for_project(project_name)
@@ -618,9 +614,7 @@ class LogsTest(BaseCombinedDbTest):
     project_name = b'Catholicism'
     sorry_msg = ('Sorry, all of the logs for this date were too large to '
                  'upload.')
-    header = ('{{Log}}\n'
-              '<noinclude>[[Category:%s articles by quality]]</noinclude>\n' %
-              project_name.decode('utf-8'))
+    header = '{{Log}}\n'
     text = 'a' * 3000 * 1024
     patched_generate.return_value = [text, text, text]
     logs.update_log_page_for_project(b'Catholicism')
