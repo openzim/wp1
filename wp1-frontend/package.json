@@ -13,6 +13,8 @@
     "axios": "^0.21.2",
     "bootstrap": "^4.4.1",
     "core-js": "^3.3.2",
+    "datatables.net": "^1.11.3",
+    "datatables.net-dt": "^1.11.3",
     "jquery": "^3.5.1",
     "minimist": "^1.2.2",
     "node-forge": "^0.10.0",
