@@ -5,6 +5,7 @@ import attr
 
 from wp1.constants import CONTENT_TYPE_TO_EXT
 import wp1.logic.selection as logic_selection
+import wp1.logic.util as logic_util
 from wp1.models.wp10.builder import Builder
 from wp1.storage import connect_storage
 from wp1.wp10_db import connect as wp10_connect
@@ -99,6 +100,8 @@ def get_builders_with_selections(wp10db, user_id):
         builders[b['b_id']] = {
             'name': b['b_name'].decode('utf-8'),
             'project': b['b_project'].decode('utf-8'),
+            'created_at': logic_util.wp10_timestamp_to_unix(b['b_created_at']),
+            'updated_at': logic_util.wp10_timestamp_to_unix(b['b_updated_at']),
             'selections': [],
         }
       if b['s_id']:
@@ -118,6 +121,8 @@ def get_builders_with_selections(wp10db, user_id):
     for id_, value in builders.items():
       result.append({
           'id': id_,
+          'created_at': value['created_at'],
+          'updated_at': value['updated_at'],
           'name': value['name'],
           'project': value['project'],
           'selections': value['selections'],

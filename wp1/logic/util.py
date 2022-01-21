@@ -1,5 +1,8 @@
+import datetime
+import time
+
 from wp1.conf import get_conf
-from wp1.constants import AssessmentKind
+from wp1.constants import AssessmentKind, TS_FORMAT_WP10
 from wp1.models.wp10.namespace import Namespace
 
 config = get_conf()
@@ -9,6 +12,13 @@ BY_IMPORTANCE_STR = config['BY_IMPORTANCE']
 BY_IMPORTANCE_ALT_STR = config['BY_IMPORTANCE_ALT']
 ARTICLES_LABEL_STR = config['ARTICLES_LABEL']
 DATABASE_WIKI_TS = config['DATABASE_WIKI_TS']
+
+
+def wp10_timestamp_to_unix(ts):
+  if ts is None:
+    raise ValueError('Cannot convert None timestamp')
+  dt = datetime.datetime.strptime(ts.decode('utf-8'), TS_FORMAT_WP10)
+  return int(time.mktime(dt.timetuple()))
 
 
 def category_for_project_by_kind(project_name,
