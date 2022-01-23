@@ -5,6 +5,7 @@ import attr
 
 from wp1.constants import CONTENT_TYPE_TO_EXT
 import wp1.logic.selection as logic_selection
+import wp1.logic.util as logic_util
 from wp1.models.wp10.builder import Builder
 from wp1.storage import connect_storage
 from wp1.wp10_db import connect as wp10_connect
@@ -95,31 +96,34 @@ def get_builders_with_selections(wp10db, user_id):
     builders = {}
     result = []
     for b in data:
-      if not b['b_id'] in builders:
-        builders[b['b_id']] = {
-            'name': b['b_name'].decode('utf-8'),
-            'project': b['b_project'].decode('utf-8'),
-            'selections': [],
-        }
-      if b['s_id']:
-        content_type = b['s_content_type'].decode('utf-8')
-        selection_id = b['s_id'].decode('utf-8')
-        builders[b['b_id']]['selections'].append({
-            'id':
-                selection_id,
-            'content_type':
-                content_type,
-            'extension':
-                CONTENT_TYPE_TO_EXT.get(content_type, '???'),
-            'url':
-                logic_selection.url_for(selection_id, content_type,
-                                        b['b_model'].decode('utf-8')),
-        })
-    for id_, value in builders.items():
+      has_selection = b['s_id'] is not None
+      content_type = b['s_content_type'].decode(
+          'utf-8') if has_selection else None
+      selection_id = b['s_id'].decode('utf-8') if has_selection else None
       result.append({
-          'id': id_,
-          'name': value['name'],
-          'project': value['project'],
-          'selections': value['selections'],
+          'id':
+              b['b_id'],
+          'name':
+              b['b_name'].decode('utf-8'),
+          'project':
+              b['b_project'].decode('utf-8'),
+          'created_at':
+              logic_util.wp10_timestamp_to_unix(b['b_created_at']),
+          'updated_at':
+              logic_util.wp10_timestamp_to_unix(b['b_updated_at']),
+          's_id':
+              selection_id,
+          's_updated_at':
+              logic_util.wp10_timestamp_to_unix(b['s_updated_at'])
+              if has_selection else None,
+          's_content_type':
+              content_type,
+          's_extension':
+              CONTENT_TYPE_TO_EXT.get(content_type, '???')
+              if has_selection else None,
+          's_url':
+              logic_selection.url_for(selection_id, content_type,
+                                      b['b_model'].decode('utf-8'))
+              if has_selection else None,
       })
     return result
