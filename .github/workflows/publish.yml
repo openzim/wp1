@@ -13,9 +13,7 @@ jobs:
     strategy:
       matrix:
         docker-file-location:
-          - workers.Dockerfile
-          - web.Dockerfile
-          - frontend.Dockerfile
+          ['workers.Dockerfile', 'web.Dockerfile', 'frontend.Dockerfile']
 
     runs-on: ubuntu-latest
     permissions:
