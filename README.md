@@ -1,5 +1,7 @@
 # Wikipedia 1.0 engine
 
+DELETE ME
+
 This directory contains the code of Wikipedia 1.0 supporting
 software. More information about the Wikipedia 1.0 project can be
 found [on the Wikipedia in
