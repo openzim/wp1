@@ -6,7 +6,7 @@
     <div class="row p-4">
       <div class="col-lg-10">
         <h2>Selections</h2>
-        <p>(all times UTC)</p>
+        <p>(all times local)</p>
         <table id="list-table">
           <thead>
             <tr>
