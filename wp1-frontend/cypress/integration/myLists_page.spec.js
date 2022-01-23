@@ -10,21 +10,36 @@ describe('when the user is logged in', () => {
   it('successfully loads', () => {});
 
   it('displays the datatables view', () => {
-    cy.get('.dataTables_info').contains('Showing 1 to 1 of 1 entries');
+    cy.get('.dataTables_info').contains('Showing 1 to 2 of 2 entries');
   });
 
   it('displays list and its contents', () => {
-    cy.get('#list-table td').contains('list_name');
-    cy.get('#list-table td').contains('en.wikipedia.org');
-    cy.get('#list-table td').contains('9/5/2021 2:28:23 PM');
-    cy.get('#list-table td').contains('9/5/2021 2:45:03 PM');
-    cy.get('#list-table td').contains('9/5/2021 3:18:23 PM');
-    cy.get('#list-table td .btn-primary').contains('Edit');
+    const listTd = cy.contains('td', 'list_name');
+    listTd.siblings().contains('td', 'en.wikipedia.org');
+    listTd.siblings().contains('td', '9/5/2021 2:28:23 PM');
+    listTd.siblings().contains('td', '9/5/2021 2:45:03 PM');
+    listTd.siblings().contains('td', '9/5/2021 3:18:23 PM');
+    listTd.siblings().contains('.btn-primary', 'Edit');
+  });
+
+  it('displays "-" for updated and download of list with no selection', () => {
+    const listTd = cy.contains('td', 'list 2');
+    listTd.parent('tr').within(td => {
+      cy.get('td')
+        .eq(4)
+        .contains('-');
+      cy.get('td')
+        .eq(5)
+        .contains('-');
+    });
   });
 
   it('takes the user to the edit screen when edit is clicked', () => {
     cy.intercept('GET', 'v1/builders/1', { fixture: 'builder_1.json' });
-    cy.get('#list-table td .btn-primary').click();
+    cy.contains('td', 'list_name')
+      .siblings()
+      .contains('.btn-primary', 'Edit')
+      .click();
     cy.url().should('eq', 'http://localhost:3000/#/selections/simple/1');
   });
 });
