@@ -39,16 +39,20 @@ class BuilderTest(BaseWpOneDbTest):
           'My Builder',
       'project':
           'en.wikipedia.fake',
-      'selections': [{
-          'id':
-              '1',
-          'content_type':
-              'text/tab-separated-values',
-          'extension':
-              'tsv',
-          'url':
-              'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1.tsv'
-      }]
+      'created_at':
+          1577249084,
+      'updated_at':
+          1577249084,
+      's_id':
+          '1',
+      's_updated_at':
+          1577249084,
+      's_content_type':
+          'text/tab-separated-values',
+      's_extension':
+          'tsv',
+      's_url':
+          'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1.tsv'
   }]
 
   expected_lists_with_multiple_selections = [{
@@ -58,32 +62,54 @@ class BuilderTest(BaseWpOneDbTest):
           'My Builder',
       'project':
           'en.wikipedia.fake',
-      'selections': [{
-          'id':
-              '1',
-          'content_type':
-              'text/tab-separated-values',
-          'extension':
-              'tsv',
-          'url':
-              'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1.tsv',
-      }, {
-          'id':
-              '2',
-          'content_type':
-              'application/vnd.ms-excel',
-          'extension':
-              'xls',
-          'url':
-              'http://credentials.not.found.fake/selections/wp1.selection.models.simple/2.xls',
-      }]
+      'created_at':
+          1577249084,
+      'updated_at':
+          1577249084,
+      's_id':
+          '1',
+      's_updated_at':
+          1577249084,
+      's_content_type':
+          'text/tab-separated-values',
+      's_extension':
+          'tsv',
+      's_url':
+          'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1.tsv',
+  }, {
+      'id':
+          1,
+      'name':
+          'My Builder',
+      'project':
+          'en.wikipedia.fake',
+      'created_at':
+          1577249084,
+      'updated_at':
+          1577249084,
+      's_id':
+          '2',
+      's_updated_at':
+          1577249084,
+      's_content_type':
+          'application/vnd.ms-excel',
+      's_extension':
+          'xls',
+      's_url':
+          'http://credentials.not.found.fake/selections/wp1.selection.models.simple/2.xls',
   }]
 
   expected_lists_with_no_selections = [{
       'id': 1,
       'name': 'My Builder',
       'project': 'en.wikipedia.fake',
-      'selections': [],
+      'created_at': 1577249084,
+      'updated_at': 1577249084,
+      's_id': None,
+      's_updated_at': None,
+      's_content_type': None,
+      's_extension': None,
+      's_url': None,
   }]
 
   expected_lists_with_unmapped_selections = [{
@@ -93,16 +119,20 @@ class BuilderTest(BaseWpOneDbTest):
           'My Builder',
       'project':
           'en.wikipedia.fake',
-      'selections': [{
-          'id':
-              '1',
-          'content_type':
-              'foo/bar-baz',
-          'extension':
-              '???',
-          'url':
-              'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1.???',
-      }],
+      'created_at':
+          1577249084,
+      'updated_at':
+          1577249084,
+      's_id':
+          '1',
+      's_updated_at':
+          1577249084,
+      's_content_type':
+          'foo/bar-baz',
+      's_extension':
+          '???',
+      's_url':
+          'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1.???',
   }]
 
   def _insert_builder(self):

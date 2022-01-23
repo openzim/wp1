@@ -33,7 +33,6 @@ def _create_or_update_builder(data, builder_id=None):
   redis = get_redis()
 
   user_id = flask.session['user']['identity']['sub']
-  print('user id: %s' % user_id)
   is_update = builder_id is not None
   builder_id = logic_builder.create_or_update_builder(wp10db, list_name,
                                                       user_id, project,

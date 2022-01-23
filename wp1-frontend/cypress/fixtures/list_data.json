@@ -4,14 +4,27 @@
       "id": 1,
       "name": "list_name",
       "project": "en.wikipedia.org",
-      "selections": [
-        {
-          "id": "1",
-          "content_type": "text/tab-separated-values",
-          "extension": "tsv",
-          "url": "https://www.example.com/<id>"
-        }
-      ]
+      "created_at": 1630877303,
+      "updated_at": 1630878303,
+      "s_id": "abcd-efgh",
+      "s_created_at": 1630879303,
+      "s_updated_at": 1630880303,
+      "s_content_type": "text/tab-separated-values",
+      "s_extension": "tsv",
+      "s_url": "https://www.example.fake/abcd-efgh"
+    },
+    {
+      "id": 2,
+      "name": "list 2",
+      "project": "en.wikipedia.org",
+      "created_at": 1630877303,
+      "updated_at": 1630878303,
+      "s_id": "hijk-lmno",
+      "s_created_at": null,
+      "s_updated_at": null,
+      "s_content_type": null,
+      "s_extension": null,
+      "s_url": null
     }
   ]
 }
