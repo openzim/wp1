@@ -37,15 +37,21 @@
                 }}
               </td>
               <td>{{ item.project }}</td>
-              <td>
+              <td v-if="item.s_updated_at">
                 {{
                   new Date(item.s_updated_at * 1000).toLocaleDateString() +
                     ' ' +
                     new Date(item.s_updated_at * 1000).toLocaleTimeString()
                 }}
               </td>
-              <td>
+              <td v-else>
+                -
+              </td>
+              <td v-if="item.s_url">
                 <a :href="item.s_url">Download {{ item.s_extension }}</a>
+              </td>
+              <td v-else>
+                -
               </td>
               <td>
                 <router-link :to="{ path: `/selections/simple/${item.id}` }"
