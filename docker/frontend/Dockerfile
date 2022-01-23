@@ -2,7 +2,7 @@
 FROM node:lts-alpine as build-stage
 WORKDIR /app
 COPY wp1-frontend/ .
-RUN npm install
+RUN npm install --production
 RUN npm run build
 
 # production stage
