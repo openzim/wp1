@@ -40,13 +40,13 @@ class BuilderTest(BaseWpOneDbTest):
       'project':
           'en.wikipedia.fake',
       'created_at':
-          1577277884,
+          1577249084,
       'updated_at':
-          1577277884,
+          1577249084,
       's_id':
           '1',
       's_updated_at':
-          1577277884,
+          1577249084,
       's_content_type':
           'text/tab-separated-values',
       's_extension':
@@ -63,13 +63,13 @@ class BuilderTest(BaseWpOneDbTest):
       'project':
           'en.wikipedia.fake',
       'created_at':
-          1577277884,
+          1577249084,
       'updated_at':
-          1577277884,
+          1577249084,
       's_id':
           '1',
       's_updated_at':
-          1577277884,
+          1577249084,
       's_content_type':
           'text/tab-separated-values',
       's_extension':
@@ -84,13 +84,13 @@ class BuilderTest(BaseWpOneDbTest):
       'project':
           'en.wikipedia.fake',
       'created_at':
-          1577277884,
+          1577249084,
       'updated_at':
-          1577277884,
+          1577249084,
       's_id':
           '2',
       's_updated_at':
-          1577277884,
+          1577249084,
       's_content_type':
           'application/vnd.ms-excel',
       's_extension':
@@ -103,8 +103,8 @@ class BuilderTest(BaseWpOneDbTest):
       'id': 1,
       'name': 'My Builder',
       'project': 'en.wikipedia.fake',
-      'created_at': 1577277884,
-      'updated_at': 1577277884,
+      'created_at': 1577249084,
+      'updated_at': 1577249084,
       's_id': None,
       's_updated_at': None,
       's_content_type': None,
@@ -120,13 +120,13 @@ class BuilderTest(BaseWpOneDbTest):
       'project':
           'en.wikipedia.fake',
       'created_at':
-          1577277884,
+          1577249084,
       'updated_at':
-          1577277884,
+          1577249084,
       's_id':
           '1',
       's_updated_at':
-          1577277884,
+          1577249084,
       's_content_type':
           'foo/bar-baz',
       's_extension':
