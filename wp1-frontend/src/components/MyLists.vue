@@ -3,43 +3,38 @@
     <div>
       <SecondaryNav></SecondaryNav>
     </div>
-    <div class="row">
-      <div class=" col-lg-6">
-        <div v-for="item in list" :key="item.id" class="card text-center m-5">
-          <div class="card-header">
-            <router-link
-              :to="{
-                path: `/selections/simple/${item.id}`
-              }"
-              >{{ item.name }} {{ item.id }}</router-link
-            >
-          </div>
-          <div class="card-body ">
-            <h5 class="card-title">{{ item.project }}</h5>
-            <div
-              v-for="selection in item.selections"
-              :key="selection.s_id"
-              class="input-group col-sm-9 mx-auto mb-3"
-            >
-              <input
-                :id="selection.id"
-                :value="selection.url"
-                class="form-control"
-              />
-              <div class="input-group-append">
-                <button
-                  class="btn btn-outline-secondary"
-                  v-on:click="copyText(selection.id)"
+    <div class="row p-4">
+      <div class="col-lg-8">
+        <table id="list-table">
+          <thead>
+            <tr>
+              <th>Selection Name</th>
+              <th>Selection Created</th>
+              <th>Project</th>
+              <th>Download Updated</th>
+              <th>Download</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in list" :key="item.id">
+              <td>{{ item.name }}</td>
+              <td>{{ item.created_at }}</td>
+              <td>{{ item.project }}</td>
+              <td>{{ item.s_updated_at }}</td>
+              <td>
+                <a :href="item.s_url">Download {{ item.s_extension }}</a>
+              </td>
+              <td>
+                <router-link :to="{ path: `/selections/simple/${item.id}` }"
+                  ><button type="button" class="btn btn-primary">
+                    Edit
+                  </button></router-link
                 >
-                  Copy
-                </button>
-              </div>
-              <a :href="selection.url" class="btn btn-primary ml-3" download
-                >Download {{ selection.extension }}</a
-              >
-            </div>
-          </div>
-        </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -49,6 +44,8 @@
 </template>
 
 <script>
+import $ from 'jquery';
+$.noConflict();
 import SecondaryNav from './SecondaryNav.vue';
 import LoginRequired from './LoginRequired.vue';
 
@@ -82,6 +79,9 @@ export default {
       );
       var data = await response.json();
       this.list = data.builders;
+      this.$nextTick(function() {
+        $('#list-table').DataTable();
+      });
     }
   },
   created: function() {
