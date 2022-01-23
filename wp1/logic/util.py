@@ -18,7 +18,15 @@ def wp10_timestamp_to_unix(ts):
   if ts is None:
     raise ValueError('Cannot convert None timestamp')
   dt = datetime.datetime.strptime(ts.decode('utf-8'), TS_FORMAT_WP10)
-  return int(time.mktime(dt.timetuple()))
+  dt = datetime.datetime(dt.year,
+                         dt.month,
+                         dt.day,
+                         dt.hour,
+                         dt.minute,
+                         dt.second,
+                         tzinfo=datetime.timezone.utc)
+  return int((dt - datetime.datetime(
+      1970, 1, 1, tzinfo=datetime.timezone.utc)).total_seconds())
 
 
 def category_for_project_by_kind(project_name,
