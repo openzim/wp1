@@ -253,19 +253,21 @@ to something like:
 
 # Updating production
 
-- Since Docker Hub no longer auto builds images, you must build the images yourself.
-  From the wp1 directory, run the following commands to build and push the images:
+- Push to the release branch of the github repository:
   - `git checkout main`
   - `git pull origin main`
-  - `./build_production_images.sh`
+  - `git checkout release`
+  - `git merge main`
+  - `git push origin release`
+- Wait for the release images [to be built](https://github.com/openzim/wp1/actions/workflows/publish.yml)
 - Log in to the box that contains the production docker images. It is
   called wp1.
 - `cd /data/code/wp1/`
 - `sudo git pull origin main`
 - Pull the docker images from docker hub:
-  - `docker pull openzim/wp1bot-workers`
-  - `docker pull openzim/wp1bot-web`
-  - `docker pull openzim/wp1bot-frontend`
+  - `docker pull ghcr.io/openzim/wp1-workers`
+  - `docker pull ghcr.io/openzim/wp1-web`
+  - `docker pull ghcr.io/openzim/wp1-frontend`
 - Run docker-compose to bring the production images online.
   - `docker-compose up -d`
 - Run the production database migrations in the worker container:
