@@ -4,12 +4,15 @@
       <SecondaryNav></SecondaryNav>
     </div>
     <div class="row p-4">
-      <div class="col-lg-8">
+      <div class="col-lg-10">
+        <h2>Selections</h2>
+        <p>(all times UTC)</p>
         <table id="list-table">
           <thead>
             <tr>
               <th>Selection Name</th>
               <th>Selection Created</th>
+              <th>Selection Updated</th>
               <th>Project</th>
               <th>Download Updated</th>
               <th>Download</th>
@@ -17,11 +20,30 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in list" :key="item.id">
+            <tr v-for="item in list" :key="item.s_id">
               <td>{{ item.name }}</td>
-              <td>{{ item.created_at }}</td>
+              <td>
+                {{
+                  new Date(item.created_at * 1000).toLocaleDateString() +
+                    ' ' +
+                    new Date(item.created_at * 1000).toLocaleTimeString()
+                }}
+              </td>
+              <td>
+                {{
+                  new Date(item.updated_at * 1000).toLocaleDateString() +
+                    ' ' +
+                    new Date(item.updated_at * 1000).toLocaleTimeString()
+                }}
+              </td>
               <td>{{ item.project }}</td>
-              <td>{{ item.s_updated_at }}</td>
+              <td>
+                {{
+                  new Date(item.s_updated_at * 1000).toLocaleDateString() +
+                    ' ' +
+                    new Date(item.s_updated_at * 1000).toLocaleTimeString()
+                }}
+              </td>
               <td>
                 <a :href="item.s_url">Download {{ item.s_extension }}</a>
               </td>
