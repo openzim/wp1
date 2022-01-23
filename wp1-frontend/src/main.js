@@ -1,6 +1,10 @@
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
+import 'jquery';
+import 'datatables.net';
+import 'datatables.net-dt/css/jquery.dataTables.min.css';
+
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 
