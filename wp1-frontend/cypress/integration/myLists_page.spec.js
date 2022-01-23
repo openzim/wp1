@@ -16,9 +16,7 @@ describe('when the user is logged in', () => {
   it('displays list and its contents', () => {
     const listTd = cy.contains('td', 'list_name');
     listTd.siblings().contains('td', 'en.wikipedia.org');
-    listTd.siblings().contains('td', '9/5/2021 2:28:23 PM');
-    listTd.siblings().contains('td', '9/5/2021 2:45:03 PM');
-    listTd.siblings().contains('td', '9/5/2021 3:18:23 PM');
+    listTd.siblings().contains('td', '9/5/2021');
     listTd.siblings().contains('.btn-primary', 'Edit');
   });
 
