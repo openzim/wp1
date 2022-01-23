@@ -9,7 +9,12 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push-image:
+  build-and-push-images:
+    strategy:
+      matrix:
+        docker-file-location:
+          ['workers.Dockerfile', 'web.Dockerfile', 'frontend.Dockerfile']
+
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -36,6 +41,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: .
+          file: ${{defaultContext}}/${{ matrix.docker_file_location }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
