@@ -8,7 +8,7 @@ services:
     restart: always
 
   workers:
-    image: openzim/wp1bot-workers
+    image: ghcr.io/openzim/wp1-workers:release
     container_name: wp1bot-workers
     volumes:
       - /data/wp1bot/credentials.py:/usr/src/app/wp1/credentials.py
@@ -26,7 +26,7 @@ services:
       - redis
 
   web:
-    image: openzim/wp1bot-web
+    image: ghcr.io/openzim/wp1-web:release
     container_name: wp1bot-web
     environment:
       - VIRTUAL_HOST=api.wp1.openzim.org
@@ -50,7 +50,7 @@ services:
       - redis
 
   frontend:
-    image: openzim/wp1bot-frontend
+    image: ghcr.io/openzim/wp1-frontend:release
     container_name: wp1bot-frontend
     environment:
       - VIRTUAL_HOST=wp1.openzim.org
