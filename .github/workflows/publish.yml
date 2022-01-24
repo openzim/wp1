@@ -12,8 +12,7 @@ jobs:
   build-and-push-images:
     strategy:
       matrix:
-        docker-file-location:
-          ['workers.Dockerfile', 'web.Dockerfile', 'frontend.Dockerfile']
+        project: ['workers', 'web', 'frontend']
 
     runs-on: ubuntu-latest
     permissions:
@@ -35,12 +34,12 @@ jobs:
         id: meta
         uses: docker/metadata-action@v3
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.project }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
         with:
-          file: ${{ matrix.docker_file_location }}
+          file: ${{ matrix.project }}.Dockerfile
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
