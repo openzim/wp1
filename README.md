@@ -265,9 +265,9 @@ to something like:
 - `cd /data/code/wp1/`
 - `sudo git pull origin main`
 - Pull the docker images from docker hub:
-  - `docker pull ghcr.io/openzim/wp1-workers`
-  - `docker pull ghcr.io/openzim/wp1-web`
-  - `docker pull ghcr.io/openzim/wp1-frontend`
+  - `docker pull ghcr.io/openzim/wp1-workers:release`
+  - `docker pull ghcr.io/openzim/wp1-web:release`
+  - `docker pull ghcr.io/openzim/wp1-frontend:release`
 - Run docker-compose to bring the production images online.
   - `docker-compose up -d`
 - Run the production database migrations in the worker container:
