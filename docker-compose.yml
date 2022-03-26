@@ -105,6 +105,12 @@ services:
         max-size: '10k'
     restart: always
 
+  backup:
+    image: kiwix/borg-backup:latest
+    env_file:
+      - /data/wp1bot/db/.wp1db_backup.env
+    restart: always
+
 networks:
   default:
     name: openzim.org
