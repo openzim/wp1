@@ -261,17 +261,17 @@ to something like:
   - `git push origin release`
 - Wait for the release images [to be built](https://github.com/openzim/wp1/actions/workflows/publish.yml)
 - Log in to the box that contains the production docker images. It is
-  called wp1.
+  called mwcurator.
 - `cd /data/code/wp1/`
 - `sudo git pull origin main`
 - Pull the docker images from docker hub:
-  - `docker pull ghcr.io/openzim/wp1-workers:release`
-  - `docker pull ghcr.io/openzim/wp1-web:release`
-  - `docker pull ghcr.io/openzim/wp1-frontend:release`
+  - `sudo docker pull ghcr.io/openzim/wp1-workers:release`
+  - `sudo docker pull ghcr.io/openzim/wp1-web:release`
+  - `sudo docker pull ghcr.io/openzim/wp1-frontend:release`
 - Run docker-compose to bring the production images online.
-  - `docker-compose up -d`
+  - `sudo docker-compose up -d`
 - Run the production database migrations in the worker container:
-  - `docker exec -ti wp1bot-workers yoyo -c /usr/src/app/db/production/yoyo.ini apply`
+  - `sudo docker exec -ti wp1bot-workers yoyo -c /usr/src/app/db/production/yoyo.ini apply`
 
 # Pre-commit hooks
 
