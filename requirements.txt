@@ -1,5 +1,5 @@
 appdirs==1.4.4
-arrow==0.14.5
+arrow==0.15.1
 aspy.yaml==1.3.0
 attrs==18.2.0
 aws-requests-auth==0.4.3
