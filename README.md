@@ -54,7 +54,7 @@ with Redis and a MariaDB server for the `enwp10` database. Use it like so
 docker-compose -f docker-compose-dev.yml up -d
 ```
 
-`docker-compose-dev.yml` is a another docker file which sets up the test db
+`docker-compose-test.yml` is a another docker file which sets up the test db
 for python "nosetests" (unit tests). Run it similarly:
 
 ```bash
