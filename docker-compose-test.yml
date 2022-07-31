@@ -1,0 +1,14 @@
+version: '3.5'
+
+services:
+  test-database:
+    image: mysql:8.0.30
+    container_name: wp1bot-test-db
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+    volumes:
+      - ./db/test/conf.d:/etc/mysql/conf.d
+      - ./db/test/init:/docker-entrypoint-initdb.d
+    ports:
+      - '6600:3306'
+    restart: always
