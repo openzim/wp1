@@ -38,6 +38,15 @@ def parse_sql(filename):
 
 class BaseWpOneDbTest(unittest.TestCase):
 
+  def connect_wp_one_db(self):
+    return pymysql.connect(host='localhost',
+                           port=6600,
+                           db='enwp10_test',
+                           user='root',
+                           charset=None,
+                           use_unicode=False,
+                           cursorclass=pymysql.cursors.DictCursor)
+
   def _cleanup_wp_one_db(self):
     stmts = parse_sql('wp10_test.down.sql')
     with self.wp10db.cursor() as cursor:
@@ -47,12 +56,7 @@ class BaseWpOneDbTest(unittest.TestCase):
     self.wp10db.close()
 
   def _setup_wp_one_db(self):
-    self.wp10db = pymysql.connect(host='localhost',
-                                  db='enwp10_test',
-                                  user='root',
-                                  charset=None,
-                                  use_unicode=False,
-                                  cursorclass=pymysql.cursors.DictCursor)
+    self.wp10db = self.connect_wp_one_db()
     stmts = parse_sql('wp10_test.up.sql')
     with self.wp10db.cursor() as cursor:
       for stmt in stmts:
@@ -66,6 +70,15 @@ class BaseWpOneDbTest(unittest.TestCase):
 
 class BaseWikiDbTest(unittest.TestCase):
 
+  def connect_wiki_db(self):
+    return pymysql.connect(host='localhost',
+                           port=6600,
+                           db='enwikip_test',
+                           user='root',
+                           charset=None,
+                           use_unicode=False,
+                           cursorclass=pymysql.cursors.DictCursor)
+
   def _cleanup_wiki_db(self):
     stmts = parse_sql('wiki_test.down.sql')
     with self.wikidb.cursor() as cursor:
@@ -75,12 +88,7 @@ class BaseWikiDbTest(unittest.TestCase):
     self.wikidb.close()
 
   def _setup_wiki_db(self):
-    self.wikidb = pymysql.connect(host='localhost',
-                                  db='enwikip_test',
-                                  user='root',
-                                  charset=None,
-                                  use_unicode=False,
-                                  cursorclass=pymysql.cursors.DictCursor)
+    self.wikidb = self.connect_wiki_db()
     stmts = parse_sql('wiki_test.up.sql')
     with self.wikidb.cursor() as cursor:
       for stmt in stmts:
