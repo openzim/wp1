@@ -54,6 +54,13 @@ with Redis and a MariaDB server for the `enwp10` database. Use it like so
 docker-compose -f docker-compose-dev.yml up -d
 ```
 
+`docker-compose-dev.yml` is a another docker file which sets up the test db
+for python "nosetests" (unit tests). Run it similarly:
+
+```bash
+docker-compose -f docker-compose-test.yml up -d
+```
+
 The `*.dockerfile` symlinks allow for each docker image in this repository
 to be more easily built on [Docker Hub](https://hub.docker.com/). See:
 
@@ -117,25 +124,6 @@ yarn install
 You will also need to have [Docker](https://www.docker.com/) on your system
 in order to run the development server.
 
-### Running the tests
-
-The tests expect a localhost MariaDB or MySQL instance on the default
-port, with a user of 'root' and no password. You also need two databases:
-`enwp10_test` and `enwikip_test`. They can use default settings and be
-empty.
-
-If you have that, and you've already installed the requirements above,
-you should be able to simply run the following command from this
-directory to run the tests:
-
-```bash
-nosetests
-```
-
-If you'd like to use a different MySQL user or non-default password for
-the tests, you must edit `_setup_wp_one_db` and `_setup_wp_one_db` in
-`base_db_test.py`.
-
 ### Populating the credentials module
 
 The script needs access to the enwiki_p replica database (referred to
@@ -152,6 +140,39 @@ API credentials for automatically editing and updating
 Currently, if your environment is DEVELOPMENT, jobs that utilize the API
 to edit Wikipedia are disabled. There is no development wiki that gets edited
 at this time.
+
+The "development" credentials files, `credentials.py.dev` and
+`credentials.py.dev.example` are for running the docker graph of development
+resources. They are copied into the docker container that is run when using
+`docker-compose-dev.yml`.
+
+The `credentials.py` file proper also contains a section for TEST database
+credentials. These are used in unit tests. If you use the database provided
+in `docker-compose-test.yml` you can copy these directly from the example
+file. However, you are free to provide your own test database that will
+be destroyed after every test run. See the section "Running the tests".
+
+
+### Running the tests
+
+The tests require a MariaDB or MySQL instance to connect to in order to
+verify various statements and logic. This database does not need to be
+persistent and in fact part of the test setup and teardown is to recreate
+a fresh schema for the test databases each time. You also will need two
+databases in your server: `enwp10_test` and `enwikip_test`. They can use
+default settings and be empty.
+
+If you have that, and you've already installed the requirements above,
+you should be able to simply run the following command from this
+directory to run the tests:
+
+```bash
+nosetests
+```
+
+If you'd like to use a different MySQL user or non-default password for
+the tests, you must edit `_setup_wp_one_db` and `_setup_wp_one_db` in
+`base_db_test.py`.
 
 # Development
 
