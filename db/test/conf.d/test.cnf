@@ -1,0 +1,6 @@
+[mysqld]
+log-output=NONE
+slow-query-log=0
+innodb_flush_log_at_trx_commit=2
+innodb_log_buffer_size=3M
+innodb_buffer_pool_size=180M

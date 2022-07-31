@@ -13,7 +13,7 @@ def get_credentials():
   try:
     from wp1.credentials import ENV, CREDENTIALS
     return CREDENTIALS[ENV]['API']
-  except ImportError:
+  except (ImportError, KeyError):
     # No credentials, probably in development environment.
     pass
 

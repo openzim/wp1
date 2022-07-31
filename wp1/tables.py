@@ -24,6 +24,16 @@ except ImportError:
   CREDENTIALS = None
   ENV = None
 
+
+def get_redis():
+  try:
+    creds = CREDENTIALS[ENV]['REDIS']
+    return Redis(**creds)
+  except KeyError:
+    logger.exception('Redis creds not found, returning None Redis')
+    return None
+
+
 config = get_conf()
 NOT_A_CLASS = config['NOT_A_CLASS'].encode('utf-8')
 ASSESSED_CLASS = b'Assessed-Class'
@@ -192,11 +202,9 @@ def get_project_category_links(data, sort=False):
 
 
 def get_cached_table_data(project_name):
-  if CREDENTIALS is None and ENV is None:
-    return None
-
-  creds = CREDENTIALS[ENV]['REDIS']
-  r = Redis(**creds)
+  r = get_redis()
+  if r is None:
+    return
 
   pkl = r.get(project_name)
   if pkl is None:
@@ -205,11 +213,9 @@ def get_cached_table_data(project_name):
 
 
 def cache_table_data(project_name, data):
-  if CREDENTIALS is None and ENV is None:
+  r = get_redis()
+  if r is None:
     return
-
-  creds = CREDENTIALS[ENV]['REDIS']
-  r = Redis(**creds)
 
   # The data nested dict is actually a defaultdict. Cast it back to a normal
   # dictionary for pickling.

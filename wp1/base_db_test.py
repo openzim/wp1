@@ -1,10 +1,20 @@
 import importlib
+import logging
 import unittest
 import sys
 
 import pymysql
 
 from wp1.environment import Environment
+
+logger = logging.getLogger(__name__)
+
+try:
+  from wp1.credentials import CREDENTIALS, ENV
+except ImportError:
+  logger.exception('The credentials.py file must be populated to run tests.')
+  CREDENTIALS = None
+  ENV = None
 
 
 def parse_sql(filename):
@@ -38,6 +48,20 @@ def parse_sql(filename):
 
 class BaseWpOneDbTest(unittest.TestCase):
 
+  def connect_wp_one_db(self):
+    if ENV != Environment.TEST:
+      raise ValueError(
+          'Database tests destroy data! They should only be run in the TEST env'
+      )
+    creds = CREDENTIALS.get(Environment.TEST, {}).get('WP10DB')
+    if creds is None:
+      raise ValueError('No WP10DB creds found')
+
+    return pymysql.connect(**creds,
+                           charset=None,
+                           use_unicode=False,
+                           cursorclass=pymysql.cursors.DictCursor)
+
   def _cleanup_wp_one_db(self):
     stmts = parse_sql('wp10_test.down.sql')
     with self.wp10db.cursor() as cursor:
@@ -47,12 +71,7 @@ class BaseWpOneDbTest(unittest.TestCase):
     self.wp10db.close()
 
   def _setup_wp_one_db(self):
-    self.wp10db = pymysql.connect(host='localhost',
-                                  db='enwp10_test',
-                                  user='root',
-                                  charset=None,
-                                  use_unicode=False,
-                                  cursorclass=pymysql.cursors.DictCursor)
+    self.wp10db = self.connect_wp_one_db()
     stmts = parse_sql('wp10_test.up.sql')
     with self.wp10db.cursor() as cursor:
       for stmt in stmts:
@@ -66,6 +85,20 @@ class BaseWpOneDbTest(unittest.TestCase):
 
 class BaseWikiDbTest(unittest.TestCase):
 
+  def connect_wiki_db(self):
+    if ENV != Environment.TEST:
+      raise ValueError(
+          'Database tests destroy data! They should only be run in the TEST env'
+      )
+    creds = CREDENTIALS.get(Environment.TEST, {}).get('WIKIDB')
+    if creds is None:
+      raise ValueError('No WIKIDB creds found')
+
+    return pymysql.connect(**creds,
+                           charset=None,
+                           use_unicode=False,
+                           cursorclass=pymysql.cursors.DictCursor)
+
   def _cleanup_wiki_db(self):
     stmts = parse_sql('wiki_test.down.sql')
     with self.wikidb.cursor() as cursor:
@@ -75,12 +108,7 @@ class BaseWikiDbTest(unittest.TestCase):
     self.wikidb.close()
 
   def _setup_wiki_db(self):
-    self.wikidb = pymysql.connect(host='localhost',
-                                  db='enwikip_test',
-                                  user='root',
-                                  charset=None,
-                                  use_unicode=False,
-                                  cursorclass=pymysql.cursors.DictCursor)
+    self.wikidb = self.connect_wiki_db()
     stmts = parse_sql('wiki_test.up.sql')
     with self.wikidb.cursor() as cursor:
       for stmt in stmts:
@@ -100,26 +128,3 @@ class BaseCombinedDbTest(BaseWikiDbTest, BaseWpOneDbTest):
 
     self.addCleanup(self._cleanup_wp_one_db)
     self._setup_wp_one_db()
-
-
-def get_test_connect_creds():
-  return {
-      Environment.DEVELOPMENT: {
-          'WP10DB': {
-              'user': 'root',
-              'host': 'localhost',
-              'db': 'enwp10_test',
-          },
-          'WIKIDB': {
-              'user': 'root',
-              'host': 'localhost',
-              'db': 'enwikip_test',
-          },
-          # Put a phony Redis port so that nothing gets connected.
-          'REDIS': {
-              'host': 'localhost',
-              'port': 55555
-          },
-      },
-      Environment.PRODUCTION: {}
-  }
