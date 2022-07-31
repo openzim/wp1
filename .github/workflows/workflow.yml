@@ -42,6 +42,11 @@ jobs:
         run: |
           mysql --host 127.0.0.1 --port 3306 -uroot -e 'CREATE DATABASE enwp10_test; CREATE DATABASE enwikip_test;'
 
+      - name: Copy credentials
+        run: |
+          cp wp1/credentials.py.e2e wp1/credentials.py
+          cp wp1/credentials.py.dev.e2e wp1/credentials.py.dev
+
       - name: Test with nose
         run: |
           nosetests --with-coverage
