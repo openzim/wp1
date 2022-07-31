@@ -108,26 +108,3 @@ class BaseCombinedDbTest(BaseWikiDbTest, BaseWpOneDbTest):
 
     self.addCleanup(self._cleanup_wp_one_db)
     self._setup_wp_one_db()
-
-
-def get_test_connect_creds():
-  return {
-      Environment.DEVELOPMENT: {
-          'WP10DB': {
-              'user': 'root',
-              'host': 'localhost',
-              'db': 'enwp10_test',
-          },
-          'WIKIDB': {
-              'user': 'root',
-              'host': 'localhost',
-              'db': 'enwikip_test',
-          },
-          # Put a phony Redis port so that nothing gets connected.
-          'REDIS': {
-              'host': 'localhost',
-              'port': 55555
-          },
-      },
-      Environment.PRODUCTION: {}
-  }

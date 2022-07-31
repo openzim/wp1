@@ -7,24 +7,25 @@ from wp1.storage import connect_storage
 
 class StorageTest(unittest.TestCase):
 
+  @patch('wp1.storage.ENV', None)
   def test_connect_storage_raises_if_no_env(self):
     with self.assertRaises(ValueError):
       actual = connect_storage()
 
-  @patch('wp1.storage.ENV', Environment.DEVELOPMENT)
+  @patch('wp1.storage.ENV', Environment.TEST)
   def test_connect_storage_raises_if_no_credentials(self):
     with self.assertRaises(ValueError):
       actual = connect_storage()
 
-  @patch('wp1.storage.CREDENTIALS', {Environment.DEVELOPMENT: {}})
-  @patch('wp1.storage.ENV', Environment.DEVELOPMENT)
+  @patch('wp1.storage.CREDENTIALS', {Environment.TEST: {}})
+  @patch('wp1.storage.ENV', Environment.TEST)
   def test_connect_storage_raises_if_no_storage_key(self):
     with self.assertRaises(ValueError):
       actual = connect_storage()
 
   @patch(
       'wp1.storage.CREDENTIALS', {
-          Environment.DEVELOPMENT: {
+          Environment.TEST: {
               'STORAGE': {
                   'key': 'test_key',
                   'secret': 'test_secret',
@@ -32,7 +33,7 @@ class StorageTest(unittest.TestCase):
               }
           }
       })
-  @patch('wp1.storage.ENV', Environment.DEVELOPMENT)
+  @patch('wp1.storage.ENV', Environment.TEST)
   @patch('wp1.storage.KiwixStorage')
   def test_connect_storage_connects_to_kiwixstorage(self, patched_kiwixstorage):
     actual = connect_storage()
@@ -43,7 +44,7 @@ class StorageTest(unittest.TestCase):
 
   @patch(
       'wp1.storage.CREDENTIALS', {
-          Environment.DEVELOPMENT: {
+          Environment.TEST: {
               'STORAGE': {
                   'key': 'test_key',
                   'secret': 'test_secret',
@@ -51,7 +52,7 @@ class StorageTest(unittest.TestCase):
               }
           }
       })
-  @patch('wp1.storage.ENV', Environment.DEVELOPMENT)
+  @patch('wp1.storage.ENV', Environment.TEST)
   @patch('wp1.storage.KiwixStorage')
   def test_connect_storage_checks_permissions(self, patched_kiwixstorage):
     s3_mock = MagicMock()

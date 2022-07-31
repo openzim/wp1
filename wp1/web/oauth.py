@@ -15,9 +15,10 @@ try:
   handshaker = Handshaker("https://en.wikipedia.org/w/index.php",
                           consumer_token)
   homepage_url = CREDENTIALS[ENV]['CLIENT_URL']['homepage']
-except ImportError:
-  print('No credentials.py file found, Please add your '
-        'mwoauth credentials in credentials.py')
+except (ImportError, KeyError):
+  print(
+      'No credentials.py file found, or credentials malformed, Please add your '
+      'mwoauth credentials in credentials.py')
   ENV = None
   CREDENTIALS = None
   handshaker = None
