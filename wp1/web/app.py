@@ -33,7 +33,7 @@ def get_redis_creds():
   try:
     from wp1.credentials import ENV, CREDENTIALS
     return CREDENTIALS[ENV]['REDIS']
-  except ImportError:
+  except (ImportError, KeyError):
     print('No REDIS_CREDS found, using defaults.')
     return None
 
@@ -42,7 +42,7 @@ def get_secret_key():
   try:
     from wp1.credentials import ENV, CREDENTIALS
     return CREDENTIALS[ENV]['SESSION']['secret_key']
-  except ImportError:
+  except (ImportError, KeyError):
     print('No secret_key found, using defaults.')
     return 'WP1'
 
