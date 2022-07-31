@@ -1,4 +1,5 @@
 import importlib
+import logging
 import unittest
 import sys
 
@@ -6,10 +7,12 @@ import pymysql
 
 from wp1.environment import Environment
 
+logger = logging.getLogger(__name__)
+
 try:
   from wp1.credentials import CREDENTIALS, ENV
 except ImportError:
-  logging.exception('The credentials.py file must be populated to run tests.')
+  logger.exception('The credentials.py file must be populated to run tests.')
   CREDENTIALS = None
   ENV = None
 
