@@ -6,6 +6,13 @@ import pymysql
 
 from wp1.environment import Environment
 
+try:
+  from wp1.credentials import CREDENTIALS, ENV
+except ImportError:
+  logging.exception('The credentials.py file must be populated to run tests.')
+  CREDENTIALS = None
+  ENV = None
+
 
 def parse_sql(filename):
   data = open(filename, 'r').readlines()
@@ -39,10 +46,15 @@ def parse_sql(filename):
 class BaseWpOneDbTest(unittest.TestCase):
 
   def connect_wp_one_db(self):
-    return pymysql.connect(host='localhost',
-                           port=6600,
-                           db='enwp10_test',
-                           user='root',
+    if ENV != Environment.TEST:
+      raise ValueError(
+          'Database tests destroy data! They should only be run in the TEST env'
+      )
+    creds = CREDENTIALS.get(Environment.TEST, {}).get('WP10DB')
+    if creds is None:
+      raise ValueError('No WP10DB creds found')
+
+    return pymysql.connect(**creds,
                            charset=None,
                            use_unicode=False,
                            cursorclass=pymysql.cursors.DictCursor)
@@ -71,10 +83,15 @@ class BaseWpOneDbTest(unittest.TestCase):
 class BaseWikiDbTest(unittest.TestCase):
 
   def connect_wiki_db(self):
-    return pymysql.connect(host='localhost',
-                           port=6600,
-                           db='enwikip_test',
-                           user='root',
+    if ENV != Environment.TEST:
+      raise ValueError(
+          'Database tests destroy data! They should only be run in the TEST env'
+      )
+    creds = CREDENTIALS.get(Environment.TEST, {}).get('WIKIDB')
+    if creds is None:
+      raise ValueError('No WIKIDB creds found')
+
+    return pymysql.connect(**creds,
                            charset=None,
                            use_unicode=False,
                            cursorclass=pymysql.cursors.DictCursor)

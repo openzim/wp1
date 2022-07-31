@@ -3,7 +3,6 @@ import json
 from unittest.mock import patch
 
 from wp1.logic import project as logic_project
-from wp1.base_db_test import get_test_connect_creds
 from wp1.web.app import create_app
 from wp1.web.base_web_testcase import BaseWebTestcase
 from wp1.environment import Environment
