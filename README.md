@@ -170,10 +170,6 @@ directory to run the tests:
 nosetests
 ```
 
-If you'd like to use a different MySQL user or non-default password for
-the tests, you must edit `_setup_wp_one_db` and `_setup_wp_one_db` in
-`base_db_test.py`.
-
 # Development
 
 For development, you will need to have Docker installed as explained above.
