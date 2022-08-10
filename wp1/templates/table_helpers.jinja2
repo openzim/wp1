@@ -35,3 +35,7 @@
     {{ caller() }}
   {%- endif -%}
 {%- endmacro %}
+
+{% macro name_with_spaces(name) -%}
+  {{project.decode('utf-8').replace('_', ' ') if project else ''}}
+{%- endmacro %}
