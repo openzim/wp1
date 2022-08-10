@@ -561,7 +561,6 @@ class TablesDbTest(BaseWpOneDbTest):
         'sort_qual': self.sort_qual,
     }
     actual = tables.get_project_categories(self.wp10db, b'Catholicism')
-    self.maxDiff = None
     self.assertEqual(expected, actual)
 
   def test_data_for_stats(self):
@@ -833,7 +832,7 @@ class TestTableCaching(BaseWpOneDbTest):
     self.assertEqual(expected_table, actual)
 
 
-class TestConvertTableForWeb(unittest.TestCase):
+class TestTableOutput(unittest.TestCase):
 
   data = {
       'project': b'Modern_philosophy',
@@ -1006,7 +1005,7 @@ class TestConvertTableForWeb(unittest.TestCase):
       'total_cols': 8
   }
 
-  expected = {
+  expected_web = {
       'project': 'Modern_philosophy',
       'project_display': 'Modern philosophy',
       'create_link': True,
@@ -1255,10 +1254,9 @@ class TestConvertTableForWeb(unittest.TestCase):
 
   def test_conversion(self):
     actual = tables.convert_table_data_for_web(self.data)
-    self.assertEqual(self.expected, actual)
+    self.assertEqual(self.expected_web, actual)
 
   def test_get_category_links(self):
-    self.maxDiff = None
     expected = {
         'A-Class': {
             'href':
@@ -1386,3 +1384,15 @@ class TestConvertTableForWeb(unittest.TestCase):
 
     actual = tables.get_project_category_links(self.data)
     self.assertEqual(expected, actual)
+
+  def test_create_wikicode(self):
+    actual = tables.create_wikicode(self.data)
+    self.assertIn(
+        '{| class="ratingstable wikitable plainlinks"  '
+        'style="text-align: right;"', actual)
+    self.assertIn(
+        '|-\n! colspan="8" class="ratingstabletitle" '
+        '| Modern philosophy articles by quality and importance', actual)
+    self.assertIn(
+        '{{User:WP 1.0 bot/WikiWork|project=Modern philosophy|export=table}}',
+        actual)
