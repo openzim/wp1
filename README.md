@@ -189,7 +189,7 @@ After that is done, use the following command to run the dev environment:
 docker-compose -f docker-compose-dev.yml up -d
 ```
 
-Migrating and updating the dev database.
+## Migrating and updating the dev database.
 
 See the instructions in the associated [README file](https://github.com/openzim/wp1/blob/main/docker/dev-db/README.md)
 
