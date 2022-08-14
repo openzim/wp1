@@ -19,6 +19,7 @@ class BuilderTest(BaseWpOneDbTest):
       b_params=b'{"list": ["a", "b", "c"]}',
       b_created_at=b'20191225044444',
       b_updated_at=b'20191225044444',
+      b_current_version=1,
   )
 
   expected_builder = {
@@ -30,6 +31,7 @@ class BuilderTest(BaseWpOneDbTest):
       'b_params': b'{"list": ["a", "b", "c"]}',
       'b_created_at': b'20191225044444',
       'b_updated_at': b'20191225044444',
+      'b_current_version': 0,
   }
 
   expected_lists = [{
@@ -135,22 +137,28 @@ class BuilderTest(BaseWpOneDbTest):
           'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1.???',
   }]
 
-  def _insert_builder(self):
+  def _insert_builder(self, version=None):
+    if version is None:
+      version = 1
+    value_dict = attr.asdict(self.builder)
+    value_dict['b_current_version'] = version
     with self.wp10db.cursor() as cursor:
       cursor.execute(
           '''INSERT INTO builders
-         (b_name, b_user_id, b_project, b_params, b_model, b_created_at, b_updated_at)
-         VALUES (%(b_name)s, %(b_user_id)s, %(b_project)s, %(b_params)s, %(b_model)s, %(b_created_at)s, %(b_updated_at)s)
-        ''', attr.asdict(self.builder))
+         (b_name, b_user_id, b_project, b_params, b_model, b_created_at, b_updated_at,
+         b_current_version)
+         VALUES (%(b_name)s, %(b_user_id)s, %(b_project)s, %(b_params)s, %(b_model)s,
+         %(b_created_at)s, %(b_updated_at)s, %(b_current_version)s)
+        ''', value_dict)
       id_ = cursor.lastrowid
     self.wp10db.commit()
     return id_
 
-  def _insert_selection(self, id_, content_type):
+  def _insert_selection(self, id_, content_type, version=1):
     with self.wp10db.cursor() as cursor:
       cursor.execute(
-          'INSERT INTO selections VALUES (%s, 1, %s, "20191225044444")',
-          (id_, content_type))
+          'INSERT INTO selections VALUES (%s, 1, %s, "20191225044444", %s)',
+          (id_, content_type, version))
     self.wp10db.commit()
 
   def _get_builder_by_user_id(self):
@@ -180,6 +188,7 @@ class BuilderTest(BaseWpOneDbTest):
     expected['b_project'] = b'zz.wikipedia.fake'
     expected['b_params'] = b'{"list": ["a", "b", "c", "d"]}'
     expected['b_updated_at'] = b'20200101055555'
+    expected['b_current_version'] = 1
     actual = self._get_builder_by_user_id()
     self.assertEqual(expected, actual)
 
@@ -221,8 +230,10 @@ class BuilderTest(BaseWpOneDbTest):
           ANY, ANY, self.builder, 'text/tab-separated-values')
     finally:
       self.wp10db.close = orig_close
-    article_data = self._get_builder_by_user_id()
-    self.assertEqual(self.expected_builder, article_data)
+    builder = self._get_builder_by_user_id()
+    expected = dict(**self.expected_builder)
+    expected['b_current_version'] = 1
+    self.assertEqual(expected, builder)
 
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
@@ -253,12 +264,24 @@ class BuilderTest(BaseWpOneDbTest):
 
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
-  def test_get_empty_lists(self, mock_utcnow):
+  def test_get_builders_empty_lists(self, mock_utcnow):
     self._insert_selection(1, 'text/tab-separated-values')
     self._insert_builder()
     article_data = logic_builder.get_builders_with_selections(
         self.wp10db, '0000')
     self.assertEqual([], article_data)
+
+  @patch('wp1.models.wp10.builder.utcnow',
+         return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
+  def teest_get_builders_ignores_old_versions(self, mock_utcnow):
+    self._insert_selection(1, 'text/tab-separated-values', 1)
+    self._insert_selection(2, 'application/vnd.ms-excel', 1)
+    self._insert_selection(3, 'text/tab-separated-values', 2)
+    self._insert_selection(4, 'application/vnd.ms-excel', 2)
+    self._insert_builder()
+    article_data = logic_builder.get_builders_with_selections(
+        self.wp10db, '1234')
+    self.assertEqual(self.expected_lists_with_multiple_selections, article_data)
 
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
@@ -322,16 +345,15 @@ class BuilderTest(BaseWpOneDbTest):
 
   def test_update_builder_updates_fields(self):
     self._insert_builder()
-    builder = Builder(
-        b_id=1,
-        b_name=b'Builder 2',
-        b_user_id=1234,
-        b_project=b'zz.wikipedia.fake',
-        b_model=b'wp1.selection.models.complex',
-        b_params=b'{"list": ["1", "b", "c"]}',
-        b_created_at=b'20191225044444',
-        b_updated_at=b'20211111044444',
-    )
+    builder = Builder(b_id=1,
+                      b_name=b'Builder 2',
+                      b_user_id=1234,
+                      b_project=b'zz.wikipedia.fake',
+                      b_model=b'wp1.selection.models.complex',
+                      b_params=b'{"list": ["1", "b", "c"]}',
+                      b_created_at=b'20191225044444',
+                      b_updated_at=b'20211111044444',
+                      b_current_version=1)
     actual = logic_builder.update_builder(self.wp10db, builder)
     self.assertTrue(actual)
 
