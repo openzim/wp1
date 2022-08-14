@@ -16,6 +16,7 @@ class Selection:
 
   s_builder_id = attr.ib()
   s_content_type = attr.ib()
+  s_version = attr.ib()
   # This is required, but is set by the set_id method below.
   s_id = attr.ib(default=None)
   s_updated_at = attr.ib(default=None)

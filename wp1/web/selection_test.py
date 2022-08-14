@@ -73,11 +73,11 @@ class SelectionTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       with self.wp10db.cursor() as cursor:
         cursor.execute('''INSERT INTO builders
-        (b_name, b_user_id, b_project, b_model, b_created_at, b_updated_at)
-        VALUES ('name', '1234', 'project_name', 'model', '20201225105544', '20201225105544')
+        (b_name, b_user_id, b_project, b_model, b_created_at, b_updated_at, b_current_version)
+        VALUES ('name', '1234', 'project_name', 'model', '20201225105544', '20201225105544', 1)
       ''')
         cursor.execute(
-            'INSERT INTO selections VALUES (1, 1, "text/tab-separated-values", "20201225105544")'
+            'INSERT INTO selections VALUES (1, 1, "text/tab-separated-values", "20201225105544", 1)'
         )
       self.wp10db.commit()
       with client.session_transaction() as sess:
@@ -90,14 +90,14 @@ class SelectionTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       with self.wp10db.cursor() as cursor:
         cursor.execute('''INSERT INTO builders
-        (b_name, b_user_id, b_project, b_model, b_created_at, b_updated_at)
-        VALUES ('name', '1234', 'project_name', 'model', '20201225105544', '20201225105544')
+        (b_name, b_user_id, b_project, b_model, b_created_at, b_updated_at, b_current_version)
+        VALUES ('name', '1234', 'project_name', 'model', '20201225105544', '20201225105544', 1)
       ''')
         cursor.execute(
-            'INSERT INTO selections VALUES (1, 1, "text/tab-separated-values", "20201225105544")'
+            'INSERT INTO selections VALUES (1, 1, "text/tab-separated-values", "20201225105544", 1)'
         )
         cursor.execute(
-            'INSERT INTO selections VALUES (2, 1, "application/vnd.ms-excel", "20201225105544")'
+            'INSERT INTO selections VALUES (2, 1, "application/vnd.ms-excel", "20201225105544", 1)'
         )
       self.wp10db.commit()
       with client.session_transaction() as sess:
@@ -111,8 +111,8 @@ class SelectionTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       with self.wp10db.cursor() as cursor:
         cursor.execute('''INSERT INTO builders
-        (b_name, b_user_id, b_project, b_model, b_created_at, b_updated_at)
-        VALUES ('name', '1234', 'project_name', 'model', '20201225105544', '20201225105544')
+        (b_name, b_user_id, b_project, b_model, b_created_at, b_updated_at, b_current_version)
+        VALUES ('name', '1234', 'project_name', 'model', '20201225105544', '20201225105544', 1)
       ''')
       self.wp10db.commit()
       with client.session_transaction() as sess:
@@ -125,7 +125,7 @@ class SelectionTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       with self.wp10db.cursor() as cursor:
         cursor.execute(
-            '''INSERT INTO selections VALUES (2, 1, "application/vnd.ms-excel", '20201225105544')'''
+            '''INSERT INTO selections VALUES (2, 1, "application/vnd.ms-excel", '20201225105544', 1)'''
         )
       self.wp10db.commit()
       with client.session_transaction() as sess:

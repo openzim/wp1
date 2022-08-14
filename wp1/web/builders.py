@@ -42,9 +42,10 @@ def _create_or_update_builder(data, builder_id=None):
   if builder_id is None:
     flask.abort(404)
 
-  if not is_update:
-    queues.enqueue_materialize(redis, SimpleBuilder, builder_id,
-                               'text/tab-separated-values')
+  # The builder has been updated. Enqueue a task to materialize selections and
+  # update the current version.
+  queues.enqueue_materialize(redis, SimpleBuilder, builder_id,
+                             'text/tab-separated-values')
   return flask.jsonify({'success': True, 'items': {}})
 
 

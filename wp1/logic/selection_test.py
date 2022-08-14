@@ -1,3 +1,5 @@
+import attr
+
 from wp1.base_db_test import BaseWpOneDbTest
 import wp1.logic.selection as logic_selection
 from wp1.models.wp10.selection import Selection
@@ -17,12 +19,98 @@ class SelectionTest(BaseWpOneDbTest):
     self.selection = Selection(s_id=b'deadbeef',
                                s_builder_id=100,
                                s_content_type=b'text/tab-separated-values',
+                               s_version=1,
                                s_updated_at=b'20190830112844')
+
+  def _insert_selections(self, selections=None):
+    if selections is None:
+      selections = [self.selection]
+    selections = [attr.asdict(s) for s in selections]
+
+    with self.wp10db.cursor() as cursor:
+      cursor.executemany(
+          '''INSERT INTO selections
+      (s_id, s_builder_id, s_version, s_content_type, s_updated_at)
+      VALUES (%(s_id)s, %(s_builder_id)s, %(s_version)s, %(s_content_type)s, %(s_updated_at)s)
+    ''', selections)
+    self.wp10db.commit()
 
   def test_insert_selection(self):
     logic_selection.insert_selection(self.wp10db, self.selection)
     actual = _get_selection(self.wp10db)
     self.assertEqual(self.selection, actual)
+
+  def test_get_next_version_empty_table(self):
+    actual = logic_selection.get_next_version(self.wp10db, 100,
+                                              b'text/tab-separated-values')
+    self.assertEqual(1, actual)
+
+  def test_get_next_version_no_builder_match(self):
+    self._insert_selections()
+    actual = logic_selection.get_next_version(self.wp10db, 200,
+                                              b'text/tab-separated-values')
+    self.assertEqual(1, actual)
+
+  def test_get_next_version_no_content_match(self):
+    self._insert_selections()
+    actual = logic_selection.get_next_version(self.wp10db, 100,
+                                              b'foo/content-type')
+    self.assertEqual(1, actual)
+
+  def test_get_next_version_existing_content(self):
+    self._insert_selections()
+    actual = logic_selection.get_next_version(self.wp10db, 100,
+                                              b'text/tab-separated-values')
+    self.assertEqual(2, actual)
+
+  def test_get_next_version_balanced_versions(self):
+    self._insert_selections(selections=[
+        Selection(s_id=b'deadbeef',
+                  s_builder_id=100,
+                  s_content_type=b'text/tab-separated-values',
+                  s_version=1,
+                  s_updated_at=b'20190830112844'),
+        Selection(s_id=b'beefdead',
+                  s_builder_id=100,
+                  s_content_type=b'application/vnd.ms-excel',
+                  s_version=1,
+                  s_updated_at=b'20190830112844'),
+        Selection(s_id=b'dead0000',
+                  s_builder_id=100,
+                  s_content_type=b'text/tab-separated-values',
+                  s_version=2,
+                  s_updated_at=b'20190830112844'),
+        Selection(s_id=b'0000beef',
+                  s_builder_id=100,
+                  s_content_type=b'application/vnd.ms-excel',
+                  s_version=2,
+                  s_updated_at=b'20190830112844'),
+    ])
+    actual = logic_selection.get_next_version(self.wp10db, 100,
+                                              b'text/tab-separated-values')
+    self.assertEqual(3, actual)
+
+  def test_get_next_version_unbalanced_versions(self):
+    self._insert_selections(selections=[
+        Selection(s_id=b'deadbeef',
+                  s_builder_id=100,
+                  s_content_type=b'text/tab-separated-values',
+                  s_version=1,
+                  s_updated_at=b'20190830112844'),
+        Selection(s_id=b'beefdead',
+                  s_builder_id=100,
+                  s_content_type=b'application/vnd.ms-excel',
+                  s_version=1,
+                  s_updated_at=b'20190830112844'),
+        Selection(s_id=b'0000beef',
+                  s_builder_id=100,
+                  s_content_type=b'application/vnd.ms-excel',
+                  s_version=2,
+                  s_updated_at=b'20190830112844'),
+    ])
+    actual = logic_selection.get_next_version(self.wp10db, 100,
+                                              b'text/tab-separated-values')
+    self.assertEqual(2, actual)
 
   def test_object_key_for_selection(self):
     actual = logic_selection.object_key_for_selection(self.selection,
