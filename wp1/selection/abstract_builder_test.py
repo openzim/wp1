@@ -62,5 +62,6 @@ class AbstractBuilderTest(BaseWpOneDbTest):
     data = self.s3.upload_fileobj.call_args[0][0]
     object_key = self.s3.upload_fileobj.call_args[1]['key']
     self.assertEqual(b'a\nb\nc', data.read())
-    self.assertEqual('selections/wp1.selection.models.simple/abcd-1234.tsv',
-                     object_key)
+    self.assertEqual(
+        'selections/wp1.selection.models.simple/abcd-1234/My Builder.tsv',
+        object_key)

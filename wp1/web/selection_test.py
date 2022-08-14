@@ -14,42 +14,72 @@ class SelectionTest(BaseWebTestcase):
 
   expected_list_data = {
       'builders': [{
-          'id': 1,
-          'name': 'name',
-          'project': 'project_name',
-          'created_at': 1608893744,
-          'updated_at': 1608893744,
-          's_id': '1',
-          's_updated_at': 1608893744,
-          's_content_type': 'text/tab-separated-values',
-          's_extension': 'tsv',
-          's_url': 'http://credentials.not.found.fake/selections/model/1.tsv'
+          'id':
+              1,
+          'name':
+              'name',
+          'project':
+              'project_name',
+          'created_at':
+              1608893744,
+          'updated_at':
+              1608893744,
+          's_id':
+              '1',
+          's_updated_at':
+              1608893744,
+          's_content_type':
+              'text/tab-separated-values',
+          's_extension':
+              'tsv',
+          's_url':
+              'http://credentials.not.found.fake/selections/model/1/name.tsv'
       }],
   }
 
   expected_lists_with_multiple_selections = {
       'builders': [{
-          'id': 1,
-          'name': 'name',
-          'project': 'project_name',
-          'created_at': 1608893744,
-          'updated_at': 1608893744,
-          's_id': '1',
-          's_updated_at': 1608893744,
-          's_content_type': 'text/tab-separated-values',
-          's_extension': 'tsv',
-          's_url': 'http://credentials.not.found.fake/selections/model/1.tsv'
+          'id':
+              1,
+          'name':
+              'name',
+          'project':
+              'project_name',
+          'created_at':
+              1608893744,
+          'updated_at':
+              1608893744,
+          's_id':
+              '1',
+          's_updated_at':
+              1608893744,
+          's_content_type':
+              'text/tab-separated-values',
+          's_extension':
+              'tsv',
+          's_url':
+              'http://credentials.not.found.fake/selections/model/1/name.tsv'
       }, {
-          'id': 1,
-          'name': 'name',
-          'project': 'project_name',
-          'created_at': 1608893744,
-          'updated_at': 1608893744,
-          's_id': '2',
-          's_updated_at': 1608893744,
-          's_content_type': 'application/vnd.ms-excel',
-          's_extension': 'xls',
-          's_url': 'http://credentials.not.found.fake/selections/model/2.xls'
+          'id':
+              1,
+          'name':
+              'name',
+          'project':
+              'project_name',
+          'created_at':
+              1608893744,
+          'updated_at':
+              1608893744,
+          's_id':
+              '2',
+          's_updated_at':
+              1608893744,
+          's_content_type':
+              'application/vnd.ms-excel',
+          's_extension':
+              'xls',
+          's_url':
+              'http://credentials.not.found.fake/selections/model/2/name.xls'
       }]
   }
 

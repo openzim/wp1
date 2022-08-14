@@ -14,7 +14,9 @@ class AbstractBuilder:
 
   def _upload_to_storage(self, s3, selection, builder):
     object_key = logic_selection.object_key_for_selection(
-        selection, builder.b_model.decode('utf-8'))
+        selection,
+        builder.b_model.decode('utf-8'),
+        name=builder.b_name.decode('utf-8'))
 
     upload_data = io.BytesIO()
     upload_data.write(selection.data)

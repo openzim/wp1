@@ -54,7 +54,7 @@ class BuilderTest(BaseWpOneDbTest):
       's_extension':
           'tsv',
       's_url':
-          'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1.tsv'
+          'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1/My%20Builder.tsv'
   }]
 
   expected_lists_with_multiple_selections = [{
@@ -77,7 +77,7 @@ class BuilderTest(BaseWpOneDbTest):
       's_extension':
           'tsv',
       's_url':
-          'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1.tsv',
+          'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1/My%20Builder.tsv',
   }, {
       'id':
           1,
@@ -98,7 +98,7 @@ class BuilderTest(BaseWpOneDbTest):
       's_extension':
           'xls',
       's_url':
-          'http://credentials.not.found.fake/selections/wp1.selection.models.simple/2.xls',
+          'http://credentials.not.found.fake/selections/wp1.selection.models.simple/2/My%20Builder.xls',
   }]
 
   expected_lists_with_no_selections = [{
@@ -134,7 +134,7 @@ class BuilderTest(BaseWpOneDbTest):
       's_extension':
           '???',
       's_url':
-          'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1.???',
+          'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1/My%20Builder.%3F%3F%3F',
   }]
 
   def _insert_builder(self, version=None):
