@@ -1,3 +1,5 @@
+import urllib.parse
+
 import attr
 
 from wp1.constants import CONTENT_TYPE_TO_EXT
@@ -8,6 +10,8 @@ try:
       's3', 'http://credentials.not.found.fake')
 except ImportError:
   S3_PUBLIC_URL = 'http://credentials.not.found.fake'
+
+DEFAULT_SELECTION_NAME = 'selection'
 
 
 def insert_selection(wp10db, selection):
@@ -34,36 +38,41 @@ def get_next_version(wp10db, builder_id, content_type):
     return version + 1
 
 
-def url_for_selection(selection, model):
+def url_for_selection(selection, model, name=None):
   if not selection:
     raise ValueError('Cannot get url for empty selection')
-  return '%s/%s' % (S3_PUBLIC_URL, object_key_for_selection(selection, model))
+  path = urllib.parse.quote(object_key_for_selection(selection, model, name))
+  return '%s/%s' % (S3_PUBLIC_URL, path)
 
 
-def url_for(selection_id, content_type, model):
+def url_for(selection_id, content_type, model, name=None):
   if not selection_id:
     raise ValueError('Cannot get url for empty selection_id')
   if not model:
     raise ValueError('Expected WP1 model name, got: %r' % model)
-  return '%s/%s' % (S3_PUBLIC_URL,
-                    object_key_for(selection_id, content_type, model))
+  path = urllib.parse.quote(
+      object_key_for(selection_id, content_type, model, name))
+  return '%s/%s' % (S3_PUBLIC_URL, path)
 
 
-def object_key_for(selection_id, content_type, model):
+def object_key_for(selection_id, content_type, model, name=None):
   if not selection_id:
     raise ValueError('Cannot get object key for empty selection_id')
   if not model:
     raise ValueError('Expected WP1 model name, got: %r' % model)
+  if name is None:
+    name = DEFAULT_SELECTION_NAME
   ext = CONTENT_TYPE_TO_EXT.get(content_type, '???')
-  return 'selections/%(model)s/%(id)s.%(ext)s' % {
+  return 'selections/%(model)s/%(id)s/%(name)s.%(ext)s' % {
       'model': model,
       'id': selection_id,
       'ext': ext,
+      'name': name,
   }
 
 
-def object_key_for_selection(selection, model):
+def object_key_for_selection(selection, model, name=None):
   if not selection:
     raise ValueError('Cannot get object key for empty selection')
   return object_key_for(selection.s_id.decode('utf-8'),
-                        selection.s_content_type.decode('utf-8'), model)
+                        selection.s_content_type.decode('utf-8'), model, name)
