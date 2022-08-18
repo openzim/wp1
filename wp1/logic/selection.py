@@ -41,7 +41,8 @@ def get_next_version(wp10db, builder_id, content_type):
 def url_for_selection(selection, model, name=None):
   if not selection:
     raise ValueError('Cannot get url for empty selection')
-  path = urllib.parse.quote(object_key_for_selection(selection, model, name))
+  path = urllib.parse.quote(
+      object_key_for_selection(selection, model, name=name))
   return '%s/%s' % (S3_PUBLIC_URL, path)
 
 
@@ -51,11 +52,15 @@ def url_for(selection_id, content_type, model, name=None):
   if not model:
     raise ValueError('Expected WP1 model name, got: %r' % model)
   path = urllib.parse.quote(
-      object_key_for(selection_id, content_type, model, name))
+      object_key_for(selection_id, content_type, model, name=name))
   return '%s/%s' % (S3_PUBLIC_URL, path)
 
 
-def object_key_for(selection_id, content_type, model, name=None):
+def object_key_for(selection_id,
+                   content_type,
+                   model,
+                   name=None,
+                   use_legacy_schema=False):
   if not selection_id:
     raise ValueError('Cannot get object key for empty selection_id')
   if not model:
@@ -63,6 +68,13 @@ def object_key_for(selection_id, content_type, model, name=None):
   if name is None:
     name = DEFAULT_SELECTION_NAME
   ext = CONTENT_TYPE_TO_EXT.get(content_type, '???')
+  if use_legacy_schema:
+    return 'selections/%(model)s/%(id)s.%(ext)s' % {
+        'model': model,
+        'id': selection_id,
+        'ext': ext,
+    }
+
   return 'selections/%(model)s/%(id)s/%(name)s.%(ext)s' % {
       'model': model,
       'id': selection_id,
@@ -71,8 +83,14 @@ def object_key_for(selection_id, content_type, model, name=None):
   }
 
 
-def object_key_for_selection(selection, model, name=None):
+def object_key_for_selection(selection,
+                             model,
+                             name=None,
+                             use_legacy_schema=False):
   if not selection:
     raise ValueError('Cannot get object key for empty selection')
   return object_key_for(selection.s_id.decode('utf-8'),
-                        selection.s_content_type.decode('utf-8'), model, name)
+                        selection.s_content_type.decode('utf-8'),
+                        model,
+                        name=name,
+                        use_legacy_schema=use_legacy_schema)

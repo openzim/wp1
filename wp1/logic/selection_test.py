@@ -193,6 +193,13 @@ class SelectionTest(BaseWpOneDbTest):
                                                       name='name')
     self.assertEqual('selections/foo.bar.model/deadbeef/name.tsv', actual)
 
+  def test_object_key_for_selection_with_name_and_legacy_schema(self):
+    actual = logic_selection.object_key_for_selection(self.selection,
+                                                      'foo.bar.model',
+                                                      name='name',
+                                                      use_legacy_schema=True)
+    self.assertEqual('selections/foo.bar.model/deadbeef.tsv', actual)
+
   def test_object_key_for_selection_unknown_content_type_and_name(self):
     self.selection.s_content_type = b'foo/bar-baz'
     actual = logic_selection.object_key_for_selection(self.selection,
