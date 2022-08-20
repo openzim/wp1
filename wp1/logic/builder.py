@@ -140,10 +140,7 @@ def get_builders_with_selections(wp10db, user_id):
               CONTENT_TYPE_TO_EXT.get(content_type, '???')
               if has_selection else None,
           's_url':
-              logic_selection.url_for(selection_id,
-                                      content_type,
-                                      b['b_model'].decode('utf-8'),
-                                      name=b['b_name'].decode('utf-8'))
+              logic_selection.url_for(b['s_object_key'])
               if has_selection else None,
       })
     return result
