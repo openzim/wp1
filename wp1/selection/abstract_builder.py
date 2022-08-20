@@ -23,6 +23,7 @@ class AbstractBuilder:
     upload_data.seek(0)
     logger.info('Uploading to path: %s ' % object_key)
     s3.upload_fileobj(upload_data, key=object_key)
+    selection.s_object_key = object_key
 
   def materialize(self, s3, wp10db, builder, content_type):
     params = json.loads(builder.b_params)

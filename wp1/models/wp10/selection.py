@@ -19,6 +19,8 @@ class Selection:
   s_version = attr.ib()
   # This is required, but is set by the set_id method below.
   s_id = attr.ib(default=None)
+  # This is required, but set after the selection is uploaded to s3-like storage.
+  s_object_key = attr.ib(default=None)
   s_updated_at = attr.ib(default=None)
   # The data that is stored in the backend s3-like storage. Not saved to the database.
   data = attr.ib(default=None)
