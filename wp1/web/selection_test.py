@@ -14,72 +14,42 @@ class SelectionTest(BaseWebTestcase):
 
   expected_list_data = {
       'builders': [{
-          'id':
-              1,
-          'name':
-              'name',
-          'project':
-              'project_name',
-          'created_at':
-              1608893744,
-          'updated_at':
-              1608893744,
-          's_id':
-              '1',
-          's_updated_at':
-              1608893744,
-          's_content_type':
-              'text/tab-separated-values',
-          's_extension':
-              'tsv',
-          's_url':
-              'http://credentials.not.found.fake/selections/model/1/name.tsv'
+          'id': 1,
+          'name': 'name',
+          'project': 'project_name',
+          'created_at': 1608893744,
+          'updated_at': 1608893744,
+          's_id': '1',
+          's_updated_at': 1608893744,
+          's_content_type': 'text/tab-separated-values',
+          's_extension': 'tsv',
+          's_url': 'http://credentials.not.found.fake/object_key'
       }],
   }
 
   expected_lists_with_multiple_selections = {
       'builders': [{
-          'id':
-              1,
-          'name':
-              'name',
-          'project':
-              'project_name',
-          'created_at':
-              1608893744,
-          'updated_at':
-              1608893744,
-          's_id':
-              '1',
-          's_updated_at':
-              1608893744,
-          's_content_type':
-              'text/tab-separated-values',
-          's_extension':
-              'tsv',
-          's_url':
-              'http://credentials.not.found.fake/selections/model/1/name.tsv'
+          'id': 1,
+          'name': 'name',
+          'project': 'project_name',
+          'created_at': 1608893744,
+          'updated_at': 1608893744,
+          's_id': '1',
+          's_updated_at': 1608893744,
+          's_content_type': 'text/tab-separated-values',
+          's_extension': 'tsv',
+          's_url': 'http://credentials.not.found.fake/object_key_1'
       }, {
-          'id':
-              1,
-          'name':
-              'name',
-          'project':
-              'project_name',
-          'created_at':
-              1608893744,
-          'updated_at':
-              1608893744,
-          's_id':
-              '2',
-          's_updated_at':
-              1608893744,
-          's_content_type':
-              'application/vnd.ms-excel',
-          's_extension':
-              'xls',
-          's_url':
-              'http://credentials.not.found.fake/selections/model/2/name.xls'
+          'id': 1,
+          'name': 'name',
+          'project': 'project_name',
+          'created_at': 1608893744,
+          'updated_at': 1608893744,
+          's_id': '2',
+          's_updated_at': 1608893744,
+          's_content_type': 'application/vnd.ms-excel',
+          's_extension': 'xls',
+          's_url': 'http://credentials.not.found.fake/object_key_2'
       }]
   }
 
@@ -107,7 +77,7 @@ class SelectionTest(BaseWebTestcase):
         VALUES ('name', '1234', 'project_name', 'model', '20201225105544', '20201225105544', 1)
       ''')
         cursor.execute(
-            'INSERT INTO selections VALUES (1, 1, "text/tab-separated-values", "20201225105544", 1)'
+            'INSERT INTO selections VALUES (1, 1, "text/tab-separated-values", "20201225105544", 1, "object_key")'
         )
       self.wp10db.commit()
       with client.session_transaction() as sess:
@@ -124,10 +94,10 @@ class SelectionTest(BaseWebTestcase):
         VALUES ('name', '1234', 'project_name', 'model', '20201225105544', '20201225105544', 1)
       ''')
         cursor.execute(
-            'INSERT INTO selections VALUES (1, 1, "text/tab-separated-values", "20201225105544", 1)'
+            'INSERT INTO selections VALUES (1, 1, "text/tab-separated-values", "20201225105544", 1, "object_key_1")'
         )
         cursor.execute(
-            'INSERT INTO selections VALUES (2, 1, "application/vnd.ms-excel", "20201225105544", 1)'
+            'INSERT INTO selections VALUES (2, 1, "application/vnd.ms-excel", "20201225105544", 1, "object_key_2")'
         )
       self.wp10db.commit()
       with client.session_transaction() as sess:
@@ -155,7 +125,7 @@ class SelectionTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       with self.wp10db.cursor() as cursor:
         cursor.execute(
-            '''INSERT INTO selections VALUES (2, 1, "application/vnd.ms-excel", '20201225105544', 1)'''
+            '''INSERT INTO selections VALUES (2, 1, "application/vnd.ms-excel", '20201225105544', 1, "object_key")'''
         )
       self.wp10db.commit()
       with client.session_transaction() as sess:

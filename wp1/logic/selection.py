@@ -39,7 +39,7 @@ def get_next_version(wp10db, builder_id, content_type):
     return version + 1
 
 
-def url_for_selection(selection, model, name=None):
+def url_for_selection(selection):
   if not selection:
     raise ValueError('Cannot get url for empty selection')
   return url_for(selection.s_object_key)
