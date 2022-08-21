@@ -267,7 +267,7 @@ to something like:
 - Run docker-compose to bring the production images online.
   - `sudo docker-compose up -d`
 - Run the production database migrations in the worker container:
-  - `sudo docker exec -ti wp1bot-workers yoyo -c /usr/src/app/db/production/yoyo.ini apply`
+  - `sudo docker exec -ti -e PYTHONPATH=app wp1bot-workers yoyo -c /usr/src/app/db/production/yoyo.ini apply`
 
 # Pre-commit hooks
 
