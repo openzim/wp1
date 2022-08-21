@@ -12,6 +12,7 @@ class ModelsSelectionTest(BaseWpOneDbTest):
     self.selection = Selection(s_id='deadbeef',
                                s_builder_id=100,
                                s_content_type='text/tab-separated-values',
+                               s_version=1,
                                s_updated_at=b'20190830112844')
 
   def test_updated_at_dt(self):

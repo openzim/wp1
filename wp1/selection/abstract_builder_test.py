@@ -47,6 +47,15 @@ class AbstractBuilderTest(BaseWpOneDbTest):
     actual = _get_first_selection(self.wp10db)
     self.assertEqual(actual.s_id, b'abcd-1234')
 
+  @patch('wp1.models.wp10.selection.uuid.uuid4', return_value='abcd-1234')
+  def test_materialize_selection_object_key(self, mock_uuid4):
+    self.test_builder.materialize(self.s3, self.wp10db, self.builder,
+                                  'text/tab-separated-values')
+    actual = _get_first_selection(self.wp10db)
+    self.assertEqual(
+        actual.s_object_key, b'selections/wp1.selection.models.simple/'
+        b'abcd-1234/My Builder.tsv')
+
   @patch('wp1.models.wp10.selection.utcnow',
          return_value=datetime(2020, 12, 25, 10, 55, 44))
   def test_materialize_selection_updated_at(self, mock_utcnow):
@@ -62,5 +71,6 @@ class AbstractBuilderTest(BaseWpOneDbTest):
     data = self.s3.upload_fileobj.call_args[0][0]
     object_key = self.s3.upload_fileobj.call_args[1]['key']
     self.assertEqual(b'a\nb\nc', data.read())
-    self.assertEqual('selections/wp1.selection.models.simple/abcd-1234.tsv',
-                     object_key)
+    self.assertEqual(
+        'selections/wp1.selection.models.simple/abcd-1234/My Builder.tsv',
+        object_key)
