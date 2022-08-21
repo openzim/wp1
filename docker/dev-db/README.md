@@ -14,8 +14,11 @@ The dev database will need to be migrated in the following circumstances:
 To migrate, cd to the `db/dev` directory and run the following command:
 
 ```bash
-yoyo apply
+PYTHONPATH=$PYTHONPATH:../.. yoyo apply
 ```
+
+The `PYTHONPATH` environment variable is necessary because some of the migrations
+import wp1 code in order to complete the migration.
 
 The YoYo Migrations application will read the data in `db/dev/yoyo.ini` and attempt
 to apply any necessary migrations to your database. If there are migrations to apply,

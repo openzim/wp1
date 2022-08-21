@@ -49,6 +49,22 @@ def insert_builder(wp10db, builder):
   return id_
 
 
+def update_current_version(wp10db, builder, version):
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        '''UPDATE builders
+      SET b_current_version=%(version)s
+      WHERE b_id = %(b_id)s AND b_user_id = %(b_user_id)s
+      ''', {
+            'version': version,
+            'b_id': builder.b_id,
+            'b_user_id': builder.b_user_id
+        })
+    rowcount = cursor.rowcount
+  wp10db.commit()
+  return rowcount > 0
+
+
 def update_builder(wp10db, builder):
   with wp10db.cursor() as cursor:
     cursor.execute(
@@ -88,7 +104,9 @@ def get_builders_with_selections(wp10db, user_id):
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''SELECT * FROM selections
-                      RIGHT JOIN builders ON selections.s_builder_id=builders.b_id
+                      RIGHT JOIN builders
+                      ON selections.s_builder_id=builders.b_id
+                        AND selections.s_version=builders.b_current_version
                       WHERE b_user_id=%(b_user_id)s
                       ORDER BY selections.s_id ASC''', {'b_user_id': user_id})
     data = cursor.fetchall()
@@ -122,8 +140,7 @@ def get_builders_with_selections(wp10db, user_id):
               CONTENT_TYPE_TO_EXT.get(content_type, '???')
               if has_selection else None,
           's_url':
-              logic_selection.url_for(selection_id, content_type,
-                                      b['b_model'].decode('utf-8'))
+              logic_selection.url_for(b['s_object_key'])
               if has_selection else None,
       })
     return result
