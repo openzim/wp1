@@ -35,70 +35,40 @@ class BuilderTest(BaseWpOneDbTest):
   }
 
   expected_lists = [{
-      'id':
-          1,
-      'name':
-          'My Builder',
-      'project':
-          'en.wikipedia.fake',
-      'created_at':
-          1577249084,
-      'updated_at':
-          1577249084,
-      's_id':
-          '1',
-      's_updated_at':
-          1577249084,
-      's_content_type':
-          'text/tab-separated-values',
-      's_extension':
-          'tsv',
-      's_url':
-          'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1/My%20Builder.tsv'
+      'id': 1,
+      'name': 'My Builder',
+      'project': 'en.wikipedia.fake',
+      'created_at': 1577249084,
+      'updated_at': 1577249084,
+      's_id': '1',
+      's_updated_at': 1577249084,
+      's_content_type': 'text/tab-separated-values',
+      's_extension': 'tsv',
+      's_url': 'http://credentials.not.found.fake/selections/foo/1234/name.tsv'
   }]
 
   expected_lists_with_multiple_selections = [{
-      'id':
-          1,
-      'name':
-          'My Builder',
-      'project':
-          'en.wikipedia.fake',
-      'created_at':
-          1577249084,
-      'updated_at':
-          1577249084,
-      's_id':
-          '1',
-      's_updated_at':
-          1577249084,
-      's_content_type':
-          'text/tab-separated-values',
-      's_extension':
-          'tsv',
-      's_url':
-          'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1/My%20Builder.tsv',
+      'id': 1,
+      'name': 'My Builder',
+      'project': 'en.wikipedia.fake',
+      'created_at': 1577249084,
+      'updated_at': 1577249084,
+      's_id': '1',
+      's_updated_at': 1577249084,
+      's_content_type': 'text/tab-separated-values',
+      's_extension': 'tsv',
+      's_url': 'http://credentials.not.found.fake/object_key_1',
   }, {
-      'id':
-          1,
-      'name':
-          'My Builder',
-      'project':
-          'en.wikipedia.fake',
-      'created_at':
-          1577249084,
-      'updated_at':
-          1577249084,
-      's_id':
-          '2',
-      's_updated_at':
-          1577249084,
-      's_content_type':
-          'application/vnd.ms-excel',
-      's_extension':
-          'xls',
-      's_url':
-          'http://credentials.not.found.fake/selections/wp1.selection.models.simple/2/My%20Builder.xls',
+      'id': 1,
+      'name': 'My Builder',
+      'project': 'en.wikipedia.fake',
+      'created_at': 1577249084,
+      'updated_at': 1577249084,
+      's_id': '2',
+      's_updated_at': 1577249084,
+      's_content_type': 'application/vnd.ms-excel',
+      's_extension': 'xls',
+      's_url': 'http://credentials.not.found.fake/object_key_2',
   }]
 
   expected_lists_with_no_selections = [{
@@ -154,11 +124,15 @@ class BuilderTest(BaseWpOneDbTest):
     self.wp10db.commit()
     return id_
 
-  def _insert_selection(self, id_, content_type, version=1):
+  def _insert_selection(self,
+                        id_,
+                        content_type,
+                        version=1,
+                        object_key='selections/foo/1234/name.tsv'):
     with self.wp10db.cursor() as cursor:
       cursor.execute(
-          'INSERT INTO selections VALUES (%s, 1, %s, "20191225044444", %s)',
-          (id_, content_type, version))
+          'INSERT INTO selections VALUES (%s, 1, %s, "20191225044444", %s, %s)',
+          (id_, content_type, version, object_key))
     self.wp10db.commit()
 
   def _get_builder_by_user_id(self):
@@ -247,8 +221,12 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
   def test_get_builders_with_multiple_selections(self, mock_utcnow):
-    self._insert_selection(1, 'text/tab-separated-values')
-    self._insert_selection(2, 'application/vnd.ms-excel')
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           object_key='object_key_1')
+    self._insert_selection(2,
+                           'application/vnd.ms-excel',
+                           object_key='object_key_2')
     self._insert_builder()
     article_data = logic_builder.get_builders_with_selections(
         self.wp10db, '1234')
@@ -294,7 +272,10 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
   def test_get_builders_with_unmapped_content_type(self, mock_utcnow):
-    self._insert_selection(1, 'foo/bar-baz')
+    self._insert_selection(
+        1,
+        'foo/bar-baz',
+        object_key='selections/wp1.selection.models.simple/1/My Builder.???')
     self._insert_builder()
     article_data = logic_builder.get_builders_with_selections(
         self.wp10db, '1234')

@@ -16,11 +16,13 @@ class SelectionTest(BaseWpOneDbTest):
 
   def setUp(self):
     super().setUp()
-    self.selection = Selection(s_id=b'deadbeef',
-                               s_builder_id=100,
-                               s_content_type=b'text/tab-separated-values',
-                               s_version=1,
-                               s_updated_at=b'20190830112844')
+    self.selection = Selection(
+        s_id=b'deadbeef',
+        s_builder_id=100,
+        s_content_type=b'text/tab-separated-values',
+        s_version=1,
+        s_updated_at=b'20190830112844',
+        s_object_key=b'selections/foo.bar.model/deadbeef/name.tsv')
 
   def _insert_selections(self, selections=None):
     if selections is None:
@@ -30,8 +32,9 @@ class SelectionTest(BaseWpOneDbTest):
     with self.wp10db.cursor() as cursor:
       cursor.executemany(
           '''INSERT INTO selections
-      (s_id, s_builder_id, s_version, s_content_type, s_updated_at)
-      VALUES (%(s_id)s, %(s_builder_id)s, %(s_version)s, %(s_content_type)s, %(s_updated_at)s)
+      (s_id, s_builder_id, s_version, s_content_type, s_updated_at, s_object_key)
+      VALUES (%(s_id)s, %(s_builder_id)s, %(s_version)s, %(s_content_type)s,
+              %(s_updated_at)s, %(s_object_key)s)
     ''', selections)
     self.wp10db.commit()
 
@@ -69,22 +72,26 @@ class SelectionTest(BaseWpOneDbTest):
                   s_builder_id=100,
                   s_content_type=b'text/tab-separated-values',
                   s_version=1,
-                  s_updated_at=b'20190830112844'),
+                  s_updated_at=b'20190830112844',
+                  s_object_key=b'object_key'),
         Selection(s_id=b'beefdead',
                   s_builder_id=100,
                   s_content_type=b'application/vnd.ms-excel',
                   s_version=1,
-                  s_updated_at=b'20190830112844'),
+                  s_updated_at=b'20190830112844',
+                  s_object_key=b'object_key'),
         Selection(s_id=b'dead0000',
                   s_builder_id=100,
                   s_content_type=b'text/tab-separated-values',
                   s_version=2,
-                  s_updated_at=b'20190830112844'),
+                  s_updated_at=b'20190830112844',
+                  s_object_key=b'object_key'),
         Selection(s_id=b'0000beef',
                   s_builder_id=100,
                   s_content_type=b'application/vnd.ms-excel',
                   s_version=2,
-                  s_updated_at=b'20190830112844'),
+                  s_updated_at=b'20190830112844',
+                  s_object_key=b'object_key'),
     ])
     actual = logic_selection.get_next_version(self.wp10db, 100,
                                               b'text/tab-separated-values')
@@ -96,17 +103,20 @@ class SelectionTest(BaseWpOneDbTest):
                   s_builder_id=100,
                   s_content_type=b'text/tab-separated-values',
                   s_version=1,
-                  s_updated_at=b'20190830112844'),
+                  s_updated_at=b'20190830112844',
+                  s_object_key=b'object_key'),
         Selection(s_id=b'beefdead',
                   s_builder_id=100,
                   s_content_type=b'application/vnd.ms-excel',
                   s_version=1,
-                  s_updated_at=b'20190830112844'),
+                  s_updated_at=b'20190830112844',
+                  s_object_key=b'object_key'),
         Selection(s_id=b'0000beef',
                   s_builder_id=100,
                   s_content_type=b'application/vnd.ms-excel',
                   s_version=2,
-                  s_updated_at=b'20190830112844'),
+                  s_updated_at=b'20190830112844',
+                  s_object_key=b'object_key'),
     ])
     actual = logic_selection.get_next_version(self.wp10db, 100,
                                               b'text/tab-separated-values')
@@ -152,40 +162,32 @@ class SelectionTest(BaseWpOneDbTest):
                                      None)
 
   def test_url_for_selection(self):
-    actual = logic_selection.url_for_selection(self.selection, 'foo.bar.model')
+    actual = logic_selection.url_for_selection(self.selection)
     self.assertEqual(
-        'http://credentials.not.found.fake/selections/foo.bar.model/deadbeef/selection.tsv',
+        'http://credentials.not.found.fake/selections/foo.bar.model/deadbeef/name.tsv',
         actual)
 
   def test_url_for_selection_none_selection(self):
     with self.assertRaises(ValueError):
-      logic_selection.url_for_selection(None, 'foo.bar.model')
-
-  def test_url_for_selection_none_model(self):
-    with self.assertRaises(ValueError):
-      logic_selection.url_for_selection(self.selection, None)
+      logic_selection.url_for_selection(None)
 
   def test_url_for(self):
-    actual = logic_selection.url_for('abcd-1234', 'text/tab-separated-values',
-                                     'foo.bar.model')
+    actual = logic_selection.url_for(
+        'selections/foo.bar.model/abcd-1234/selection.tsv')
     self.assertEqual(
         'http://credentials.not.found.fake/selections/foo.bar.model/abcd-1234/selection.tsv',
         actual)
 
-  def test_url_for_none_selection_id(self):
+  def test_url_for_none_object_id(self):
     with self.assertRaises(ValueError):
-      logic_selection.url_for(None, 'text/tab-separated-values',
-                              'foo.bar.model')
+      logic_selection.url_for(None)
 
-  def test_url_for_none_content_type(self):
-    actual = logic_selection.url_for('abcd-1234', None, 'foo.bar.model')
+  def test_url_for_escapes(self):
+    actual = logic_selection.url_for(
+        'selections/foo.bar.model/abcd-1234/Héllo Wørld.???')
     self.assertEqual(
-        'http://credentials.not.found.fake/selections/foo.bar.model/abcd-1234/selection.%3F%3F%3F',
-        actual)
-
-  def test_url_for_none_model(self):
-    with self.assertRaises(ValueError):
-      logic_selection.url_for('abcd-1234', 'text/tab-separated-values', None)
+        'http://credentials.not.found.fake/selections/foo.bar.model/abcd-1234/'
+        'H%C3%A9llo%20W%C3%B8rld.%3F%3F%3F', actual)
 
   def test_object_key_for_selection_with_name(self):
     actual = logic_selection.object_key_for_selection(self.selection,
@@ -220,43 +222,3 @@ class SelectionTest(BaseWpOneDbTest):
                                             'foo.bar.model',
                                             name='name')
     self.assertEqual('selections/foo.bar.model/abcd-1234/name.???', actual)
-
-  def test_url_for_selection_with_name(self):
-    actual = logic_selection.url_for_selection(self.selection,
-                                               'foo.bar.model',
-                                               name='name')
-    self.assertEqual(
-        'http://credentials.not.found.fake/selections/foo.bar.model/deadbeef/name.tsv',
-        actual)
-
-  def test_url_for_with_name(self):
-    actual = logic_selection.url_for('abcd-1234',
-                                     'text/tab-separated-values',
-                                     'foo.bar.model',
-                                     name='name')
-    self.assertEqual(
-        'http://credentials.not.found.fake/selections/foo.bar.model/abcd-1234/name.tsv',
-        actual)
-
-  def test_url_for_none_selection_id_with_name(self):
-    with self.assertRaises(ValueError):
-      logic_selection.url_for(None, 'text/tab-separated-values',
-                              'foo.bar.model')
-
-  def test_url_for_none_content_type_and_name(self):
-    actual = logic_selection.url_for('abcd-1234',
-                                     None,
-                                     'foo.bar.model',
-                                     name='name')
-    self.assertEqual(
-        'http://credentials.not.found.fake/selections/foo.bar.model/abcd-1234/name.%3F%3F%3F',
-        actual)
-
-  def test_url_for_quotes_url(self):
-    actual = logic_selection.url_for('abcd-1234',
-                                     'text/tab-separated-values',
-                                     'foo.bar.model',
-                                     name='My Nåmé')
-    self.assertEqual(
-        'http://credentials.not.found.fake/selections/foo.bar.model/abcd-1234/My%20N%C3%A5m%C3%A9.tsv',
-        actual)
