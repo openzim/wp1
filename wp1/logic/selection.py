@@ -48,7 +48,8 @@ def url_for_selection(selection):
 def url_for(object_key):
   if not object_key:
     raise ValueError('Cannot get url for empty object_key')
-  path = urllib.parse.quote(object_key)
+  path = urllib.parse.quote(
+      object_key if isinstance(object_key, str) else object_key.decode('utf-8'))
   return '%s/%s' % (S3_PUBLIC_URL, path)
 
 

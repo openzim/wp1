@@ -77,3 +77,15 @@ def get_builder(builder_id):
     flask.abort(404)
 
   return flask.jsonify(builder.to_web_dict())
+
+
+@builders.route('/<builder_id>/selection/latest.<ext>')
+def latest_selection_for_builder(builder_id, ext):
+  wp10db = get_db('wp10db')
+
+  url = logic_builder.latest_selection_url(wp10db, builder_id, ext)
+  if not url:
+    print(404)
+    flask.abort(404)
+
+  return flask.redirect(url, code=302)

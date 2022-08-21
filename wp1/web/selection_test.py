@@ -23,7 +23,7 @@ class SelectionTest(BaseWebTestcase):
           's_updated_at': 1608893744,
           's_content_type': 'text/tab-separated-values',
           's_extension': 'tsv',
-          's_url': 'http://credentials.not.found.fake/object_key'
+          's_url': 'http://test.server.fake/v1/builders/1/selection/latest.tsv'
       }],
   }
 
@@ -38,7 +38,7 @@ class SelectionTest(BaseWebTestcase):
           's_updated_at': 1608893744,
           's_content_type': 'text/tab-separated-values',
           's_extension': 'tsv',
-          's_url': 'http://credentials.not.found.fake/object_key_1'
+          's_url': 'http://test.server.fake/v1/builders/1/selection/latest.tsv'
       }, {
           'id': 1,
           'name': 'name',
@@ -49,7 +49,7 @@ class SelectionTest(BaseWebTestcase):
           's_updated_at': 1608893744,
           's_content_type': 'application/vnd.ms-excel',
           's_extension': 'xls',
-          's_url': 'http://credentials.not.found.fake/object_key_2'
+          's_url': 'http://test.server.fake/v1/builders/1/selection/latest.xls'
       }]
   }
 

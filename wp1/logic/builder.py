@@ -3,7 +3,8 @@ import logging
 
 import attr
 
-from wp1.constants import CONTENT_TYPE_TO_EXT
+from wp1.constants import CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE
+from wp1.credentials import CREDENTIALS, ENV
 import wp1.logic.selection as logic_selection
 import wp1.logic.util as logic_util
 from wp1.models.wp10.builder import Builder
@@ -100,15 +101,53 @@ def materialize_builder(builder_cls, builder_id, content_type):
     wp10db.close()
 
 
+def latest_url_for(builder_id, content_type):
+  ext = CONTENT_TYPE_TO_EXT.get(content_type)
+  if ext is None:
+    logger.warning(
+        'Attempt to get latest selection URL with unrecognized content type: %r',
+        content_type)
+    return None
+  server_url = CREDENTIALS.get(ENV, {}).get('CLIENT_URL', {}).get('api')
+  if server_url is None:
+    logger.warning('Could not determine server API URL. Check credentials.py')
+    return None
+  return '%s/v1/builders/%s/selection/latest.%s' % (server_url, builder_id, ext)
+
+
+def latest_selection_url(wp10db, builder_id, ext):
+  content_type = EXT_TO_CONTENT_TYPE.get(ext)
+  if content_type is None:
+    logger.warning(
+        'Attempt to get latest selection with unrecognized extension: %r', ext)
+    return None
+
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        '''SELECT s.s_object_key AS object_key
+           FROM selections AS s JOIN builders as b
+             ON s.s_builder_id = b.b_id
+             AND s.s_version = b.b_current_version
+             AND s.s_content_type = %s
+           WHERE b.b_id = %s''', (content_type, builder_id))
+    data = cursor.fetchone()
+  if data is None:
+    logger.warning('Could not find latest selection for builder id=%s',
+                   builder_id)
+    return None
+
+  return logic_selection.url_for(data['object_key'].decode('utf-8'))
+
+
 def get_builders_with_selections(wp10db, user_id):
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''SELECT * FROM selections
-                      RIGHT JOIN builders
-                      ON selections.s_builder_id=builders.b_id
-                        AND selections.s_version=builders.b_current_version
-                      WHERE b_user_id=%(b_user_id)s
-                      ORDER BY selections.s_id ASC''', {'b_user_id': user_id})
+           RIGHT JOIN builders
+             ON selections.s_builder_id=builders.b_id
+             AND selections.s_version=builders.b_current_version
+           WHERE b_user_id=%(b_user_id)s
+           ORDER BY selections.s_id ASC''', {'b_user_id': user_id})
     data = cursor.fetchall()
 
     builders = {}
@@ -140,7 +179,7 @@ def get_builders_with_selections(wp10db, user_id):
               CONTENT_TYPE_TO_EXT.get(content_type, '???')
               if has_selection else None,
           's_url':
-              logic_selection.url_for(b['s_object_key'])
+              latest_url_for(b['b_id'], content_type)
               if has_selection else None,
       })
     return result

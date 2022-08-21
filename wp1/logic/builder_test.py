@@ -44,7 +44,7 @@ class BuilderTest(BaseWpOneDbTest):
       's_updated_at': 1577249084,
       's_content_type': 'text/tab-separated-values',
       's_extension': 'tsv',
-      's_url': 'http://credentials.not.found.fake/selections/foo/1234/name.tsv'
+      's_url': 'http://test.server.fake/v1/builders/1/selection/latest.tsv'
   }]
 
   expected_lists_with_multiple_selections = [{
@@ -57,7 +57,7 @@ class BuilderTest(BaseWpOneDbTest):
       's_updated_at': 1577249084,
       's_content_type': 'text/tab-separated-values',
       's_extension': 'tsv',
-      's_url': 'http://credentials.not.found.fake/object_key_1',
+      's_url': 'http://test.server.fake/v1/builders/1/selection/latest.tsv',
   }, {
       'id': 1,
       'name': 'My Builder',
@@ -68,7 +68,7 @@ class BuilderTest(BaseWpOneDbTest):
       's_updated_at': 1577249084,
       's_content_type': 'application/vnd.ms-excel',
       's_extension': 'xls',
-      's_url': 'http://credentials.not.found.fake/object_key_2',
+      's_url': 'http://test.server.fake/v1/builders/1/selection/latest.xls',
   }]
 
   expected_lists_with_no_selections = [{
@@ -85,26 +85,16 @@ class BuilderTest(BaseWpOneDbTest):
   }]
 
   expected_lists_with_unmapped_selections = [{
-      'id':
-          1,
-      'name':
-          'My Builder',
-      'project':
-          'en.wikipedia.fake',
-      'created_at':
-          1577249084,
-      'updated_at':
-          1577249084,
-      's_id':
-          '1',
-      's_updated_at':
-          1577249084,
-      's_content_type':
-          'foo/bar-baz',
-      's_extension':
-          '???',
-      's_url':
-          'http://credentials.not.found.fake/selections/wp1.selection.models.simple/1/My%20Builder.%3F%3F%3F',
+      'id': 1,
+      'name': 'My Builder',
+      'project': 'en.wikipedia.fake',
+      'created_at': 1577249084,
+      'updated_at': 1577249084,
+      's_id': '1',
+      's_updated_at': 1577249084,
+      's_content_type': 'foo/bar-baz',
+      's_extension': '???',
+      's_url': None,
   }]
 
   def _insert_builder(self, version=None):

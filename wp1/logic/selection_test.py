@@ -178,6 +178,13 @@ class SelectionTest(BaseWpOneDbTest):
         'http://credentials.not.found.fake/selections/foo.bar.model/abcd-1234/selection.tsv',
         actual)
 
+  def test_url_for_bytes(self):
+    actual = logic_selection.url_for(
+        b'selections/foo.bar.model/abcd-1234/selection.tsv')
+    self.assertEqual(
+        'http://credentials.not.found.fake/selections/foo.bar.model/abcd-1234/selection.tsv',
+        actual)
+
   def test_url_for_none_object_id(self):
     with self.assertRaises(ValueError):
       logic_selection.url_for(None)
