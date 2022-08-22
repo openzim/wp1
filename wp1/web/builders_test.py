@@ -35,18 +35,36 @@ class BuildersTest(BaseWebTestcase):
       b_params=b'{"list": ["a", "b", "c"]}',
       b_created_at=b'20191225044444',
       b_updated_at=b'20191225044444',
+      b_current_version=2,
   )
 
   def _insert_builder(self):
     with self.wp10db.cursor() as cursor:
       cursor.execute(
           '''INSERT INTO builders
-         (b_name, b_user_id, b_project, b_params, b_model, b_created_at, b_updated_at)
-         VALUES (%(b_name)s, %(b_user_id)s, %(b_project)s, %(b_params)s, %(b_model)s, %(b_created_at)s, %(b_updated_at)s)
+         (b_name, b_user_id, b_project, b_params, b_model, b_created_at, b_updated_at, b_current_version)
+         VALUES (%(b_name)s, %(b_user_id)s, %(b_project)s, %(b_params)s, %(b_model)s,
+                 %(b_created_at)s, %(b_updated_at)s, %(b_current_version)s)
         ''', attr.asdict(self.builder))
       id_ = cursor.lastrowid
     self.wp10db.commit()
     return id_
+
+  def _insert_selections(self, builder_id):
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+          'INSERT INTO selections VALUES (1, %s, "text/tab-separated-values", "20201225105544", 1, "object_key1")',
+          builder_id)
+      cursor.execute(
+          'INSERT INTO selections VALUES (2, %s, "application/vnd.ms-excel", "20201225105544", 1, "object_key2")',
+          builder_id)
+      cursor.execute(
+          'INSERT INTO selections VALUES (3, %s, "text/tab-separated-values", "20201225105544", 2, "latest_object_key_tsv")',
+          builder_id)
+      cursor.execute(
+          'INSERT INTO selections VALUES (4, %s, "application/vnd.ms-excel", "20201225105544", 2, "latest_object_key_xls")',
+          builder_id)
+    self.wp10db.commit()
 
   def test_create_unsuccessful(self):
     self.app = create_app()
@@ -227,3 +245,36 @@ class BuildersTest(BaseWebTestcase):
                            'project': 'my_project'
                        })
     self.assertEqual('401 UNAUTHORIZED', rv.status)
+
+  def test_latest_selection(self):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+    self.app = create_app()
+    with self.app.test_client() as client:
+      rv = client.get('/v1/builders/%s/selection/latest.tsv' % builder_id)
+    self.assertEqual('302 FOUND', rv.status)
+    self.assertEqual('http://credentials.not.found.fake/latest_object_key_tsv',
+                     rv.headers['Location'])
+
+  def test_latest_selection_bad_content_type(self):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+    self.app = create_app()
+    with self.app.test_client() as client:
+      rv = client.get('/v1/builders/%s/selection/latest.foo' % builder_id)
+    self.assertEqual('404 NOT FOUND', rv.status)
+
+  def test_latest_selection_bad_builder_id(self):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+    self.app = create_app()
+    with self.app.test_client() as client:
+      rv = client.get('/v1/builders/-1/selection/latest.tsv')
+    self.assertEqual('404 NOT FOUND', rv.status)
+
+  def test_latest_selection_no_selections(self):
+    builder_id = self._insert_builder()
+    self.app = create_app()
+    with self.app.test_client() as client:
+      rv = client.get('/v1/builders/%s/selection/latest.tsv' % builder_id)
+    self.assertEqual('404 NOT FOUND', rv.status)

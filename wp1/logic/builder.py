@@ -132,8 +132,9 @@ def latest_selection_url(wp10db, builder_id, ext):
            WHERE b.b_id = %s''', (content_type, builder_id))
     data = cursor.fetchone()
   if data is None:
-    logger.warning('Could not find latest selection for builder id=%s',
-                   builder_id)
+    logger.warning(
+        'Could not find latest selection for builder id=%s, content_type=%s',
+        builder_id, content_type)
     return None
 
   return logic_selection.url_for(data['object_key'].decode('utf-8'))
