@@ -42,3 +42,6 @@ CONTENT_TYPE_TO_EXT = {
     'application/vnd.ms-excel': 'xls',
     b'application/vnd.ms-excel': 'xls',
 }
+
+EXT_TO_CONTENT_TYPE = dict(
+    (ext, ct) for ct, ext in CONTENT_TYPE_TO_EXT.items() if isinstance(ct, str))
