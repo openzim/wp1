@@ -97,11 +97,11 @@ class BuilderTest(BaseWpOneDbTest):
       's_url': None,
   }]
 
-  def _insert_builder(self, version=None):
-    if version is None:
-      version = 1
+  def _insert_builder(self, current_version=None):
+    if current_version is None:
+      current_version = 1
     value_dict = attr.asdict(self.builder)
-    value_dict['b_current_version'] = version
+    value_dict['b_current_version'] = current_version
     with self.wp10db.cursor() as cursor:
       cursor.execute(
           '''INSERT INTO builders
@@ -118,11 +118,12 @@ class BuilderTest(BaseWpOneDbTest):
                         id_,
                         content_type,
                         version=1,
-                        object_key='selections/foo/1234/name.tsv'):
+                        object_key='selections/foo/1234/name.tsv',
+                        builder_id=1):
     with self.wp10db.cursor() as cursor:
       cursor.execute(
-          'INSERT INTO selections VALUES (%s, 1, %s, "20191225044444", %s, %s)',
-          (id_, content_type, version, object_key))
+          'INSERT INTO selections VALUES (%s, %s, %s, "20191225044444", %s, %s)',
+          (id_, builder_id, content_type, version, object_key))
     self.wp10db.commit()
 
   def _get_builder_by_user_id(self):
@@ -333,3 +334,79 @@ class BuilderTest(BaseWpOneDbTest):
       db_builder = cursor.fetchone()
       actual_builder = Builder(**db_builder)
     self.assertEqual(builder, actual_builder)
+
+  def test_latest_url_for(self):
+    actual = logic_builder.latest_url_for(15, 'text/tab-separated-values')
+    self.assertEqual(
+        actual, 'http://test.server.fake/v1/builders/15/selection/latest.tsv')
+    actual = logic_builder.latest_url_for(439, 'application/vnd.ms-excel')
+    self.assertEqual(
+        actual, 'http://test.server.fake/v1/builders/439/selection/latest.xls')
+
+  def test_latest_url_for_unmapped_content_type(self):
+    actual = logic_builder.latest_url_for(150, 'foo/bar-baz')
+    self.assertIsNone(actual)
+
+  @patch('wp1.logic.builder.CREDENTIALS', {})
+  def test_latest_url_for_no_server_url(self):
+    actual = logic_builder.latest_url_for(15, 'text/tab-separated-values')
+    self.assertIsNone(actual)
+
+  def test_latest_selection_url(self):
+    builder_id = self._insert_builder()
+    self._insert_selection(1, 'text/tab-separated-values')
+
+    actual = logic_builder.latest_selection_url(self.wp10db, builder_id, 'tsv')
+
+    self.assertEqual(
+        actual,
+        'http://credentials.not.found.fake/selections/foo/1234/name.tsv')
+
+  def test_latest_selection_url_unknown_extension(self):
+    builder_id = self._insert_builder()
+    self._insert_selection(1, 'text/tab-separated-values')
+
+    actual = logic_builder.latest_selection_url(self.wp10db, builder_id, 'foo')
+
+    self.assertIsNone(actual)
+
+  def test_latest_selection_url_missing_builder(self):
+    builder_id = self._insert_builder()
+    self._insert_selection(1, 'text/tab-separated-values')
+
+    actual = logic_builder.latest_selection_url(self.wp10db, -1, 'tsv')
+
+    self.assertIsNone(actual)
+
+  def test_latest_selection_url_missing_selection(self):
+    builder_id = self._insert_builder()
+
+    actual = logic_builder.latest_selection_url(self.wp10db, builder_id, 'tsv')
+
+    self.assertIsNone(actual)
+
+  def test_latest_selection_url_unrelated_selections(self):
+    builder_id = self._insert_builder()
+    self._insert_selection(1, 'text/tab-separated-values', builder_id=-1)
+    self._insert_selection(2, 'text/tab-separated-values', builder_id=-2)
+    self._insert_selection(3, 'text/tab-separated-values', builder_id=-3)
+
+    actual = logic_builder.latest_selection_url(self.wp10db, builder_id, 'tsv')
+
+    self.assertIsNone(actual)
+
+  def test_latest_selection_url_multiple_versions(self):
+    builder_id = self._insert_builder(current_version=3)
+    self._insert_selection(1, 'text/tab-separated-values', version=1)
+    self._insert_selection(2, 'application/vnd.ms-excel', version=1)
+    self._insert_selection(3, 'text/tab-separated-values', version=2)
+    self._insert_selection(4,
+                           'text/tab-separated-values',
+                           version=3,
+                           object_key='proper/selection/4321/name.tsv')
+
+    actual = logic_builder.latest_selection_url(self.wp10db, builder_id, 'tsv')
+
+    self.assertEqual(
+        actual,
+        'http://credentials.not.found.fake/proper/selection/4321/name.tsv')
