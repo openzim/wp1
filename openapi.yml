@@ -436,6 +436,26 @@ paths:
           description: 'The id of the builder to update.'
           schema:
             type: string
+  /builders/{builderId}/selection/latest.{ext}:
+    get:
+      summary: 'Return a redirect to the latest materialization of the given builder in the given format.'
+      operationId: getBuilderSelectionLatest
+      responses:
+        302:
+          description: 'Successful operation, redirect to the list in the s3-like storage.'
+      parameters:
+        - name: builderId
+          in: path
+          required: true
+          description: 'The id of the builder whose latest selection should be retrieved.'
+          schema:
+            type: string
+        - name: ext
+          in: path
+          required: true
+          description: 'The requested extension of the selection list to be redirected to.'
+          schema:
+            type: string
   /selection/simple/lists:
     get:
       summary: 'Return list details from database'
