@@ -87,18 +87,23 @@ def delete_builder(wp10db, user_id, builder_id):
            JOIN builders AS b ON b.b_id = s.s_builder_id
            WHERE b.b_user_id = %s AND b.b_id = %s
         ''', (user_id, builder_id))
-    object_ids_to_delete = [d['object_key'] for d in cursor.fetchall()]
+    keys_to_delete = [d['object_key'] for d in cursor.fetchall()]
     cursor.execute(
         '''DELETE b, s FROM builders AS b
-           JOIN selections AS s ON s.s_builder_id = b.b_id
+           LEFT JOIN selections AS s ON s.s_builder_id = b.b_id
            WHERE b.b_user_id = %s AND b.b_id = %s
         ''', (user_id, builder_id))
     rowcount = cursor.rowcount
+    print(rowcount)
 
-  # TODO: delete the object keys from s3
+  # Delete the object keys from the s3-like backend
+  s3_success = logic_selection.delete_keys_from_storage(keys_to_delete)
 
   wp10db.commit()
-  return rowcount > 0
+  return {
+      'db_delete_success': rowcount > 0,
+      's3_delete_success': s3_success,
+  }
 
 
 def get_builder(wp10db, id_):
