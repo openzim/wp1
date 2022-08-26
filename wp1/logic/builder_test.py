@@ -395,18 +395,54 @@ class BuilderTest(BaseWpOneDbTest):
 
     self.assertIsNone(actual)
 
-  def test_latest_selection_url_multiple_versions(self):
+  def _insert_builder_with_multiple_version_selections(self):
     builder_id = self._insert_builder(current_version=3)
-    self._insert_selection(1, 'text/tab-separated-values', version=1)
-    self._insert_selection(2, 'application/vnd.ms-excel', version=1)
-    self._insert_selection(3, 'text/tab-separated-values', version=2)
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           version=1,
+                           builder_id=builder_id)
+    self._insert_selection(2,
+                           'application/vnd.ms-excel',
+                           version=1,
+                           builder_id=builder_id)
+    self._insert_selection(3,
+                           'text/tab-separated-values',
+                           version=2,
+                           builder_id=builder_id)
     self._insert_selection(4,
                            'text/tab-separated-values',
                            version=3,
-                           object_key='proper/selection/4321/name.tsv')
+                           object_key='proper/selection/4321/name.tsv',
+                           builder_id=builder_id)
+
+    return builder_id
+
+  def test_latest_selection_url_multiple_versions(self):
+    builder_id = self._insert_builder_with_multiple_version_selections()
 
     actual = logic_builder.latest_selection_url(self.wp10db, builder_id, 'tsv')
 
     self.assertEqual(
         actual,
         'http://credentials.not.found.fake/proper/selection/4321/name.tsv')
+
+  def test_delete_builder(self):
+    builder_id = self._insert_builder_with_multiple_version_selections()
+
+    actual = logic_builder.delete_builder(self.wp10db, 1234, builder_id)
+
+    self.assertTrue(actual)
+
+  def test_delete_builder_user_id_unmatched(self):
+    builder_id = self._insert_builder_with_multiple_version_selections()
+
+    actual = logic_builder.delete_builder(self.wp10db, 4321, builder_id)
+
+    self.assertFalse(actual)
+
+  def test_delete_builder_user_builder_id_unmatched(self):
+    builder_id = self._insert_builder_with_multiple_version_selections()
+
+    actual = logic_builder.delete_builder(self.wp10db, 1234, -1)
+
+    self.assertFalse(actual)
