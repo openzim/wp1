@@ -400,14 +400,17 @@ class BuilderTest(BaseWpOneDbTest):
     self._insert_selection(1,
                            'text/tab-separated-values',
                            version=1,
+                           object_key='object_key_1',
                            builder_id=builder_id)
     self._insert_selection(2,
                            'application/vnd.ms-excel',
                            version=1,
+                           object_key='object_key_2',
                            builder_id=builder_id)
     self._insert_selection(3,
                            'text/tab-separated-values',
                            version=2,
+                           object_key='object_key_3',
                            builder_id=builder_id)
     self._insert_selection(4,
                            'text/tab-separated-values',
@@ -426,23 +429,48 @@ class BuilderTest(BaseWpOneDbTest):
         actual,
         'http://credentials.not.found.fake/proper/selection/4321/name.tsv')
 
-  def test_delete_builder(self):
+  @patch('wp1.logic.builder.logic_selection')
+  def test_delete_builder(self, patched_selection):
     builder_id = self._insert_builder_with_multiple_version_selections()
 
     actual = logic_builder.delete_builder(self.wp10db, 1234, builder_id)
 
-    self.assertTrue(actual)
+    self.assertTrue(actual['db_delete_success'])
 
-  def test_delete_builder_user_id_unmatched(self):
+  @patch('wp1.logic.builder.logic_selection')
+  def test_delete_builder_user_id_unmatched(self, patched_selection):
     builder_id = self._insert_builder_with_multiple_version_selections()
 
     actual = logic_builder.delete_builder(self.wp10db, 4321, builder_id)
 
-    self.assertFalse(actual)
+    self.assertFalse(actual['db_delete_success'])
 
-  def test_delete_builder_user_builder_id_unmatched(self):
+  @patch('wp1.logic.builder.logic_selection')
+  def test_delete_builder_user_builder_id_unmatched(self, patched_selection):
     builder_id = self._insert_builder_with_multiple_version_selections()
 
     actual = logic_builder.delete_builder(self.wp10db, 1234, -1)
 
-    self.assertFalse(actual)
+    self.assertFalse(actual['db_delete_success'])
+
+  @patch('wp1.logic.builder.logic_selection')
+  def test_delete_builder_user_no_selections(self, patched_selection):
+    builder_id = self._insert_builder()
+
+    actual = logic_builder.delete_builder(self.wp10db, 1234, builder_id)
+
+    self.assertTrue(actual['db_delete_success'])
+
+  @patch('wp1.logic.builder.logic_selection.delete_keys_from_storage')
+  def test_delete_builder_deletes_object_keys(self, patched_delete_keys):
+    builder_id = self._insert_builder_with_multiple_version_selections()
+    patched_delete_keys.return_value = True
+
+    actual = logic_builder.delete_builder(self.wp10db, 1234, builder_id)
+
+    self.assertTrue(actual['db_delete_success'])
+    self.assertTrue(actual['s3_delete_success'])
+    patched_delete_keys.assert_called_once_with([
+        b'object_key_1', b'object_key_2', b'object_key_3',
+        b'proper/selection/4321/name.tsv'
+    ])

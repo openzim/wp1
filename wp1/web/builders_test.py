@@ -118,7 +118,6 @@ class BuildersTest(BaseWebTestcase):
                            'name': 'updated_list',
                            'project': 'my_project'
                        })
-      print(rv.status)
       self.assertEqual(self.successful_response, rv.get_json())
 
   def test_update_not_owner(self):
@@ -278,3 +277,57 @@ class BuildersTest(BaseWebTestcase):
     with self.app.test_client() as client:
       rv = client.get('/v1/builders/%s/selection/latest.tsv' % builder_id)
     self.assertEqual('404 NOT FOUND', rv.status)
+
+  @patch('wp1.logic.selection.connect_storage')
+  def test_delete_successful(self, patched_connect_storage):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/%s/delete' % builder_id)
+      self.assertEqual('200 OK', rv.status)
+      self.assertEqual({'status': '204'}, rv.get_json())
+
+  @patch('wp1.logic.selection.connect_storage')
+  def test_delete_no_selections(self, patched_connect_storage):
+    builder_id = self._insert_builder()
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/%s/delete' % builder_id)
+      self.assertEqual('200 OK', rv.status)
+      self.assertEqual({'status': '204'}, rv.get_json())
+
+  @patch('wp1.logic.selection.connect_storage')
+  def test_delete_not_owner(self, patched_connect_storage):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+    different_user = {
+        'access_token': 'access_token',
+        'identity': {
+            'username': 'Another_User',
+            'sub': 5555,
+        },
+    }
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = different_user
+      rv = client.post('/v1/builders/%s/delete' % builder_id)
+      self.assertEqual('404 NOT FOUND', rv.status)
+
+  @patch('wp1.logic.selection.connect_storage')
+  def test_delete_no_builder(self, patched_connect_storage):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/-1/delete')
+      self.assertEqual('404 NOT FOUND', rv.status)

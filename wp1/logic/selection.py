@@ -1,8 +1,11 @@
+import html
+import logging
 import urllib.parse
 
 import attr
 
 from wp1.constants import CONTENT_TYPE_TO_EXT
+from wp1.storage import connect_storage
 
 try:
   from wp1.credentials import ENV, CREDENTIALS
@@ -12,6 +15,8 @@ except ImportError:
   S3_PUBLIC_URL = 'http://credentials.not.found.fake'
 
 DEFAULT_SELECTION_NAME = 'selection'
+
+logger = logging.getLogger(__name__)
 
 
 def insert_selection(wp10db, selection):
@@ -91,3 +96,32 @@ def object_key_for_selection(selection,
                         model,
                         name=name,
                         use_legacy_schema=use_legacy_schema)
+
+
+def delete_keys_from_storage(keys):
+  if isinstance(keys, (bytes)):
+    keys = [keys]
+
+  for key in keys:
+    if isinstance(key, str):
+      raise ValueError('Expected keys to all be bytes, not str')
+
+  s3 = connect_storage()
+  resp = s3.bucket.delete_objects(
+      Delete={
+          'Objects': [{
+              'Key': html.escape(k.decode('utf-8'))
+          } for k in keys],
+          'Quiet': True,
+      })
+
+  fully_successful = True
+
+  # TODO: Check for errors in the response. For now, just pretend
+  # it's always successful.
+  # for e in (resp if resp is not None else {}).get('Errors', []):
+  #   fully_successful = False
+  #   logger.warning('Error deleting %r: [code=%r, msg=%r]',
+  #                  (e['Key'], e['Code'], e['Message']))
+
+  return fully_successful
