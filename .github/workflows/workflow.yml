@@ -70,7 +70,7 @@ jobs:
 
       - name: Build production frontend
         run: |
-          yarn run build
+          cd wp1-frontend && yarn run build
 
   frontend-cypress:
     runs-on: ubuntu-latest
