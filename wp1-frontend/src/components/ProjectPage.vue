@@ -21,7 +21,7 @@ import Autocomplete from './Autocomplete.vue';
 import ProjectTable from './ProjectTable.vue';
 
 export default {
-  name: 'projectpage',
+  name: 'project-page',
   components: {
     Autocomplete,
     ProjectTable

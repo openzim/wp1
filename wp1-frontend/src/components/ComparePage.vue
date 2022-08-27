@@ -87,7 +87,7 @@ import ArticleTableRatingSelect from './ArticleTableRatingSelect';
 import Autocomplete from './Autocomplete.vue';
 
 export default {
-  name: 'updatepage',
+  name: 'update-page',
   components: {
     ArticleTable,
     ArticleTableRatingSelect,

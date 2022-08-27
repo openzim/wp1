@@ -4,7 +4,7 @@
 
 <script>
 export default {
-  name: 'wikilink',
+  name: 'wiki-link',
   props: {
     href: String,
     text: String

@@ -50,7 +50,7 @@
 
 <script>
 export default {
-  name: 'autocomplete',
+  name: 'auto-complete',
   props: ['incomingSearch', 'hideInstructions'],
   data: function() {
     return {

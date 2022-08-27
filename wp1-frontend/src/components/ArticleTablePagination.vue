@@ -28,7 +28,7 @@
 
 <script>
 export default {
-  name: 'articletablepagination',
+  name: 'article-table-pagination',
   components: {},
   props: {
     page: String,
