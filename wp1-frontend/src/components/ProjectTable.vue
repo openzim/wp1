@@ -56,7 +56,7 @@
               "
               data-file-width="180"
               data-file-height="180"
-              style="position:relative; top: -2px"
+              style="position: relative; top: -2px"
             />
           </span>
           <span v-if="tableData.row_labels[row].text == 'GA'">
@@ -73,7 +73,7 @@
               "
               data-file-width="180"
               data-file-height="185"
-              style="position:relative; top: -2px"
+              style="position: relative; top: -2px"
             />
           </span>
           <WikiLink
@@ -132,7 +132,7 @@ import WikiLink from './WikiLink.vue';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 
 export default {
-  name: 'projecttable',
+  name: 'project-table',
   components: {
     WikiLink,
     PulseLoader

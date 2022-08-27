@@ -143,7 +143,7 @@ import ArticleTableNameFilter from './ArticleTableNameFilter.vue';
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 
 export default {
-  name: 'articletable',
+  name: 'article-table',
   components: {
     ArticleTablePagination,
     ArticleTablePageSelect,

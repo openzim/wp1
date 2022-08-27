@@ -56,7 +56,7 @@
 
 <script>
 export default {
-  name: 'articletablenamefilter',
+  name: 'article-table-name-filter',
   props: {
     filterValue: String
   },
