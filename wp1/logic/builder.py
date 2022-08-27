@@ -42,9 +42,10 @@ def insert_builder(wp10db, builder):
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''INSERT INTO builders
-        (b_name, b_user_id, b_project, b_params, b_model, b_created_at, b_updated_at)
-        VALUES (%(b_name)s, %(b_user_id)s, %(b_project)s, %(b_params)s, %(b_model)s, %(b_created_at)s, %(b_updated_at)s)
-      ''', attr.asdict(builder))
+             (b_name, b_user_id, b_project, b_params, b_model, b_created_at, b_updated_at)
+           VALUES (%(b_name)s, %(b_user_id)s, %(b_project)s, %(b_params)s, %(b_model)s,
+                   %(b_created_at)s, %(b_updated_at)s)
+        ''', attr.asdict(builder))
     id_ = cursor.lastrowid
   wp10db.commit()
   return id_
@@ -54,9 +55,9 @@ def update_current_version(wp10db, builder, version):
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''UPDATE builders
-      SET b_current_version=%(version)s
-      WHERE b_id = %(b_id)s AND b_user_id = %(b_user_id)s
-      ''', {
+           SET b_current_version=%(version)s
+           WHERE b_id = %(b_id)s AND b_user_id = %(b_user_id)s
+        ''', {
             'version': version,
             'b_id': builder.b_id,
             'b_user_id': builder.b_user_id
@@ -70,13 +71,40 @@ def update_builder(wp10db, builder):
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''UPDATE builders
-      SET b_name = %(b_name)s, b_project = %(b_project)s, b_params = %(b_params)s, b_model = %(b_model)s,
-          b_updated_at = %(b_updated_at)s
-      WHERE b_id = %(b_id)s AND b_user_id = %(b_user_id)s
-      ''', attr.asdict(builder))
+          SET b_name = %(b_name)s, b_project = %(b_project)s, b_params = %(b_params)s, b_model = %(b_model)s,
+              b_updated_at = %(b_updated_at)s
+          WHERE b_id = %(b_id)s AND b_user_id = %(b_user_id)s
+        ''', attr.asdict(builder))
     rowcount = cursor.rowcount
   wp10db.commit()
   return rowcount > 0
+
+
+def delete_builder(wp10db, user_id, builder_id):
+  logger.warning('%s %s' % (user_id, builder_id))
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        '''SELECT s.s_object_key as object_key FROM selections AS s
+           JOIN builders AS b ON b.b_id = s.s_builder_id
+           WHERE b.b_user_id = %s AND b.b_id = %s
+        ''', (user_id, builder_id))
+    keys_to_delete = [d['object_key'] for d in cursor.fetchall()]
+    cursor.execute(
+        '''DELETE b, s FROM builders AS b
+           LEFT JOIN selections AS s ON s.s_builder_id = b.b_id
+           WHERE b.b_user_id = %s AND b.b_id = %s
+        ''', (user_id, builder_id))
+    rowcount = cursor.rowcount
+    print(rowcount)
+
+  # Delete the object keys from the s3-like backend
+  s3_success = logic_selection.delete_keys_from_storage(keys_to_delete)
+
+  wp10db.commit()
+  return {
+      'db_delete_success': rowcount > 0,
+      's3_delete_success': s3_success,
+  }
 
 
 def get_builder(wp10db, id_):
@@ -129,7 +157,8 @@ def latest_selection_url(wp10db, builder_id, ext):
              ON s.s_builder_id = b.b_id
              AND s.s_version = b.b_current_version
              AND s.s_content_type = %s
-           WHERE b.b_id = %s''', (content_type, builder_id))
+           WHERE b.b_id = %s
+        ''', (content_type, builder_id))
     data = cursor.fetchone()
   if data is None:
     logger.warning(
@@ -148,7 +177,8 @@ def get_builders_with_selections(wp10db, user_id):
              ON selections.s_builder_id=builders.b_id
              AND selections.s_version=builders.b_current_version
            WHERE b_user_id=%(b_user_id)s
-           ORDER BY selections.s_id ASC''', {'b_user_id': user_id})
+           ORDER BY selections.s_id ASC
+        ''', {'b_user_id': user_id})
     data = cursor.fetchall()
 
     builders = {}

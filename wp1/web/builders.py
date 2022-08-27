@@ -79,6 +79,20 @@ def get_builder(builder_id):
   return flask.jsonify(builder.to_web_dict())
 
 
+@builders.route('/<builder_id>/delete', methods=['POST'])
+@authenticate
+def delete_builder(builder_id):
+  wp10db = get_db('wp10db')
+  user_id = flask.session['user']['identity']['sub']
+
+  status = logic_builder.delete_builder(wp10db, user_id, builder_id)
+
+  if not status['db_delete_success']:
+    flask.abort(404)
+
+  return {'status': '204'}
+
+
 @builders.route('/<builder_id>/selection/latest.<ext>')
 def latest_selection_for_builder(builder_id, ext):
   wp10db = get_db('wp10db')
