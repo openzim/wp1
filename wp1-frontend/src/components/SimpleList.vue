@@ -31,9 +31,9 @@
             <div id="project" class="m-4">
               <label>Project</label>
               <select v-model="builder.project" class="custom-select my-list">
-                <option v-if="wikiProjects.length == 0" selected
-                  >en.wikipedia.org</option
-                >
+                <option v-if="wikiProjects.length == 0" selected>
+                  en.wikipedia.org
+                </option>
                 <option v-for="item in wikiProjects" v-bind:key="item">
                   {{ item }}
                 </option>
@@ -65,32 +65,44 @@
                 rows="13"
                 required
               ></textarea>
-              <div class="invalid-feedback">
-                Please provide valid items
-              </div>
+              <div class="invalid-feedback">Please provide valid items</div>
             </div>
           </div>
           <div
-            v-if="this.success == false"
+            v-if="this.success == false || this.deleteSuccess == false"
             id="invalid_articles"
             class="form-group m-4"
           >
-            {{ errors }}
+            <div class="errors">{{ errors }}</div>
             <textarea
+              v-if="this.success == false"
               class="form-control my-list is-invalid"
               rows="6"
               ref="invalid"
               v-model="invalid_article_names"
             ></textarea>
           </div>
-          <button
-            v-if="isEditing"
-            id="updateListButton"
-            type="submit"
-            class="btn-primary ml-4"
-          >
-            Update List
-          </button>
+          <div v-if="isEditing">
+            <div>
+              <button
+                id="updateListButton"
+                type="submit"
+                class="btn-primary ml-4"
+              >
+                Update List
+              </button>
+            </div>
+            <div class="mt-4">
+              <button
+                v-on:click.prevent="onDelete"
+                id="deleteListButton"
+                type="button"
+                class="btn-danger ml-4"
+              >
+                Delete List
+              </button>
+            </div>
+          </div>
           <button
             v-else
             id="saveListButton"
@@ -101,6 +113,9 @@
           </button>
         </form>
       </div>
+    </div>
+    <div v-if="!notFound" class="row">
+      <div class="col-lg-6 col-md-9 m-4"></div>
     </div>
   </div>
   <div v-else>
@@ -120,6 +135,7 @@ export default {
       notFound: false,
       wikiProjects: [],
       success: true,
+      deleteSuccess: true,
       valid_article_names: '',
       invalid_article_names: '',
       errors: '',
@@ -199,6 +215,8 @@ export default {
         this.$router.push('/selections/user');
         return;
       }
+
+      // Otherwise there were errors with the POST
       this.$refs.form_group.classList.add('was-validated');
       this.builder.articles = data.items.valid.join('\n');
       this.invalid_article_names = data.items.invalid.join('\n');
@@ -210,9 +228,38 @@ export default {
       } else {
         event.target.classList.add('is-invalid');
       }
+    },
+    onDelete: async function() {
+      if (
+        !window.confirm(
+          'Really delete this list? The definition and all downloadable selections will be permanently deleted.'
+        )
+      ) {
+        return;
+      }
+
+      const postUrl = `${process.env.VUE_APP_API_URL}/builders/${this.$route.params.builder_id}/delete`;
+      const response = await fetch(postUrl, {
+        method: 'post',
+        credentials: 'include'
+      });
+
+      if (response.status == 200) {
+        this.$router.push('/selections/user');
+        return;
+      } else if (response.status == 404 || response.status == 401) {
+        this.deleteSuccess = false;
+        this.errors =
+          "Could not delete this list. Check that the list still exists and you're logged in as its owner.";
+        return;
+      }
     }
   }
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.errors {
+  color: red;
+}
+</style>
