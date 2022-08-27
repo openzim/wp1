@@ -65,7 +65,7 @@ import ArticleTable from './ArticleTable.vue';
 import WikiLink from './WikiLink.vue';
 
 export default {
-  name: 'articlepage',
+  name: 'article-page',
   components: {
     ArticleTable,
     WikiLink

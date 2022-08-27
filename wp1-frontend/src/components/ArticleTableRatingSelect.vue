@@ -39,8 +39,9 @@
                     :value="key"
                     v-bind:key="key"
                     :selected="selectedQuality == key"
-                    >{{ item.text ? item.text : item }}</option
                   >
+                    {{ item.text ? item.text : item }}
+                  </option>
                 </select>
               </div>
               <div>
@@ -51,8 +52,9 @@
                     :value="key"
                     v-bind:key="key"
                     :selected="selectedImportance == key"
-                    >{{ item.text ? item.text : item }}</option
                   >
+                    {{ item.text ? item.text : item }}
+                  </option>
                 </select>
               </div>
               <button
@@ -82,8 +84,9 @@
               :value="key"
               v-bind:key="key"
               :selected="selectedQuality == key"
-              >{{ item.text ? item.text : item }}</option
             >
+              {{ item.text ? item.text : item }}
+            </option>
           </select>
         </div>
         <div class="m-2">
@@ -99,8 +102,9 @@
               :value="key"
               v-bind:key="key"
               :selected="selectedImportance == key"
-              >{{ item.text ? item.text : item }}</option
             >
+              {{ item.text ? item.text : item }}
+            </option>
           </select>
         </div>
       </div>
@@ -110,7 +114,7 @@
 
 <script>
 export default {
-  name: 'articletableratingselect',
+  name: 'article-table-rating-select',
   props: ['initialQuality', 'initialImportance', 'projectId', 'layout'],
   data: function() {
     return {

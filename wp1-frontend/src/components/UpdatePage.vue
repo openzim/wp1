@@ -71,7 +71,7 @@ import Autocomplete from './Autocomplete.vue';
 import LoginRequired from './LoginRequired';
 
 export default {
-  name: 'updatepage',
+  name: 'update-page',
   components: {
     Autocomplete,
     LoginRequired

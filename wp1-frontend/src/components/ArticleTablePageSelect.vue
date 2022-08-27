@@ -77,7 +77,7 @@
 
 <script>
 export default {
-  name: 'articletablepageselect',
+  name: 'article-table-page-select',
   props: {
     numRows: Number,
     startPage: String
