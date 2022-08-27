@@ -64,7 +64,7 @@ jobs:
         # Don't need lfs because we're not referencing the dev-db in this workflow.
       - name: Install Javascript dependencies
         run: |
-          cd wp1-frontend && yarn install --production
+          cd wp1-frontend && yarn install
 
       - name: Build production frontend
         run: |
