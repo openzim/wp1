@@ -56,6 +56,20 @@ jobs:
         with:
           fail_ci_if_error: true
 
+  frontend-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        # Don't need lfs because we're not referencing the dev-db in this workflow.
+      - name: Install Javascript dependencies
+        run: |
+          cd wp1-frontend && yarn install
+
+      - name: Build production frontend
+        run: |
+          cd wp1-frontend && yarn run build
+
   frontend-cypress:
     runs-on: ubuntu-latest
 
