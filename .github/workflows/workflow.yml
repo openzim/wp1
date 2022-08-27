@@ -56,6 +56,22 @@ jobs:
         with:
           fail_ci_if_error: true
 
+  frontend-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          lfs: true
+
+      - name: Install Javascript dependencies
+        run: |
+          cd wp1-frontend && yarn
+
+      - name: Build production frontend
+        run: |
+          $(yarn bin)/vue-cli-service build
+
   frontend-cypress:
     runs-on: ubuntu-latest
 
