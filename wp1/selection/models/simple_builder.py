@@ -12,8 +12,6 @@ class SimpleBuilder(AbstractBuilder):
         raise ValueError(
             f'Missing required param: list, unnecessary argument given: {list(params.keys())[0]}'
         )
-      for l in params['list']:
-        print(repr(l), repr(l.strip()))
       list_minus_comments = [
           l for l in params['list'] if l.strip() != '' and not l.startswith('#')
       ]
