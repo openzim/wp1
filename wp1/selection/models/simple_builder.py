@@ -8,11 +8,16 @@ class SimpleBuilder(AbstractBuilder):
     if content_type != 'text/tab-separated-values':
       raise ValueError('Unrecognized content type')
     if len(params) == 1:
-      if 'list' in params:
-        return '\n'.join(params['list']).encode('utf-8')
-      raise ValueError(
-          f'Missing required param: list, unnecessary argument given: {list(params.keys())[0]}'
-      )
+      if 'list' not in params:
+        raise ValueError(
+            f'Missing required param: list, unnecessary argument given: {list(params.keys())[0]}'
+        )
+      for l in params['list']:
+        print(repr(l), repr(l.strip()))
+      list_minus_comments = [
+          l for l in params['list'] if l.strip() != '' and not l.startswith('#')
+      ]
+      return '\n'.join(list_minus_comments).encode('utf-8')
     raise ValueError('Additional unnecessary params present')
 
   def validate(self, **params):
@@ -25,6 +30,9 @@ class SimpleBuilder(AbstractBuilder):
     for item in params['list']:
       is_valid = True
       item = item.strip().replace(" ", "_")
+      # Ignore lines that are only whitespace or that start with a comment
+      if item == '' or item.startswith('#'):
+        continue
       decoded_item = urllib.parse.unquote(item)
       len_item = len(decoded_item.encode("utf-8"))
       char_set = ["#", "<", ">", "[", "]", "{", "}", "|"]
