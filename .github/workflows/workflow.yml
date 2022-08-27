@@ -66,11 +66,11 @@ jobs:
 
       - name: Install Javascript dependencies
         run: |
-          cd wp1-frontend && yarn
+          cd wp1-frontend && yarn install --production
 
       - name: Build production frontend
         run: |
-          $(yarn bin)/vue-cli-service build
+          yarn run build
 
   frontend-cypress:
     runs-on: ubuntu-latest
