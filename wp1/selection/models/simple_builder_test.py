@@ -48,6 +48,32 @@ of text than an actual article name.', 'Not_an_<article_name>',
     with self.assertRaises(ValueError):
       simple_test_builder.build('text/tab-separated-values', **params)
 
+  def test_build_ignores_comments(self):
+    simple_test_builder = SimpleBuilder()
+    expected = b'Eiffel_Tower\nStatue_of_Liberty\nLiberty_(personification)'
+    params = {
+        'list': [
+            '# Starting with a comment', '\n', 'Eiffel_Tower', '# Comment here',
+            '# Consecutive comments', 'Statue_of_Liberty',
+            '###Comment with lots of #', 'Liberty_(personification)',
+            '#Ending with a comment#'
+        ]
+    }
+    actual = simple_test_builder.build('text/tab-separated-values', **params)
+    self.assertEqual(expected, actual)
+
+  def test_build_ignores_whitespace(self):
+    simple_test_builder = SimpleBuilder()
+    expected = b'Eiffel_Tower\nStatue_of_Liberty\nLiberty_(personification)'
+    params = {
+        'list': [
+            '\n', '  Eiffel_Tower', '\n\t  \n  \t', 'Statue_of_Liberty  ',
+            '   ', 'Liberty_(personification)', '\n\n\n'
+        ],
+    }
+    actual = simple_test_builder.build('text/tab-separated-values', **params)
+    self.assertEqual(expected, actual)
+
   def test_validate_items(self):
     simple_builder_test = SimpleBuilder()
     expected = ([
@@ -74,3 +100,35 @@ of text than an actual article name.', 'Not_an_<article_name>',
     params = {'list': []}
     actual = simple_test_builder.validate(**params)
     self.assertEqual(([], [], ['Empty List']), actual)
+
+  def test_validate_whitespace_lines_ignored(self):
+    simple_builder_test = SimpleBuilder()
+    expected = ([
+        'Eiffel_Tower', 'Statue_of_Liberty', 'Liberty_(personification)'
+    ], [], [])
+    params = {
+        'list': [
+            '\n', '  Eiffel_Tower', '\n\t  \n  \t', 'Statue_of_Liberty  ',
+            '   ', 'Liberty_(personification)', '\n\n\n'
+        ],
+        'project': 'project_name'
+    }
+    actual = simple_builder_test.validate(**params)
+    self.assertEqual(expected, actual)
+
+  def test_validate_comments_ignored(self):
+    simple_builder_test = SimpleBuilder()
+    expected = ([
+        'Eiffel_Tower', 'Statue_of_Liberty', 'Liberty_(personification)'
+    ], [], [])
+    params = {
+        'list': [
+            '# Starting with a comment', '\n', 'Eiffel_Tower', '# Comment here',
+            '# Consecutive comments', 'Statue_of_Liberty',
+            '###Comment with lots of #', 'Liberty_(personification)',
+            '#Ending with a comment#'
+        ],
+        'project': 'project_name'
+    }
+    actual = simple_builder_test.validate(**params)
+    self.assertEqual(expected, actual)
