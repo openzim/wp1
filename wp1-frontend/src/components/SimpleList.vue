@@ -59,7 +59,8 @@
                 v-on:blur="validationOnBlur"
                 v-model="builder.articles"
                 :placeholder="
-                  'Eiffel_Tower\nStatue_of_Liberty\nFreedom_Monument_(Baghdad)\nGeorge-Étienne_Cartier_Monument'
+                  'Eiffel_Tower\nStatue_of_Liberty\nFreedom_Monument_(Baghdad)\nGeorge-Étienne_Cartier_Monument' +
+                    '\n\n# Whitespace and comments starting with # are ignored'
                 "
                 class="form-control my-list"
                 rows="13"
