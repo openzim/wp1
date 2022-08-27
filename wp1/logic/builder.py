@@ -81,6 +81,7 @@ def update_builder(wp10db, builder):
 
 
 def delete_builder(wp10db, user_id, builder_id):
+  logger.warning('%s %s' % (user_id, builder_id))
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''SELECT s.s_object_key as object_key FROM selections AS s
