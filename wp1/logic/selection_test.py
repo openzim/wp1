@@ -1,3 +1,5 @@
+from unittest.mock import patch, MagicMock
+
 import attr
 
 from wp1.base_db_test import BaseWpOneDbTest
@@ -229,3 +231,73 @@ class SelectionTest(BaseWpOneDbTest):
                                             'foo.bar.model',
                                             name='name')
     self.assertEqual('selections/foo.bar.model/abcd-1234/name.???', actual)
+
+  @patch('wp1.logic.selection.connect_storage')
+  def test_delete_keys_from_storage(self, patched_connect_storage):
+    s3 = MagicMock()
+    bucket = MagicMock()
+    patched_connect_storage.return_value = s3
+    s3.bucket = bucket
+
+    actual = logic_selection.delete_keys_from_storage(
+        [b'object/key/1', b'object/key/2'])
+
+    bucket.delete_objects.assert_called_once_with(
+        Delete={
+            'Objects': [{
+                'Key': 'object/key/1'
+            }, {
+                'Key': 'object/key/2'
+            }],
+            'Quiet': True
+        })
+    self.assertTrue(actual)
+
+  @patch('wp1.logic.selection.connect_storage')
+  def test_delete_keys_from_storage_single_bytes(self, patched_connect_storage):
+    s3 = MagicMock()
+    bucket = MagicMock()
+    patched_connect_storage.return_value = s3
+    s3.bucket = bucket
+
+    actual = logic_selection.delete_keys_from_storage(b'object/key/1')
+
+    bucket.delete_objects.assert_called_once_with(Delete={
+        'Objects': [{
+            'Key': 'object/key/1'
+        }],
+        'Quiet': True
+    })
+    self.assertTrue(actual)
+
+  @patch('wp1.logic.selection.connect_storage')
+  def test_delete_keys_from_storage_single_str(self, patched_connect_storage):
+    s3 = MagicMock()
+    bucket = MagicMock()
+    patched_connect_storage.return_value = s3
+    s3.bucket = bucket
+
+    with self.assertRaises(ValueError):
+      logic_selection.delete_keys_from_storage('object/key/1')
+
+  @patch('wp1.logic.selection.connect_storage')
+  def test_delete_keys_from_storage_list_of_str(self, patched_connect_storage):
+    s3 = MagicMock()
+    bucket = MagicMock()
+    patched_connect_storage.return_value = s3
+    s3.bucket = bucket
+
+    with self.assertRaises(ValueError):
+      logic_selection.delete_keys_from_storage(['object/key/1', 'object/key/2'])
+
+  @patch('wp1.logic.selection.connect_storage')
+  def test_delete_keys_from_storage_mix_of_str_and_bytes(
+      self, patched_connect_storage):
+    s3 = MagicMock()
+    bucket = MagicMock()
+    patched_connect_storage.return_value = s3
+    s3.bucket = bucket
+
+    with self.assertRaises(ValueError):
+      logic_selection.delete_keys_from_storage(
+          [b'object/key/1', 'object/key/2'])

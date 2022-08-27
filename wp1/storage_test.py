@@ -12,6 +12,7 @@ class StorageTest(unittest.TestCase):
     with self.assertRaises(ValueError):
       actual = connect_storage()
 
+  @patch('wp1.storage.CREDENTIALS', {Environment.TEST: {}})
   @patch('wp1.storage.ENV', Environment.TEST)
   def test_connect_storage_raises_if_no_credentials(self):
     with self.assertRaises(ValueError):
