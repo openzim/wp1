@@ -2,7 +2,7 @@
 FROM node:lts-alpine as build-stage
 WORKDIR /app
 COPY wp1-frontend/ .
-RUN yarn install --production && yarn run build
+RUN yarn install && yarn run build
 
 # production stage
 FROM nginx:stable-alpine as production-stage
