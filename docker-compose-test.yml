@@ -1,6 +1,13 @@
 version: '3.5'
 
 services:
+  redis:
+    image: redis
+    container_name: wp1bot-test-redis
+    ports:
+      - '9777:6379'
+    restart: always
+
   test-database:
     image: mysql:8.0.30
     container_name: wp1bot-test-db
