@@ -23,12 +23,7 @@ class AppTest(BaseWebTestcase):
 
 class RqTest(unittest.TestCase):
 
-  @patch('wp1.web.app.get_redis_creds')
-  def test_rq_no_login(self, patched_get_creds):
-    patched_get_creds.return_value = {
-        'host': 'localhost',
-        'port': 6379,
-    }
+  def test_rq_no_login(self):
     os.environ['RQ_USER'] = 'testuser'
     os.environ['RQ_PASS'] = 'testpass'  # nosec
     self.app = create_app()
@@ -36,12 +31,7 @@ class RqTest(unittest.TestCase):
       rv = client.get('/rq', follow_redirects=True)
       self.assertTrue(b'Please login' in rv.data)
 
-  @patch('wp1.web.app.get_redis_creds')
-  def test_rq_login(self, patched_get_creds):
-    patched_get_creds.return_value = {
-        'host': 'localhost',
-        'port': 6379,
-    }
+  def test_rq_login(self):
     os.environ['RQ_USER'] = 'testuser'
     os.environ['RQ_PASS'] = 'testpass'  # nosec
     self.app = create_app()
