@@ -733,8 +733,6 @@ class TablesDbTest(BaseWpOneDbTest):
     for k, v in expected_overrides.items():
       self.assertEqual(v, actual[k])
 
-  @patch('wp1.tables.CREDENTIALS', {'DEVELOPMENT': {'REDIS': {}}})
-  @patch('wp1.tables.ENV', 'DEVELOPMENT')
   def test_generate_project_table_data(self):
     actual = tables.generate_project_table_data(self.wp10db, b'Catholicism')
     self.assertEqual('Catholicism pages by quality', actual['title'])
@@ -744,8 +742,6 @@ class TablesDbTest(BaseWpOneDbTest):
     self.assertEqual('All rated articles by quality and importance',
                      actual['title'])
 
-  @patch('wp1.tables.CREDENTIALS', {'DEVELOPMENT': {'REDIS': {}}})
-  @patch('wp1.tables.ENV', 'DEVELOPMENT')
   @patch('wp1.tables.api')
   @patch('wp1.tables.wp10_connect')
   def test_upload_project_table(self, patched_connect, patched_site):
