@@ -177,7 +177,7 @@ def get_builders_with_selections(wp10db, user_id):
              ON selections.s_builder_id=builders.b_id
              AND selections.s_version=builders.b_current_version
            WHERE b_user_id=%(b_user_id)s
-           ORDER BY selections.s_id ASC
+           ORDER BY builders.b_updated_at DESC
         ''', {'b_user_id': user_id})
     data = cursor.fetchall()
 
