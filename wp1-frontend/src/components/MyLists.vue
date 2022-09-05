@@ -25,33 +25,35 @@
               <td>
                 {{
                   new Date(item.created_at * 1000).toLocaleDateString() +
-                    ' ' +
-                    new Date(item.created_at * 1000).toLocaleTimeString()
+                  ' ' +
+                  new Date(item.created_at * 1000).toLocaleTimeString()
                 }}
               </td>
               <td>
                 {{
                   new Date(item.updated_at * 1000).toLocaleDateString() +
-                    ' ' +
-                    new Date(item.updated_at * 1000).toLocaleTimeString()
+                  ' ' +
+                  new Date(item.updated_at * 1000).toLocaleTimeString()
                 }}
               </td>
               <td>{{ item.project }}</td>
               <td v-if="item.s_updated_at">
                 {{
                   new Date(item.s_updated_at * 1000).toLocaleDateString() +
-                    ' ' +
-                    new Date(item.s_updated_at * 1000).toLocaleTimeString()
+                  ' ' +
+                  new Date(item.s_updated_at * 1000).toLocaleTimeString()
                 }}
               </td>
-              <td v-else>
-                -
-              </td>
+              <td v-else>-</td>
               <td v-if="item.s_url">
                 <a :href="item.s_url">Download {{ item.s_extension }}</a>
               </td>
               <td v-else>
-                -
+                <pulse-loader
+                  class="loader"
+                  :color="loaderColor"
+                  :size="loaderSize"
+                ></pulse-loader>
               </td>
               <td>
                 <router-link :to="{ path: `/selections/simple/${item.id}` }"
@@ -74,47 +76,77 @@
 <script>
 import $ from 'jquery';
 $.noConflict();
+
+import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
+
 import SecondaryNav from './SecondaryNav.vue';
 import LoginRequired from './LoginRequired.vue';
 
 export default {
-  components: { SecondaryNav, LoginRequired },
+  components: { SecondaryNav, LoginRequired, PulseLoader },
   name: 'MyLists',
-  data: function() {
+  data: function () {
     return {
-      list: []
+      list: [],
+      loaderColor: '#007bff',
+      loaderSize: '.75rem',
+      pollId: null,
     };
   },
   computed: {
-    isLoggedIn: function() {
+    isLoggedIn: function () {
       return this.$root.$data.isLoggedIn;
-    }
+    },
   },
   methods: {
-    copyText: function(id) {
-      var copyText = document.getElementById(id);
-      copyText.select();
-      document.execCommand('copy');
-      copyText.blur();
-    },
-    getLists: async function() {
+    getLists: async function () {
+      let createDataTable = false;
+      if (this.list.length === 0) {
+        createDataTable = true;
+      }
+
       const response = await fetch(
         `${process.env.VUE_APP_API_URL}/selection/simple/lists`,
         {
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include'
+          credentials: 'include',
         }
       );
       var data = await response.json();
       this.list = data.builders;
-      this.$nextTick(function() {
-        $('#list-table').DataTable();
+      if (createDataTable) {
+        this.$nextTick(function () {
+          $('#list-table').DataTable({
+            order: [[2, 'desc']],
+          });
+        });
+      }
+
+      let hasPending = false;
+      this.list.forEach((item) => {
+        if (!item.s_url) {
+          hasPending = true;
+        }
       });
-    }
+      if (hasPending) {
+        this.startProgressPolling();
+      } else {
+        this.stopProgressPolling();
+      }
+    },
+    startProgressPolling: function () {
+      if (this.pollId) {
+        return;
+      }
+      this.pollId = setInterval(() => this.getLists(), 3000);
+    },
+    stopProgressPolling: function () {
+      clearInterval(this.pollId);
+    },
   },
-  created: function() {
+  created: function () {
     this.getLists();
-  }
+  },
 };
 </script>
 
