@@ -31,7 +31,12 @@ def create_or_update_builder(wp10db,
     builder.set_created_at_now()
     return insert_builder(wp10db, builder)
 
-  builder.b_id = int(builder_id)
+  if isinstance(builder_id, bytes):
+    builder.b_id = builder_id
+  elif isinstance(builder_id, str):
+    builder.b_id = builder_id.encode('utf-8')
+  else:
+    builder.b_id = str(builder_id).encode('utf-8')
   if update_builder(wp10db, builder):
     return builder_id
 
@@ -39,16 +44,17 @@ def create_or_update_builder(wp10db,
 
 
 def insert_builder(wp10db, builder):
+  builder.set_id()
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''INSERT INTO builders
-             (b_name, b_user_id, b_project, b_params, b_model, b_created_at, b_updated_at)
-           VALUES (%(b_name)s, %(b_user_id)s, %(b_project)s, %(b_params)s, %(b_model)s,
-                   %(b_created_at)s, %(b_updated_at)s)
+             (b_id, b_name, b_user_id, b_project, b_params, b_model, b_created_at, b_updated_at)
+           VALUES
+             (%(b_id)s, %(b_name)s, %(b_user_id)s, %(b_project)s, %(b_params)s, %(b_model)s,
+              %(b_created_at)s, %(b_updated_at)s)
         ''', attr.asdict(builder))
-    id_ = cursor.lastrowid
   wp10db.commit()
-  return id_
+  return builder.b_id
 
 
 def update_current_version(wp10db, builder, version):
@@ -71,8 +77,8 @@ def update_builder(wp10db, builder):
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''UPDATE builders
-          SET b_name = %(b_name)s, b_project = %(b_project)s, b_params = %(b_params)s, b_model = %(b_model)s,
-              b_updated_at = %(b_updated_at)s
+          SET b_name = %(b_name)s, b_project = %(b_project)s, b_params = %(b_params)s,
+              b_model = %(b_model)s, b_updated_at = %(b_updated_at)s
           WHERE b_id = %(b_id)s AND b_user_id = %(b_user_id)s
         ''', attr.asdict(builder))
     rowcount = cursor.rowcount
@@ -81,7 +87,9 @@ def update_builder(wp10db, builder):
 
 
 def delete_builder(wp10db, user_id, builder_id):
-  logger.warning('%s %s' % (user_id, builder_id))
+  if not isinstance(builder_id, bytes):
+    builder_id = str(builder_id).encode('utf-8')
+
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''SELECT s.s_object_key as object_key FROM selections AS s
@@ -171,6 +179,8 @@ def latest_selection_url(wp10db, builder_id, ext):
 
 def get_builders_with_selections(wp10db, user_id):
   with wp10db.cursor() as cursor:
+    cursor.execute('SELECT * FROM builders')
+    print(cursor.fetchall())
     cursor.execute(
         '''SELECT * FROM selections
            RIGHT JOIN builders
@@ -181,36 +191,36 @@ def get_builders_with_selections(wp10db, user_id):
         ''', {'b_user_id': user_id})
     data = cursor.fetchall()
 
-    builders = {}
-    result = []
-    for b in data:
-      has_selection = b['s_id'] is not None
-      content_type = b['s_content_type'].decode(
-          'utf-8') if has_selection else None
-      selection_id = b['s_id'].decode('utf-8') if has_selection else None
-      result.append({
-          'id':
-              b['b_id'],
-          'name':
-              b['b_name'].decode('utf-8'),
-          'project':
-              b['b_project'].decode('utf-8'),
-          'created_at':
-              logic_util.wp10_timestamp_to_unix(b['b_created_at']),
-          'updated_at':
-              logic_util.wp10_timestamp_to_unix(b['b_updated_at']),
-          's_id':
-              selection_id,
-          's_updated_at':
-              logic_util.wp10_timestamp_to_unix(b['s_updated_at'])
-              if has_selection else None,
-          's_content_type':
-              content_type,
-          's_extension':
-              CONTENT_TYPE_TO_EXT.get(content_type, '???')
-              if has_selection else None,
-          's_url':
-              latest_url_for(b['b_id'], content_type)
-              if has_selection else None,
-      })
-    return result
+  builders = {}
+  result = []
+  for b in data:
+    has_selection = b['s_id'] is not None
+    content_type = b['s_content_type'].decode(
+        'utf-8') if has_selection else None
+    selection_id = b['s_id'].decode('utf-8') if has_selection else None
+    result.append({
+        'id':
+            b['b_id'].decode('utf-8'),
+        'name':
+            b['b_name'].decode('utf-8'),
+        'project':
+            b['b_project'].decode('utf-8'),
+        'created_at':
+            logic_util.wp10_timestamp_to_unix(b['b_created_at']),
+        'updated_at':
+            logic_util.wp10_timestamp_to_unix(b['b_updated_at']),
+        's_id':
+            selection_id,
+        's_updated_at':
+            logic_util.wp10_timestamp_to_unix(b['s_updated_at'])
+            if has_selection else None,
+        's_content_type':
+            content_type,
+        's_extension':
+            CONTENT_TYPE_TO_EXT.get(content_type, '???')
+            if has_selection else None,
+        's_url':
+            latest_url_for(b['b_id'].decode('utf-8'), content_type)
+            if has_selection else None,
+    })
+  return result

@@ -20,7 +20,7 @@ class SelectionTest(BaseWpOneDbTest):
     super().setUp()
     self.selection = Selection(
         s_id=b'deadbeef',
-        s_builder_id=100,
+        s_builder_id=b'100',
         s_content_type=b'text/tab-separated-values',
         s_version=1,
         s_updated_at=b'20190830112844',
@@ -41,6 +41,7 @@ class SelectionTest(BaseWpOneDbTest):
     self.wp10db.commit()
 
   def test_insert_selection(self):
+    self.maxDiff = None
     logic_selection.insert_selection(self.wp10db, self.selection)
     actual = _get_selection(self.wp10db)
     self.assertEqual(self.selection, actual)

@@ -26,7 +26,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
     super().setUp()
     self.s3 = MagicMock()
     self.test_builder = TestBuilder()
-    self.builder = Builder(b_id=100,
+    self.builder = Builder(b_id=b'1a-2b-3c-4d',
                            b_name=b'My Builder',
                            b_user_id=1234,
                            b_project=b'en.wikipedia.fake',
@@ -38,7 +38,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
                                   'text/tab-separated-values')
     actual = _get_first_selection(self.wp10db)
     self.assertEqual(actual.s_content_type, b'text/tab-separated-values')
-    self.assertEqual(actual.s_builder_id, 100)
+    self.assertEqual(actual.s_builder_id, b'1a-2b-3c-4d')
 
   @patch('wp1.models.wp10.selection.uuid.uuid4', return_value='abcd-1234')
   def test_materialize_selection_id(self, mock_uuid4):

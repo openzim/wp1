@@ -470,8 +470,6 @@ class ProjectTest(BaseWebTestcase):
       rv = client.get('/v1/projects/Project 0/category_links')
       self.assertEqual('200 OK', rv.status)
 
-      self.maxDiff = None
-
       data = json.loads(rv.data)
       self.assertEqual(self.EXPECTED_CATEGORY_LINKS, data)
 
@@ -484,8 +482,6 @@ class ProjectTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       rv = client.get('/v1/projects/Project 0/category_links/sorted')
       self.assertEqual('200 OK', rv.status)
-
-      self.maxDiff = None
 
       data = json.loads(rv.data)
       self.assertEqual(self.EXPECTED_CATEGORY_LINKS_SORTED, data)
