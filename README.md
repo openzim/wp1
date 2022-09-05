@@ -59,11 +59,7 @@ docker-compose -f docker-compose-test.yml up -d
 ```
 
 The `*.dockerfile` symlinks allow for each docker image in this repository
-to be more easily built on [Docker Hub](https://hub.docker.com/). See:
-
-- https://hub.docker.com/repository/docker/openzim/wp1bot-frontend
-- https://hub.docker.com/repository/docker/openzim/wp1bot-workers
-- https://hub.docker.com/repository/docker/openzim/wp1bot-web
+(there are many) to be more easily organized.
 
 `openapi.yml` is a YAML file that describes the API of the `web` image
 in [OpenAPI](https://swagger.io/specification/) format. If you visit
