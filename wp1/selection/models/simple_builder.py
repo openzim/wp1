@@ -4,6 +4,9 @@ from wp1.selection.abstract_builder import AbstractBuilder
 
 class SimpleBuilder(AbstractBuilder):
 
+  MAX_LIST_SIZE = 1024 * 1024 * 10  # 10 MB
+  MAX_LIST_DESC = '10 MB'
+
   def build(self, content_type, **params):
     if content_type != 'text/tab-separated-values':
       raise ValueError('Unrecognized content type')
@@ -23,6 +26,9 @@ class SimpleBuilder(AbstractBuilder):
   def validate(self, **params):
     if not params['list']:
       return ([], [], ['Empty List'])
+    if len(('').join(params['list'])) > self.MAX_LIST_SIZE:
+      return ([], [], ['The list was longer than %s' % self.MAX_LIST_DESC])
+
     invalid_article_names = []
     valid_article_names = []
     forbidden_chars = []
