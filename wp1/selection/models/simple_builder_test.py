@@ -132,3 +132,17 @@ of text than an actual article name.', 'Not_an_<article_name>',
     }
     actual = simple_builder_test.validate(**params)
     self.assertEqual(expected, actual)
+
+  def test_validate_max_size(self):
+    simple_builder_test = SimpleBuilder()
+    expected = ([], [],
+                ['The list was longer than %s' % SimpleBuilder.MAX_LIST_DESC])
+    junk_list = []
+    for _ in range(SimpleBuilder.MAX_LIST_SIZE // 10 + 1):
+      junk_list.append('abcdefghij0123456789')
+    params = {
+        'list': junk_list,
+        'project': 'project_name',
+    }
+    actual = simple_builder_test.validate(**params)
+    self.assertEqual(expected, actual)
