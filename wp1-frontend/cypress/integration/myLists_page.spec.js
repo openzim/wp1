@@ -20,15 +20,11 @@ describe('when the user is logged in', () => {
     listTd.siblings().contains('.btn-primary', 'Edit');
   });
 
-  it('displays "-" for updated and download of list with no selection', () => {
+  it('displays a spinner for download of list with no selection', () => {
     const listTd = cy.contains('td', 'list 2');
-    listTd.parent('tr').within(td => {
-      cy.get('td')
-        .eq(4)
-        .contains('-');
-      cy.get('td')
-        .eq(5)
-        .contains('-');
+    listTd.parent('tr').within((td) => {
+      cy.get('td').eq(4).contains('-');
+      cy.get('td').eq(5).get('div').should('have.class', 'loader');
     });
   });
 
