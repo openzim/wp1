@@ -28,6 +28,7 @@ class BuildersTest(BaseWebTestcase):
   successful_response = {'success': True, 'items': {}}
 
   builder = Builder(
+      b_id=b'1a-2b-3c-4d',
       b_name=b'My Builder',
       b_user_id=1234,
       b_project=b'en.wikipedia.fake',
@@ -42,13 +43,15 @@ class BuildersTest(BaseWebTestcase):
     with self.wp10db.cursor() as cursor:
       cursor.execute(
           '''INSERT INTO builders
-         (b_name, b_user_id, b_project, b_params, b_model, b_created_at, b_updated_at, b_current_version)
-         VALUES (%(b_name)s, %(b_user_id)s, %(b_project)s, %(b_params)s, %(b_model)s,
-                 %(b_created_at)s, %(b_updated_at)s, %(b_current_version)s)
+               (b_id, b_name, b_user_id, b_project, b_params, b_model,
+                b_created_at, b_updated_at, b_current_version)
+             VALUES
+               (%(b_id)s, %(b_name)s, %(b_user_id)s, %(b_project)s,
+                %(b_params)s, %(b_model)s, %(b_created_at)s,
+                %(b_updated_at)s, %(b_current_version)s)
         ''', attr.asdict(self.builder))
-      id_ = cursor.lastrowid
     self.wp10db.commit()
-    return id_
+    return self.builder.b_id.decode('utf-8')
 
   def _insert_selections(self, builder_id):
     with self.wp10db.cursor() as cursor:
