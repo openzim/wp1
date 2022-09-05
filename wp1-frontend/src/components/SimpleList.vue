@@ -10,6 +10,11 @@
         isn't owned by you.
       </div>
     </div>
+    <div v-else-if="serverError">
+      <h2>500 Server error</h2>
+      Something went wrong and we couldn't retrieve the builder (simple list)
+      with that ID. You might try again later.
+    </div>
     <div v-else class="row">
       <div class="col-lg-6 col-md-9 m-4">
         <h2 v-if="!isEditing" class="ml-4">New Simple Selection</h2>
@@ -60,7 +65,7 @@
                 v-model="builder.articles"
                 :placeholder="
                   'Eiffel_Tower\nStatue_of_Liberty\nFreedom_Monument_(Baghdad)\nGeorge-Étienne_Cartier_Monument' +
-                    '\n\n# Whitespace and comments starting with # are ignored'
+                  '\n\n# Whitespace and comments starting with # are ignored'
                 "
                 class="form-control my-list"
                 rows="13"
@@ -131,9 +136,10 @@ import LoginRequired from './LoginRequired';
 export default {
   components: { SecondaryNav, LoginRequired },
   name: 'SimpleList',
-  data: function() {
+  data: function () {
     return {
       notFound: false,
+      serverError: false,
       wikiProjects: [],
       success: true,
       deleteSuccess: true,
@@ -143,54 +149,56 @@ export default {
       builder: {
         articles: '',
         name: '',
-        project: 'en.wikipedia.org'
-      }
+        project: 'en.wikipedia.org',
+      },
     };
   },
   computed: {
-    isLoggedIn: function() {
+    isLoggedIn: function () {
       return this.$root.$data.isLoggedIn;
     },
-    isEditing: function() {
+    isEditing: function () {
       return !!this.builderId;
     },
-    builderId: function() {
+    builderId: function () {
       return this.$route.params.builder_id;
-    }
+    },
   },
-  created: function() {
+  created: function () {
     this.getWikiProjects();
     if (this.isEditing) {
       this.getBuilder();
     }
   },
   watch: {
-    builderId: function() {
+    builderId: function () {
       this.getBuilder();
-    }
+    },
   },
   methods: {
-    getWikiProjects: async function() {
+    getWikiProjects: async function () {
       const response = await fetch(`${process.env.VUE_APP_API_URL}/sites/`);
       var data = await response.json();
       this.wikiProjects = data.sites;
     },
-    getBuilder: async function() {
+    getBuilder: async function () {
       const response = await fetch(
         `${process.env.VUE_APP_API_URL}/builders/${this.$route.params.builder_id}`,
         {
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include'
+          credentials: 'include',
         }
       );
-      if (!response.ok) {
+      if (response.status == 404) {
         this.notFound = true;
+      } else if (!response.ok) {
+        this.serverError = true;
       } else {
         this.notFound = false;
         this.builder = await response.json();
       }
     },
-    onSubmit: async function() {
+    onSubmit: async function () {
       const form = this.$refs.form;
       if (!form.checkValidity()) {
         this.$refs.form_group.classList.add('was-validated');
@@ -208,7 +216,7 @@ export default {
         headers: { 'Content-Type': 'application/json' },
         method: 'post',
         credentials: 'include',
-        body: JSON.stringify(this.builder)
+        body: JSON.stringify(this.builder),
       });
       var data = await response.json();
       this.success = data.success;
@@ -223,14 +231,14 @@ export default {
       this.invalid_article_names = data.items.invalid.join('\n');
       this.errors = data.items.errors.join(', ');
     },
-    validationOnBlur: function(event) {
+    validationOnBlur: function (event) {
       if (event.target.value) {
         event.target.classList.remove('is-invalid');
       } else {
         event.target.classList.add('is-invalid');
       }
     },
-    onDelete: async function() {
+    onDelete: async function () {
       if (
         !window.confirm(
           'Really delete this list? The definition and all downloadable selections will be permanently deleted.'
@@ -242,7 +250,7 @@ export default {
       const postUrl = `${process.env.VUE_APP_API_URL}/builders/${this.$route.params.builder_id}/delete`;
       const response = await fetch(postUrl, {
         method: 'post',
-        credentials: 'include'
+        credentials: 'include',
       });
 
       if (response.status == 200) {
@@ -254,8 +262,8 @@ export default {
           "Could not delete this list. Check that the list still exists and you're logged in as its owner.";
         return;
       }
-    }
-  }
+    },
+  },
 };
 </script>
 
