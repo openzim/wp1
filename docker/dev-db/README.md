@@ -67,7 +67,7 @@ Finally, we must add CREATE and USE database commands to the top of the dump so 
 actual database is created when the dev db server starts.
 
 ```bash
-echo -e "CREATE DATABASE \`enwp10_dev\` CHARACTER SET = "utf8mb4" COLLATE = "utf8mb4_unicode_ci";\nUSE enwp10_dev;\n\n$(cat enwp10_dev.dump.sql)" > enwp10_dev.dump.sql
+echo -e "CREATE DATABASE \`enwp10_dev\` CHARACTER SET = \"utf8mb4\" COLLATE = \"utf8mb4_unicode_ci\";\nUSE enwp10_dev;\n\n$(cat enwp10_dev.dump.sql)" > enwp10_dev.dump.sql
 ```
 
 Once you're done, commit the file and push it to Github as normal.
