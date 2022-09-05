@@ -97,9 +97,21 @@ export default {
     isLoggedIn: function () {
       return this.$root.$data.isLoggedIn;
     },
+    builderIdToIdx: () => {
+      const idToIdx = {};
+      this.list.forEach((item, idx) => {
+        idToIdx[item.id] = idx;
+      });
+      return idToIdx;
+    },
   },
   methods: {
     getLists: async function () {
+      let createDataTable = false;
+      if (this.list.length === 0) {
+        createDataTable = true;
+      }
+
       const response = await fetch(
         `${process.env.VUE_APP_API_URL}/selection/simple/lists`,
         {
@@ -109,45 +121,31 @@ export default {
       );
       var data = await response.json();
       this.list = data.builders;
-      this.$nextTick(function () {
-        $('#list-table').DataTable({
-          order: [[2, 'desc']],
-        });
-      });
-    },
-    pollForProgress: async function () {
-      const url = `${process.env.VUE_APP_API_URL}/selection/simple/lists`;
-      const response = await fetch(url, {
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      });
-      const data = await response.data();
-      const currentIdToIdx = {};
-      this.data.forEach((item, idx) => {
-        currentIdToIdx[item.b_id] = idx;
-      });
-      for (let i = 0; i < data.length; i++) {
-        const item = data[i];
-        const curIdx = currentIdToIdx[item.b_id];
-        if (curIdx === undefined) {
-          this.data.push(item);
-        } else if (this.data[curIdx].s_url !== item.s_url) {
-          this.$set(this.data, curIdx, {
-            ...this.data[curIdx],
-            s_url: item.s_url,
+      if (createDataTable) {
+        this.$nextTick(function () {
+          $('#list-table').DataTable({
+            order: [[2, 'desc']],
           });
-        }
-        currentIdToIdx[item.b_id] = null;
+        });
       }
-      Object.entries(currentIdToIdx).forEach((id, idx) => {
-        if (idx !== null) {
-          this.data.splice(idx, 1);
+
+      let hasPending = false;
+      this.list.forEach((item) => {
+        if (!item.s_url) {
+          hasPending = true;
         }
       });
+      if (hasPending) {
+        this.startProgressPolling();
+      } else {
+        this.stopProgressPolling();
+      }
     },
     startProgressPolling: function () {
-      this.pollForProgress();
-      this.pollId = setInterval(() => this.pollForProgress(), 4000);
+      if (this.pollId) {
+        return;
+      }
+      this.pollId = setInterval(() => this.getLists(), 3000);
     },
     stopProgressPolling: function () {
       clearInterval(this.pollId);
