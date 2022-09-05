@@ -27,7 +27,7 @@ class SimpleBuilder(AbstractBuilder):
     if not params['list']:
       return ([], [], ['Empty List'])
     if len(('').join(params['list'])) > self.MAX_LIST_SIZE:
-      return ([], [], 'The list was longer than %s' % self.MAX_LIST_DESC)
+      return ([], [], ['The list was longer than %s' % self.MAX_LIST_DESC])
 
     invalid_article_names = []
     valid_article_names = []
