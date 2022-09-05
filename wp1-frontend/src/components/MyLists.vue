@@ -97,13 +97,6 @@ export default {
     isLoggedIn: function () {
       return this.$root.$data.isLoggedIn;
     },
-    builderIdToIdx: () => {
-      const idToIdx = {};
-      this.list.forEach((item, idx) => {
-        idToIdx[item.id] = idx;
-      });
-      return idToIdx;
-    },
   },
   methods: {
     getLists: async function () {
