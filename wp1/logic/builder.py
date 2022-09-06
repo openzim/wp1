@@ -103,7 +103,6 @@ def delete_builder(wp10db, user_id, builder_id):
            WHERE b.b_user_id = %s AND b.b_id = %s
         ''', (user_id, builder_id))
     rowcount = cursor.rowcount
-    print(rowcount)
 
   # Delete the object keys from the s3-like backend
   s3_success = logic_selection.delete_keys_from_storage(keys_to_delete)
@@ -179,8 +178,6 @@ def latest_selection_url(wp10db, builder_id, ext):
 
 def get_builders_with_selections(wp10db, user_id):
   with wp10db.cursor() as cursor:
-    cursor.execute('SELECT * FROM builders')
-    print(cursor.fetchall())
     cursor.execute(
         '''SELECT * FROM selections
            RIGHT JOIN builders

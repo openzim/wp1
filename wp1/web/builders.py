@@ -99,7 +99,6 @@ def latest_selection_for_builder(builder_id, ext):
 
   url = logic_builder.latest_selection_url(wp10db, builder_id, ext)
   if not url:
-    print(404)
     flask.abort(404)
 
   return flask.redirect(url, code=302)

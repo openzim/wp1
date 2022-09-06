@@ -6,8 +6,9 @@ try:
   #  The credentials module isn't checked in and may be missing
   from wp1.credentials import ENV, CREDENTIALS
 except ImportError:
-  print('No credentials.py file found, Please add your '
-        'mwoauth credentials in credentials.py')
+  print(
+      'No credentials.py file found, Please add your credentials in credentials.py'
+  )
   ENV = None
   CREDENTIALS = None
 
