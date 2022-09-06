@@ -133,13 +133,13 @@ def project_names_to_update(wikidb):
   # steps and if we don't exhaust it now, it will get truncated.
   for category_page in list(projects_in_root):
     if BY_QUALITY not in category_page.page_title:
-      print('Skipping %s -- it does not have quality in title' %
-            category_page.page_title.decode('utf-8'))
+      logger.info('Skipping %s -- it does not have quality in title' %
+                  category_page.page_title.decode('utf-8'))
       continue
 
     if RE_REJECT_GENERIC.match(category_page.page_title):
-      print('Skipping %r -- it is a generic "articles by quality"' %
-            category_page)
+      logger.info('Skipping %r -- it is a generic "articles by quality"' %
+                  category_page)
       continue
 
     yield category_page.base_title
