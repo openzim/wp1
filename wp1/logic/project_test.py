@@ -298,7 +298,6 @@ class UpdateProjectCategoriesByKindTest(BaseCombinedDbTest):
 
     expected = dict(
         (p[3].decode('utf-8'), (p[1], p[4])) for p in self.quality_pages)
-    self.maxDiff = None
     self.assertEqual(expected, rating_to_category)
 
   def test_update_importance(self):

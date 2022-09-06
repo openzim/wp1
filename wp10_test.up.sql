@@ -93,7 +93,7 @@ CREATE TABLE `users` (
 );
 
 CREATE TABLE `builders` (
-  b_id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
+  b_id VARBINARY(255) NOT NULL PRIMARY KEY,
   b_name VARBINARY(255) NOT NULL,
   b_user_id INTEGER NOT NULL,
   b_project VARBINARY(255) NOT NULL,
@@ -106,7 +106,7 @@ CREATE TABLE `builders` (
 
 CREATE TABLE `selections` (
   s_id VARBINARY(255) NOT NULL PRIMARY KEY,
-  s_builder_id INTEGER NOT NULL,
+  s_builder_id VARBINARY(255) NOT NULL,
   s_content_type VARBINARY(255) NOT NULL,
   s_updated_at BINARY(14) NOT NULL,
   s_version int(11) NOT NULL,

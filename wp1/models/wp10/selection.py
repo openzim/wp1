@@ -43,4 +43,4 @@ class Selection:
     self.set_updated_at_dt(utcnow())
 
   def set_id(self):
-    self.s_id = str(uuid.uuid4()).encode()
+    self.s_id = str(uuid.uuid4()).encode('utf-8')
