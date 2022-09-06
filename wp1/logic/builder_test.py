@@ -260,7 +260,11 @@ class BuilderTest(BaseWpOneDbTest):
                            object_key='object_key_2')
     self._insert_builder()
     article_data = logic_builder.get_builders_with_selections(self.wp10db, 1234)
-    self.assertEqual(self.expected_lists_with_multiple_selections, article_data)
+    self.assertEqual(
+        set(
+            tuple(d.items())
+            for d in self.expected_lists_with_multiple_selections),
+        set(tuple(d.items()) for d in article_data))
 
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))

@@ -136,8 +136,13 @@ class SelectionTest(BaseWebTestcase):
       with client.session_transaction() as sess:
         sess['user'] = self.USER
       rv = client.get('/v1/selection/simple/lists')
-      self.assertEqual(self.expected_lists_with_multiple_selections,
-                       rv.get_json())
+      self.assertEqual(
+          set(
+              tuple(sorted((d.items()))) for d in
+              self.expected_lists_with_multiple_selections['builders']),
+          set(
+              tuple(sorted(tuple(d.items())))
+              for d in rv.get_json()['builders']))
 
   def test_list_with_no_selections(self):
     self.app = create_app()
