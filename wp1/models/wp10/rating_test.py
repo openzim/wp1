@@ -6,7 +6,6 @@ class RatingModelTest(BaseWpOneDbTest):
 
   def setUp(self):
     super().setUp()
-    self.maxDiff = None
     self.rating = Rating(r_project=b'Test Project',
                          r_namespace=4,
                          r_article=b'Test article pages',

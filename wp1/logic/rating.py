@@ -104,7 +104,7 @@ def _project_rating_query(project_name,
   else:
     query += ' LIMIT %s' % limit
 
-  print(query)
+  logger.debug(query)
   return query
 
 

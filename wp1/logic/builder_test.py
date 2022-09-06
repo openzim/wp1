@@ -11,19 +11,8 @@ from wp1.selection.models.simple_builder import SimpleBuilder
 
 class BuilderTest(BaseWpOneDbTest):
 
-  builder = Builder(
-      b_name=b'My Builder',
-      b_user_id=1234,
-      b_project=b'en.wikipedia.fake',
-      b_model=b'wp1.selection.models.simple',
-      b_params=b'{"list": ["a", "b", "c"]}',
-      b_created_at=b'20191225044444',
-      b_updated_at=b'20191225044444',
-      b_current_version=1,
-  )
-
   expected_builder = {
-      'b_id': 1,
+      'b_id': b'1a-2b-3c-4d',
       'b_name': b'My Builder',
       'b_user_id': 1234,
       'b_project': b'en.wikipedia.fake',
@@ -35,44 +24,77 @@ class BuilderTest(BaseWpOneDbTest):
   }
 
   expected_lists = [{
-      'id': 1,
-      'name': 'My Builder',
-      'project': 'en.wikipedia.fake',
-      'created_at': 1577249084,
-      'updated_at': 1577249084,
-      's_id': '1',
-      's_updated_at': 1577249084,
-      's_content_type': 'text/tab-separated-values',
-      's_extension': 'tsv',
-      's_url': 'http://test.server.fake/v1/builders/1/selection/latest.tsv'
+      'id':
+          '1a-2b-3c-4d',
+      'name':
+          'My Builder',
+      'project':
+          'en.wikipedia.fake',
+      'created_at':
+          1577249084,
+      'updated_at':
+          1577249084,
+      's_id':
+          '1',
+      's_updated_at':
+          1577249084,
+      's_content_type':
+          'text/tab-separated-values',
+      's_extension':
+          'tsv',
+      's_url':
+          'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv'
   }]
 
-  expected_lists_with_multiple_selections = [{
-      'id': 1,
-      'name': 'My Builder',
-      'project': 'en.wikipedia.fake',
-      'created_at': 1577249084,
-      'updated_at': 1577249084,
-      's_id': '1',
-      's_updated_at': 1577249084,
-      's_content_type': 'text/tab-separated-values',
-      's_extension': 'tsv',
-      's_url': 'http://test.server.fake/v1/builders/1/selection/latest.tsv',
-  }, {
-      'id': 1,
-      'name': 'My Builder',
-      'project': 'en.wikipedia.fake',
-      'created_at': 1577249084,
-      'updated_at': 1577249084,
-      's_id': '2',
-      's_updated_at': 1577249084,
-      's_content_type': 'application/vnd.ms-excel',
-      's_extension': 'xls',
-      's_url': 'http://test.server.fake/v1/builders/1/selection/latest.xls',
-  }]
+  expected_lists_with_multiple_selections = [
+      {
+          'id':
+              '1a-2b-3c-4d',
+          'name':
+              'My Builder',
+          'project':
+              'en.wikipedia.fake',
+          'created_at':
+              1577249084,
+          'updated_at':
+              1577249084,
+          's_id':
+              '2',
+          's_updated_at':
+              1577249084,
+          's_content_type':
+              'application/vnd.ms-excel',
+          's_extension':
+              'xls',
+          's_url':
+              'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.xls',
+      },
+      {
+          'id':
+              '1a-2b-3c-4d',
+          'name':
+              'My Builder',
+          'project':
+              'en.wikipedia.fake',
+          'created_at':
+              1577249084,
+          'updated_at':
+              1577249084,
+          's_id':
+              '1',
+          's_updated_at':
+              1577249084,
+          's_content_type':
+              'text/tab-separated-values',
+          's_extension':
+              'tsv',
+          's_url':
+              'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv',
+      },
+  ]
 
   expected_lists_with_no_selections = [{
-      'id': 1,
+      'id': '1a-2b-3c-4d',
       'name': 'My Builder',
       'project': 'en.wikipedia.fake',
       'created_at': 1577249084,
@@ -85,7 +107,7 @@ class BuilderTest(BaseWpOneDbTest):
   }]
 
   expected_lists_with_unmapped_selections = [{
-      'id': 1,
+      'id': '1a-2b-3c-4d',
       'name': 'My Builder',
       'project': 'en.wikipedia.fake',
       'created_at': 1577249084,
@@ -102,24 +124,25 @@ class BuilderTest(BaseWpOneDbTest):
       current_version = 1
     value_dict = attr.asdict(self.builder)
     value_dict['b_current_version'] = current_version
+    value_dict['b_id'] = b'1a-2b-3c-4d'
     with self.wp10db.cursor() as cursor:
       cursor.execute(
           '''INSERT INTO builders
-         (b_name, b_user_id, b_project, b_params, b_model, b_created_at, b_updated_at,
-         b_current_version)
-         VALUES (%(b_name)s, %(b_user_id)s, %(b_project)s, %(b_params)s, %(b_model)s,
-         %(b_created_at)s, %(b_updated_at)s, %(b_current_version)s)
-        ''', value_dict)
-      id_ = cursor.lastrowid
+               (b_id, b_name, b_user_id, b_project, b_params, b_model, b_created_at,
+                b_updated_at, b_current_version)
+             VALUES
+               (%(b_id)s, %(b_name)s, %(b_user_id)s, %(b_project)s, %(b_params)s,
+                %(b_model)s, %(b_created_at)s, %(b_updated_at)s, %(b_current_version)s)
+          ''', value_dict)
     self.wp10db.commit()
-    return id_
+    return value_dict['b_id']
 
   def _insert_selection(self,
                         id_,
                         content_type,
                         version=1,
                         object_key='selections/foo/1234/name.tsv',
-                        builder_id=1):
+                        builder_id=b'1a-2b-3c-4d'):
     with self.wp10db.cursor() as cursor:
       cursor.execute(
           'INSERT INTO selections VALUES (%s, %s, %s, "20191225044444", %s, %s)',
@@ -133,9 +156,24 @@ class BuilderTest(BaseWpOneDbTest):
       db_lists = cursor.fetchone()
       return db_lists
 
+  def setUp(self):
+    super().setUp()
+    self.builder = Builder(
+        b_id=b'1a-2b-3c-4d',
+        b_name=b'My Builder',
+        b_user_id=1234,
+        b_project=b'en.wikipedia.fake',
+        b_model=b'wp1.selection.models.simple',
+        b_params=b'{"list": ["a", "b", "c"]}',
+        b_created_at=b'20191225044444',
+        b_updated_at=b'20191225044444',
+        b_current_version=1,
+    )
+
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
-  def test_create_or_update_builder_create(self, mock_utcnow):
+  @patch('wp1.models.wp10.builder.builder_id', return_value=b'1a-2b-3c-4d')
+  def test_create_or_update_builder_create(self, mock_builder_id, mock_utcnow):
     logic_builder.create_or_update_builder(self.wp10db, 'My Builder', '1234',
                                            'en.wikipedia.fake', 'a\nb\nc')
     actual = self._get_builder_by_user_id()
@@ -145,9 +183,10 @@ class BuilderTest(BaseWpOneDbTest):
          return_value=datetime.datetime(2020, 1, 1, 5, 55, 55))
   def test_create_or_update_builder_update(self, mock_utcnow):
     id_ = self._insert_builder()
-    logic_builder.create_or_update_builder(self.wp10db, 'Builder 2', '1234',
-                                           'zz.wikipedia.fake', 'a\nb\nc\nd',
-                                           id_)
+    actual = logic_builder.create_or_update_builder(self.wp10db, 'Builder 2',
+                                                    '1234', 'zz.wikipedia.fake',
+                                                    'a\nb\nc\nd', id_)
+    self.assertTrue(actual)
     expected = dict(**self.expected_builder)
     expected['b_name'] = b'Builder 2'
     expected['b_project'] = b'zz.wikipedia.fake'
@@ -159,16 +198,18 @@ class BuilderTest(BaseWpOneDbTest):
 
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
-  def test_insert_builder(self, mock_utcnow):
+  @patch('wp1.models.wp10.builder.builder_id', return_value=b'1a-2b-3c-4d')
+  def test_insert_builder(self, mock_builder_id, mock_utcnow):
     logic_builder.insert_builder(self.wp10db, self.builder)
     actual = self._get_builder_by_user_id()
     self.assertEqual(self.expected_builder, actual)
 
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
-  def test_insert_builder_returns_id(self, mock_utcnow):
+  @patch('wp1.models.wp10.builder.builder_id', return_value=b'1a-2b-3c-4d')
+  def test_insert_builder_returns_id(self, mock_builder_id, mock_utcnow):
     actual = logic_builder.insert_builder(self.wp10db, self.builder)
-    self.assertEqual(1, actual)
+    self.assertEqual(b'1a-2b-3c-4d', actual)
 
   def test_get_builder(self):
     id_ = self._insert_builder()
@@ -205,8 +246,7 @@ class BuilderTest(BaseWpOneDbTest):
   def test_get_builders(self, mock_utcnow):
     self._insert_selection(1, 'text/tab-separated-values')
     self._insert_builder()
-    article_data = logic_builder.get_builders_with_selections(
-        self.wp10db, '1234')
+    article_data = logic_builder.get_builders_with_selections(self.wp10db, 1234)
     self.assertEqual(self.expected_lists, article_data)
 
   @patch('wp1.models.wp10.builder.utcnow',
@@ -219,23 +259,25 @@ class BuilderTest(BaseWpOneDbTest):
                            'application/vnd.ms-excel',
                            object_key='object_key_2')
     self._insert_builder()
-    article_data = logic_builder.get_builders_with_selections(
-        self.wp10db, '1234')
-    self.assertEqual(self.expected_lists_with_multiple_selections, article_data)
+    article_data = logic_builder.get_builders_with_selections(self.wp10db, 1234)
+    self.assertEqual(
+        set(
+            tuple(d.items())
+            for d in self.expected_lists_with_multiple_selections),
+        set(tuple(d.items()) for d in article_data))
 
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
   def test_get_builders_with_no_selections(self, mock_utcnow):
     self._insert_builder()
-    article_data = logic_builder.get_builders_with_selections(
-        self.wp10db, '1234')
+    article_data = logic_builder.get_builders_with_selections(self.wp10db, 1234)
     self.assertEqual(self.expected_lists_with_no_selections, article_data)
 
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
   def test_get_builders_empty_lists(self, mock_utcnow):
     self._insert_selection(1, 'text/tab-separated-values')
-    self._insert_builder()
+    id_ = self._insert_builder()
     article_data = logic_builder.get_builders_with_selections(
         self.wp10db, '0000')
     self.assertEqual([], article_data)
@@ -247,9 +289,8 @@ class BuilderTest(BaseWpOneDbTest):
     self._insert_selection(2, 'application/vnd.ms-excel', 1)
     self._insert_selection(3, 'text/tab-separated-values', 2)
     self._insert_selection(4, 'application/vnd.ms-excel', 2)
-    self._insert_builder()
-    article_data = logic_builder.get_builders_with_selections(
-        self.wp10db, '1234')
+    id_ = self._insert_builder()
+    article_data = logic_builder.get_builders_with_selections(self.wp10db, id_)
     self.assertEqual(self.expected_lists_with_multiple_selections, article_data)
 
   @patch('wp1.models.wp10.builder.utcnow',
@@ -292,7 +333,7 @@ class BuilderTest(BaseWpOneDbTest):
   def test_update_builder_wrong_id(self):
     self._insert_builder()
     builder = Builder(
-        b_id=100,  # Wrong ID
+        b_id=b'100',  # Wrong ID
         b_name=b'My Builder',
         b_user_id=1234,
         b_project=b'en.wikipedia.fake',
@@ -305,7 +346,7 @@ class BuilderTest(BaseWpOneDbTest):
   def test_update_builder_success(self):
     self._insert_builder()
     builder = Builder(
-        b_id=1,
+        b_id=b'1a-2b-3c-4d',
         b_name=b'My Builder',
         b_user_id=1234,
         b_project=b'en.wikipedia.fake',
@@ -317,7 +358,7 @@ class BuilderTest(BaseWpOneDbTest):
 
   def test_update_builder_updates_fields(self):
     self._insert_builder()
-    builder = Builder(b_id=1,
+    builder = Builder(b_id=b'1a-2b-3c-4d',
                       b_name=b'Builder 2',
                       b_user_id=1234,
                       b_project=b'zz.wikipedia.fake',
@@ -449,7 +490,7 @@ class BuilderTest(BaseWpOneDbTest):
   def test_delete_builder_user_builder_id_unmatched(self, patched_selection):
     builder_id = self._insert_builder_with_multiple_version_selections()
 
-    actual = logic_builder.delete_builder(self.wp10db, 1234, -1)
+    actual = logic_builder.delete_builder(self.wp10db, 1234, 'abcd')
 
     self.assertFalse(actual['db_delete_success'])
 
