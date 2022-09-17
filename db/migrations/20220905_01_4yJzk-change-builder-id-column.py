@@ -12,11 +12,12 @@ def update_builder_id(conn):
   cursor = conn.cursor()
   cursor.execute('SELECT b_id FROM builders')
   for row in cursor.fetchall():
+    new_id = str(uuid.uuid4()).encode('utf-8')
     cursor.execute('UPDATE builders SET b_id = %s WHERE b_id = %s',
-                   (str(uuid.uuid4()).encode('utf-8'), row[0]))
+                   (new_id, row[0]))
     cursor.execute(
         'UPDATE selections SET s_builder_id = %s WHERE s_builder_id = %s',
-        (str(uuid.uuid4()).encode('utf-8'), row[0]))
+        (new_id, row[0]))
 
 
 def restore_builder_id(conn):
