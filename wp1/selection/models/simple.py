@@ -2,7 +2,7 @@ import urllib.parse
 from wp1.selection.abstract_builder import AbstractBuilder
 
 
-class SimpleBuilder(AbstractBuilder):
+class Builder(AbstractBuilder):
 
   MAX_LIST_SIZE = 1024 * 1024 * 10  # 10 MB
   MAX_LIST_DESC = '10 MB'

@@ -15,7 +15,7 @@ class BuildersTest(BaseWebTestcase):
           'sub': 1234,
       },
   }
-  invalid_article_name = 'Eiffel_Tower\nStatue of#Liberty'
+  invalid_article_name = ['Eiffel_Tower', 'Statue of#Liberty']
   unsuccessful_response = {
       'success': False,
       'items': {
@@ -24,7 +24,15 @@ class BuildersTest(BaseWebTestcase):
           'errors': ['The list contained the following invalid characters: #'],
       },
   }
-  valid_article_name = 'Eiffel_Tower\nStatue of Liberty'
+  empty_response = {
+      'success': False,
+      'items': {
+          'valid': [],
+          'invalid': [],
+          'errors': ['Empty List'],
+      },
+  }
+  valid_article_name = ['Eiffel_Tower', 'Statue of Liberty']
   successful_response = {'success': True, 'items': {}}
 
   builder = Builder(
@@ -76,7 +84,10 @@ class BuildersTest(BaseWebTestcase):
         sess['user'] = self.USER
       rv = client.post('/v1/builders/',
                        json={
-                           'articles': self.invalid_article_name,
+                           'model': 'wp1.selection.models.simple',
+                           'params': {
+                               'list': self.invalid_article_name
+                           },
                            'name': 'my_list',
                            'project': 'my_project'
                        })
@@ -89,7 +100,10 @@ class BuildersTest(BaseWebTestcase):
         sess['user'] = self.USER
       rv = client.post('/v1/builders/',
                        json={
-                           'articles': self.valid_article_name,
+                           'model': 'wp1.selection.models.simple',
+                           'params': {
+                               'list': self.valid_article_name
+                           },
                            'name': 'my_list',
                            'project': 'my_project'
                        })
@@ -103,7 +117,10 @@ class BuildersTest(BaseWebTestcase):
         sess['user'] = self.USER
       rv = client.post('/v1/builders/%s' % builder_id,
                        json={
-                           'articles': self.invalid_article_name,
+                           'model': 'wp1.selection.models.simple',
+                           'params': {
+                               'list': self.invalid_article_name
+                           },
                            'name': 'updated_list',
                            'project': 'my_project'
                        })
@@ -117,7 +134,10 @@ class BuildersTest(BaseWebTestcase):
         sess['user'] = self.USER
       rv = client.post('/v1/builders/%s' % builder_id,
                        json={
-                           'articles': self.valid_article_name,
+                           'model': 'wp1.selection.models.simple',
+                           'params': {
+                               'list': self.valid_article_name
+                           },
                            'name': 'updated_list',
                            'project': 'my_project'
                        })
@@ -138,33 +158,42 @@ class BuildersTest(BaseWebTestcase):
         sess['user'] = different_user
       rv = client.post('/v1/builders/%s' % builder_id,
                        json={
-                           'articles': self.valid_article_name,
+                           'model': 'wp1.selection.models.simple',
+                           'params': {
+                               'list': self.valid_article_name
+                           },
                            'name': 'updated_list',
                            'project': 'my_project'
                        })
       self.assertEqual('404 NOT FOUND', rv.status)
 
-  def test_empty_article_create(self):
+  def test_empty_articles_create(self):
     self.app = create_app()
     with self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['user'] = self.USER
       rv = client.post('/v1/builders/',
                        json={
-                           'articles': '',
+                           'model': 'wp1.selection.models.simple',
+                           'params': {
+                               'list': []
+                           },
                            'name': 'my_list',
                            'project': 'my_project'
                        })
-      self.assertEqual('400 BAD REQUEST', rv.status)
+      self.assertEqual(self.empty_response, rv.get_json())
 
-  def test_empty_list_create(self):
+  def test_empty_name_create(self):
     self.app = create_app()
     with self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['user'] = self.USER
       rv = client.post('/v1/builders/',
                        json={
-                           'articles': self.valid_article_name,
+                           'model': 'wp1.selection.models.simple',
+                           'params': {
+                               'list': self.valid_article_name
+                           },
                            'name': '',
                            'project': 'my_project'
                        })
@@ -177,7 +206,10 @@ class BuildersTest(BaseWebTestcase):
         sess['user'] = self.USER
       rv = client.post('/v1/builders/',
                        json={
-                           'articles': self.valid_article_name,
+                           'model': 'wp1.selection.models.simple',
+                           'params': {
+                               'list': self.valid_article_name
+                           },
                            'name': 'my_list',
                            'project': ''
                        })
@@ -188,13 +220,16 @@ class BuildersTest(BaseWebTestcase):
     with self.app.test_client() as client:
       rv = client.post('/v1/builders/',
                        json={
-                           'articles': self.valid_article_name,
+                           'model': 'wp1.selection.models.simple',
+                           'articles': {
+                               'list': self.valid_article_name
+                           },
                            'name': 'my_list',
                            'project': 'my_project'
                        })
     self.assertEqual('401 UNAUTHORIZED', rv.status)
 
-  def test_empty_article_update(self):
+  def test_empty_articles_update(self):
     builder_id = self._insert_builder()
     self.app = create_app()
     with self.app.test_client() as client:
@@ -202,11 +237,14 @@ class BuildersTest(BaseWebTestcase):
         sess['user'] = self.USER
       rv = client.post('/v1/builders/%s' % builder_id,
                        json={
-                           'articles': '',
+                           'model': 'wp1.selection.models.simple',
+                           'params': {
+                               'list': []
+                           },
                            'name': 'my_list',
                            'project': 'my_project'
                        })
-      self.assertEqual('400 BAD REQUEST', rv.status)
+      self.assertEqual(self.empty_response, rv.get_json())
 
   def test_empty_list_update(self):
     builder_id = self._insert_builder()
@@ -216,7 +254,10 @@ class BuildersTest(BaseWebTestcase):
         sess['user'] = self.USER
       rv = client.post('/v1/builders/%s' % builder_id,
                        json={
-                           'articles': self.valid_article_name,
+                           'model': 'wp1.selection.models.simple',
+                           'params': {
+                               'list': self.valid_article_name
+                           },
                            'name': '',
                            'project': 'my_project'
                        })
@@ -230,7 +271,10 @@ class BuildersTest(BaseWebTestcase):
         sess['user'] = self.USER
       rv = client.post('/v1/builders/%s' % builder_id,
                        json={
-                           'articles': self.valid_article_name,
+                           'model': 'wp1.selection.models.simple',
+                           'params': {
+                               'list': self.valid_article_name
+                           },
                            'name': 'my_list',
                            'project': ''
                        })
@@ -242,7 +286,10 @@ class BuildersTest(BaseWebTestcase):
     with self.app.test_client() as client:
       rv = client.post('/v1/builders/%s' % builder_id,
                        json={
-                           'articles': self.valid_article_name,
+                           'model': 'wp1.selection.models.simple',
+                           'params': {
+                               'list': self.valid_article_name
+                           },
                            'name': 'my_list',
                            'project': 'my_project'
                        })

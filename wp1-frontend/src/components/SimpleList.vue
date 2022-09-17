@@ -81,7 +81,9 @@
           >
             <div class="errors">{{ errors }}</div>
             <textarea
-              v-if="this.success == false"
+              v-if="
+                this.success == false && this.invalid_article_names.length > 0
+              "
               class="form-control my-list is-invalid"
               rows="6"
               ref="invalid"
@@ -150,6 +152,7 @@ export default {
         articles: '',
         name: '',
         project: 'en.wikipedia.org',
+        model: 'wp1.selection.models.simple',
       },
     };
   },
@@ -212,12 +215,21 @@ export default {
         postUrl = `${process.env.VUE_APP_API_URL}/builders/`;
       }
 
+      const params = { list: this.builder.articles.split('\n') };
+
       const response = await fetch(postUrl, {
         headers: { 'Content-Type': 'application/json' },
         method: 'post',
         credentials: 'include',
-        body: JSON.stringify(this.builder),
+        body: JSON.stringify({ ...this.builder, articles: '', params }),
       });
+
+      if (!response.ok) {
+        this.success = false;
+        this.errors = 'An unknown server error has occurred.';
+        return;
+      }
+
       var data = await response.json();
       this.success = data.success;
       if (this.success) {
