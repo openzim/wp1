@@ -6,7 +6,6 @@ import attr
 from wp1.base_db_test import BaseWpOneDbTest
 from wp1.logic import builder as logic_builder
 from wp1.models.wp10.builder import Builder
-from wp1.selection.models.simple_builder import SimpleBuilder
 
 
 class BuilderTest(BaseWpOneDbTest):
@@ -175,7 +174,9 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.models.wp10.builder.builder_id', return_value=b'1a-2b-3c-4d')
   def test_create_or_update_builder_create(self, mock_builder_id, mock_utcnow):
     logic_builder.create_or_update_builder(self.wp10db, 'My Builder', '1234',
-                                           'en.wikipedia.fake', 'a\nb\nc')
+                                           'en.wikipedia.fake',
+                                           {'list': ['a', 'b', 'c']},
+                                           'wp1.selection.models.simple')
     actual = self._get_builder_by_user_id()
     self.assertEqual(self.expected_builder, actual)
 
@@ -183,9 +184,13 @@ class BuilderTest(BaseWpOneDbTest):
          return_value=datetime.datetime(2020, 1, 1, 5, 55, 55))
   def test_create_or_update_builder_update(self, mock_utcnow):
     id_ = self._insert_builder()
-    actual = logic_builder.create_or_update_builder(self.wp10db, 'Builder 2',
-                                                    '1234', 'zz.wikipedia.fake',
-                                                    'a\nb\nc\nd', id_)
+    actual = logic_builder.create_or_update_builder(
+        self.wp10db,
+        'Builder 2',
+        '1234',
+        'zz.wikipedia.fake', {'list': ['a', 'b', 'c', 'd']},
+        'wp1.selection.models.simple',
+        builder_id=id_)
     self.assertTrue(actual)
     expected = dict(**self.expected_builder)
     expected['b_name'] = b'Builder 2'

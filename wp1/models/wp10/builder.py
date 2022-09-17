@@ -70,6 +70,7 @@ class Builder:
         'name': self.b_name.decode('utf-8'),
         'project': self.b_project.decode('utf-8'),
         'articles': articles,
+        'model': self.b_model.decode('utf-8'),
     }
 
   def set_id(self):
