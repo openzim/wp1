@@ -242,13 +242,11 @@ export default {
         postUrl = `${process.env.VUE_APP_API_URL}/builders/`;
       }
 
-      const params = { query: this.builder.articles };
-
       const response = await fetch(postUrl, {
         headers: { 'Content-Type': 'application/json' },
         method: 'post',
         credentials: 'include',
-        body: JSON.stringify({ ...this.builder, articles: '', params }),
+        body: JSON.stringify(this.builder),
       });
 
       if (!response.ok) {
