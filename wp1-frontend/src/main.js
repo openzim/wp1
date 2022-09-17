@@ -115,6 +115,13 @@ const routes = [
       title: () => BASE_TITLE + ' - Edit Simple Selection',
     },
   },
+  {
+    path: '/selections/sparql/:builder_id',
+    component: SparqlList,
+    meta: {
+      title: () => BASE_TITLE + ' - Edit SPARQL Selection',
+    },
+  },
 ];
 
 const router = new VueRouter({

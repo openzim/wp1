@@ -62,7 +62,7 @@
               <label for="items">Items</label>
               <textarea
                 v-on:blur="validationOnBlur"
-                v-model="builder.articles"
+                v-model="articles"
                 :placeholder="
                   'Eiffel_Tower\nStatue_of_Liberty\nFreedom_Monument_(Baghdad)\nGeorge-Étienne_Cartier_Monument' +
                   '\n\n# Whitespace and comments starting with # are ignored'
@@ -140,6 +140,7 @@ export default {
   name: 'SimpleList',
   data: function () {
     return {
+      articles: '',
       notFound: false,
       serverError: false,
       wikiProjects: [],
@@ -149,7 +150,6 @@ export default {
       invalid_article_names: '',
       errors: '',
       builder: {
-        articles: '',
         name: '',
         project: 'en.wikipedia.org',
         model: 'wp1.selection.models.simple',
@@ -199,6 +199,7 @@ export default {
       } else {
         this.notFound = false;
         this.builder = await response.json();
+        this.articles = this.builder.params.list.join('\n');
       }
     },
     onSubmit: async function () {
@@ -215,7 +216,7 @@ export default {
         postUrl = `${process.env.VUE_APP_API_URL}/builders/`;
       }
 
-      const params = { list: this.builder.articles.split('\n') };
+      const params = { list: this.articles.split('\n') };
 
       const response = await fetch(postUrl, {
         headers: { 'Content-Type': 'application/json' },
