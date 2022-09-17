@@ -203,6 +203,8 @@ def get_builders_with_selections(wp10db, user_id):
             b['b_name'].decode('utf-8'),
         'project':
             b['b_project'].decode('utf-8'),
+        'model':
+            b['b_model'].decode('utf-8'),
         'created_at':
             logic_util.wp10_timestamp_to_unix(b['b_created_at']),
         'updated_at':
