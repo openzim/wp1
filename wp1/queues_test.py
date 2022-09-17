@@ -5,7 +5,7 @@ from wp1.base_redis_test import BaseRedisTest
 from wp1 import constants
 from wp1.environment import Environment
 from wp1 import queues
-from wp1.selection.models.simple_builder import SimpleBuilder
+from wp1.selection.models.simple import Builder as SimpleBuilder
 
 
 class QueuesTest(BaseRedisTest):
