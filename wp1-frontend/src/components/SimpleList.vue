@@ -240,7 +240,7 @@ export default {
 
       // Otherwise there were errors with the POST
       this.$refs.form_group.classList.add('was-validated');
-      this.builder.articles = data.items.valid.join('\n');
+      this.articles = data.items.valid.join('\n');
       this.invalid_article_names = data.items.invalid.join('\n');
       this.errors = data.items.errors.join(', ');
     },
