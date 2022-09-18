@@ -11,10 +11,7 @@ describe('the home page', () => {
     cy.get('.search').type('Water');
 
     cy.get('.results').should('be.visible');
-    cy.get('.results')
-      .children('li')
-      .eq(1)
-      .should('contain.text', 'Water');
+    cy.get('.results').children('li').eq(1).should('contain.text', 'Water');
   });
 
   it('project-table for Alien displayed', () => {

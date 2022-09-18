@@ -1,0 +1,9 @@
+{
+  "params": {
+    "query": "SELECT ?foo FROM bar",
+    "queryVariable": ""
+  },
+  "model": "wp1.selection.models.sparql",
+  "name": "Builder 2",
+  "project": "en.wiktionary.org"
+}

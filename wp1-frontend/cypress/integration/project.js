@@ -5,7 +5,7 @@ describe('the project page', () => {
     cy.visit('/#/project/Aesthetics');
 
     const col_labels = ['Top', 'High', 'Mid', 'Low', 'NA', '???'];
-    col_labels.forEach(label => {
+    col_labels.forEach((label) => {
       cy.get('table').contains('th', label);
     });
 
@@ -23,9 +23,9 @@ describe('the project page', () => {
       'Redirect',
       'Template',
       'Other',
-      'Assessed'
+      'Assessed',
     ];
-    row_labels.forEach(label => {
+    row_labels.forEach((label) => {
       cy.get('table').contains('tr', label);
     });
   });
@@ -38,13 +38,8 @@ describe('the project page', () => {
       .find('td')
       .eq(0)
       .invoke('text')
-      .then(text => {
-        cy.get('tr')
-          .eq(3)
-          .find('td')
-          .eq(0)
-          .contains(/^\d+$/)
-          .click();
+      .then((text) => {
+        cy.get('tr').eq(3).find('td').eq(0).contains(/^\d+$/).click();
         cy.get('tr').should('have.length', text);
       });
 
@@ -56,13 +51,9 @@ describe('the project page', () => {
     cy.get('tr')
       .eq(0)
       .find('td')
-      .then($row => {
-        cy.wrap($row)
-          .eq(2)
-          .contains('Top');
-        cy.wrap($row)
-          .eq(4)
-          .contains('FA');
+      .then(($row) => {
+        cy.wrap($row).eq(2).contains('Top');
+        cy.wrap($row).eq(4).contains('FA');
       });
   });
 });

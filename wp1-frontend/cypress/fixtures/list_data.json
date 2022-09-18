@@ -2,7 +2,7 @@
   "builders": [
     {
       "id": 1,
-      "name": "list_name",
+      "name": "simple list",
       "project": "en.wikipedia.org",
       "created_at": 1630877303,
       "updated_at": 1630878303,
@@ -16,7 +16,7 @@
     },
     {
       "id": 2,
-      "name": "list 2",
+      "name": "sparql list",
       "project": "en.wikipedia.org",
       "created_at": 1630877303,
       "updated_at": 1630878303,
