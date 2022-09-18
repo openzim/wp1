@@ -46,7 +46,21 @@ def parse_sql(filename):
   return stmts
 
 
-class BaseWpOneDbTest(unittest.TestCase):
+class WpOneAssertions(unittest.TestCase):
+
+  def assertObjectListsEqual(self, expected, actual):
+    self.assertEqual(
+        set(
+            tuple(sorted((key, value)
+                         for key, value in d.items()))
+            for d in expected),
+        set(
+            tuple(sorted((key, value)
+                         for key, value in d.items()))
+            for d in actual))
+
+
+class BaseWpOneDbTest(WpOneAssertions):
 
   def connect_wp_one_db(self):
     if ENV != Environment.TEST:
@@ -83,7 +97,7 @@ class BaseWpOneDbTest(unittest.TestCase):
     self._setup_wp_one_db()
 
 
-class BaseWikiDbTest(unittest.TestCase):
+class BaseWikiDbTest(WpOneAssertions):
 
   def connect_wiki_db(self):
     if ENV != Environment.TEST:
