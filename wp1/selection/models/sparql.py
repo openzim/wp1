@@ -1,3 +1,4 @@
+import json
 from pyparsing.exceptions import ParseException
 import requests
 from rdflib.term import Literal, URIRef, Variable
@@ -12,7 +13,7 @@ from wp1.selection.abstract_builder import AbstractBuilder
 class Builder(AbstractBuilder):
 
   def add_url_select(self, a, query_variable=None):
-    if query_variable is None:
+    if not query_variable:
       query_variable = 'article'
     else:
       query_variable = query_variable.lstrip('?')
@@ -21,6 +22,8 @@ class Builder(AbstractBuilder):
       if getattr(node, 'name', None) == 'Project':
         node.PV.append(Variable('_wp1_0'))
       elif getattr(node, 'name', None) == 'BGP':
+        if not node.triples:
+          return
         p1 = node
         p2_vars = set((Variable('_wp1_0'), Variable(query_variable)))
         p2 = CompValue('BGP',
@@ -59,7 +62,16 @@ class Builder(AbstractBuilder):
                           'query': modified_query,
                           'format': 'json',
                       })
-    data = r.json()
+    r.raise_for_status()
+
+    if len(r.content) > 1024 * 1024 * 10:
+      raise ValueError('Response was larger than 10 MB')
+
+    try:
+      data = r.json()
+    except json.decoder.JSONDecodeError:
+      raise ValueError('Response was not valid JSON')
+
     urls = [
         d['_wp1_0']['value']
         for d in data['results']['bindings']
