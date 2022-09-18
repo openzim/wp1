@@ -1,3 +1,4 @@
+import json
 import unittest
 from unittest.mock import patch, MagicMock
 
@@ -71,6 +72,39 @@ class SparqlBuilderTest(unittest.TestCase):
         })
     response.json.assert_called_once()
     self.assertEqual(b'Foo', actual)
+
+  @patch('wp1.selection.models.sparql.requests')
+  def test_build_server_error(self, mock_requests):
+    response = MagicMock()
+    mock_requests.post.return_value = response
+    response.raise_for_status.side_effect = Exception()
+
+    with self.assertRaises(Exception):
+      actual = self.builder.build('text/tab-separated-values',
+                                  query=self.cats_uk_us_after_1950,
+                                  queryVariable='cat')
+
+  @patch('wp1.selection.models.sparql.requests')
+  def test_build_not_valid_json(self, mock_requests):
+    response = MagicMock()
+    response.json.side_effect = json.decoder.JSONDecodeError('foo', 'bar', 0)
+    mock_requests.post.return_value = response
+
+    with self.assertRaises(ValueError):
+      actual = self.builder.build('text/tab-separated-values',
+                                  query=self.cats_uk_us_after_1950,
+                                  queryVariable='cat')
+
+  @patch('wp1.selection.models.sparql.requests')
+  def test_build_not_resp_too_large(self, mock_requests):
+    response = MagicMock()
+    response.content = 'a' * (1024 * 1024 * 20)
+    mock_requests.post.return_value = response
+
+    with self.assertRaises(ValueError):
+      actual = self.builder.build('text/tab-separated-values',
+                                  query=self.cats_uk_us_after_1950,
+                                  queryVariable='cat')
 
   def test_validate(self):
     actual = self.builder.validate(query=self.cats_uk_us_after_1950)
