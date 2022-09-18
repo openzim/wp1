@@ -346,8 +346,8 @@ paths:
                       type: string
   /builders:
     post:
-      summary: 'Save a new Simple list, validating it first and returning invalid items if they exist'
-      operationId: createSimpleList
+      summary: 'Save a new Builder, validating it first and returning invalid items if they exist'
+      operationId: createBuilder
       requestBody:
         required: true
         content:
@@ -355,8 +355,10 @@ paths:
             schema:
               type: object
               properties:
-                articles:
+                model:
                   type: string
+                params:
+                  type: object
                 name:
                   type: string
                 project:
@@ -374,7 +376,7 @@ paths:
           description: 'Request with either empty list_name or project or articles'
   /builders/{builderId}:
     get:
-      summary: 'Return the builder (Simple list) with the given id'
+      summary: 'Return the builder with the given id'
       operationId: getSimpleList
       responses:
         200:
@@ -382,47 +384,32 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  name:
-                    type: string
-                  project:
-                    type: string
-                  articles:
-                    type: string
-                    description: 'A newline separated list of articles that make up this Simple list.'
+                $ref: '#/components/schemas/BuilderSpec'
         401:
-          description: 'Unauthorized. You must be logged in to retrieve builders.'
+          description: 'Unauthorized. You must be logged in to retrieve Builders.'
         404:
-          description: 'Not found. The logged in user does not own a builder with the given ID.'
+          description: 'Not found. The logged in user does not own a Builder with the given ID.'
       parameters:
         - name: builderId
           in: path
           required: true
-          description: 'The id of the builder to retrieve.'
+          description: 'The id of the Builder to retrieve.'
           schema:
             type: string
     post:
-      summary: 'Update the builder (Simple list) with the given id'
+      summary: 'Update the Builder with the given id'
       operationId: updateSimpleList
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                articles:
-                  type: string
-                name:
-                  type: string
-                project:
-                  type: string
+              $ref: '#/components/schemas/BuilderSpec'
       responses:
         401:
-          description: 'Unauthorized. You must be logged in to update a builder.'
+          description: 'Unauthorized. You must be logged in to update a Builder.'
         404:
-          description: 'Not found. No builder with the given ID was found for the logged in user.'
+          description: 'Not found. No Builder with the given ID was found for the logged in user.'
         200:
           description: 'Successful operation'
           content:
@@ -438,22 +425,22 @@ paths:
             type: string
   /builders/{builderId}/selection/latest.{ext}:
     get:
-      summary: 'Return a redirect to the latest materialization of the given builder in the given format.'
+      summary: 'Return a redirect to the Selection (latest materialization) of the given Builder in the given format.'
       operationId: getBuilderSelectionLatest
       responses:
         302:
-          description: 'Successful operation, redirect to the list in the s3-like storage.'
+          description: 'Successful operation, redirect to the Selection in the s3-like storage.'
       parameters:
         - name: builderId
           in: path
           required: true
-          description: 'The id of the builder whose latest selection should be retrieved.'
+          description: 'The id of the Builder whose latest Selection should be retrieved.'
           schema:
             type: string
         - name: ext
           in: path
           required: true
-          description: 'The requested extension of the selection list to be redirected to.'
+          description: 'The requested extension of the Selection list to be redirected to.'
           schema:
             type: string
   /selection/simple/lists:
@@ -517,6 +504,19 @@ components:
               description: List of forbidden characters present in article names
               items:
                 type: string
+    BuilderSpec:
+      type: object
+      properties:
+        model:
+          type: string
+          description: 'The Builder model that this builder corresponds to.'
+        name:
+          type: string
+        project:
+          type: string
+        params:
+          type: object
+          description: 'The parameters of the Builder that are used to materialize the Selection. This varies depending on the model.'
     Project:
       type: object
       properties:
