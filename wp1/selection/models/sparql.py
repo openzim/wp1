@@ -1,10 +1,11 @@
 from pyparsing.exceptions import ParseException
+import requests
 from rdflib.term import Literal, URIRef, Variable
 from rdflib.plugins.sparql import algebra
 from rdflib.plugins.sparql import parser
 from rdflib.plugins.sparql.parserutils import CompValue
 
-from wp1.constants import WIKIDATA_PREFIXES
+from wp1.constants import WIKIDATA_PREFIXES, WP1_USER_AGENT
 from wp1.selection.abstract_builder import AbstractBuilder
 
 
@@ -13,6 +14,8 @@ class Builder(AbstractBuilder):
   def add_url_select(self, a, query_variable=None):
     if query_variable is None:
       query_variable = 'article'
+    else:
+      query_variable = query_variable.lstrip('?')
 
     def modify_query(node):
       if getattr(node, 'name', None) == 'Project':
@@ -37,16 +40,34 @@ class Builder(AbstractBuilder):
 
     algebra.traverse(a, visitPre=modify_query)
 
+  def extract_article(self, url):
+    return url.split('/')[-1]
+
   def build(self, content_type, **params):
+    if content_type != 'text/tab-separated-values':
+      raise ValueError('Unrecognized content type')
+
+    query_variable = params.get('queryVariable')
     parse_results = parser.parseQuery(params['query'])
     query = algebra.translateQuery(parse_results, initNs=WIKIDATA_PREFIXES)
-    self.add_url_select(
-        query.algebra,
-        params['queryVariable'] if params['queryVariable'] else None)
+    self.add_url_select(query.algebra, query_variable)
     modified_query = algebra.translateAlgebra(query)
-    return modified_query.encode('utf-8')
 
-    # TODO: send modified_query to Wikidata SPARQL endpoint
+    r = requests.post('https://query.wikidata.org/sparql',
+                      headers={'User-Agent': WP1_USER_AGENT},
+                      data={
+                          'query': modified_query,
+                          'format': 'json',
+                      })
+    data = r.json()
+    urls = [
+        d['_wp1_0']['value']
+        for d in data['results']['bindings']
+        if '_wp1_0' in d
+    ]
+    articles = [self.extract_article(url) for url in urls]
+
+    return '\n'.join(articles).encode('utf-8')
 
   def validate(self, **params):
     try:

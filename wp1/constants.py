@@ -79,3 +79,5 @@ WIKIDATA_PREFIXES = {
     'wikibase': 'http://wikiba.se/ontology#',
     'xsd': 'http://www.w3.org/2001/XMLSchema#',
 }
+
+WP1_USER_AGENT = 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
