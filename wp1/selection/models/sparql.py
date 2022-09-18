@@ -61,6 +61,6 @@ class Builder(AbstractBuilder):
     except Exception as e:
       # In testing, this was most common when the query contained
       # an undefined prefix.
-      return ('', params['query'], e.args[0])
+      return ('', params['query'], [e.args[0]])
 
     return ('', '', [])
