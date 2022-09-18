@@ -26,6 +26,7 @@ gunicorn==19.9.0
 identify==1.4.6
 idna==2.8
 importlib-metadata==0.19
+isodate==0.6.1
 itsdangerous==1.1.0
 Jinja2==2.11.3
 jmespath==0.10.0
@@ -47,6 +48,7 @@ PyMySQL==0.9.3
 pyparsing==3.0.9
 python-dateutil==2.8.0
 PyYAML==5.4.1
+rdflib==6.2.0
 redis==4.3.4
 requests==2.25.1
 requests-oauthlib==1.0.0
