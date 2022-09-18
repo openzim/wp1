@@ -62,6 +62,7 @@
             <div id="items" class="form-group m-4">
               <label for="items">Query</label>
               <textarea
+                ref="query"
                 v-on:blur="validationOnBlur"
                 v-model="builder.params.query"
                 :placeholder="
@@ -75,6 +76,7 @@
                   '  FILTER(STRSTARTS(?bandLabel, \'M\')) .\n}'
                 "
                 class="form-control my-list"
+                :class="{ 'is-invalid': !this.success }"
                 rows="13"
                 required
               ></textarea>
@@ -99,20 +101,10 @@
             </div>
           </div>
           <div
-            v-if="this.success == false || this.deleteSuccess == false"
-            id="invalid_articles"
+            v-if="!this.success || !this.deleteSuccess"
             class="form-group m-4"
           >
             <div class="errors">{{ errors }}</div>
-            <textarea
-              v-if="
-                this.success == false && this.invalid_article_names.length > 0
-              "
-              class="form-control my-list is-invalid"
-              rows="6"
-              ref="invalid"
-              v-model="invalid_article_names"
-            ></textarea>
           </div>
           <div v-if="isEditing">
             <div>
@@ -169,8 +161,6 @@ export default {
       wikiProjects: [],
       success: true,
       deleteSuccess: true,
-      valid_article_names: '',
-      invalid_article_names: '',
       errors: '',
       builder: {
         params: {
@@ -230,6 +220,7 @@ export default {
     },
     onSubmit: async function () {
       const form = this.$refs.form;
+      this.$refs.query.setCustomValidity('');
       if (!form.checkValidity()) {
         this.$refs.form_group.classList.add('was-validated');
         return;
@@ -264,12 +255,12 @@ export default {
 
       // Otherwise there were errors with the POST
       this.$refs.form_group.classList.add('was-validated');
-      this.builder.articles = data.items.valid.join('\n');
-      this.invalid_article_names = data.items.invalid.join('\n');
+      this.builder.params.query = data.items.invalid;
+      this.$refs.query.setCustomValidity('Query not valid');
       this.errors = data.items.errors.join(', ');
     },
     validationOnBlur: function (event) {
-      if (event.target.value) {
+      if (this.success && event.target.value) {
         event.target.classList.remove('is-invalid');
       } else {
         event.target.classList.add('is-invalid');
