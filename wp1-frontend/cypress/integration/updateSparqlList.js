@@ -9,10 +9,10 @@ describe('the update SPARQL list page', () => {
 
     describe('and the builder is found', () => {
       beforeEach(() => {
-        cy.intercept('GET', 'v1/builders/1', {
+        cy.intercept('GET', 'v1/builders/2', {
           fixture: 'sparql_builder.json',
         });
-        cy.visit('/#/selections/sparql/1');
+        cy.visit('/#/selections/sparql/2');
       });
 
       it('successfully loads', () => {});
@@ -27,35 +27,33 @@ describe('the update SPARQL list page', () => {
         cy.get('#listName > .form-control').should('have.value', 'Builder 2');
         cy.get('#items > .form-control').should(
           'have.value',
-          'SELECT ?foo FROM bar'
+          'SELECT ?foo WHERE {}'
         );
         cy.get('#project > select').should('have.value', 'en.wiktionary.org');
       });
 
-      it('does not show invalid list items', () => {
-        cy.get('#updateListButton').click();
-        cy.get('#items > .invalid-feedback').should('not.be.visible');
-      });
+      describe('on update success', () => {
+        beforeEach(() => {
+          cy.intercept('POST', 'v1/builders/2', {
+            fixture: 'save_list_success.json',
+          });
+        });
 
-      it('does not show invalid list name', () => {
-        cy.get('#updateListButton').click();
-        cy.get('#listName > .invalid-feedback').should('not.be.visible');
-      });
-
-      it('redirects on saving valid article names', () => {
-        cy.intercept('v1/builders/1', { fixture: 'save_list_success.json' });
-        cy.get('#updateListButton').click();
-        cy.url().should('eq', 'http://localhost:3000/#/selections/user');
+        it('redirects on saving valid article names', () => {
+          cy.intercept('v1/builders/2', { fixture: 'save_list_success.json' });
+          cy.get('#updateListButton').click();
+          cy.url().should('eq', 'http://localhost:3000/#/selections/user');
+        });
       });
     });
 
     describe('and the builder is not found', () => {
       beforeEach(() => {
-        cy.intercept('GET', 'v1/builders/1', {
+        cy.intercept('GET', 'v1/builders/2', {
           statusCode: 404,
           body: '404 NOT FOUND',
         });
-        cy.visit('/#/selections/sparql/1');
+        cy.visit('/#/selections/sparql/2');
       });
 
       it('displays the 404 text', () => {
@@ -70,7 +68,7 @@ describe('the update SPARQL list page', () => {
     });
 
     it('opens login page', () => {
-      cy.visit('/#/selections/sparql/1');
+      cy.visit('/#/selections/sparql/2');
       cy.contains('Please Log In To Continue');
       cy.get('.pt-2 > .btn');
     });

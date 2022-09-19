@@ -1,6 +1,6 @@
 {
   "params": {
-    "query": "SELECT ?foo FROM bar",
+    "query": "SELECT ?foo WHERE {}",
     "queryVariable": ""
   },
   "model": "wp1.selection.models.sparql",
