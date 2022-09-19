@@ -6,7 +6,6 @@ import attr
 from wp1.base_db_test import BaseWpOneDbTest
 from wp1.logic import builder as logic_builder
 from wp1.models.wp10.builder import Builder
-from wp1.selection.models.simple_builder import SimpleBuilder
 
 
 class BuilderTest(BaseWpOneDbTest):
@@ -34,6 +33,8 @@ class BuilderTest(BaseWpOneDbTest):
           1577249084,
       'updated_at':
           1577249084,
+      'model':
+          'wp1.selection.models.simple',
       's_id':
           '1',
       's_updated_at':
@@ -58,6 +59,8 @@ class BuilderTest(BaseWpOneDbTest):
               1577249084,
           'updated_at':
               1577249084,
+          'model':
+              'wp1.selection.models.simple',
           's_id':
               '2',
           's_updated_at':
@@ -80,6 +83,8 @@ class BuilderTest(BaseWpOneDbTest):
               1577249084,
           'updated_at':
               1577249084,
+          'model':
+              'wp1.selection.models.simple',
           's_id':
               '1',
           's_updated_at':
@@ -99,6 +104,7 @@ class BuilderTest(BaseWpOneDbTest):
       'project': 'en.wikipedia.fake',
       'created_at': 1577249084,
       'updated_at': 1577249084,
+      'model': 'wp1.selection.models.simple',
       's_id': None,
       's_updated_at': None,
       's_content_type': None,
@@ -112,6 +118,7 @@ class BuilderTest(BaseWpOneDbTest):
       'project': 'en.wikipedia.fake',
       'created_at': 1577249084,
       'updated_at': 1577249084,
+      'model': 'wp1.selection.models.simple',
       's_id': '1',
       's_updated_at': 1577249084,
       's_content_type': 'foo/bar-baz',
@@ -175,7 +182,9 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.models.wp10.builder.builder_id', return_value=b'1a-2b-3c-4d')
   def test_create_or_update_builder_create(self, mock_builder_id, mock_utcnow):
     logic_builder.create_or_update_builder(self.wp10db, 'My Builder', '1234',
-                                           'en.wikipedia.fake', 'a\nb\nc')
+                                           'en.wikipedia.fake',
+                                           {'list': ['a', 'b', 'c']},
+                                           'wp1.selection.models.simple')
     actual = self._get_builder_by_user_id()
     self.assertEqual(self.expected_builder, actual)
 
@@ -183,9 +192,13 @@ class BuilderTest(BaseWpOneDbTest):
          return_value=datetime.datetime(2020, 1, 1, 5, 55, 55))
   def test_create_or_update_builder_update(self, mock_utcnow):
     id_ = self._insert_builder()
-    actual = logic_builder.create_or_update_builder(self.wp10db, 'Builder 2',
-                                                    '1234', 'zz.wikipedia.fake',
-                                                    'a\nb\nc\nd', id_)
+    actual = logic_builder.create_or_update_builder(
+        self.wp10db,
+        'Builder 2',
+        '1234',
+        'zz.wikipedia.fake', {'list': ['a', 'b', 'c', 'd']},
+        'wp1.selection.models.simple',
+        builder_id=id_)
     self.assertTrue(actual)
     expected = dict(**self.expected_builder)
     expected['b_name'] = b'Builder 2'
@@ -260,11 +273,8 @@ class BuilderTest(BaseWpOneDbTest):
                            object_key='object_key_2')
     self._insert_builder()
     article_data = logic_builder.get_builders_with_selections(self.wp10db, 1234)
-    self.assertEqual(
-        set(
-            tuple(d.items())
-            for d in self.expected_lists_with_multiple_selections),
-        set(tuple(d.items()) for d in article_data))
+    self.assertObjectListsEqual(self.expected_lists_with_multiple_selections,
+                                article_data)
 
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
@@ -291,7 +301,8 @@ class BuilderTest(BaseWpOneDbTest):
     self._insert_selection(4, 'application/vnd.ms-excel', 2)
     id_ = self._insert_builder()
     article_data = logic_builder.get_builders_with_selections(self.wp10db, id_)
-    self.assertEqual(self.expected_lists_with_multiple_selections, article_data)
+    self.assertObjectListsEqual(self.expected_lists_with_multiple_selections,
+                                article_data)
 
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
@@ -311,7 +322,8 @@ class BuilderTest(BaseWpOneDbTest):
     self._insert_builder()
     article_data = logic_builder.get_builders_with_selections(
         self.wp10db, '1234')
-    self.assertEqual(self.expected_lists_with_unmapped_selections, article_data)
+    self.assertObjectListsEqual(self.expected_lists_with_unmapped_selections,
+                                article_data)
 
   def test_update_builder_doesnt_exist(self):
     actual = logic_builder.update_builder(self.wp10db, self.builder)

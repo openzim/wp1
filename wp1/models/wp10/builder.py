@@ -65,11 +65,11 @@ class Builder:
     self.set_updated_at_dt(utcnow())
 
   def to_web_dict(self):
-    articles = '\n'.join(json.loads(self.b_params.decode('utf-8'))['list'])
     return {
         'name': self.b_name.decode('utf-8'),
         'project': self.b_project.decode('utf-8'),
-        'articles': articles,
+        'params': json.loads(self.b_params.decode('utf-8')),
+        'model': self.b_model.decode('utf-8'),
     }
 
   def set_id(self):

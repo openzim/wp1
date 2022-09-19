@@ -24,6 +24,8 @@ class SelectionTest(BaseWebTestcase):
               1608893744,
           'updated_at':
               1608893744,
+          'model':
+              'model',
           's_id':
               '1',
           's_updated_at':
@@ -50,6 +52,8 @@ class SelectionTest(BaseWebTestcase):
                   1608893744,
               'updated_at':
                   1608893744,
+              'model':
+                  'model',
               's_id':
                   '2',
               's_updated_at':
@@ -72,6 +76,8 @@ class SelectionTest(BaseWebTestcase):
                   1608893744,
               'updated_at':
                   1608893744,
+              'model':
+                  'model',
               's_id':
                   '1',
               's_updated_at':
@@ -91,6 +97,7 @@ class SelectionTest(BaseWebTestcase):
           'id': '1a-2b-3c-4d',
           'name': 'name',
           'project': 'project_name',
+          'model': 'model',
           'created_at': 1608893744,
           'updated_at': 1608893744,
           's_id': None,
@@ -136,13 +143,9 @@ class SelectionTest(BaseWebTestcase):
       with client.session_transaction() as sess:
         sess['user'] = self.USER
       rv = client.get('/v1/selection/simple/lists')
-      self.assertEqual(
-          set(
-              tuple(sorted((d.items()))) for d in
-              self.expected_lists_with_multiple_selections['builders']),
-          set(
-              tuple(sorted(tuple(d.items())))
-              for d in rv.get_json()['builders']))
+      self.assertObjectListsEqual(
+          self.expected_lists_with_multiple_selections['builders'],
+          rv.get_json()['builders'])
 
   def test_list_with_no_selections(self):
     self.app = create_app()
@@ -156,7 +159,9 @@ class SelectionTest(BaseWebTestcase):
       with client.session_transaction() as sess:
         sess['user'] = self.USER
       rv = client.get('/v1/selection/simple/lists')
-      self.assertEqual(self.expected_lists_with_no_selections, rv.get_json())
+      self.assertObjectListsEqual(
+          self.expected_lists_with_no_selections['builders'],
+          rv.get_json()['builders'])
 
   def test_list_with_no_builders(self):
     self.app = create_app()

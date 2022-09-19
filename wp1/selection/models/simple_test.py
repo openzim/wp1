@@ -1,5 +1,5 @@
 import unittest
-from wp1.selection.models.simple_builder import SimpleBuilder
+from wp1.selection.models.simple import Builder as SimpleBuilder
 
 
 class SimpleBuilderTest(unittest.TestCase):

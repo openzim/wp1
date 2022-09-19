@@ -18,12 +18,13 @@ def create_or_update_builder(wp10db,
                              name,
                              user_id,
                              project,
-                             articles,
+                             params,
+                             model,
                              builder_id=None):
-  params = json.dumps({'list': articles.split('\n')}).encode('utf-8')
+  params = json.dumps(params).encode('utf-8')
   builder = Builder(b_name=name,
                     b_user_id=user_id,
-                    b_model='wp1.selection.models.simple',
+                    b_model=model,
                     b_project=project,
                     b_params=params)
   builder.set_updated_at_now()
@@ -202,6 +203,8 @@ def get_builders_with_selections(wp10db, user_id):
             b['b_name'].decode('utf-8'),
         'project':
             b['b_project'].decode('utf-8'),
+        'model':
+            b['b_model'].decode('utf-8'),
         'created_at':
             logic_util.wp10_timestamp_to_unix(b['b_created_at']),
         'updated_at':

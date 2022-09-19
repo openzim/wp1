@@ -56,7 +56,7 @@
                 ></pulse-loader>
               </td>
               <td>
-                <router-link :to="{ path: `/selections/simple/${item.id}` }"
+                <router-link :to="editPathFor(item)"
                   ><button type="button" class="btn btn-primary">
                     Edit
                   </button></router-link
@@ -133,6 +133,11 @@ export default {
       } else {
         this.stopProgressPolling();
       }
+    },
+    editPathFor: (item) => {
+      const fragments = item.model.split('.');
+      const modelFragment = fragments[fragments.length - 1];
+      return { path: `/selections/${modelFragment}/${item.id}` };
     },
     startProgressPolling: function () {
       if (this.pollId) {
