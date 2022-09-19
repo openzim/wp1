@@ -3,6 +3,6 @@
     "list": ["Eiffel_Tower", "Statue_of_Liberty"]
   },
   "name": "Builder 1",
-  "model": "wp1.selection.models.sparql",
+  "model": "wp1.selection.models.simple",
   "project": "en.wiktionary.org"
 }
