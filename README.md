@@ -145,14 +145,15 @@ in `docker-compose-test.yml` you can copy these directly from the example
 file. However, you are free to provide your own test database that will
 be destroyed after every test run. See the section "Running the tests".
 
-### Running the tests
+### Running the backend (Python/nose) tests
 
-The tests require a MariaDB or MySQL instance to connect to in order to
-verify various statements and logic. This database does not need to be
-persistent and in fact part of the test setup and teardown is to recreate
-a fresh schema for the test databases each time. You also will need two
-databases in your server: `enwp10_test` and `enwikip_test`. They can use
-default settings and be empty.
+The backend/python tests require a MariaDB or MySQL instance to connect to in
+order to verify various statements and logic. This database does not need to be
+persistent and in fact part of the test setup and teardown is to recreate a
+fresh schema for the test databases each time. You also will need two databases
+in your server: `enwp10_test` and `enwikip_test`. They can use default settings
+and be empty. **If you've followed the steps under 'Development' below to
+create a running dev database with docker-compose, you're all set.**
 
 If you have that, and you've already installed the requirements above,
 you should be able to simply run the following command from this
@@ -160,6 +161,20 @@ directory to run the tests:
 
 ```bash
 nosetests
+```
+
+### Running the frontend (Cypress) integration tests
+
+For frontend tests, you need to have a full working local development
+environment. You should follow the steps in 'Installation' above, as well as the
+steps in 'Development' below. Your frontend should be running on port 3000 (the
+default) and the backend should be on port 5000 (also the default).
+
+To run the tests:
+
+```bash
+cd wp1-frontend
+$(yarn bin)/cypress run
 ```
 
 # Development
