@@ -11,6 +11,7 @@ import VueRouter from 'vue-router';
 import App from './App.vue';
 import ArticlePage from './components/ArticlePage.vue';
 import SimpleList from './components/SimpleList.vue';
+import SparqlList from './components/SparqlList.vue';
 import ComparePage from './components/ComparePage.vue';
 import IndexPage from './components/IndexPage.vue';
 import MyLists from './components/MyLists.vue';
@@ -27,86 +28,100 @@ const routes = [
   {
     path: '/',
     component: IndexPage,
-    meta: { title: () => BASE_TITLE }
+    meta: { title: () => BASE_TITLE },
   },
   {
     path: '/update/',
     component: UpdatePage,
-    meta: { title: () => BASE_TITLE + ' - Manual Update' }
+    meta: { title: () => BASE_TITLE + ' - Manual Update' },
   },
   {
     path: '/update/:projectName',
     component: UpdatePage,
-    props: route => ({
-      incomingSearch: route.params.projectName
+    props: (route) => ({
+      incomingSearch: route.params.projectName,
     }),
     meta: {
-      title: route =>
-        BASE_TITLE + ' - Manual Update - ' + route.params.projectName
-    }
+      title: (route) =>
+        BASE_TITLE + ' - Manual Update - ' + route.params.projectName,
+    },
   },
   {
     path: '/project/:projectName',
     component: ProjectPage,
     meta: {
-      title: route => BASE_TITLE + ' - ' + route.params.projectName
-    }
+      title: (route) => BASE_TITLE + ' - ' + route.params.projectName,
+    },
   },
   {
     path: '/project/:projectName/articles',
     component: ArticlePage,
-    props: route => ({
-      currentProject: route.params.projectName
+    props: (route) => ({
+      currentProject: route.params.projectName,
     }),
     meta: {
-      title: route =>
-        BASE_TITLE + ' - ' + route.params.projectName + ' articles'
-    }
+      title: (route) =>
+        BASE_TITLE + ' - ' + route.params.projectName + ' articles',
+    },
   },
   {
     path: '/compare/',
     component: ComparePage,
     meta: {
-      title: () => BASE_TITLE + ' - Comparing projects'
-    }
+      title: () => BASE_TITLE + ' - Comparing projects',
+    },
   },
   {
     path: '/compare/:projectNameA/:projectNameB',
     component: ComparePage,
-    props: route => ({
+    props: (route) => ({
       incomingSearchA: route.params.projectNameA,
-      incomingSearchB: route.params.projectNameB
+      incomingSearchB: route.params.projectNameB,
     }),
     meta: {
-      title: route =>
+      title: (route) =>
         BASE_TITLE +
         ' - Comparing ' +
         route.params.projectNameA +
         ' and ' +
-        route.params.projectNameB
-    }
+        route.params.projectNameB,
+    },
   },
   {
     path: '/selections/user',
     component: MyLists,
     meta: {
-      title: () => BASE_TITLE + ' - My Selections'
-    }
+      title: () => BASE_TITLE + ' - My Selections',
+    },
   },
   {
     path: '/selections/simple',
     component: SimpleList,
     meta: {
-      title: () => BASE_TITLE + ' - Create Simple Selection'
-    }
+      title: () => BASE_TITLE + ' - Create Simple Selection',
+    },
+  },
+  {
+    path: '/selections/sparql',
+    component: SparqlList,
+    meta: {
+      title: () => BASE_TITLE + ' - Create SPARQL Selection',
+    },
   },
   {
     path: '/selections/simple/:builder_id',
     component: SimpleList,
     meta: {
-      title: () => BASE_TITLE + ' - Edit Simple Selection'
-    }
-  }
+      title: () => BASE_TITLE + ' - Edit Simple Selection',
+    },
+  },
+  {
+    path: '/selections/sparql/:builder_id',
+    component: SparqlList,
+    meta: {
+      title: () => BASE_TITLE + ' - Edit SPARQL Selection',
+    },
+  },
 ];
 
 const router = new VueRouter({
@@ -117,7 +132,7 @@ const router = new VueRouter({
     } else {
       return { x: 0, y: 0 };
     }
-  }
+  },
 });
 
 router.beforeEach((to, from, next) => {
@@ -127,11 +142,11 @@ router.beforeEach((to, from, next) => {
 
 new Vue({
   data: {
-    isLoggedIn: false
+    isLoggedIn: false,
   },
   el: '#app',
-  render: h => h(App),
+  render: (h) => h(App),
   router,
   template: '<App/>',
-  components: { App }
+  components: { App },
 });

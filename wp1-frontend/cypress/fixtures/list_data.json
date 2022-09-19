@@ -2,10 +2,11 @@
   "builders": [
     {
       "id": 1,
-      "name": "list_name",
+      "name": "simple list",
       "project": "en.wikipedia.org",
       "created_at": 1630877303,
       "updated_at": 1630878303,
+      "model": "wp1.selection.models.simple",
       "s_id": "abcd-efgh",
       "s_created_at": 1630879303,
       "s_updated_at": 1630880303,
@@ -15,10 +16,11 @@
     },
     {
       "id": 2,
-      "name": "list 2",
+      "name": "sparql list",
       "project": "en.wikipedia.org",
       "created_at": 1630877303,
       "updated_at": 1630878303,
+      "model": "wp1.selection.models.sparql",
       "s_id": "hijk-lmno",
       "s_created_at": null,
       "s_updated_at": null,

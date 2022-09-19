@@ -6,24 +6,25 @@
     <div v-if="notFound">
       <div id="404" class="col-lg-6 m-4">
         <h2>404 Not Found</h2>
-        Sorry, the builder (simple list) with that ID either doesn't exist or
-        isn't owned by you.
+        Sorry, the builder (SPARQL query list) with that ID either doesn't exist
+        or isn't owned by you.
       </div>
     </div>
     <div v-else-if="serverError">
       <h2>500 Server error</h2>
-      Something went wrong and we couldn't retrieve the builder (simple list)
-      with that ID. You might try again later.
+      Something went wrong and we couldn't retrieve the builder (SPARQL query
+      list) with that ID. You might try again later.
     </div>
     <div v-else class="row">
       <div class="col-lg-6 col-md-9 m-4">
-        <h2 v-if="!isEditing" class="ml-4">New Simple Selection</h2>
-        <h2 v-else class="ml-4">Editing Simple Selection</h2>
+        <h2 v-if="!isEditing" class="ml-4">New SPARQL Selection</h2>
+        <h2 v-else class="ml-4">Editing SPARQL Selection</h2>
         <div v-if="!isEditing" class="ml-4 mb-4">
           Use this tool to create an article selection list for the Wikipedia
-          project of your choice. Your selection will be saved in public cloud
-          storage and can be accessed through URLs that will be provided once it
-          has been saved.
+          project of your choice, using a SPARQL query. The query can either be
+          entered directly or provided via a Wikidata query service URL. Your
+          selection will be saved in public cloud storage and can be accessed
+          through URLs that will be provided once it has been saved.
         </div>
 
         <form
@@ -45,7 +46,7 @@
               </select>
             </div>
             <div id="listName" class="m-4">
-              <label for="listName">List Name</label>
+              <label for="listName">Selection Name</label>
               <input
                 v-on:blur="validationOnBlur"
                 v-model="builder.name"
@@ -55,23 +56,46 @@
                 required
               />
               <div class="invalid-feedback">
-                Please provide a valid list name
+                Please provide a valid selection name
               </div>
             </div>
             <div id="items" class="form-group m-4">
-              <label for="items">Items</label>
+              <label for="items">Query</label>
               <textarea
                 v-on:blur="validationOnBlur"
-                v-model="articles"
+                v-model="builder.params.query"
                 :placeholder="
-                  'Eiffel_Tower\nStatue_of_Liberty\nFreedom_Monument_(Baghdad)\nGeorge-Étienne_Cartier_Monument' +
-                  '\n\n# Whitespace and comments starting with # are ignored'
+                  '#Rock bands that start with &quot;M&quot;\n' +
+                  'SELECT ?article ?bandLabel\n' +
+                  'WHERE\n' +
+                  '{\n' +
+                  '  ?article wdt:P31 wd:Q5741069 .\n' +
+                  '  ?article rdfs:label ?bandLabel .\n' +
+                  '  FILTER(LANG(?bandLabel) = &quot;en&quot;) .\n' +
+                  '  FILTER(STRSTARTS(?bandLabel, \'M\')) .\n}'
                 "
                 class="form-control my-list"
                 rows="13"
                 required
               ></textarea>
-              <div class="invalid-feedback">Please provide valid items</div>
+              <div class="invalid-feedback">Please provide a valid query</div>
+            </div>
+            <div id="queryVariable" class="m-4">
+              <label for="queryVariable">Query variable</label>
+              <p class="explanation">
+                The variable in your query that represents the Wikidata entity
+                whose article URLs should be retrieved. This will default to
+                <span style="white-space: nowrap">"?article"</span>, for when
+                your query already selects a variable named "?article". Note:
+                this variable must appear in the SELECT clause of your query.
+              </p>
+              <input
+                v-on:blur="validationOnBlur"
+                v-model="builder.params.queryVariable"
+                type="text"
+                placeholder="?article"
+                class="form-control my-list"
+              />
             </div>
           </div>
           <div
@@ -137,10 +161,9 @@ import LoginRequired from './LoginRequired';
 
 export default {
   components: { SecondaryNav, LoginRequired },
-  name: 'SimpleList',
+  name: 'SparqlList',
   data: function () {
     return {
-      articles: '',
       notFound: false,
       serverError: false,
       wikiProjects: [],
@@ -150,9 +173,13 @@ export default {
       invalid_article_names: '',
       errors: '',
       builder: {
+        params: {
+          query: '',
+          queryVariable: '',
+        },
         name: '',
         project: 'en.wikipedia.org',
-        model: 'wp1.selection.models.simple',
+        model: 'wp1.selection.models.sparql',
       },
     };
   },
@@ -199,7 +226,6 @@ export default {
       } else {
         this.notFound = false;
         this.builder = await response.json();
-        this.articles = this.builder.params.list.join('\n');
       }
     },
     onSubmit: async function () {
@@ -216,13 +242,11 @@ export default {
         postUrl = `${process.env.VUE_APP_API_URL}/builders/`;
       }
 
-      const params = { list: this.articles.split('\n') };
-
       const response = await fetch(postUrl, {
         headers: { 'Content-Type': 'application/json' },
         method: 'post',
         credentials: 'include',
-        body: JSON.stringify({ ...this.builder, articles: '', params }),
+        body: JSON.stringify(this.builder),
       });
 
       if (!response.ok) {
@@ -240,7 +264,7 @@ export default {
 
       // Otherwise there were errors with the POST
       this.$refs.form_group.classList.add('was-validated');
-      this.articles = data.items.valid.join('\n');
+      this.builder.articles = data.items.valid.join('\n');
       this.invalid_article_names = data.items.invalid.join('\n');
       this.errors = data.items.errors.join(', ');
     },
@@ -283,5 +307,9 @@ export default {
 <style scoped>
 .errors {
   color: red;
+}
+
+.explanation {
+  color: #777;
 }
 </style>
