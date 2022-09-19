@@ -12,13 +12,28 @@ from wp1.selection.abstract_builder import AbstractBuilder
 
 class Builder(AbstractBuilder):
 
-  def add_url_select(self, a, query_variable=None):
+  def instrument_query(self, a, query_variable=None):
+    '''
+    Takes a SPARQL query, and adds a binding for Wikipedia article names.
+
+    Given a pre-parsed SPARQL Algebra 'a' (from the rdflib sparql library), this method
+    adds a variable to the SELECT clause, '_wp1_0'. It also adds an OPTIONAL (LEFT JOIN)
+    binding for this variable, such that the variable is bound to the English Wikipedia
+    URL of the main subject of the query (which is derived from the 'query_variable'
+    parameter). When the instrumented query is sent to the Wikidata SPARQL endpoint,
+    the values of '_wp1_0' are the primary data that is retrieved.
+
+    Modifies the algebra 'a' in place. No return value.
+
+    Note: this is only designed to work on SELECT queries and will likely have
+    undefined behavior for anything else.
+    '''
     if not query_variable:
       query_variable = 'article'
     else:
       query_variable = query_variable.lstrip('?')
 
-    def modify_query(node):
+    def modify_query_in_place(node):
       if getattr(node, 'name', None) == 'Project':
         node.PV.append(Variable('_wp1_0'))
       elif getattr(node, 'name', None) == 'BGP':
@@ -41,7 +56,7 @@ class Builder(AbstractBuilder):
         join = CompValue('LeftJoin', _vars=total_vars, p1=p1, p2=p2)
         return join
 
-    algebra.traverse(a, visitPre=modify_query)
+    algebra.traverse(a, visitPre=modify_query_in_place)
 
   def extract_article(self, url):
     return url.split('/')[-1]
@@ -53,7 +68,7 @@ class Builder(AbstractBuilder):
     query_variable = params.get('queryVariable')
     parse_results = parser.parseQuery(params['query'])
     query = algebra.translateQuery(parse_results, initNs=WIKIDATA_PREFIXES)
-    self.add_url_select(query.algebra, query_variable)
+    self.instrument_query(query.algebra, query_variable)
     modified_query = algebra.translateAlgebra(query)
 
     r = requests.post('https://query.wikidata.org/sparql',
