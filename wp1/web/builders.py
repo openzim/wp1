@@ -29,7 +29,8 @@ def _create_or_update_builder(data, builder_id=None):
     flask.abort(400)
 
   builder = Builder()
-  valid_values, invalid_values, errors = builder.validate(**params)
+  valid_values, invalid_values, errors = builder.validate(project=project,
+                                                          **params)
   if invalid_values or errors:
     return flask.jsonify({
         'success': False,
