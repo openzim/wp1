@@ -30,7 +30,7 @@ class Builder(AbstractBuilder):
   abstract class.
   '''
 
-  def instrument_query(self, a, query_variable=None):
+  def instrument_query(self, a, project, query_variable=None):
     '''
     Takes a SPARQL query, and adds a binding for Wikipedia article names.
 
@@ -62,11 +62,8 @@ class Builder(AbstractBuilder):
         p2 = CompValue('BGP',
                        _vars=p2_vars,
                        triples=[(Variable('_wp1_0'),
-                                 URIRef('http://schema.org/inLanguage'),
-                                 Literal('en')),
-                                (Variable('_wp1_0'),
                                  URIRef('http://schema.org/isPartOf'),
-                                 URIRef('https://en.wikipedia.org/')),
+                                 URIRef('https://%s/' % project)),
                                 (Variable('_wp1_0'),
                                  URIRef('http://schema.org/about'),
                                  Variable(query_variable))])
@@ -83,10 +80,14 @@ class Builder(AbstractBuilder):
     if content_type != 'text/tab-separated-values':
       raise ValueError('Unrecognized content type')
 
+    project = params.get('project')
+    if not project:
+      raise ValueError('Expected project, got: %r' % project)
+
     query_variable = params.get('queryVariable')
     parse_results = parser.parseQuery(params['query'])
     query = algebra.translateQuery(parse_results, initNs=WIKIDATA_PREFIXES)
-    self.instrument_query(query.algebra, query_variable)
+    self.instrument_query(query.algebra, project, query_variable=query_variable)
     modified_query = algebra.translateAlgebra(query)
 
     r = requests.post('https://query.wikidata.org/sparql',
