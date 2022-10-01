@@ -36,17 +36,16 @@ class SparqlBuilderTest(unittest.TestCase):
       '"1950"^^<http://www.w3.org/2001/XMLSchema#integer>) ?cat '
       '<http://www.wikidata.org/prop/direct/P31> '
       '<http://www.wikidata.org/entity/Q146>.?cat '
-      '<http://www.wikidata.org/prop/direct/P569> ?birth.OPTIONAL{?_wp1_0 '
-      '<http://schema.org/inLanguage> "en".?_wp1_0 <http://schema.org/isPartOf> '
+      '<http://www.wikidata.org/prop/direct/P569> ?birth.OPTIONAL{?_wp1_0 <http://schema.org/isPartOf> '
       '<https://en.wikipedia.org/>.?_wp1_0 <http://schema.org/about> ?cat.}{?cat '
       '<http://www.wikidata.org/prop/direct/P19> '
-      '<http://www.wikidata.org/entity/Q30>.OPTIONAL{?_wp1_0 '
-      '<http://schema.org/inLanguage> "en".?_wp1_0 <http://schema.org/isPartOf> '
+      '<http://www.wikidata.org/entity/Q30>.OPTIONAL{?_wp1_0 <http://schema.org/isPartOf> '
       '<https://en.wikipedia.org/>.?_wp1_0 <http://schema.org/about> '
       '?cat.}}UNION{?cat <http://www.wikidata.org/prop/direct/P19> '
-      '<http://www.wikidata.org/entity/Q145>.OPTIONAL{?_wp1_0 '
-      '<http://schema.org/inLanguage> "en".?_wp1_0 <http://schema.org/isPartOf> '
+      '<http://www.wikidata.org/entity/Q145>.OPTIONAL{?_wp1_0 <http://schema.org/isPartOf> '
       '<https://en.wikipedia.org/>.?_wp1_0 <http://schema.org/about> ?cat.}}}')
+
+  french_query = expanded_query.replace('en.wikipedia.org', 'fr.wikipedia.org')
 
   def setUp(self):
     self.builder = SparqlBuilder()
@@ -58,6 +57,7 @@ class SparqlBuilderTest(unittest.TestCase):
     mock_requests.post.return_value = response
 
     actual = self.builder.build('text/tab-separated-values',
+                                project='en.wikipedia.org',
                                 query=self.cats_uk_us_after_1950,
                                 queryVariable='cat')
 
@@ -68,6 +68,29 @@ class SparqlBuilderTest(unittest.TestCase):
         },
         data={
             'query': self.expanded_query,
+            'format': 'json'
+        })
+    response.json.assert_called_once()
+    self.assertEqual(b'Foo', actual)
+
+  @patch('wp1.selection.models.sparql.requests')
+  def test_build_french_wikipedia(self, mock_requests):
+    response = MagicMock()
+    response.json.return_value = self.json_return_value
+    mock_requests.post.return_value = response
+
+    actual = self.builder.build('text/tab-separated-values',
+                                project='fr.wikipedia.org',
+                                query=self.cats_uk_us_after_1950,
+                                queryVariable='cat')
+
+    mock_requests.post.assert_called_once_with(
+        'https://query.wikidata.org/sparql',
+        headers={
+            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
+        },
+        data={
+            'query': self.french_query,
             'format': 'json'
         })
     response.json.assert_called_once()
