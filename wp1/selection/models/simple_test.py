@@ -1,8 +1,12 @@
 import unittest
+from unittest.mock import MagicMock
+
+from wp1.base_db_test import BaseWpOneDbTest, get_first_selection
+from wp1.models.wp10.builder import Builder
 from wp1.selection.models.simple import Builder as SimpleBuilder
 
 
-class SimpleBuilderTest(unittest.TestCase):
+class SimpleBuilderTest(BaseWpOneDbTest):
 
   params = {
       'list': [
@@ -22,6 +26,24 @@ of text than an actual article name.', 'Not_an_<article_name>',
       ]
   }
 
+  def setUp(self):
+    super().setUp()
+    self.s3 = MagicMock()
+    self.builder = Builder(b_id=b'1a-2b-3c-4d',
+                           b_name=b'Simple Builder',
+                           b_user_id=1234,
+                           b_project=b'en.wikipedia.fake',
+                           b_model=b'wp1.selection.models.simple',
+                           b_params='{"list":["a","b","c"]}')
+
+  def test_materialize(self):
+    simple_test_builder = SimpleBuilder()
+    simple_test_builder.materialize(self.s3, self.wp10db, self.builder,
+                                    'text/tab-separated-values')
+    actual = get_first_selection(self.wp10db)
+    self.assertEqual(actual.s_content_type, b'text/tab-separated-values')
+    self.assertEqual(actual.s_builder_id, b'1a-2b-3c-4d')
+
   def test_build(self):
     simple_test_builder = SimpleBuilder()
     params = {'list': ['Eiffel_Tower', 'Statue#of_Liberty', 'Libertas']}
@@ -39,14 +61,14 @@ of text than an actual article name.', 'Not_an_<article_name>',
     with self.assertRaises(ValueError):
       simple_test_builder.build('text/tab-separated-values', **params)
 
-  def test_build_unwanted_params(self):
+  def test_build_ignores_unwanted_params(self):
     simple_test_builder = SimpleBuilder()
     params = {
         'list': ['Eiffel_Tower', 'Statue#of_Liberty', 'Libertas'],
         'project': 'project_name'
     }
-    with self.assertRaises(ValueError):
-      simple_test_builder.build('text/tab-separated-values', **params)
+    actual = simple_test_builder.build('text/tab-separated-values', **params)
+    self.assertEqual(b'Eiffel_Tower\nStatue#of_Liberty\nLibertas', actual)
 
   def test_build_ignores_comments(self):
     simple_test_builder = SimpleBuilder()

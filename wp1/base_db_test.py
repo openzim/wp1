@@ -6,6 +6,7 @@ import sys
 import pymysql
 
 from wp1.environment import Environment
+from wp1.models.wp10.selection import Selection
 
 logger = logging.getLogger(__name__)
 
@@ -142,3 +143,10 @@ class BaseCombinedDbTest(BaseWikiDbTest, BaseWpOneDbTest):
 
     self.addCleanup(self._cleanup_wp_one_db)
     self._setup_wp_one_db()
+
+
+def get_first_selection(wp10db):
+  with wp10db.cursor() as cursor:
+    cursor.execute('SELECT * from selections LIMIT 1')
+    db_selection = cursor.fetchone()
+    return Selection(**db_selection)
