@@ -26,18 +26,17 @@ class Builder(AbstractBuilder):
   def build(self, content_type, **params):
     if content_type != 'text/tab-separated-values':
       raise ValueError('Unrecognized content type')
-    if len(params) == 1:
-      if 'list' not in params:
-        raise ValueError(
-            f'Missing required param: list, unnecessary argument given: {list(params.keys())[0]}'
-        )
-      list_minus_comments = [
-          line.strip()
-          for line in params['list']
-          if line.strip() != '' and not line.startswith('#')
-      ]
-      return '\n'.join(list_minus_comments).encode('utf-8')
-    raise ValueError('Additional unnecessary params present')
+    if 'list' not in params:
+      raise ValueError(
+          f'Missing required param: list, unnecessary argument given: {list(params.keys())[0]}'
+      )
+
+    list_minus_comments = [
+        line.strip()
+        for line in params['list']
+        if line.strip() != '' and not line.startswith('#')
+    ]
+    return '\n'.join(list_minus_comments).encode('utf-8')
 
   def validate(self, **params):
     if not params['list']:
