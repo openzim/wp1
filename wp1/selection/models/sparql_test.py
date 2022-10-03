@@ -2,10 +2,12 @@ import json
 import unittest
 from unittest.mock import patch, MagicMock
 
+from wp1.base_db_test import BaseWpOneDbTest, get_first_selection
+from wp1.models.wp10.builder import Builder
 from wp1.selection.models.sparql import Builder as SparqlBuilder
 
 
-class SparqlBuilderTest(unittest.TestCase):
+class SparqlBuilderTest(BaseWpOneDbTest):
   cats_uk_us_after_1950 = '''
     #Cats born in the UK or US after 1950
     SELECT ?cat
@@ -48,7 +50,31 @@ class SparqlBuilderTest(unittest.TestCase):
   french_query = expanded_query.replace('en.wikipedia.org', 'fr.wikipedia.org')
 
   def setUp(self):
+    super().setUp()
+    self.s3 = MagicMock()
+    self.builder_model = Builder(b_id=b'1a-2b-3c-4d',
+                                 b_name=b'SPARQL Builder',
+                                 b_user_id=1234,
+                                 b_project=b'en.wikipedia.fake',
+                                 b_model=b'wp1.selection.models.sparql',
+                                 b_params=json.dumps({
+                                     'query': self.cats_uk_us_after_1950,
+                                     'queryVariable': 'cat',
+                                 }).encode('utf-8'))
     self.builder = SparqlBuilder()
+
+  @patch('wp1.selection.models.sparql.requests')
+  def test_materialize(self, mock_requests):
+    response = MagicMock()
+    response.json.return_value = self.json_return_value
+    mock_requests.post.return_value = response
+
+    self.builder.materialize(self.s3, self.wp10db, self.builder_model,
+                             'text/tab-separated-values')
+
+    actual = get_first_selection(self.wp10db)
+    self.assertEqual(actual.s_content_type, b'text/tab-separated-values')
+    self.assertEqual(actual.s_builder_id, b'1a-2b-3c-4d')
 
   @patch('wp1.selection.models.sparql.requests')
   def test_build(self, mock_requests):

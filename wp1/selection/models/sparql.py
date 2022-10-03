@@ -84,8 +84,12 @@ class Builder(AbstractBuilder):
     if not project:
       raise ValueError('Expected project, got: %r' % project)
 
+    params_query = params.get('query')
+    if not params_query:
+      raise ValueError('Expected param "query", got: %r' % params_query)
+
     query_variable = params.get('queryVariable')
-    parse_results = parser.parseQuery(params['query'])
+    parse_results = parser.parseQuery(params_query)
     query = algebra.translateQuery(parse_results, initNs=WIKIDATA_PREFIXES)
     self.instrument_query(query.algebra, project, query_variable=query_variable)
     modified_query = algebra.translateAlgebra(query)
