@@ -47,10 +47,10 @@ describe('the create simple builder page', () => {
       cy.intercept('v1/builders/', { fixture: 'save_list_failure.json' });
       cy.get('#saveListButton').click();
 
-      cy.get('#items > .invalid-feedback').should('not.be.visible');
+      cy.get('#items > .invalid-feedback').should('be.visible');
       cy.get('#listName > .invalid-feedback').should('not.be.visible');
 
-      cy.get('#items > .form-control').should('have.value', 'Eiffel_Tower');
+      cy.get('#items > .form-control').should('have.value', 'Eiffel_Tower\nStatue of#Liberty');
       cy.get('#invalid_articles').contains(
         'The list contained the following invalid characters: #'
       );
@@ -58,6 +58,38 @@ describe('the create simple builder page', () => {
         'have.value',
         'Statue_of#Liberty'
       );
+    });
+
+    it('saves successfully after fixing invalid names', () => {
+      cy.intercept('v1/builders/', (req) => {
+        if (req.body.params.list.length > 1) {
+          // First request has two items, second is invalid.
+          req.reply({
+            statusCode: 200,
+            fixture: 'save_list_failure.json'
+          });
+        } else {
+          // Second request has only one item and is valid.
+          req.reply({
+            statusCode: 200,
+            fixture: 'save_list_success.json'
+          });
+        }
+      })
+
+      cy.get('#listName > .form-control').click().type('List Name');
+      cy.get('#items > .form-control')
+        .click()
+        .type('Eiffel_Tower\nStatue of#Liberty');
+      cy.get('#saveListButton').click();
+
+      cy.get('#items > .form-control')
+      .click()
+      .clear()
+      .type('Eiffel_Tower');
+
+      cy.get('#saveListButton').click();
+      cy.url().should('eq', 'http://localhost:3000/#/selections/user');
     });
 
     it('redirects on saving valid article names', () => {

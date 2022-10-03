@@ -32,13 +32,11 @@ describe('the update simple list page', () => {
         cy.get('#project > select').should('have.value', 'en.wiktionary.org');
       });
 
-      it('does not show invalid list items', () => {
-        cy.get('#updateListButton').click();
+      it('does not show invalid list items', () => {      
         cy.get('#items > .invalid-feedback').should('not.be.visible');
       });
 
       it('does not show invalid list name', () => {
-        cy.get('#updateListButton').click();
         cy.get('#listName > .invalid-feedback').should('not.be.visible');
       });
 
@@ -46,7 +44,8 @@ describe('the update simple list page', () => {
         cy.get('#items > .form-control').click().type('\nStatue of#Liberty');
         cy.intercept('v1/builders/1', { fixture: 'save_list_failure.json' });
         cy.get('#updateListButton').click();
-        cy.get('#items > .form-control').should('have.value', 'Eiffel_Tower');
+        cy.get('#items > .form-control').should('have.value',
+          'Eiffel_Tower\nStatue_of_Liberty\nStatue of#Liberty');
         cy.get('#invalid_articles').contains(
           'The list contained the following invalid characters: #'
         );

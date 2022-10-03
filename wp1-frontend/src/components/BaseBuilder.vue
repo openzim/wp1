@@ -6,24 +6,20 @@
     <div v-if="notFound">
       <div id="404" class="col-lg-6 m-4">
         <h2>404 Not Found</h2>
-        Sorry, the builder (simple list) with that ID either doesn't exist or
-        isn't owned by you.
+        Sorry, the list with that ID either doesn't exist or isn't owned by you.
       </div>
     </div>
     <div v-else-if="serverError">
       <h2>500 Server error</h2>
-      Something went wrong and we couldn't retrieve the builder (simple list)
-      with that ID. You might try again later.
+      Something went wrong and we couldn't retrieve the list with that ID. You
+      might try again later.
     </div>
     <div v-else class="row">
       <div class="col-lg-6 col-md-9 m-4">
-        <h2 v-if="!isEditing" class="ml-4">New Simple Selection</h2>
-        <h2 v-else class="ml-4">Editing Simple Selection</h2>
+        <h2 v-if="!isEditing" class="ml-4">New {{ listName }}</h2>
+        <h2 v-else class="ml-4">Editing {{ listName }}</h2>
         <div v-if="!isEditing" class="ml-4 mb-4">
-          Use this tool to create an article selection list for the Wikipedia
-          project of your choice. Your selection will be saved in public cloud
-          storage and can be accessed through URLs that will be provided once it
-          has been saved.
+          <slot name="create-desc"></slot>
         </div>
 
         <form
@@ -58,21 +54,7 @@
                 Please provide a valid list name
               </div>
             </div>
-            <div id="items" class="form-group m-4">
-              <label for="items">Items</label>
-              <textarea
-                v-on:blur="validationOnBlur"
-                v-model="articles"
-                :placeholder="
-                  'Eiffel_Tower\nStatue_of_Liberty\nFreedom_Monument_(Baghdad)\nGeorge-Étienne_Cartier_Monument' +
-                  '\n\n# Whitespace and comments starting with # are ignored'
-                "
-                class="form-control my-list"
-                rows="13"
-                required
-              ></textarea>
-              <div class="invalid-feedback">Please provide valid items</div>
-            </div>
+            <slot name="extra-params" :success="success"></slot>
           </div>
           <div
             v-if="this.success == false || this.deleteSuccess == false"
@@ -81,13 +63,11 @@
           >
             <div class="errors">{{ errors }}</div>
             <textarea
-              v-if="
-                this.success == false && this.invalid_article_names.length > 0
-              "
+              v-if="this.success == false && this.computedInvalidItems"
               class="form-control my-list is-invalid"
               rows="6"
               ref="invalid"
-              v-model="invalid_article_names"
+              v-model="computedInvalidItems"
             ></textarea>
           </div>
           <div v-if="isEditing">
@@ -137,22 +117,25 @@ import LoginRequired from './LoginRequired';
 
 export default {
   components: { SecondaryNav, LoginRequired },
-  name: 'SimpleList',
+  name: 'BaseBuilder',
+  props: {
+    invalidItems: String,
+    listName: String,
+    model: String,
+    params: Object,
+    serializeParams: Function,
+  },
   data: function () {
     return {
-      articles: '',
       notFound: false,
       serverError: false,
       wikiProjects: [],
       success: true,
       deleteSuccess: true,
-      valid_article_names: '',
-      invalid_article_names: '',
       errors: '',
       builder: {
         name: '',
         project: 'en.wikipedia.org',
-        model: 'wp1.selection.models.simple',
       },
     };
   },
@@ -165,6 +148,9 @@ export default {
     },
     builderId: function () {
       return this.$route.params.builder_id;
+    },
+    computedInvalidItems: function () {
+      return this.invalidItems;
     },
   },
   created: function () {
@@ -190,7 +176,7 @@ export default {
         {
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-        }
+        },
       );
       if (response.status == 404) {
         this.notFound = true;
@@ -199,10 +185,11 @@ export default {
       } else {
         this.notFound = false;
         this.builder = await response.json();
-        this.articles = this.builder.params.list.join('\n');
+        this.$emit('onBuilderLoaded', this.builder);
       }
     },
     onSubmit: async function () {
+      this.$emit('onBeforeSubmit');
       const form = this.$refs.form;
       if (!form.checkValidity()) {
         this.$refs.form_group.classList.add('was-validated');
@@ -216,13 +203,15 @@ export default {
         postUrl = `${process.env.VUE_APP_API_URL}/builders/`;
       }
 
-      const params = { list: this.articles.split('\n') };
-
       const response = await fetch(postUrl, {
         headers: { 'Content-Type': 'application/json' },
         method: 'post',
         credentials: 'include',
-        body: JSON.stringify({ ...this.builder, articles: '', params }),
+        body: JSON.stringify({
+          ...this.builder,
+          model: this.model,
+          params: this.params,
+        }),
       });
 
       if (!response.ok) {
@@ -240,9 +229,8 @@ export default {
 
       // Otherwise there were errors with the POST
       this.$refs.form_group.classList.add('was-validated');
-      this.articles = data.items.valid.join('\n');
-      this.invalid_article_names = data.items.invalid.join('\n');
       this.errors = data.items.errors.join(', ');
+      this.$emit('onValidationError', data);
     },
     validationOnBlur: function (event) {
       if (event.target.value) {
@@ -254,7 +242,7 @@ export default {
     onDelete: async function () {
       if (
         !window.confirm(
-          'Really delete this list? The definition and all downloadable selections will be permanently deleted.'
+          'Really delete this list? The definition and all downloadable selections will be permanently deleted.',
         )
       ) {
         return;
@@ -282,6 +270,6 @@ export default {
 
 <style scoped>
 .errors {
-  color: red;
+  color: #dc3545;
 }
 </style>
