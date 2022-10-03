@@ -1,17 +1,10 @@
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
-from wp1.base_db_test import BaseWpOneDbTest
+from wp1.base_db_test import BaseWpOneDbTest, get_first_selection
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
 from wp1.selection.abstract_builder import AbstractBuilder
-
-
-def _get_first_selection(wp10db):
-  with wp10db.cursor() as cursor:
-    cursor.execute('SELECT * from selections LIMIT 1')
-    db_selection = cursor.fetchone()
-    return Selection(**db_selection)
 
 
 class TestBuilder(AbstractBuilder):
@@ -36,7 +29,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
   def test_materialize_creates_selection(self):
     self.test_builder.materialize(self.s3, self.wp10db, self.builder,
                                   'text/tab-separated-values')
-    actual = _get_first_selection(self.wp10db)
+    actual = get_first_selection(self.wp10db)
     self.assertEqual(actual.s_content_type, b'text/tab-separated-values')
     self.assertEqual(actual.s_builder_id, b'1a-2b-3c-4d')
 
@@ -44,14 +37,14 @@ class AbstractBuilderTest(BaseWpOneDbTest):
   def test_materialize_selection_id(self, mock_uuid4):
     self.test_builder.materialize(self.s3, self.wp10db, self.builder,
                                   'text/tab-separated-values')
-    actual = _get_first_selection(self.wp10db)
+    actual = get_first_selection(self.wp10db)
     self.assertEqual(actual.s_id, b'abcd-1234')
 
   @patch('wp1.models.wp10.selection.uuid.uuid4', return_value='abcd-1234')
   def test_materialize_selection_object_key(self, mock_uuid4):
     self.test_builder.materialize(self.s3, self.wp10db, self.builder,
                                   'text/tab-separated-values')
-    actual = _get_first_selection(self.wp10db)
+    actual = get_first_selection(self.wp10db)
     self.assertEqual(
         actual.s_object_key, b'selections/wp1.selection.models.simple/'
         b'abcd-1234/My Builder.tsv')
@@ -61,7 +54,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
   def test_materialize_selection_updated_at(self, mock_utcnow):
     self.test_builder.materialize(self.s3, self.wp10db, self.builder,
                                   'text/tab-separated-values')
-    actual = _get_first_selection(self.wp10db)
+    actual = get_first_selection(self.wp10db)
     self.assertEqual(actual.s_updated_at, b'20201225105544')
 
   @patch('wp1.models.wp10.selection.uuid.uuid4', return_value='abcd-1234')
