@@ -10,8 +10,8 @@ import VueRouter from 'vue-router';
 
 import App from './App.vue';
 import ArticlePage from './components/ArticlePage.vue';
-import SimpleList from './components/SimpleList.vue';
-import SparqlList from './components/SparqlList.vue';
+import SimpleBuilder from './components/SimpleBuilder.vue';
+import SparqlBuilder from './components/SparqlBuilder.vue';
 import ComparePage from './components/ComparePage.vue';
 import IndexPage from './components/IndexPage.vue';
 import MyLists from './components/MyLists.vue';
@@ -96,28 +96,28 @@ const routes = [
   },
   {
     path: '/selections/simple',
-    component: SimpleList,
+    component: SimpleBuilder,
     meta: {
       title: () => BASE_TITLE + ' - Create Simple Selection',
     },
   },
   {
     path: '/selections/sparql',
-    component: SparqlList,
+    component: SparqlBuilder,
     meta: {
       title: () => BASE_TITLE + ' - Create SPARQL Selection',
     },
   },
   {
     path: '/selections/simple/:builder_id',
-    component: SimpleList,
+    component: SimpleBuilder,
     meta: {
       title: () => BASE_TITLE + ' - Edit Simple Selection',
     },
   },
   {
     path: '/selections/sparql/:builder_id',
-    component: SparqlList,
+    component: SparqlBuilder,
     meta: {
       title: () => BASE_TITLE + ' - Edit SPARQL Selection',
     },
