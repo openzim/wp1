@@ -86,6 +86,28 @@ describe('the update SPARQL list page', () => {
           cy.url().should('eq', 'http://localhost:3000/#/selections/user');
         });
       });
+
+      describe('when update button clicked', () => {
+        beforeEach(() => {
+          cy.intercept('POST', 'v1/builders/2', (req) => {
+            req.continue(() => {
+              return new Promise((resolve) => {
+                setTimeout(resolve, 4000);
+              });
+            });
+          });
+        });
+
+        it('shows spinner', () => {
+          cy.get('#updateListButton').click();
+          cy.get('#updateLoader').should('be.visible');
+        });
+
+        it('disables update button', () => {
+          cy.get('#updateListButton').click();
+          cy.get('#updateListButton').should('have.attr', 'disabled');
+        });
+      });
     });
 
     describe('and the builder is not found', () => {
