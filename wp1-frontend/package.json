@@ -22,7 +22,7 @@
     "bootstrap": "^4.4.1",
     "cli-highlight": "^2.1.5",
     "core-js": "^3.3.2",
-    "cypress": "^6.8.0",
+    "cypress": "^10.10.0",
     "datatables.net-dt": "^1.11.3",
     "datatables.net": "^1.11.3",
     "eslint-plugin-vue": "^9.4.0",
