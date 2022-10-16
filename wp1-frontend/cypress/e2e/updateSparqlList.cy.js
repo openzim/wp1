@@ -27,7 +27,7 @@ describe('the update SPARQL list page', () => {
         cy.get('#listName > .form-control').should('have.value', 'Builder 2');
         cy.get('#items > .form-control').should(
           'have.value',
-          'SELECT ?foo WHERE {}',
+          'SELECT ?foo WHERE {}'
         );
         cy.get('#project > select').should('have.value', 'en.wiktionary.org');
       });
@@ -36,7 +36,7 @@ describe('the update SPARQL list page', () => {
         cy.get('#listName > .form-control').click().type('List Name');
         cy.get('#items > .form-control').click().clear().type('SELECT ?foo');
 
-        cy.intercept('v1/builders/', { fixture: 'save_sparql_failure.json' });
+        cy.intercept('v1/builders/2', { fixture: 'save_sparql_failure.json' });
         cy.get('#updateListButton').click();
 
         cy.get('#items > .form-control').should('have.value', 'SELECT ?foo');
@@ -44,7 +44,7 @@ describe('the update SPARQL list page', () => {
       });
 
       it('saves successfully after fixing invalid query', () => {
-        cy.intercept('v1/builders/', (req) => {
+        cy.intercept('v1/builders/2', (req) => {
           if (req.body.params.query.indexOf('WHERE') === -1) {
             // First request is missing a WHERE clause.
             req.reply({
