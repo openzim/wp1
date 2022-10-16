@@ -58,9 +58,33 @@ describe('the update simple list page', () => {
       });
 
       it('redirects on saving valid article names', () => {
-        cy.intercept('v1/builders/1', { fixture: 'save_list_success.json' });
+        cy.intercept('POST', 'v1/builders/1', {
+          fixture: 'save_list_success.json',
+        });
         cy.get('#updateListButton').click();
         cy.url().should('eq', 'http://localhost:3000/#/selections/user');
+      });
+
+      describe('when update button clicked', () => {
+        beforeEach(() => {
+          cy.intercept('POST', 'v1/builders/1', (req) => {
+            req.continue(() => {
+              return new Promise((resolve) => {
+                setTimeout(resolve, 4000);
+              });
+            });
+          });
+        });
+
+        it('shows spinner', () => {
+          cy.get('#updateListButton').click();
+          cy.get('#updateLoader').should('be.visible');
+        });
+
+        it('disables update button', () => {
+          cy.get('#updateListButton').click();
+          cy.get('#updateListButton').should('have.attr', 'disabled');
+        });
       });
     });
 

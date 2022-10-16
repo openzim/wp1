@@ -75,10 +75,19 @@
               <button
                 id="updateListButton"
                 type="submit"
+                :disabled="processing"
                 class="btn-primary ml-4"
               >
                 Update List
               </button>
+              <pulse-loader
+                id="updateLoader"
+                v-if="processing"
+                class="loader"
+                style="display: inline-block"
+                :color="loaderColor"
+                :size="loaderSize"
+              ></pulse-loader>
             </div>
             <div class="mt-4">
               <button
@@ -91,14 +100,24 @@
               </button>
             </div>
           </div>
-          <button
-            v-else
-            id="saveListButton"
-            type="submit"
-            class="btn-primary ml-4"
-          >
-            Save List
-          </button>
+          <div v-else>
+            <button
+              id="saveListButton"
+              :disabled="processing"
+              type="submit"
+              class="btn-primary ml-4"
+            >
+              Save List
+            </button>
+            <pulse-loader
+              id="saveLoader"
+              v-if="processing"
+              class="loader"
+              style="display: inline-block"
+              :color="loaderColor"
+              :size="loaderSize"
+            ></pulse-loader>
+          </div>
         </form>
       </div>
     </div>
@@ -112,11 +131,16 @@
 </template>
 
 <script>
+import $ from 'jquery';
+$.noConflict();
+
+import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
+
 import SecondaryNav from './SecondaryNav.vue';
 import LoginRequired from './LoginRequired';
 
 export default {
-  components: { SecondaryNav, LoginRequired },
+  components: { SecondaryNav, LoginRequired, PulseLoader },
   name: 'BaseBuilder',
   props: {
     invalidItems: String,
@@ -130,6 +154,9 @@ export default {
       notFound: false,
       serverError: false,
       wikiProjects: [],
+      processing: false,
+      loaderColor: '#007bff',
+      loaderSize: '.75rem',
       success: true,
       deleteSuccess: true,
       errors: '',
@@ -176,7 +203,7 @@ export default {
         {
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-        },
+        }
       );
       if (response.status == 404) {
         this.notFound = true;
@@ -203,6 +230,7 @@ export default {
         postUrl = `${process.env.VUE_APP_API_URL}/builders/`;
       }
 
+      this.processing = true;
       const response = await fetch(postUrl, {
         headers: { 'Content-Type': 'application/json' },
         method: 'post',
@@ -213,6 +241,8 @@ export default {
           params: this.params,
         }),
       });
+
+      this.processing = false;
 
       if (!response.ok) {
         this.success = false;
@@ -242,7 +272,7 @@ export default {
     onDelete: async function () {
       if (
         !window.confirm(
-          'Really delete this list? The definition and all downloadable selections will be permanently deleted.',
+          'Really delete this list? The definition and all downloadable selections will be permanently deleted.'
         )
       ) {
         return;
@@ -271,5 +301,9 @@ export default {
 <style scoped>
 .errors {
   color: #dc3545;
+}
+
+.loader {
+  margin-left: 1rem;
 }
 </style>
