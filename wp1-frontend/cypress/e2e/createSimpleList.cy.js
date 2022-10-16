@@ -95,7 +95,7 @@ describe('the create simple builder page', () => {
     describe('when save button clicked', () => {
       beforeEach(() => {
         cy.intercept('v1/builders/', (req) => {
-          req.continue((res) => {
+          req.continue(() => {
             return new Promise((resolve) => {
               setTimeout(resolve, 4000);
             });

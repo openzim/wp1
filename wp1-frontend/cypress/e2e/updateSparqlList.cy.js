@@ -90,7 +90,7 @@ describe('the update SPARQL list page', () => {
       describe('when update button clicked', () => {
         beforeEach(() => {
           cy.intercept('POST', 'v1/builders/2', (req) => {
-            req.continue((res) => {
+            req.continue(() => {
               return new Promise((resolve) => {
                 setTimeout(resolve, 4000);
               });
