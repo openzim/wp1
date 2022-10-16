@@ -79,6 +79,32 @@ describe('the create SPARQL builder page', () => {
       cy.url().should('eq', 'http://localhost:3000/#/selections/user');
     });
 
+    describe('when save button clicked', () => {
+      beforeEach(() => {
+        cy.intercept('v1/builders/', (req) => {
+          req.continue((res) => {
+            return new Promise((resolve) => {
+              setTimeout(resolve, 4000);
+            });
+          });
+        });
+      });
+
+      it('shows spinner', () => {
+        cy.get('#listName > .form-control').click().type('List Name');
+        cy.get('#items > .form-control').click().type('Eiffel_Tower');
+        cy.get('#saveListButton').click();
+        cy.get('#saveLoader').should('be.visible');
+      });
+
+      it('disables save button', () => {
+        cy.get('#listName > .form-control').click().type('List Name');
+        cy.get('#items > .form-control').click().type('Eiffel_Tower');
+        cy.get('#saveListButton').click();
+        cy.get('#saveListButton').should('have.attr', 'disabled');
+      });
+    });
+
     it('redirects on saving valid builder', () => {
       cy.get('#listName > .form-control').click().type('List Name');
       cy.get('#items > .form-control').click().type('SELECT ?article FROM foo');
