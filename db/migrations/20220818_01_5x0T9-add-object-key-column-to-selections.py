@@ -6,7 +6,7 @@ from yoyo import group, step
 
 import wp1.logic.selection as logic_selection
 from wp1.redis_db import connect
-from wp1.selection.models.simple import SimpleBuilder
+from wp1.selection.models.simple import Builder as SimpleBuilder
 from wp1 import queues
 
 __depends__ = {'20220813_02_Yqp7y-add-version-column-to-selections'}
