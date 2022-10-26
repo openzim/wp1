@@ -22,7 +22,17 @@ steps = [
         '''
       INSERT INTO custom (c_name, c_module, c_username, c_description, c_params, c_created_at, c_updated_at, c_is_active) VALUES
         ('us_roads', 'wp1.custom_tables.us_roads', 'Audiodude', 'First attempt at custom table for US roads project',
-         '{"wiki_path": "US-Roads-Test", "template": "us_roads.jinja2"}',
+         '{"wiki_path": "US-Roads-Test", "template": "us_roads.jinja2",
+         "projects": [
+            {
+                "name": "Alabama"
+            }, {
+                "name": "California"
+            }, {
+                "name": "Mississippi",
+                "alias": "MS"
+            }
+         ]}',
          '2022-10-23T00:00:00Z', '2022-10-23T00:00:00Z', 1
         )
     ''', 'DELETE FROM custom WHERE c_name = "us_roads"')

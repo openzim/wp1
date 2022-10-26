@@ -28,7 +28,11 @@ def upload_custom_table_by_name(custom_name):
                      custom_name.decode('utf-8'))
         return
       module = data['c_module'].decode('utf-8')
-      params = json.loads(data['c_params'].decode('utf-8'))
+      try:
+        params = json.loads(data['c_params'].decode('utf-8'))
+      except json.decoder.JSONDecodeError:
+        logger.exception('Could not parse custom table JSON params')
+        raise
 
     wiki_path = params.get('wiki_path')
     if wiki_path is None:

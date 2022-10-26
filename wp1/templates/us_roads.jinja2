@@ -1,0 +1,22 @@
+{% from 'table_helpers.jinja2' import include_wiki_template with context -%}
+
+{|class="wikitable sortable"
+|-
+!State
+!{%- call include_wiki_template() %}FA-Class|category=Category:FA-Class U.S. road transport articles{% endcall %}
+!{%- call include_wiki_template() %}A-Class|category=Category:A-Class U.S. road transport articles{% endcall %}
+!{%- call include_wiki_template() %}GA-Class|category=Category:GA-Class U.S. road transport articles{% endcall %}
+!{%- call include_wiki_template() %}B-Class|category=Category:B-Class U.S. road transport articles{% endcall %}
+!{%- call include_wiki_template() %}C-Class|category=Category:C-Class U.S. road transport articles{% endcall %}
+!{%- call include_wiki_template() %}Start-Class|category=Category:Start-Class U.S. road transport articles{% endcall %}
+!{%- call include_wiki_template() %}Stub-Class|category=Category:Stub-Class U.S. road transport articles{% endcall %}
+!Total
+!&#969;
+!&#937;
+|-
+{%- for project in projects %}
+!bgcolor={{project.get('bgcolor', '')}}|[[User:WP_1.0_bot/Tables/Project/{{project['name']}}_road_transport_articles_by_quality|{{project.get('alias', project['name'])}}]]
+{%- for col in project['data'] %}
+|{{project.get('bgcolor', '')}}{{col|commas}}
+{%- endfor %}
+{%- endfor %}
