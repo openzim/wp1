@@ -6,6 +6,7 @@ import rq.exceptions
 from rq.job import Job
 
 from wp1 import constants
+from wp1 import custom_tables
 from wp1.environment import Environment
 import wp1.logic.builder as logic_builder
 import wp1.logic.project as logic_project
@@ -37,16 +38,21 @@ def _get_materializer_queue(redis):
   return Queue('materializer', connection=redis)
 
 
-def enqueue_all_projects(redis):
+def enqueue_all_projects(redis, wp10db):
   update_q, upload_q = _get_queues(redis)
 
   if (update_q.count > 0 or upload_q.count > 0):
     logger.error('Queues are not empty. Refusing to add more work.')
     return
 
+  # Enqueue all regular WikiProjects as queried from the Wiki DB
   wikidb = wiki_connect()
   for project_name in logic_project.project_names_to_update(wikidb):
     enqueue_project(project_name, update_q, upload_q)
+
+  # Enqueue all active custom tables, as found in the WP10 DB
+  for custom_name in custom_tables.all_custom_table_names(wp10db):
+    enqueue_custom_table(redis, custom_name)
 
 
 def enqueue_multiple_projects(redis, project_names):
@@ -67,6 +73,15 @@ def enqueue_single_project(redis, project_name, manual=False):
                   upload_q,
                   redis=redis,
                   track_progress=manual)
+
+
+def enqueue_custom_table(redis, custom_name):
+  _, upload_q = _get_queues(redis)
+
+  upload_q.enqueue(custom_tables.upload_custom_table_by_name,
+                   custom_name,
+                   job_timeout=constants.JOB_TIMEOUT,
+                   failure_ttl=constants.JOB_FAILURE_TTL)
 
 
 def _manual_key(project_name):
