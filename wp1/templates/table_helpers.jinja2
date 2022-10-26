@@ -39,3 +39,7 @@
 {% macro name_with_spaces(name) -%}
   {{project.decode('utf-8').replace('_', ' ') if project else ''}}
 {%- endmacro %}
+
+{% macro include_wiki_template() -%}
+  {{'{{'}}{{ caller() }}{{'}}'}}
+{%- endmacro %}

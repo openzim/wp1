@@ -12,7 +12,17 @@ class CustomTable(BaseCustomTable):
     self.params = kwargs
 
   def generate(self, wp10db):
-    pass
+    projects = []
+    for project in self.params["projects"]:
+      out = {}
+      for key in ('bgcolor', 'name', 'alias'):
+        if key in project:
+          out[key] = project[key]
+      out['data'] = [1, 2, 3, 4, 5, 6, 7]
+      projects.append(out)
+
+    # print(repr(projects))
+    return {'projects': projects}
 
   def create_wikicode(self, table_data):
     template_path = self.params.get('template')
@@ -23,3 +33,6 @@ class CustomTable(BaseCustomTable):
       return
 
     template = jinja_env.get_template(template_path)
+    wikicode = template.render(table_data)
+    # print(wikicode)
+    return wikicode
