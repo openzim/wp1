@@ -20,20 +20,26 @@ steps = [
         ")", "DROP TABLE custom"),
     step(
         '''
-      INSERT INTO custom (c_name, c_module, c_username, c_description, c_params, c_created_at, c_updated_at, c_is_active) VALUES
-        ('us_roads', 'wp1.custom_tables.us_roads', 'Audiodude', 'First attempt at custom table for US roads project',
-         '{"wiki_path": "US-Roads-Test", "template": "us_roads.jinja2",
-         "projects": [
-            {
-                "name": "Alabama"
-            }, {
-                "name": "California"
-            }, {
-                "name": "Mississippi",
-                "alias": "MS"
-            }
-         ]}',
-         '2022-10-23T00:00:00Z', '2022-10-23T00:00:00Z', 1
-        )
+    INSERT INTO custom (c_name, c_module, c_username, c_description, c_params, c_created_at, c_updated_at, c_is_active) VALUES
+    ('us_roads', 'wp1.custom_tables.us_roads', 'Audiodude', 'First attempt at custom table for US roads project',
+        -- Start of JSON params, no unescaped ' allowed here
+        '{
+          "wiki_path": "US-Roads-Test", "template": "us_roads.jinja2", "parent_project": "U.S._road_transport",
+          "aggregate_name": "State",
+          "projects": [
+          {
+            "name": "Alabama"
+          }, {
+            "name": "California"
+          }, {
+            "name": "Mississippi",
+            "alias": "MS"
+          }
+          ],
+          "categories": ["FA-Class", "A-Class", "GA-Class", "B-Class", "C-Class", "Start-Class", "Stub-Class"]
+        }',
+        -- End of JSON params
+        '2022-10-23T00:00:00Z', '2022-10-23T00:00:00Z', 1
+    )
     ''', 'DELETE FROM custom WHERE c_name = "us_roads"')
 ]
