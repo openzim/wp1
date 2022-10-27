@@ -21,8 +21,13 @@ class CustomTable(BaseCustomTable):
       out['data'] = [1, 2, 3, 4, 5, 6, 7]
       projects.append(out)
 
-    # print(repr(projects))
-    return {'projects': projects}
+    data = {}
+    for key in ('parent_project', 'categories', 'aggregate_name'):
+      if key in self.params:
+        data[key] = self.params[key]
+    data['projects'] = projects
+    print(data)
+    return data
 
   def create_wikicode(self, table_data):
     template_path = self.params.get('template')
