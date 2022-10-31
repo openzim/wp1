@@ -11,8 +11,10 @@
 !&#937;
 |-
 {%- for project in projects %}
-!bgcolor={{project.get('bgcolor', '')}}|[[User:WP_1.0_bot/Tables/Project/{{project['name']}}_road_transport_articles_by_quality|{{project.get('alias', project['name'])}}]]
+!{% if project.get('bgcolor') %}bgcolor={{ project['bgcolor'] }}{% endif %}|[[User:WP_1.0_bot/Tables/Project/{{project['name']}}|{{project.get('alias', project['name'])}}]]
 {%- for col in project['data'] %}
-|{{project.get('bgcolor', '')}}{{col|commas}}
+|{% if project.get('bgcolor') %}bgcolor={{ project['bgcolor']}}|{% endif %}{% if col is integer %}{{col|commas}}{% else %}{{col}}{% endif %}
 {%- endfor %}
+|-
 {%- endfor %}
+|}
