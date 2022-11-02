@@ -92,11 +92,11 @@ def _project_rating_query(project_name,
 
   if project_b_name is None:
     if quality is None and importance is None:
-      query += ' ORDER BY grq.gr_ranking DESC, gri.gr_ranking DESC'
+      query += ' ORDER BY grq.gr_ranking DESC, gri.gr_ranking DESC, rating_a.r_article'
     elif quality is None:
-      query += ' ORDER BY grq.gr_ranking DESC'
+      query += ' ORDER BY grq.gr_ranking DESC, rating_a.r_article'
     elif importance is None:
-      query += ' ORDER BY gri.gr_ranking DESC'
+      query += ' ORDER BY gri.gr_ranking DESC, rating_a.r_article'
 
   if page is not None:
     page = int(page) - 1
