@@ -1,14 +1,24 @@
 import unittest
 from unittest.mock import patch, MagicMock
 
-from wp1.base_redis_test import BaseRedisTest
+import fakeredis
+
+from wp1.base_db_test import BaseWpOneDbTest
 from wp1 import constants
 from wp1.environment import Environment
 from wp1 import queues
 from wp1.selection.models.simple import Builder as SimpleBuilder
 
 
-class QueuesTest(BaseRedisTest):
+class QueuesTest(BaseWpOneDbTest):
+
+  def setUp(self):
+    super().setUp()
+    self.redis = fakeredis.FakeStrictRedis()
+
+  def tearDown(self):
+    super().tearDown()
+    self.redis = None
 
   @patch('wp1.queues.ENV', Environment.DEVELOPMENT)
   @patch('wp1.queues.logic_project.update_project_by_name')
@@ -76,29 +86,37 @@ class QueuesTest(BaseRedisTest):
                                                     track_progress=False)
 
   @patch('wp1.queues.ENV', Environment.DEVELOPMENT)
+  @patch('wp1.queues.custom_tables.upload_custom_table_by_name')
   @patch('wp1.queues.Queue')
   @patch('wp1.queues.enqueue_project')
   def test_enqueue_multipe_projects(self, patched_enqueue_project,
-                                    patched_queue):
+                                    patched_queue, patched_upload):
     projects = (b'Water', b'Air', b'Fire', b'Earth')
     update_q = MagicMock()
     upload_q = MagicMock()
     patched_queue.side_effect = lambda name, connection=None: update_q if name == 'update' else upload_q
 
-    queues.enqueue_multiple_projects(self.redis, projects)
+    queues.enqueue_custom_table(self.redis, b'Water')
 
-    for project_name in projects:
-      patched_enqueue_project.assert_any_call(project_name, update_q, upload_q)
+    upload_q.enqueue.assert_any_call(patched_upload,
+                                     b'Water',
+                                     job_timeout=constants.JOB_TIMEOUT,
+                                     failure_ttl=constants.JOB_FAILURE_TTL)
 
   @patch('wp1.queues.ENV', Environment.DEVELOPMENT)
   @patch('wp1.queues.logic_project.project_names_to_update')
+  @patch('wp1.queues.custom_tables.all_custom_table_names')
   @patch('wp1.queues.wiki_connect')
   @patch('wp1.queues.Queue')
   @patch('wp1.queues.enqueue_project')
-  def test_enqueue_all(self, patched_enqueue_project, patched_queue,
-                       patched_db_connect, patched_names):
+  @patch('wp1.queues.enqueue_custom_table')
+  def test_enqueue_all(self, patched_enqueue_custom, patched_enqueue_project,
+                       patched_queue, patched_db_connect, patched_custom_names,
+                       patched_names):
     projects = (b'Water', b'Air', b'Fire', b'Earth')
     patched_names.return_value = projects
+    custom_names = (b'North', b'South', b'East', b'West')
+    patched_custom_names.return_value = custom_names
 
     update_q = MagicMock()
     upload_q = MagicMock()
@@ -107,10 +125,13 @@ class QueuesTest(BaseRedisTest):
 
     patched_queue.side_effect = lambda name, connection=None: update_q if name == 'update' else upload_q
 
-    queues.enqueue_all_projects(self.redis)
+    queues.enqueue_all_projects(self.redis, self.wp10db)
 
     for project_name in projects:
       patched_enqueue_project.assert_any_call(project_name, update_q, upload_q)
+
+    for name in custom_names:
+      patched_enqueue_custom.assert_any_call(self.redis, name)
 
   def test_next_update_time_empty(self):
     actual = queues.next_update_time(self.redis, b'Some_Project')

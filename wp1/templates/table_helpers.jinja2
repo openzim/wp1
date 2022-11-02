@@ -37,5 +37,13 @@
 {%- endmacro %}
 
 {% macro name_with_spaces(name) -%}
-  {{project.decode('utf-8').replace('_', ' ') if project else ''}}
+  {#- There is a bug that the original function didn't use name but just used the global 'project' variable. -#}
+  {#- This was fine because it was always called with 'project' for 'name'. However now that we want to use it -#}
+  {#- for actual names, we need to patch this, while preserving the original behavior (because we're not sure -#}
+  {#- what will break). -#}
+  {%- if not project -%}{{name.decode('utf-8').replace('_', ' ') if name else ''}}{%- else -%}{{project.decode('utf-8').replace('_', ' ') if project else ''}}{%- endif -%}
+{%- endmacro %}
+
+{% macro include_wiki_template() -%}
+  {{'{{'}}{{ caller() }}{{'}}'}}
 {%- endmacro %}
