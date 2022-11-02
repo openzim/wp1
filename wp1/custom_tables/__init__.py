@@ -24,9 +24,9 @@ def upload_custom_table_by_name(custom_name):
                      (custom_name.decode('utf-8'),))
       data = cursor.fetchone()
       if data is None:
-        logger.error('Could not find custom table with name: %r',
-                     custom_name.decode('utf-8'))
-        return
+        raise ValueError('Could not find custom table with name: %r' %
+                         custom_name.decode('utf-8'))
+
       module = data['c_module'].decode('utf-8')
       try:
         params = json.loads(data['c_params'].decode('utf-8'))
@@ -36,22 +36,20 @@ def upload_custom_table_by_name(custom_name):
 
     wiki_path = params.get('wiki_path')
     if wiki_path is None:
-      logger.error(
-          'Missing "wiki_path" param in table %s params. Upload cannot continue.',
-          custom_name)
-      return
+      raise ValueError(
+          'Missing "wiki_path" param in table %s params. Upload cannot continue.'
+          % custom_name)
 
     if not module.startswith('wp1.custom_tables'):
-      logger.error(
+      raise ValueError(
           'Expected module path to start with "wp1.custom_tables" but it did not'
       )
-      return
+
     table_module = importlib.import_module(module)
     CustomTable = getattr(table_module, 'CustomTable')
 
     table = CustomTable(name=custom_name.decode('utf-8'), **params)
     table.upload(wp10db, custom_name, wiki_path)
-
   finally:
     if wp10db is not None:
       wp10db.close()
