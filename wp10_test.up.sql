@@ -113,6 +113,17 @@ CREATE TABLE `selections` (
   s_object_key VARBINARY(255) NOT NULL
 );
 
+CREATE TABLE custom (
+  c_name VARBINARY(255) NOT NULL PRIMARY KEY,
+  c_module VARBINARY(255) NOT NULL,
+  c_username VARBINARY(255) DEFAULT NULL,
+  c_description BLOB,
+  c_params MEDIUMBLOB,
+  c_created_at BINARY(20),
+  c_updated_at BINARY(20),
+  c_is_active TINYINT
+);
+
 INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'Unknown-Class', 0);
 INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'NA-Class', 50);
 INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'Low-Class', 100);
