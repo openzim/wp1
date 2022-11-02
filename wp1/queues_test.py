@@ -86,19 +86,22 @@ class QueuesTest(BaseWpOneDbTest):
                                                     track_progress=False)
 
   @patch('wp1.queues.ENV', Environment.DEVELOPMENT)
+  @patch('wp1.queues.custom_tables.upload_custom_table_by_name')
   @patch('wp1.queues.Queue')
   @patch('wp1.queues.enqueue_project')
   def test_enqueue_multipe_projects(self, patched_enqueue_project,
-                                    patched_queue):
+                                    patched_queue, patched_upload):
     projects = (b'Water', b'Air', b'Fire', b'Earth')
     update_q = MagicMock()
     upload_q = MagicMock()
     patched_queue.side_effect = lambda name, connection=None: update_q if name == 'update' else upload_q
 
-    queues.enqueue_multiple_projects(self.redis, projects)
+    queues.enqueue_custom_table(self.redis, b'Water')
 
-    for project_name in projects:
-      patched_enqueue_project.assert_any_call(project_name, update_q, upload_q)
+    upload_q.enqueue.assert_any_call(patched_upload,
+                                     b'Water',
+                                     job_timeout=constants.JOB_TIMEOUT,
+                                     failure_ttl=constants.JOB_FAILURE_TTL)
 
   @patch('wp1.queues.ENV', Environment.DEVELOPMENT)
   @patch('wp1.queues.logic_project.project_names_to_update')
