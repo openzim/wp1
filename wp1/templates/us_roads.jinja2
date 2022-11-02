@@ -1,0 +1,20 @@
+{% from 'table_helpers.jinja2' import name_with_spaces, include_wiki_template with context -%}
+
+{|class="wikitable sortable"
+|-
+!{{ aggregate_name }}
+{%- for cat in categories %}
+!{%- call include_wiki_template() %}{{ cat }}|category=Category:{{cat}} {{ name_with_spaces(parent_project.encode('utf-8')) }} articles{% endcall %}
+{%- endfor %}
+!Total
+!&#969;
+!&#937;
+|-
+{%- for project in projects %}
+!{% if project.get('bgcolor') %}bgcolor={{ project['bgcolor'] }}{% endif %}|[[User:WP_1.0_bot/Tables/Project/{{project['name']}}|{{project.get('alias', project['name'])}}]]
+{%- for col in project['data'] %}
+|{% if project.get('bgcolor') %}bgcolor={{ project['bgcolor']}}|{% endif %}{% if col is integer %}{{col|commas}}{% else %}{{col}}{% endif %}
+{%- endfor %}
+|-
+{%- endfor %}
+|}

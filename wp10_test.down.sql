@@ -10,3 +10,4 @@ DROP TABLE IF EXISTS `global_rankings`;
 DROP TABLE IF EXISTS `users`;
 DROP TABLE IF EXISTS `builders`;
 DROP TABLE IF EXISTS `selections`;
+DROP TABLE IF EXISTS `custom`;
