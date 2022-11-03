@@ -42,7 +42,7 @@ class UsRoadsCustomTableTest(BaseWpOneDbTest):
 |bgcolor=red|3
 |bgcolor=red|8
 |bgcolor=red|9
-|bgcolor=red|0.889
+|bgcolor=red|1.125
 |-
 !|[[User:WP_1.0_bot/Tables/Project/Orange|Orange]]
 |0
@@ -50,7 +50,7 @@ class UsRoadsCustomTableTest(BaseWpOneDbTest):
 |2
 |5
 |7
-|0.714
+|1.400
 |-
 !bgcolor=yellow|[[User:WP_1.0_bot/Tables/Project/Banana|Banana]]
 |bgcolor=yellow|1
@@ -58,7 +58,7 @@ class UsRoadsCustomTableTest(BaseWpOneDbTest):
 |bgcolor=yellow|3
 |bgcolor=yellow|5
 |bgcolor=yellow|7
-|bgcolor=yellow|0.714
+|bgcolor=yellow|1.400
 |-
 |}'''
 
