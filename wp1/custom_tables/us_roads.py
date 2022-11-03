@@ -54,7 +54,7 @@ class CustomTable(BaseCustomTable):
         total += d
         wikiwork += d * i
       out['data'] += [
-          total, wikiwork, f'{total / wikiwork:.3f}' if total > 0 else '-'
+          total, wikiwork, f'{wikiwork / total:.3f}' if total > 0 else '-'
       ]
 
       projects.append(out)
