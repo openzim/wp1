@@ -45,7 +45,7 @@
                 }}
               </td>
               <td v-else>-</td>
-              <td v-if="item.s_url">
+              <td v-if="!isPending(item)">
                 <a :href="item.s_url">Download {{ item.s_extension }}</a>
               </td>
               <td v-else>
@@ -99,6 +99,9 @@ export default {
     },
   },
   methods: {
+    isPending: function (item) {
+      return !item.s_url || item.updated_at > item.s_updated_at;
+    },
     getLists: async function () {
       let createDataTable = false;
       if (this.list.length === 0) {
@@ -124,7 +127,7 @@ export default {
 
       let hasPending = false;
       this.list.forEach((item) => {
-        if (!item.s_url) {
+        if (this.isPending(item)) {
           hasPending = true;
         }
       });
