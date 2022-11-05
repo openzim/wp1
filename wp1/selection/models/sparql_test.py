@@ -156,7 +156,8 @@ class SparqlBuilderTest(BaseWpOneDbTest):
                                   queryVariable='cat')
 
   def test_validate(self):
-    actual = self.builder.validate(query=self.cats_uk_us_after_1950)
+    actual = self.builder.validate(query=self.cats_uk_us_after_1950,
+                                   queryVariable='cat')
 
     self.assertEqual(('', '', []), actual)
 
@@ -180,6 +181,12 @@ class SparqlBuilderTest(BaseWpOneDbTest):
 
   def test_validate_missing_prefix(self):
     query = 'SELECT ?foo WHERE { ?foo blah:x ?bar }'
-    actual = self.builder.validate(query=query)
+    actual = self.builder.validate(query=query, queryVariable='foo')
 
     self.assertEqual(('', query, ['Unknown namespace prefix : blah']), actual)
+
+  def test_validate_missing_query_variable(self):
+    actual = self.builder.validate(query=self.cats_uk_us_after_1950)
+    self.assertEqual(
+        ('', self.cats_uk_us_after_1950,
+         ['The query variable "article" did not appear in the query']), actual)
