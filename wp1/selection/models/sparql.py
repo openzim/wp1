@@ -9,6 +9,8 @@ from rdflib.plugins.sparql.parserutils import CompValue
 from wp1.constants import WIKIDATA_PREFIXES, WP1_USER_AGENT
 from wp1.selection.abstract_builder import AbstractBuilder
 
+DEFAULT_QUERY_VARIABLE = 'article'
+
 
 class Builder(AbstractBuilder):
   '''
@@ -47,7 +49,7 @@ class Builder(AbstractBuilder):
     undefined behavior for anything else.
     '''
     if not query_variable:
-      query_variable = 'article'
+      query_variable = DEFAULT_QUERY_VARIABLE
     else:
       query_variable = query_variable.lstrip('?')
 
@@ -126,6 +128,11 @@ class Builder(AbstractBuilder):
       # The query cannot be parsed as SPARQL, invalid syntax.
       return ('', params['query'],
               ['Could not parse query, are you sure it\'s valid SPARQL?'])
+
+    qv = params.get('queryVariable', DEFAULT_QUERY_VARIABLE)
+    if qv not in params['query']:
+      return ('', params['query'],
+              ['The query variable "%s" did not appear in the query' % qv])
 
     try:
       query = algebra.translateQuery(parse_results, initNs=WIKIDATA_PREFIXES)
