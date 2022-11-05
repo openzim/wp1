@@ -18,7 +18,7 @@ PYTHONPATH=$PYTHONPATH:../.. yoyo apply
 ```
 
 The `PYTHONPATH` environment variable is necessary because some of the migrations
-import wp1 code in order to complete the migration.
+imports wp1 code in order to complete the migration.
 
 The YoYo Migrations application will read the data in `db/dev/yoyo.ini` and attempt
 to apply any necessary migrations to your database. If there are migrations to apply,
@@ -37,6 +37,36 @@ As part of this process, you will create a MySQL dump file of the dev database.
 It is important to recognize that all data from your dev database will be included
 in this dump, and available on Github. Please make sure there isn't any sensitive or
 personally identifiable information included.
+
+### Setup Git LFS
+
+The database dump file is attached to the git repository using Git LFS, so that the
+rather large file does not need to be stored alongside the normal git repository.
+If you haven't already, set up [Git LFS](https://git-lfs.github.com/) and make sure
+that when you run the following command:
+
+```bash
+head docker/dev-db/enwp10_dev.dump.sql
+```
+
+You see:
+
+```
+head docker/dev-db/enwp10_dev.dump.sql
+CREATE DATABASE `enwp10_dev` CHARACTER SET = "utf8mb4" COLLATE = "utf8mb4_unicode_ci";
+USE enwp10_dev;
+
+-- MySQL dump 10.13  Distrib 8.0.30, for Linux (x86_64)
+--
+-- Host: 127.0.0.1    Database: enwp10_dev
+-- ------------------------------------------------------
+-- Server version       5.5.5-10.1.48-MariaDB-1~bionic
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+```
+
+If you see something about SHA256 hashes, you may have set up Git LFS but not actually
+checked out the db dump file with it. Try a `git restore` on the dump file.
 
 ### Getting a clean copy of the dev database
 
