@@ -95,10 +95,9 @@ jobs:
       - name: Start Docker dev services
         run: docker-compose -f docker-compose-dev.yml up -d --build
 
-      - name: Wait for dev services to be up
-        uses: jakejarvis/wait-action@master
-        with:
-          time: '45s'
+      - name: Sleep for 30 seconds
+        run: sleep 30s
+        shell: bash
 
       - name: Start web API server
         timeout-minutes: 2
