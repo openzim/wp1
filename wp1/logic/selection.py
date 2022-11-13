@@ -131,6 +131,6 @@ def delete_keys_from_storage(keys):
 
 def set_error_messages(selection, e):
   messages = [str(e)]
-  if e.__cause__:
-    messages.append(str(e.__cause__))
+  if e.__context__:
+    messages.append(str(e.__context__))
   selection.s_error_messages = json.dumps({'error_messages': messages})
