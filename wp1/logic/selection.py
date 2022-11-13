@@ -1,4 +1,5 @@
 import html
+import json
 import logging
 import urllib.parse
 
@@ -23,9 +24,10 @@ def insert_selection(wp10db, selection):
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''INSERT INTO selections
-      (s_id, s_builder_id, s_version, s_content_type, s_updated_at, s_object_key)
+      (s_id, s_builder_id, s_version, s_content_type, s_updated_at,
+       s_object_key, s_status, s_error_messages)
       VALUES (%(s_id)s, %(s_builder_id)s, %(s_version)s, %(s_content_type)s,
-      %(s_updated_at)s, %(s_object_key)s)
+      %(s_updated_at)s, %(s_object_key)s, %(s_status)s, %(s_error_messages)s)
     ''', attr.asdict(selection))
   wp10db.commit()
 
@@ -125,3 +127,10 @@ def delete_keys_from_storage(keys):
   #                  (e['Key'], e['Code'], e['Message']))
 
   return fully_successful
+
+
+def set_error_messages(selection, e):
+  messages = [str(e)]
+  if e.__cause__:
+    messages.append(str(e.__cause__))
+  selection.s_error_messages = json.dumps({'error_messages': messages})
