@@ -47,7 +47,9 @@ class AbstractBuilder:
       logic_selection.set_error_messages(selection, e)
 
     selection.set_updated_at_now()
-    self._upload_to_storage(s3, selection, builder)
+    # Data might be None if build operation didn't succeed.
+    if selection.data:
+      self._upload_to_storage(s3, selection, builder)
 
     logger.info('Saving selection %s to database' %
                 selection.s_id.decode('utf-8'))

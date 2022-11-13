@@ -110,7 +110,9 @@ CREATE TABLE `selections` (
   s_content_type VARBINARY(255) NOT NULL,
   s_updated_at BINARY(14) NOT NULL,
   s_version int(11) NOT NULL,
-  s_object_key VARBINARY(255) NOT NULL
+  s_object_key VARBINARY(255),
+  s_status VARBINARY(255) DEFAULT 'OK',
+  s_error_messages BLOB
 );
 
 CREATE TABLE custom (
