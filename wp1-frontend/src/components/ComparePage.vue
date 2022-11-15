@@ -83,7 +83,7 @@
 
 <script>
 import ArticleTable from './ArticleTable.vue';
-import ArticleTableRatingSelect from './ArticleTableRatingSelect';
+import ArticleTableRatingSelect from './ArticleTableRatingSelect.vue';
 import Autocomplete from './Autocomplete.vue';
 
 export default {
@@ -91,10 +91,10 @@ export default {
   components: {
     ArticleTable,
     ArticleTableRatingSelect,
-    Autocomplete
+    Autocomplete,
   },
   props: ['incomingSearchA', 'incomingSearchB'],
-  data: function() {
+  data: function () {
     return {
       projectA: null,
       projectB: null,
@@ -102,39 +102,39 @@ export default {
       projectAImportance: null,
       projectBQuality: null,
       projectBImportance: null,
-      compareClicked: false
+      compareClicked: false,
     };
   },
   computed: {
-    showCompareButton: function() {
+    showCompareButton: function () {
       return (
         !this.compareClicked && (!this.incomingSearchA || !this.incomingSearchB)
       );
     },
-    projectIdA: function() {
+    projectIdA: function () {
       if (!this.projectA) {
         return null;
       }
       return this.projectA.replace(/ /g, '_');
     },
-    projectIdB: function() {
+    projectIdB: function () {
       if (!this.projectB) {
         return null;
       }
       return this.projectB.replace(/ /g, '_');
     },
-    projectsSelected: function() {
+    projectsSelected: function () {
       return !!this.projectA && !!this.projectB;
-    }
+    },
   },
   watch: {
-    $route: function(to) {
+    $route: function (to) {
       window.console.log(to.path);
       if (to.path == '/compare') {
         this.reset();
       }
     },
-    projectAQuality: function(quality) {
+    projectAQuality: function (quality) {
       if (this.showCompareButton) {
         return;
       }
@@ -147,11 +147,11 @@ export default {
           importanceB: this.$route.query.importanceB,
           page: this.$route.query.page,
           numRows: this.$route.query.numRows,
-          articlePattern: this.$route.query.articlePattern
-        }
+          articlePattern: this.$route.query.articlePattern,
+        },
       });
     },
-    projectAImportance: function(importance) {
+    projectAImportance: function (importance) {
       if (this.showCompareButton) {
         return;
       }
@@ -164,11 +164,11 @@ export default {
           importanceB: this.$route.query.importanceB,
           page: this.$route.query.page,
           numRows: this.$route.query.numRows,
-          articlePattern: this.$route.query.articlePattern
-        }
+          articlePattern: this.$route.query.articlePattern,
+        },
       });
     },
-    projectBQuality: function(qualityB) {
+    projectBQuality: function (qualityB) {
       if (this.showCompareButton) {
         return;
       }
@@ -181,11 +181,11 @@ export default {
           importanceB: this.$route.query.importanceB,
           page: this.$route.query.page,
           numRows: this.$route.query.numRows,
-          articlePattern: this.$route.query.articlePattern
-        }
+          articlePattern: this.$route.query.articlePattern,
+        },
       });
     },
-    projectBImportance: function(importanceB) {
+    projectBImportance: function (importanceB) {
       if (this.showCompareButton) {
         return;
       }
@@ -198,13 +198,13 @@ export default {
           importanceB,
           page: this.$route.query.page,
           numRows: this.$route.query.numRows,
-          articlePattern: this.$route.query.articlePattern
-        }
+          articlePattern: this.$route.query.articlePattern,
+        },
       });
-    }
+    },
   },
   methods: {
-    onCompareClick: async function() {
+    onCompareClick: async function () {
       this.compareClicked = true;
       this.$router.push({
         path: `/compare/${this.projectA}/${this.projectB}`,
@@ -212,19 +212,19 @@ export default {
           quality: this.projectAQuality,
           importance: this.projectAImportance,
           qualityB: this.projectBQuality,
-          importanceB: this.projectBImportance
-        }
+          importanceB: this.projectBImportance,
+        },
       });
     },
-    onProjectARatingSelect: function(event) {
+    onProjectARatingSelect: function (event) {
       this.projectAQuality = event.quality;
       this.projectAImportance = event.importance;
     },
-    onProjectBRatingSelect: function(event) {
+    onProjectBRatingSelect: function (event) {
       this.projectBQuality = event.quality;
       this.projectBImportance = event.importance;
     },
-    onPageSelect: function(selection) {
+    onPageSelect: function (selection) {
       this.$router.push({
         path: `/compare/${this.projectA}/${this.projectB}`,
         query: {
@@ -234,11 +234,11 @@ export default {
           importanceB: this.$route.query.importanceB,
           page: selection.page,
           numRows: selection.rows,
-          articlePattern: this.$route.query.articlePattern
-        }
+          articlePattern: this.$route.query.articlePattern,
+        },
       });
     },
-    onNameFilter: function(selection) {
+    onNameFilter: function (selection) {
       this.$router.push({
         path: `/compare/${this.projectA}/${this.projectB}`,
         query: {
@@ -248,11 +248,11 @@ export default {
           importanceB: this.$route.query.importanceB,
           page: this.$route.query.page,
           numRows: this.$route.query.numRows,
-          articlePattern: selection
-        }
+          articlePattern: selection,
+        },
       });
     },
-    onUpdatePage: function(page) {
+    onUpdatePage: function (page) {
       this.$router.push({
         path: `/compare/${this.projectA}/${this.projectB}`,
         query: {
@@ -262,11 +262,11 @@ export default {
           importanceB: this.$route.query.importanceB,
           page: page.toString(),
           numRows: this.$route.query.numRows,
-          articlePattern: this.$route.query.articlePattern
-        }
+          articlePattern: this.$route.query.articlePattern,
+        },
       });
     },
-    reset: function() {
+    reset: function () {
       this.projectA = null;
       this.projectB = null;
       this.projectAQuality = null;
@@ -274,8 +274,8 @@ export default {
       this.projectBQuality = null;
       this.projectBImportance = null;
       this.compareClicked = false;
-    }
-  }
+    },
+  },
 };
 </script>
 

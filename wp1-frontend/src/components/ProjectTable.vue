@@ -90,7 +90,7 @@
             <router-link
               :to="{
                 path: `/project/${currentProject}/articles`,
-                query: { quality: row, importance: col }
+                query: { quality: row, importance: col },
               }"
               >{{ tableData.data[row][col] }}</router-link
             >
@@ -100,7 +100,7 @@
           <router-link
             :to="{
               path: `/project/${currentProject}/articles`,
-              query: { quality: row }
+              query: { quality: row },
             }"
             >{{ tableData.row_totals[row] }}</router-link
           >
@@ -114,7 +114,7 @@
           <router-link
             :to="{
               path: `/project/${currentProject}/articles`,
-              query: { importance: col }
+              query: { importance: col },
             }"
             >{{ tableData.col_totals[col] }}</router-link
           >
@@ -135,29 +135,29 @@ export default {
   name: 'project-table',
   components: {
     WikiLink,
-    PulseLoader
+    PulseLoader,
   },
   props: {
-    projectId: String
+    projectId: String,
   },
-  data: function() {
+  data: function () {
     return {
       tableData: null,
       loading: false,
       loaderColor: '#007bff',
-      loaderSize: '1rem'
+      loaderSize: '1rem',
     };
   },
   computed: {
-    currentProject: function() {
+    currentProject: function () {
       if (!this.projectId) {
         return null;
       }
       return this.projectId.replace(/_/g, ' ');
-    }
+    },
   },
   watch: {
-    projectId: async function(projectId) {
+    projectId: async function (projectId) {
       this.tableData = null;
       if (!projectId) {
         return;
@@ -165,22 +165,22 @@ export default {
 
       this.loading = true;
       const response = await fetch(
-        `${process.env.VUE_APP_API_URL}/projects/${projectId}/table`
+        `${import.meta.env.VITE_API_URL}/projects/${projectId}/table`
       );
       const json = await response.json();
       this.loading = false;
 
       this.tableData = json.table_data;
-    }
+    },
   },
   methods: {
-    getClass: function(cls) {
+    getClass: function (cls) {
       if (cls.text) {
         return cls.text;
       }
       return cls;
-    }
-  }
+    },
+  },
 };
 </script>
 

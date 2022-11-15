@@ -20,8 +20,8 @@ class IdentifyTest(BaseWebTestcase):
               'secret_key': 'wp1_secret'
           },
           'CLIENT_URL': {
-              'domain': 'localhost:3000',
-              'homepage': 'http://localhost:3000/#/'
+              'domain': 'localhost:5173',
+              'homepage': 'http://localhost:5173/#/'
           }
       },
       Environment.PRODUCTION: {}

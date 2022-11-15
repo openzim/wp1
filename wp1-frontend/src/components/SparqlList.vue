@@ -197,13 +197,15 @@ export default {
   },
   methods: {
     getWikiProjects: async function () {
-      const response = await fetch(`${process.env.VUE_APP_API_URL}/sites/`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/sites/`);
       var data = await response.json();
       this.wikiProjects = data.sites;
     },
     getBuilder: async function () {
       const response = await fetch(
-        `${process.env.VUE_APP_API_URL}/builders/${this.$route.params.builder_id}`,
+        `${import.meta.env.VITE_API_URL}/builders/${
+          this.$route.params.builder_id
+        }`,
         {
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -228,9 +230,11 @@ export default {
 
       let postUrl = '';
       if (this.isEditing) {
-        postUrl = `${process.env.VUE_APP_API_URL}/builders/${this.$route.params.builder_id}`;
+        postUrl = `${import.meta.env.VITE_API_URL}/builders/${
+          this.$route.params.builder_id
+        }`;
       } else {
-        postUrl = `${process.env.VUE_APP_API_URL}/builders/`;
+        postUrl = `${import.meta.env.VITE_API_URL}/builders/`;
       }
 
       const response = await fetch(postUrl, {
@@ -275,7 +279,9 @@ export default {
         return;
       }
 
-      const postUrl = `${process.env.VUE_APP_API_URL}/builders/${this.$route.params.builder_id}/delete`;
+      const postUrl = `${import.meta.env.VITE_API_URL}/builders/${
+        this.$route.params.builder_id
+      }/delete`;
       const response = await fetch(postUrl, {
         method: 'post',
         credentials: 'include',
