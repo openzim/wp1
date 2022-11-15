@@ -116,43 +116,45 @@
 export default {
   name: 'article-table-rating-select',
   props: ['initialQuality', 'initialImportance', 'projectId', 'layout'],
-  data: function() {
+  data: function () {
     return {
-      categoryLinks: {}
+      categoryLinks: {},
     };
   },
-  created: function() {
+  created: function () {
     this.getCategoryLinks();
   },
   computed: {
-    selectedQuality: function() {
+    selectedQuality: function () {
       return this.initialQuality || '';
     },
-    selectedImportance: function() {
+    selectedImportance: function () {
       return this.initialImportance || '';
-    }
+    },
   },
   watch: {
-    projectId: async function() {
+    projectId: async function () {
       await this.getCategoryLinks();
       this.onSelectChange();
     },
-    $route: function(to) {
+    $route: function (to) {
       if (to.path == '/compare') {
         this.categoryLinks = {};
       }
-    }
+    },
   },
   methods: {
-    startOpen: function() {
+    startOpen: function () {
       return !!this.$route.query.quality || !!this.$route.query.importance;
     },
-    getCategoryLinks: async function() {
+    getCategoryLinks: async function () {
       if (!this.projectId) {
         return;
       }
       const response = await fetch(
-        `${process.env.VUE_APP_API_URL}/projects/${this.projectId}/category_links/sorted`
+        `${import.meta.env.VITE_API_URL}/projects/${
+          this.projectId
+        }/category_links/sorted`
       );
       const links = await response.json();
       links.quality[''] = 'None Selected';
@@ -161,13 +163,13 @@ export default {
     },
 
     // Only used for alternate view on Compare pages.
-    onSelectChange: function() {
+    onSelectChange: function () {
       const quality = this.$refs.qualitySelect.value;
       const importance = this.$refs.importanceSelect.value;
 
       this.$emit('rating-select', { quality, importance });
     },
-    onButtonClick: function() {
+    onButtonClick: function () {
       const quality = this.$refs.qualitySelect.value;
       const importance = this.$refs.importanceSelect.value;
       if (
@@ -178,8 +180,8 @@ export default {
       }
 
       this.$emit('rating-select', { quality, importance });
-    }
-  }
+    },
+  },
 };
 </script>
 

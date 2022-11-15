@@ -114,7 +114,7 @@ jobs:
         run: |
           cd wp1-frontend
           yarn serve &
-          $(yarn bin)/wait-on http://localhost:3000
+          $(yarn bin)/wait-on http://localhost:5173
 
       - name: Run frontend tests
         run: |

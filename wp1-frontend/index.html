@@ -7,13 +7,14 @@
     <!-- No favicon -->
     <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon" />
     <title>WP 1.0 Web Interface</title>
+    <script type="module" src="/src/main.js"></script>
     <!-- Matomo -->
     <script type="text/javascript">
       var _paq = window._paq || [];
       /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
       _paq.push(['trackPageView']);
       _paq.push(['enableLinkTracking']);
-      (function() {
+      (function () {
         var u = '//stats.kiwix.org/';
         _paq.push(['setTrackerUrl', u + 'matomo.php']);
         _paq.push(['setSiteId', '10']);
@@ -32,8 +33,8 @@
   <body>
     <noscript>
       <strong
-        >We're sorry but the WP 1.0 web interface doesn't work properly without
-        JavaScript enabled. Please enable it to continue.</strong
+        >We're sorry but this app doesn't work properly without JavaScript
+        enabled. Please enable it to continue.</strong
       >
     </noscript>
     <div id="app"></div>
