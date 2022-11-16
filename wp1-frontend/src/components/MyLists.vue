@@ -76,6 +76,8 @@
 <script>
 import $ from 'jquery';
 $.noConflict();
+import DataTable from 'datatables.net';
+DataTable(window, $);
 
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 
