@@ -33,6 +33,7 @@
     "**/**/ssri": "^8.0.1"
   },
   "dependencies": {
+    "@rollup/plugin-inject": "^5.0.2",
     "@vitejs/plugin-vue2": "^2.0.1",
     "acorn": "^6.4.1",
     "autoprefixer": "^10.4.13",
