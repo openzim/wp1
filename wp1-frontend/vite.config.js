@@ -12,6 +12,16 @@ export default defineConfig({
       jQuery: 'jquery',
     }),
   ],
+  build: {
+    rollupOptions: {
+      external: ['jquery'],
+      output: {
+        globals: {
+          jquery: ['$', 'window.jQuery'],
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
