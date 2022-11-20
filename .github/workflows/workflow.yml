@@ -123,7 +123,7 @@ jobs:
       - name: Start frontend server
         run: |
           cd wp1-frontend
-          python -m http.server 5173 --directory dist/
+          python -m http.server 5173 --directory dist/ &
 
       - name: Wait for API and frontend server to be up (10s)
         run: sleep 10s
