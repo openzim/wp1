@@ -149,15 +149,15 @@ export default {
     ArticleTablePageSelect,
     ArticleTableRatingSelect,
     ArticleTableNameFilter,
-    PulseLoader
+    PulseLoader,
   },
-  data: function() {
+  data: function () {
     return {
       articleData: null,
       categoryLinks: {},
       loading: false,
       loaderColor: '#007bff',
-      loaderSize: '1rem'
+      loaderSize: '1rem',
     };
   },
   props: [
@@ -170,66 +170,66 @@ export default {
     'page',
     'numRows',
     'articlePattern',
-    'hideRatingSelect'
+    'hideRatingSelect',
   ],
   computed: {
-    tableData: function() {
+    tableData: function () {
       if (this.articleData === null) {
         return [];
       }
       return this.articleData['articles'];
-    }
+    },
   },
-  created: function() {
+  created: function () {
     this.updateTable();
   },
   watch: {
-    projectId: async function(projectId) {
+    projectId: async function (projectId) {
       if (!projectId) {
         this.articleData = null;
         return;
       }
       await this.updateTable();
     },
-    projectIdB: async function() {
+    projectIdB: async function () {
       await this.updateTable();
     },
-    importance: async function() {
+    importance: async function () {
       await this.updateTable();
     },
-    quality: async function() {
+    quality: async function () {
       await this.updateTable();
     },
-    importanceB: async function() {
+    importanceB: async function () {
       await this.updateTable();
     },
-    qualityB: async function() {
+    qualityB: async function () {
       await this.updateTable();
     },
-    page: async function() {
+    page: async function () {
       await this.updateTable();
     },
-    numRows: async function() {
+    numRows: async function () {
       await this.updateTable();
     },
-    articlePattern: async function() {
+    articlePattern: async function () {
       await this.updateTable();
-    }
+    },
   },
   methods: {
-    onPageSelect: function(selection) {
+    onPageSelect: function (selection) {
       this.$emit('page-select', selection);
     },
-    onRatingSelect: function(selection) {
+    onRatingSelect: function (selection) {
       this.$emit('rating-select', selection);
     },
-    onNameFilter: function(selection) {
+    onNameFilter: function (selection) {
       this.$emit('name-filter', selection);
     },
-    onUpdatePage: function(page) {
+    onUpdatePage: function (page) {
       this.$emit('update-page', page);
     },
-    classLabel: function(qualOrImp) {
+    classLabel: function (qualOrImp) {
       if (!this.categoryLinks[qualOrImp]) {
         return '';
       }
@@ -237,15 +237,17 @@ export default {
         this.categoryLinks[qualOrImp].text || this.categoryLinks[qualOrImp]
       );
     },
-    getCategoryLinks: async function() {
+    getCategoryLinks: async function () {
       const response = await fetch(
-        `${process.env.VUE_APP_API_URL}/projects/${this.projectId}/category_links`
+        `${import.meta.env.VITE_API_URL}/projects/${
+          this.projectId
+        }/category_links`
       );
       this.categoryLinks = await response.json();
     },
-    updateTable: async function() {
+    updateTable: async function () {
       const url = new URL(
-        `${process.env.VUE_APP_API_URL}/projects/${this.projectId}/articles`
+        `${import.meta.env.VITE_API_URL}/projects/${this.projectId}/articles`
       );
       const params = {};
       if (this.importance) {
@@ -272,7 +274,7 @@ export default {
       if (this.articlePattern) {
         params.articlePattern = this.articlePattern;
       }
-      Object.keys(params).forEach(key =>
+      Object.keys(params).forEach((key) =>
         url.searchParams.append(key, params[key])
       );
 
@@ -292,15 +294,15 @@ export default {
       this.loading = false;
       await this.getCategoryLinks();
     },
-    formatTimestamp: function(ts) {
+    formatTimestamp: function (ts) {
       return ts.split('T')[0];
     },
-    timestampLink: function(articleName, ts) {
-      return `${process.env.VUE_APP_API_URL}/articles/${encodeURIComponent(
+    timestampLink: function (articleName, ts) {
+      return `${import.meta.env.VITE_API_URL}/articles/${encodeURIComponent(
         articleName
       )}/${encodeURIComponent(ts)}/redirect`;
-    }
-  }
+    },
+  },
 };
 </script>
 

@@ -68,36 +68,36 @@
 
 <script>
 import Autocomplete from './Autocomplete.vue';
-import LoginRequired from './LoginRequired';
+import LoginRequired from './LoginRequired.vue';
 
 export default {
   name: 'update-page',
   components: {
     Autocomplete,
-    LoginRequired
+    LoginRequired,
   },
   props: ['incomingSearch'],
-  data: function() {
+  data: function () {
     return {
       currentProject: null,
       updateTime: null,
       pollingId: 0,
       progressCurrent: null,
       progressTotal: null,
-      jobStatusEnum: null
+      jobStatusEnum: null,
     };
   },
   computed: {
-    currentProjectId: function() {
+    currentProjectId: function () {
       if (!this.currentProject) {
         return null;
       }
       return this.currentProject.replace(/ /g, '_');
     },
-    jobComplete: function() {
+    jobComplete: function () {
       return this.jobStatusEnum === 'finished';
     },
-    jobFinishingUp: function() {
+    jobFinishingUp: function () {
       return (
         this.jobStatusEnum !== null &&
         this.jobStatusEnum !== 'finished' &&
@@ -105,32 +105,34 @@ export default {
         this.progressCurrent >= this.progressTotal
       );
     },
-    jobNotStarted: function() {
+    jobNotStarted: function () {
       return this.jobStatusEnum === null || this.jobStatusEnum === 'queued';
     },
-    jobScheduled: function() {
+    jobScheduled: function () {
       return (
         this.jobStatusEnum === 'queued' || this.jobStatusEnum === 'started'
       );
     },
-    progressWidth: function() {
+    progressWidth: function () {
       if (this.progressCurrent !== null && this.progressTotal !== null) {
         return ((this.progressCurrent * 100) / this.progressTotal).toFixed(4);
       }
       return null;
     },
-    isLoggedIn: function() {
+    isLoggedIn: function () {
       return this.$root.$data.isLoggedIn;
-    }
+    },
   },
   watch: {
-    currentProject: async function(val) {
+    currentProject: async function (val) {
       this.stopProgressPolling();
       if (val !== this.$route.params.projectName) {
         this.$router.push({ path: `/update/${val}` });
       }
       const response = await fetch(
-        `${process.env.VUE_APP_API_URL}/projects/${this.currentProjectId}/update/time`
+        `${import.meta.env.VITE_API_URL}/projects/${
+          this.currentProjectId
+        }/update/time`
       );
       const data = await response.json();
       this.updateTime = data.next_update_time;
@@ -138,37 +140,41 @@ export default {
       this.progressTotal = null;
       this.jobStatusEnum = null;
     },
-    updateTime: function(val) {
+    updateTime: function (val) {
       if (val !== null) {
         this.startProgressPolling();
       } else {
         this.stopProgressPolling();
       }
-    }
+    },
   },
   beforeRouteUpdate(to, from, next) {
     this.stopProgressPolling();
     next();
   },
-  beforeRouteLeave: function(to, from, next) {
+  beforeRouteLeave: function (to, from, next) {
     this.stopProgressPolling();
     next();
   },
   methods: {
-    onUpdateClick: async function() {
+    onUpdateClick: async function () {
       const response = await fetch(
-        `${process.env.VUE_APP_API_URL}/projects/${this.currentProjectId}/update`,
+        `${import.meta.env.VITE_API_URL}/projects/${
+          this.currentProjectId
+        }/update`,
         { method: 'POST', credentials: 'include' }
       );
       const data = await response.json();
       this.updateTime = data.next_update_time;
     },
-    pollForProgress: async function() {
+    pollForProgress: async function () {
       if (!this.isLoggedIn) {
         return;
       }
       const response = await fetch(
-        `${process.env.VUE_APP_API_URL}/projects/${this.currentProjectId}/update/progress`
+        `${import.meta.env.VITE_API_URL}/projects/${
+          this.currentProjectId
+        }/update/progress`
       );
       const data = await response.json();
       this.progressCurrent = (data.job && data.job.progress) || null;
@@ -178,7 +184,7 @@ export default {
         this.stopProgressPolling();
       }
     },
-    getProgressString: function() {
+    getProgressString: function () {
       if (this.jobNotStarted) {
         return "Your job has been scheduled, but hasn't started yet.";
       }
@@ -193,14 +199,14 @@ export default {
       }
       return 'Your job is running, track its progress below.';
     },
-    startProgressPolling: function() {
+    startProgressPolling: function () {
       this.pollForProgress();
       this.pollingId = setInterval(() => this.pollForProgress(), 2000);
     },
-    stopProgressPolling: function() {
+    stopProgressPolling: function () {
       clearInterval(this.pollingId);
-    }
-  }
+    },
+  },
 };
 </script>
 

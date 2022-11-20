@@ -70,7 +70,7 @@ describe('the update SPARQL list page', () => {
           .type('SELECT ?foo WHERE {}', { parseSpecialCharSequences: false });
 
         cy.get('#updateListButton').click();
-        cy.url().should('eq', 'http://localhost:3000/#/selections/user');
+        cy.url().should('eq', 'http://localhost:5173/#/selections/user');
       });
 
       describe('on update success', () => {
@@ -83,7 +83,7 @@ describe('the update SPARQL list page', () => {
         it('redirects on saving valid article names', () => {
           cy.intercept('v1/builders/2', { fixture: 'save_list_success.json' });
           cy.get('#updateListButton').click();
-          cy.url().should('eq', 'http://localhost:3000/#/selections/user');
+          cy.url().should('eq', 'http://localhost:5173/#/selections/user');
         });
       });
 

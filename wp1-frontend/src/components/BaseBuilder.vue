@@ -137,7 +137,7 @@ $.noConflict();
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 
 import SecondaryNav from './SecondaryNav.vue';
-import LoginRequired from './LoginRequired';
+import LoginRequired from './LoginRequired.vue';
 
 export default {
   components: { SecondaryNav, LoginRequired, PulseLoader },
@@ -193,13 +193,15 @@ export default {
   },
   methods: {
     getWikiProjects: async function () {
-      const response = await fetch(`${process.env.VUE_APP_API_URL}/sites/`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/sites/`);
       var data = await response.json();
       this.wikiProjects = data.sites;
     },
     getBuilder: async function () {
       const response = await fetch(
-        `${process.env.VUE_APP_API_URL}/builders/${this.$route.params.builder_id}`,
+        `${import.meta.env.VITE_API_URL}/builders/${
+          this.$route.params.builder_id
+        }`,
         {
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
@@ -225,9 +227,11 @@ export default {
 
       let postUrl = '';
       if (this.isEditing) {
-        postUrl = `${process.env.VUE_APP_API_URL}/builders/${this.$route.params.builder_id}`;
+        postUrl = `${import.meta.env.VITE_API_URL}/builders/${
+          this.$route.params.builder_id
+        }`;
       } else {
-        postUrl = `${process.env.VUE_APP_API_URL}/builders/`;
+        postUrl = `${import.meta.env.VITE_API_URL}/builders/`;
       }
 
       this.processing = true;
@@ -278,7 +282,9 @@ export default {
         return;
       }
 
-      const postUrl = `${process.env.VUE_APP_API_URL}/builders/${this.$route.params.builder_id}/delete`;
+      const postUrl = `${import.meta.env.VITE_API_URL}/builders/${
+        this.$route.params.builder_id
+      }/delete`;
       const response = await fetch(postUrl, {
         method: 'post',
         credentials: 'include',

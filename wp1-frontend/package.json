@@ -3,71 +3,68 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint",
-    "test": "vue-cli-service serve --mode e2e"
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview"
   },
-  "dependencies": {
-    "@babel/core": "^7.12.16",
-    "@babel/eslint-parser": "^7.12.16",
-    "@vue/cli-plugin-babel": "~5.0.8",
-    "@vue/cli-plugin-eslint": "~5.0.8",
-    "@vue/cli-service": "~5.0.8",
-    "acorn": "^6.4.1",
-    "axios": "^0.21.2",
-    "babel-eslint": "^10.1.0",
-    "babel-loader": "^8.0.6",
-    "babel-preset-vue": "^2.0.2",
-    "bootstrap": "^4.4.1",
-    "cli-highlight": "^2.1.5",
-    "core-js": "^3.3.2",
-    "cypress": "^10.10.0",
-    "datatables.net-dt": "^1.11.3",
-    "datatables.net": "^1.11.3",
-    "eslint-plugin-vue": "^9.4.0",
-    "eslint": "^7.32.0",
-    "fetch-mock": "^8.0.0",
-    "jquery": "^3.6.0",
-    "minimist": "^1.2.6",
-    "node-forge": "^1.3.0",
-    "popper.js": "^1.16.0",
-    "serialize-javascript": "^3.1.0",
-    "vue-router": "^3.1.6",
-    "vue-spinner": "^1.0.3",
-    "vue-template-compiler": "^2.6.10",
-    "vue": "^2.7.0",
-    "wait-on": "^5.2.0",
-    "webpack": "^5.74.0"
-  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions"
+  ],
   "eslintConfig": {
-    "root": true,
     "env": {
       "node": true
+    },
+    "parserOptions": {
+      "parser": "@babel/eslint-parser"
     },
     "extends": [
       "plugin:vue/essential",
       "eslint:recommended"
     ],
     "rules": {},
-    "parserOptions": {
-      "parser": "@babel/eslint-parser"
-    }
+    "root": true
+  },
+  "resolutions": {
+    "**/**/cli-highlight": "^2.1.9",
+    "**/**/is-svg": "^4.2.2",
+    "**/**/prismjs": "^1.21.0",
+    "**/**/selfsigned/node-forge": "~1.3.0",
+    "**/**/ssri": "^8.0.1"
+  },
+  "dependencies": {
+    "@rollup/plugin-inject": "^5.0.2",
+    "@vitejs/plugin-vue2": "^2.0.1",
+    "acorn": "^6.4.1",
+    "autoprefixer": "^10.4.13",
+    "axios": "^0.21.2",
+    "babel-preset-vue": "^2.0.2",
+    "bootstrap": "^4.4.1",
+    "cli-highlight": "^2.1.5",
+    "cypress": "^10.10.0",
+    "datatables.net": "^1.13.1",
+    "datatables.net-dt": "^1.13.1",
+    "eslint": "^7.32.0",
+    "eslint-plugin-vue": "^9.4.0",
+    "fetch-mock": "^8.0.0",
+    "jquery": "^3.6.0",
+    "minimist": "^1.2.6",
+    "node-forge": "^1.3.0",
+    "popper.js": "^1.16.0",
+    "postcss": "^8.4.19",
+    "serialize-javascript": "^3.1.0",
+    "vite": "^3.2.4",
+    "vite-plugin-vue2": "^2.0.2",
+    "vue": "^2.7.14",
+    "vue-router": "^3.1.6",
+    "vue-spinner": "^1.0.3",
+    "vue-template-compiler": "^2.7.14",
+    "wait-on": "^5.2.0",
+    "webpack": "^5.74.0"
   },
   "postcss": {
     "plugins": {
       "autoprefixer": {}
     }
-  },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions"
-  ],
-  "resolutions": {
-    "**/**/prismjs": "^1.21.0",
-    "**/**/cli-highlight": "^2.1.9",
-    "**/**/ssri": "^8.0.1",
-    "**/**/is-svg": "^4.2.2",
-    "**/**/selfsigned/node-forge": "~1.3.0"
   }
 }

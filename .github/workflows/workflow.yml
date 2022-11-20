@@ -95,7 +95,7 @@ jobs:
       - name: Start Docker dev services
         run: docker-compose -f docker-compose-dev.yml up -d --build
 
-      - name: Sleep for 30 seconds
+      - name: Wait for Docker dev services to be up (30s)
         run: sleep 30s
         shell: bash
 
@@ -113,8 +113,11 @@ jobs:
       - name: Start frontend server
         run: |
           cd wp1-frontend
-          yarn serve &
-          $(yarn bin)/wait-on http://localhost:3000
+          yarn dev &
+
+      - name: Wait for frontend server to be up (10s)
+        run: sleep 10s
+        shell: bash
 
       - name: Run frontend tests
         run: |

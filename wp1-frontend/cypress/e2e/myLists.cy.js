@@ -35,7 +35,7 @@ describe('the user selection list page', () => {
         .siblings()
         .contains('.btn-primary', 'Edit')
         .click();
-      cy.url().should('eq', 'http://localhost:3000/#/selections/simple/1');
+      cy.url().should('eq', 'http://localhost:5173/#/selections/simple/1');
     });
 
     it('takes the user to the SPARQL edit screen when SPARQL edit is clicked', () => {
@@ -44,7 +44,7 @@ describe('the user selection list page', () => {
         .siblings()
         .contains('.btn-primary', 'Edit')
         .click();
-      cy.url().should('eq', 'http://localhost:3000/#/selections/sparql/2');
+      cy.url().should('eq', 'http://localhost:5173/#/selections/sparql/2');
     });
   });
 

@@ -68,61 +68,63 @@ export default {
   name: 'article-page',
   components: {
     ArticleTable,
-    WikiLink
+    WikiLink,
   },
   props: ['currentProject'],
-  data: function() {
+  data: function () {
     return {
       notFound: false,
-      categoryLinks: {}
+      categoryLinks: {},
     };
   },
   computed: {
-    currentProjectId: function() {
+    currentProjectId: function () {
       if (!this.currentProject) {
         return null;
       }
       return this.currentProject.replace(/ /g, '_');
-    }
+    },
   },
   beforeRouteUpdate(to, from, next) {
     this.checkIfProjectExists(to.params.projectName.replace(/ /g, '_'));
     next();
   },
-  created: function() {
+  created: function () {
     this.checkIfProjectExists(this.currentProjectId);
     if (!this.notFound) {
       this.getCategoryLinks();
     }
   },
   methods: {
-    getCategoryLinks: async function() {
+    getCategoryLinks: async function () {
       const response = await fetch(
-        `${process.env.VUE_APP_API_URL}/projects/${this.currentProjectId}/category_links`
+        `${import.meta.env.VITE_API_URL}/projects/${
+          this.currentProjectId
+        }/category_links`
       );
       this.categoryLinks = await response.json();
     },
-    hasImportanceLink: function() {
+    hasImportanceLink: function () {
       return (
         this.categoryLinks &&
         this.categoryLinks[this.$route.query.importance] &&
         this.categoryLinks[this.$route.query.importance].href
       );
     },
-    hasQualityLink: function() {
+    hasQualityLink: function () {
       return (
         this.categoryLinks &&
         this.categoryLinks[this.$route.query.quality] &&
         this.categoryLinks[this.$route.query.quality].href
       );
     },
-    checkIfProjectExists: async function(projectId) {
+    checkIfProjectExists: async function (projectId) {
       const response = await fetch(
-        `${process.env.VUE_APP_API_URL}/projects/${projectId}`
+        `${import.meta.env.VITE_API_URL}/projects/${projectId}`
       );
       this.notFound = response.status === 404;
     },
-    onPageSelect: function(selection) {
+    onPageSelect: function (selection) {
       if (
         this.$route.query.numRows === selection.rows &&
         this.$route.query.page === selection.page
@@ -136,11 +138,11 @@ export default {
           importance: this.$route.query.importance,
           page: selection.page,
           numRows: selection.rows,
-          articlePattern: this.$route.query.articlePattern
-        }
+          articlePattern: this.$route.query.articlePattern,
+        },
       });
     },
-    onRatingSelect: function(selection) {
+    onRatingSelect: function (selection) {
       if (
         this.$route.query.quality === selection.qualty &&
         this.$route.query.importance === selection.importance
@@ -154,11 +156,11 @@ export default {
           importance: selection.importance,
           page: this.$route.query.page,
           numRows: this.$route.query.numRows,
-          articlePattern: this.$route.query.articlePattern
-        }
+          articlePattern: this.$route.query.articlePattern,
+        },
       });
     },
-    onNameFilter: function(selection) {
+    onNameFilter: function (selection) {
       if (this.$route.query.articlePattern == selection) {
         return;
       }
@@ -169,11 +171,11 @@ export default {
           importance: this.$route.query.importance,
           page: this.$route.query.page,
           numRows: this.$route.query.numRows,
-          articlePattern: selection
-        }
+          articlePattern: selection,
+        },
       });
     },
-    onUpdatePage: function(page) {
+    onUpdatePage: function (page) {
       if (this.$route.query.page === page.toString()) {
         return;
       }
@@ -184,11 +186,11 @@ export default {
           importance: this.$route.query.importance,
           page: page.toString(),
           numRows: this.$route.query.numRows,
-          articlePattern: this.$route.query.articlePattern
-        }
+          articlePattern: this.$route.query.articlePattern,
+        },
       });
-    }
-  }
+    },
+  },
 };
 </script>
 
