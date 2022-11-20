@@ -89,7 +89,7 @@ describe('the create simple builder page', () => {
       cy.get('#items > .form-control').click().clear().type('Eiffel_Tower');
 
       cy.get('#saveListButton').click();
-      cy.url().should('eq', 'http://localhost:3000/#/selections/user');
+      cy.url().should('eq', 'http://localhost:5173/#/selections/user');
     });
 
     describe('when save button clicked', () => {
@@ -125,7 +125,7 @@ describe('the create simple builder page', () => {
         .type('Eiffel_Tower\nStatue of Liberty');
       cy.intercept('v1/builders/', { fixture: 'save_list_success.json' });
       cy.get('#saveListButton').click();
-      cy.url().should('eq', 'http://localhost:3000/#/selections/user');
+      cy.url().should('eq', 'http://localhost:5173/#/selections/user');
     });
   });
 

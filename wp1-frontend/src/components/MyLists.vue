@@ -109,7 +109,7 @@ export default {
       }
 
       const response = await fetch(
-        `${process.env.VUE_APP_API_URL}/selection/simple/lists`,
+        `${import.meta.env.VITE_API_URL}/selection/simple/lists`,
         {
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',

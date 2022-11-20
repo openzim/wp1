@@ -76,7 +76,7 @@ describe('the create SPARQL builder page', () => {
         .type('SELECT ?foo WHERE {}', { parseSpecialCharSequences: false });
 
       cy.get('#saveListButton').click();
-      cy.url().should('eq', 'http://localhost:3000/#/selections/user');
+      cy.url().should('eq', 'http://localhost:5173/#/selections/user');
     });
 
     describe('when save button clicked', () => {
@@ -110,7 +110,7 @@ describe('the create SPARQL builder page', () => {
       cy.get('#items > .form-control').click().type('SELECT ?article FROM foo');
       cy.intercept('v1/builders/', { fixture: 'save_list_success.json' });
       cy.get('#saveListButton').click();
-      cy.url().should('eq', 'http://localhost:3000/#/selections/user');
+      cy.url().should('eq', 'http://localhost:5173/#/selections/user');
     });
   });
 

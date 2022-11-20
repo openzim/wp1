@@ -52,45 +52,45 @@
 export default {
   name: 'auto-complete',
   props: ['incomingSearch', 'hideInstructions'],
-  data: function() {
+  data: function () {
     return {
       isOpen: false,
       projects: [],
       results: [],
-      search: ''
+      search: '',
     };
   },
-  created: async function() {
+  created: async function () {
     this.projects = await this.getProjects();
     this.updateFromIncomingSearch(this.incomingSearch);
   },
   methods: {
-    filterResults: function() {
+    filterResults: function () {
       if (this.search === '' || !this.projects) {
         this.results = [];
         return;
       }
-      this.results = this.projects.filter(project => {
+      this.results = this.projects.filter((project) => {
         return (
           project.name.toLowerCase().indexOf(this.search.toLowerCase()) !== -1
         );
       });
     },
-    focusList: function() {
+    focusList: function () {
       if (!this.results.length) {
         this.results = this.projects;
       }
       this.isOpen = true;
       this.$refs.list.children[0].focus();
     },
-    focusNext: function(event) {
+    focusNext: function (event) {
       var nodes = Array.prototype.slice.call(this.$refs.list.children);
       var currentIndex = nodes.indexOf(event.target);
       if (currentIndex < this.results.length - 1) {
         this.$refs.list.children[currentIndex + 1].focus();
       }
     },
-    focusPrev: function() {
+    focusPrev: function () {
       var nodes = Array.prototype.slice.call(this.$refs.list.children);
       var currentIndex = nodes.indexOf(event.target);
       if (currentIndex > 0) {
@@ -100,14 +100,14 @@ export default {
         this.$refs.input.focus();
       }
     },
-    getProjects: async function() {
+    getProjects: async function () {
       if (this.projects.length !== 0) {
         return this.projects;
       }
-      const response = await fetch(`${process.env.VUE_APP_API_URL}/projects/`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/projects/`);
       return await response.json();
     },
-    onChange: function() {
+    onChange: function () {
       if (this.search === '') {
         this.isOpen = false;
       } else {
@@ -115,24 +115,24 @@ export default {
       }
       this.filterResults();
     },
-    makeSelection: function() {
+    makeSelection: function () {
       this.isOpen = false;
       this.filterResults();
       this.$emit('select-project', this.search);
     },
-    onButtonClick: function() {
+    onButtonClick: function () {
       if (this.results.length == 1) {
         this.search = this.results[0].name;
       }
       this.makeSelection();
     },
-    selectResult: function(event) {
+    selectResult: function (event) {
       this.search = event.target.innerText;
       this.makeSelection();
     },
-    updateFromIncomingSearch: function(val) {
+    updateFromIncomingSearch: function (val) {
       if (!!val && val !== this.search) {
-        const found = this.projects.filter(project => {
+        const found = this.projects.filter((project) => {
           return project.name == val;
         });
         if (found.length === 1) {
@@ -141,18 +141,18 @@ export default {
           this.makeSelection();
         }
       }
-    }
+    },
   },
   watch: {
-    incomingSearch: function(val) {
+    incomingSearch: function (val) {
       this.updateFromIncomingSearch(val);
     },
-    $route: function(to) {
+    $route: function (to) {
       if (to.path == '/compare') {
         this.search = '';
       }
-    }
-  }
+    },
+  },
 };
 </script>
 

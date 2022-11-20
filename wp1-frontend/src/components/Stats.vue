@@ -8,23 +8,23 @@
 <script>
 export default {
   name: 'stats',
-  data: function() {
+  data: function () {
     return {
-      numProjects: null
+      numProjects: null,
     };
   },
-  created: async function() {
+  created: async function () {
     this.numProjects = await this.getProjectCount();
   },
   methods: {
-    getProjectCount: async function() {
+    getProjectCount: async function () {
       const response = await fetch(
-        `${process.env.VUE_APP_API_URL}/projects/count`
+        `${import.meta.env.VITE_API_URL}/projects/count`
       );
       const data = await response.json();
       return data.count;
-    }
-  }
+    },
+  },
 };
 </script>
 

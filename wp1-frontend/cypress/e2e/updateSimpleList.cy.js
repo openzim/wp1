@@ -62,7 +62,7 @@ describe('the update simple list page', () => {
           fixture: 'save_list_success.json',
         });
         cy.get('#updateListButton').click();
-        cy.url().should('eq', 'http://localhost:3000/#/selections/user');
+        cy.url().should('eq', 'http://localhost:5173/#/selections/user');
       });
 
       describe('when update button clicked', () => {
