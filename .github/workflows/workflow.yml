@@ -78,20 +78,45 @@ jobs:
         with:
           lfs: true
 
+      - uses: actions/cache@v1
+        name: Cache pip dependencies
+        id: pip-cache
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Get yarn cache directory path
+        id: yarn-dep-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - uses: actions/cache@v1
+        name: Setup Yarn dep cache
+        id: yarn-dep-cache
+        with:
+          path: ${{ steps.yarn-dep-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-dep-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-dep-
+
       - name: Install Javascript dependencies
         run: |
-          cd wp1-frontend && yarn
+          cd wp1-frontend && yarn install --frozen-lockfile
+        if: steps.yarn-dep-cache.outputs.cache-hit != 'true'
 
       - name: Copy credentials
         run: |
           cp wp1/credentials.py.e2e wp1/credentials.py
           cp wp1/credentials.py.dev.e2e wp1/credentials.py.dev
 
+      # This is the dev database, the dev redis, and the dev workers.
+      # We don't technically need that last one.
       - name: Start Docker dev services
         run: docker-compose -f docker-compose-dev.yml up -d --build
 
