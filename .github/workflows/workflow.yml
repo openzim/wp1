@@ -113,7 +113,7 @@ jobs:
       - name: Start frontend server
         run: |
           cd wp1-frontend
-          yarn dev --host &
+          yarn dev &
 
       - name: Wait for frontend server to be up (10s)
         run: sleep 10s
