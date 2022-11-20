@@ -94,7 +94,7 @@ jobs:
 
       - name: Get yarn cache directory path
         id: yarn-dep-cache-dir-path
-        run: echo "YARN_CACHE_DIR=$(yarn cache dir)" >> $GITHUB_OUTPUT
+        run: cd wp1-frontend && echo "YARN_CACHE_DIR=$(yarn cache dir)" >> $GITHUB_OUTPUT
 
       - uses: actions/cache@v1
         name: Setup Yarn dep cache
@@ -106,8 +106,7 @@ jobs:
             ${{ runner.os }}-yarn-dep-
 
       - name: Install Javascript dependencies
-        run: |
-          cd wp1-frontend && yarn install --frozen-lockfile
+        run: cd wp1-frontend && yarn install --frozen-lockfile
         if: steps.yarn-dep-cache.outputs.cache-hit != 'true'
 
       - name: Copy credentials
