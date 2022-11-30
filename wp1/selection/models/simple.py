@@ -1,4 +1,6 @@
 import urllib.parse
+
+from wp1.exceptions import Wp1FatalSelectionError
 from wp1.selection.abstract_builder import AbstractBuilder
 
 
@@ -27,9 +29,7 @@ class Builder(AbstractBuilder):
     if content_type != 'text/tab-separated-values':
       raise ValueError('Unrecognized content type')
     if 'list' not in params:
-      raise ValueError(
-          f'Missing required param: list, unnecessary argument given: {list(params.keys())[0]}'
-      )
+      raise Wp1FatalSelectionError('Missing required param: list')
 
     list_minus_comments = [
         line.strip()
