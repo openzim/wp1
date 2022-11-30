@@ -64,16 +64,16 @@ class BuildersTest(BaseWebTestcase):
   def _insert_selections(self, builder_id):
     with self.wp10db.cursor() as cursor:
       cursor.execute(
-          'INSERT INTO selections VALUES (1, %s, "text/tab-separated-values", "20201225105544", 1, "object_key1")',
+          'INSERT INTO selections VALUES (1, %s, "text/tab-separated-values", "20201225105544", 1, "object_key1", NULL, NULL)',
           builder_id)
       cursor.execute(
-          'INSERT INTO selections VALUES (2, %s, "application/vnd.ms-excel", "20201225105544", 1, "object_key2")',
+          'INSERT INTO selections VALUES (2, %s, "application/vnd.ms-excel", "20201225105544", 1, "object_key2", NULL, NULL)',
           builder_id)
       cursor.execute(
-          'INSERT INTO selections VALUES (3, %s, "text/tab-separated-values", "20201225105544", 2, "latest_object_key_tsv")',
+          'INSERT INTO selections VALUES (3, %s, "text/tab-separated-values", "20201225105544", 2, "latest_object_key_tsv", NULL, NULL)',
           builder_id)
       cursor.execute(
-          'INSERT INTO selections VALUES (4, %s, "application/vnd.ms-excel", "20201225105544", 2, "latest_object_key_xls")',
+          'INSERT INTO selections VALUES (4, %s, "application/vnd.ms-excel", "20201225105544", 2, "latest_object_key_xls", NULL, NULL)',
           builder_id)
     self.wp10db.commit()
 

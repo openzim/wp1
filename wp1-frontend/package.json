@@ -40,6 +40,7 @@
     "axios": "^0.21.2",
     "babel-preset-vue": "^2.0.2",
     "bootstrap": "^4.4.1",
+    "bootstrap-icons": "^1.10.2",
     "cli-highlight": "^2.1.5",
     "cypress": "^10.10.0",
     "datatables.net": "^1.13.1",

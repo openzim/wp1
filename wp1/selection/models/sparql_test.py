@@ -3,6 +3,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 
 from wp1.base_db_test import BaseWpOneDbTest, get_first_selection
+from wp1.exceptions import Wp1FatalSelectionError
 from wp1.models.wp10.builder import Builder
 from wp1.selection.models.sparql import Builder as SparqlBuilder
 
@@ -139,7 +140,7 @@ class SparqlBuilderTest(BaseWpOneDbTest):
     response.json.side_effect = json.decoder.JSONDecodeError('foo', 'bar', 0)
     mock_requests.post.return_value = response
 
-    with self.assertRaises(ValueError):
+    with self.assertRaises(Wp1FatalSelectionError):
       actual = self.builder.build('text/tab-separated-values',
                                   query=self.cats_uk_us_after_1950,
                                   queryVariable='cat')
@@ -150,7 +151,7 @@ class SparqlBuilderTest(BaseWpOneDbTest):
     response.content = 'a' * (1024 * 1024 * 20)
     mock_requests.post.return_value = response
 
-    with self.assertRaises(ValueError):
+    with self.assertRaises(Wp1FatalSelectionError):
       actual = self.builder.build('text/tab-separated-values',
                                   query=self.cats_uk_us_after_1950,
                                   queryVariable='cat')

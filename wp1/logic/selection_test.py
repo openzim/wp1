@@ -34,9 +34,9 @@ class SelectionTest(BaseWpOneDbTest):
     with self.wp10db.cursor() as cursor:
       cursor.executemany(
           '''INSERT INTO selections
-      (s_id, s_builder_id, s_version, s_content_type, s_updated_at, s_object_key)
+      (s_id, s_builder_id, s_version, s_content_type, s_updated_at, s_object_key, s_status, s_error_messages)
       VALUES (%(s_id)s, %(s_builder_id)s, %(s_version)s, %(s_content_type)s,
-              %(s_updated_at)s, %(s_object_key)s)
+              %(s_updated_at)s, %(s_object_key)s, NULL, NULL)
     ''', selections)
     self.wp10db.commit()
 

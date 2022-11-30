@@ -27,7 +27,7 @@ class Builder(AbstractBuilder):
 
   def build(self, content_type, **params):
     if content_type != 'text/tab-separated-values':
-      raise ValueError('Unrecognized content type')
+      raise Wp1FatalSelectionError('Unrecognized content type')
     if 'list' not in params:
       raise Wp1FatalSelectionError('Missing required param: list')
 
