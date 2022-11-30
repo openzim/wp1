@@ -44,7 +44,9 @@ class BuilderTest(BaseWpOneDbTest):
       's_extension':
           'tsv',
       's_url':
-          'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv'
+          'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv',
+      's_status':
+          None,
   }]
 
   expected_lists_with_multiple_selections = [
@@ -71,6 +73,8 @@ class BuilderTest(BaseWpOneDbTest):
               'xls',
           's_url':
               'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.xls',
+          's_status':
+              None,
       },
       {
           'id':
@@ -95,6 +99,8 @@ class BuilderTest(BaseWpOneDbTest):
               'tsv',
           's_url':
               'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv',
+          's_status':
+              None,
       },
   ]
 
@@ -110,6 +116,7 @@ class BuilderTest(BaseWpOneDbTest):
       's_content_type': None,
       's_extension': None,
       's_url': None,
+      's_status': None,
   }]
 
   expected_lists_with_unmapped_selections = [{
@@ -124,6 +131,7 @@ class BuilderTest(BaseWpOneDbTest):
       's_content_type': 'foo/bar-baz',
       's_extension': '???',
       's_url': None,
+      's_status': None,
   }]
 
   def _insert_builder(self, current_version=None):
@@ -152,7 +160,7 @@ class BuilderTest(BaseWpOneDbTest):
                         builder_id=b'1a-2b-3c-4d'):
     with self.wp10db.cursor() as cursor:
       cursor.execute(
-          'INSERT INTO selections VALUES (%s, %s, %s, "20191225044444", %s, %s)',
+          'INSERT INTO selections VALUES (%s, %s, %s, "20191225044444", %s, %s, NULL, NULL)',
           (id_, builder_id, content_type, version, object_key))
     self.wp10db.commit()
 
@@ -383,7 +391,7 @@ class BuilderTest(BaseWpOneDbTest):
     self.assertTrue(actual)
 
     with self.wp10db.cursor() as cursor:
-      cursor.execute('SELECT * FROM builders where b_id = %s', (1,))
+      cursor.execute('SELECT * FROM builders where b_id = %s', ('1a-2b-3c-4d',))
       db_builder = cursor.fetchone()
       actual_builder = Builder(**db_builder)
     self.assertEqual(builder, actual_builder)
@@ -427,7 +435,8 @@ class BuilderTest(BaseWpOneDbTest):
     builder_id = self._insert_builder()
     self._insert_selection(1, 'text/tab-separated-values')
 
-    actual = logic_builder.latest_selection_url(self.wp10db, -1, 'tsv')
+    actual = logic_builder.latest_selection_url(self.wp10db, 'foo-bar-baz',
+                                                'tsv')
 
     self.assertIsNone(actual)
 

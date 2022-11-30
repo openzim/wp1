@@ -45,15 +45,35 @@
                 }}
               </td>
               <td v-else>-</td>
-              <td v-if="!isPending(item)">
+              <td v-if="!isPending(item) && !hasSelectionError(item)">
                 <a :href="item.s_url">Download {{ item.s_extension }}</a>
               </td>
-              <td v-else>
+              <td v-else-if="!hasSelectionError(item)">
                 <pulse-loader
                   class="loader"
                   :color="loaderColor"
                   :size="loaderSize"
                 ></pulse-loader>
+              </td>
+              <td v-else>
+                <div v-if="item.s_status === 'FAILED'">
+                  <span class="failed">PERMANENTLY FAILED</span>
+                  <span
+                    data-toggle="tooltip"
+                    data-placement="top"
+                    title="Materializing failed and cannot be retried"
+                    ><i class="bi bi-info-circle"></i
+                  ></span>
+                </div>
+                <div v-else-if="item.s_status === 'CAN_RETRY'">
+                  <span class="failed">FAILED, RETRYABLE</span>
+                  <span
+                    data-toggle="tooltip"
+                    data-placement="top"
+                    title="Materializing failed, but can be retried on the edit page"
+                    >[i]</span
+                  >
+                </div>
               </td>
               <td>
                 <router-link :to="editPathFor(item)"
@@ -101,6 +121,9 @@ export default {
   methods: {
     isPending: function (item) {
       return !item.s_url || item.updated_at > item.s_updated_at;
+    },
+    hasSelectionError: function (item) {
+      return item.s_status !== null;
     },
     getLists: async function () {
       let createDataTable = false;
@@ -154,10 +177,23 @@ export default {
   },
   created: function () {
     this.getLists();
+    $(function () {
+      $('[data-toggle="tooltip"]').tooltip();
+    });
   },
 };
 </script>
 
 <style scoped>
 @import '../cards.scss';
+
+.failed {
+  display: inline-block;
+  color: #dc3545;
+  margin-right: 0.75em;
+}
+
+.bi {
+  cursor: pointer;
+}
 </style>

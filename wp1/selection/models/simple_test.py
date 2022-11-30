@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import MagicMock
 
 from wp1.base_db_test import BaseWpOneDbTest, get_first_selection
+from wp1.exceptions import Wp1FatalSelectionError
 from wp1.models.wp10.builder import Builder
 from wp1.selection.models.simple import Builder as SimpleBuilder
 
@@ -52,13 +53,13 @@ of text than an actual article name.', 'Not_an_<article_name>',
 
   def test_build_unrecognized_content_type(self):
     simple_test_builder = SimpleBuilder()
-    with self.assertRaises(ValueError):
+    with self.assertRaises(Wp1FatalSelectionError):
       simple_test_builder.build('invalid_content_type', **self.params)
 
   def test_build_incorrect_params(self):
     simple_test_builder = SimpleBuilder()
     params = {'items': ['Eiffel_Tower', 'Statue#of_Liberty', 'Libertas']}
-    with self.assertRaises(ValueError):
+    with self.assertRaises(Wp1FatalSelectionError):
       simple_test_builder.build('text/tab-separated-values', **params)
 
   def test_build_ignores_unwanted_params(self):

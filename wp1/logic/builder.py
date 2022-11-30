@@ -185,9 +185,9 @@ def get_builders_with_selections(wp10db, user_id):
     cursor.execute(
         '''SELECT * FROM selections
            RIGHT JOIN builders
-             ON selections.s_builder_id=builders.b_id
-             AND selections.s_version=builders.b_current_version
-           WHERE b_user_id=%(b_user_id)s
+             ON selections.s_builder_id = builders.b_id
+             AND selections.s_version = builders.b_current_version
+           WHERE b_user_id = %(b_user_id)s
            ORDER BY builders.b_updated_at DESC
         ''', {'b_user_id': user_id})
     data = cursor.fetchall()
@@ -196,6 +196,7 @@ def get_builders_with_selections(wp10db, user_id):
   result = []
   for b in data:
     has_selection = b['s_id'] is not None
+    has_status = b['s_status'] is not None
     content_type = b['s_content_type'].decode(
         'utf-8') if has_selection else None
     selection_id = b['s_id'].decode('utf-8') if has_selection else None
@@ -224,6 +225,9 @@ def get_builders_with_selections(wp10db, user_id):
             if has_selection else None,
         's_url':
             latest_url_for(b['b_id'].decode('utf-8'), content_type)
-            if has_selection else None,
+            if has_selection and not has_status else None,
+        's_status':
+            b['s_status'].decode('utf-8')
+            if has_selection and has_status else None
     })
   return result
