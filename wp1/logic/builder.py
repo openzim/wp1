@@ -174,6 +174,9 @@ def latest_selection_url(wp10db, builder_id, ext):
         builder_id, content_type)
     return None
 
+  if data['object_key'] is None:
+    return None
+
   return logic_selection.url_for(data['object_key'].decode('utf-8'))
 
 
