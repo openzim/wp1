@@ -3,7 +3,7 @@ import json
 import logging
 
 from wp1.constants import CONTENT_TYPE_TO_EXT
-from wp1.exceptions import Wp1RetryableSelectionError, Wp1FatalSelectionError
+from wp1.exceptions import Wp1RetryableSelectionError, Wp1FatalSelectionError, Wp1SelectionError
 import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
 from wp1.models.wp10.selection import Selection
@@ -42,7 +42,7 @@ class AbstractBuilder:
     except Wp1RetryableSelectionError as e:
       selection.s_status = 'CAN_RETRY'
       logic_selection.set_error_messages(selection, e)
-    except Wp1FatalSelectionError as e:
+    except (Wp1FatalSelectionError, Wp1SelectionError) as e:
       selection.s_status = 'FAILED'
       logic_selection.set_error_messages(selection, e)
 

@@ -3,7 +3,7 @@ import json
 from unittest.mock import MagicMock, patch
 
 from wp1.base_db_test import BaseWpOneDbTest, get_first_selection
-from wp1.exceptions import Wp1RetryableSelectionError, Wp1FatalSelectionError
+from wp1.exceptions import Wp1RetryableSelectionError, Wp1FatalSelectionError, Wp1SelectionError
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
 from wp1.selection.abstract_builder import AbstractBuilder
@@ -20,8 +20,8 @@ class TestBuilderRetryable(AbstractBuilder):
   def build(self, content_type, **params):
     try:
       int('Not an int')
-    except ValueError:
-      raise Wp1RetryableSelectionError('Could not convert to int')
+    except ValueError as e:
+      raise Wp1RetryableSelectionError('Could not convert to int') from e
 
 
 class TestBuilderFatal(AbstractBuilder):
@@ -29,14 +29,23 @@ class TestBuilderFatal(AbstractBuilder):
   def build(self, content_type, **params):
     try:
       int('Not an int')
-    except ValueError:
-      raise Wp1FatalSelectionError('Could not convert to int')
+    except ValueError as e:
+      raise Wp1FatalSelectionError('Could not convert to int') from e
 
 
 class TestBuilderNoContext(AbstractBuilder):
 
   def build(self, content_type, **params):
     raise Wp1FatalSelectionError('Something broke')
+
+
+class TestBuilderSuppressedException(AbstractBuilder):
+
+  def build(self, content_type, **params):
+    try:
+      int('Not an int')
+    except ValueError as e:
+      raise Wp1SelectionError('Just this thing, really') from None
 
 
 class AbstractBuilderTest(BaseWpOneDbTest):
@@ -136,7 +145,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
 
     self.assertEqual(b'FAILED', actual.s_status)
 
-  def test_materialize_retryable_error_messages(self):
+  def test_materialize_fatal_error_messages(self):
     builder_obj = TestBuilderFatal()
     builder_obj.materialize(self.s3, self.wp10db, self.builder,
                             'text/tab-separated-values')
@@ -151,7 +160,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
             ]
         }, json.loads(actual.s_error_messages))
 
-  def test_materialize_retryable_error_messages(self):
+  def test_materialize_no_context_messages(self):
     builder_obj = TestBuilderNoContext()
     builder_obj.materialize(self.s3, self.wp10db, self.builder,
                             'text/tab-separated-values')
@@ -159,4 +168,14 @@ class AbstractBuilderTest(BaseWpOneDbTest):
     actual = get_first_selection(self.wp10db)
 
     self.assertEqual({'error_messages': ['Something broke']},
+                     json.loads(actual.s_error_messages))
+
+  def test_materialize_suppressed_message(self):
+    builder_obj = TestBuilderSuppressedException()
+    builder_obj.materialize(self.s3, self.wp10db, self.builder,
+                            'text/tab-separated-values')
+
+    actual = get_first_selection(self.wp10db)
+
+    self.assertEqual({'error_messages': ['Just this thing, really']},
                      json.loads(actual.s_error_messages))
