@@ -157,11 +157,20 @@ class BuilderTest(BaseWpOneDbTest):
                         content_type,
                         version=1,
                         object_key='selections/foo/1234/name.tsv',
-                        builder_id=b'1a-2b-3c-4d'):
+                        builder_id=b'1a-2b-3c-4d',
+                        has_errors=False):
+    if has_errors:
+      status = 'CAN_RETRY'
+      error_messages = '{"error_messages":["There was an error"]}'
+    else:
+      status = None
+      error_messages = None
+
     with self.wp10db.cursor() as cursor:
       cursor.execute(
-          'INSERT INTO selections VALUES (%s, %s, %s, "20191225044444", %s, %s, NULL, NULL)',
-          (id_, builder_id, content_type, version, object_key))
+          'INSERT INTO selections VALUES (%s, %s, %s, "20191225044444", %s, %s, %s, %s)',
+          (id_, builder_id, content_type, version, object_key, status,
+           error_messages))
     self.wp10db.commit()
 
   def _get_builder_by_user_id(self):
@@ -536,3 +545,30 @@ class BuilderTest(BaseWpOneDbTest):
         b'object_key_1', b'object_key_2', b'object_key_3',
         b'proper/selection/4321/name.tsv'
     ])
+
+  def test_latest_selections_with_errors(self):
+    builder_id = self._insert_builder(current_version=2)
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           version=1,
+                           builder_id=builder_id,
+                           has_errors=True)
+    self._insert_selection(2,
+                           'text/tab-separated-values',
+                           version=2,
+                           builder_id=builder_id,
+                           has_errors=False)
+    self._insert_selection(3,
+                           'application/vnd.ms-excel',
+                           version=2,
+                           builder_id=builder_id,
+                           has_errors=True)
+
+    actual = logic_builder.latest_selections_with_errors(
+        self.wp10db, builder_id)
+
+    self.assertEqual([{
+        'status': 'CAN_RETRY',
+        'ext': 'xls',
+        'error_messages': ['There was an error']
+    }], actual)
