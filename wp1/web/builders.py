@@ -91,7 +91,11 @@ def get_builder(builder_id):
   if builder.b_user_id != user['identity']['sub']:
     flask.abort(404)
 
-  return flask.jsonify(builder.to_web_dict())
+  selection_errors = logic_builder.latest_selections_with_errors(
+      wp10db, builder_id)
+  res = builder.to_web_dict()
+  res.update(selection_errors=selection_errors)
+  return flask.jsonify(res)
 
 
 @builders.route('/<builder_id>/delete', methods=['POST'])

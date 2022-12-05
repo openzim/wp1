@@ -164,8 +164,7 @@ def latest_selection_url(wp10db, builder_id, ext):
            FROM selections AS s JOIN builders as b
              ON s.s_builder_id = b.b_id
              AND s.s_version = b.b_current_version
-             AND s.s_content_type = %s
-           WHERE b.b_id = %s
+           WHERE s.s_content_type = %s AND b.b_id = %s
         ''', (content_type, builder_id))
     data = cursor.fetchone()
   if data is None:
@@ -178,6 +177,40 @@ def latest_selection_url(wp10db, builder_id, ext):
     return None
 
   return logic_selection.url_for(data['object_key'].decode('utf-8'))
+
+
+def latest_selections_with_errors(wp10db, builder_id):
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        '''SELECT s.s_status, s.s_error_messages, s.s_content_type
+           FROM selections AS s JOIN builders as b
+             ON s.s_builder_id = b.b_id
+             AND s.s_version = b.b_current_version
+           WHERE b.b_id = %s AND s.s_status IS NOT NULL
+        ''', (builder_id,))
+    data = cursor.fetchall()
+  if data is None:
+    logger.warning(
+        'Could not find latest selections with errors for builder id=%s',
+        builder_id)
+    return None
+
+  print(data)
+
+  res = []
+  for db_selection in data:
+    status = {
+        'status':
+            db_selection['s_status'].decode('utf-8'),
+        'ext':
+            CONTENT_TYPE_TO_EXT.get(
+                db_selection['s_content_type'].decode('utf-8'), '???')
+    }
+    status.update(
+        **json.loads(db_selection['s_error_messages'].decode('utf-8')))
+    res.append(status)
+
+  return res
 
 
 def get_builders_with_selections(wp10db, user_id):

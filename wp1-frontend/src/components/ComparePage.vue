@@ -129,7 +129,6 @@ export default {
   },
   watch: {
     $route: function (to) {
-      window.console.log(to.path);
       if (to.path == '/compare') {
         this.reset();
       }
