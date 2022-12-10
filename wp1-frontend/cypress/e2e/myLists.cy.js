@@ -23,38 +23,42 @@ describe('the user selection list page', () => {
 
     it('displays a spinner for download of list with no selection', () => {
       const listTd = cy.contains('td', 'sparql list');
-      listTd.parent('tr').within((td) => {
+      listTd.parent('tr').within(() => {
         cy.get('td').eq(4).contains('-');
         cy.get('td').eq(5).get('div').should('have.class', 'loader');
       });
     });
 
     it('displays a spinner if the selection is newer than the builder', () => {
-      const listTd = cy.contains('td', 'updated list');
-      listTd.parent('tr').within((td) => {
-        cy.get('td').eq(5).get('div').should('have.class', 'loader');
-      });
+      cy.contains('td', 'updated list')
+        .parent('tr')
+        .within(() => {
+          cy.get('td').eq(5).get('div').should('have.class', 'loader');
+        });
     });
 
     it('displays a spinner if the selection has error and is retrying', () => {
-      const listTd = cy.contains('td', 'in retry');
-      listTd.parent('tr').within((td) => {
-        cy.get('td').eq(5).get('div').should('have.class', 'loader');
-      });
+      cy.contains('td', 'in retry')
+        .parent('tr')
+        .within(() => {
+          cy.get('td').eq(5).get('div').should('have.class', 'loader');
+        });
     });
 
     it('displays error message for list with permanent error', () => {
-      const listTd = cy.contains('td', 'permanent error');
-      listTd.parent('tr').within((td) => {
-        cy.get('td').eq(5).get('div').should('contain', 'FAILED');
-      });
+      cy.contains('td', 'permanent error')
+        .parent('tr')
+        .within(() => {
+          cy.get('td').eq(5).get('div').should('contain', 'FAILED');
+        });
     });
 
     it('displays error message for list with retryable failure', () => {
-      const listTd = cy.contains('td', 'retryable error');
-      listTd.parent('tr').within((td) => {
-        cy.get('td').eq(5).get('div').should('contain', 'FAILED');
-      });
+      cy.contains('td', 'retryable error')
+        .parent('tr')
+        .within(() => {
+          cy.get('td').eq(5).get('div').should('contain', 'FAILED');
+        });
     });
 
     it('takes the user to the simple edit screen when simple edit is clicked', () => {
