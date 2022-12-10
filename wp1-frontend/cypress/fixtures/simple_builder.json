@@ -4,5 +4,6 @@
   },
   "name": "Builder 1",
   "model": "wp1.selection.models.simple",
-  "project": "en.wiktionary.org"
+  "project": "en.wiktionary.org",
+  "selection_errors": []
 }
