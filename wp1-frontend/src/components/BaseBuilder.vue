@@ -227,7 +227,11 @@ export default {
       return this.invalidItems;
     },
     hasMaterializeErrors: function () {
-      return this.isEditing && this.builder.selection_errors.length > 0;
+      return (
+        this.isEditing &&
+        this.builder.selection_errors &&
+        this.builder.selection_errors.length > 0
+      );
     },
     materializeRetryable: function () {
       return (

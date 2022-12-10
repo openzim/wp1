@@ -11,7 +11,7 @@ describe('the user selection list page', () => {
     it('successfully loads', () => {});
 
     it('displays the datatables view', () => {
-      cy.get('.dataTables_info').contains('Showing 1 to 2 of 2 entries');
+      cy.get('.dataTables_info').contains('Showing 1 to 6 of 6 entries');
     });
 
     it('displays list and its contents', () => {
@@ -26,6 +26,34 @@ describe('the user selection list page', () => {
       listTd.parent('tr').within((td) => {
         cy.get('td').eq(4).contains('-');
         cy.get('td').eq(5).get('div').should('have.class', 'loader');
+      });
+    });
+
+    it('displays a spinner if the selection is newer than the builder', () => {
+      const listTd = cy.contains('td', 'updated list');
+      listTd.parent('tr').within((td) => {
+        cy.get('td').eq(5).get('div').should('have.class', 'loader');
+      });
+    });
+
+    it('displays a spinner if the selection has error and is retrying', () => {
+      const listTd = cy.contains('td', 'in retry');
+      listTd.parent('tr').within((td) => {
+        cy.get('td').eq(5).get('div').should('have.class', 'loader');
+      });
+    });
+
+    it('displays error message for list with permanent error', () => {
+      const listTd = cy.contains('td', 'permanent error');
+      listTd.parent('tr').within((td) => {
+        cy.get('td').eq(5).get('div').should('contain', 'FAILED');
+      });
+    });
+
+    it('displays error message for list with retryable failure', () => {
+      const listTd = cy.contains('td', 'retryable error');
+      listTd.parent('tr').within((td) => {
+        cy.get('td').eq(5).get('div').should('contain', 'FAILED');
       });
     });
 

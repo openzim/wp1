@@ -27,6 +27,62 @@
       "s_content_type": null,
       "s_extension": null,
       "s_url": null
+    },
+    {
+      "created_at": 1670251154,
+      "id": "aafcc4a2-cd5c-4236-85ca-3a10d16f13aa",
+      "model": "wp1.selection.models.simple",
+      "name": "updated list",
+      "project": "en.wikipedia.org",
+      "s_content_type": "text/tab-separated-values",
+      "s_extension": "tsv",
+      "s_id": "8fb73096-d208-4a4f-9c49-52facee1747a",
+      "s_status": null,
+      "s_updated_at": 1670251157,
+      "s_url": null,
+      "updated_at": 1670261154
+    },
+    {
+      "created_at": 1669778531,
+      "id": "7368f534-27f5-4350-bfe3-23b90363df7b",
+      "model": "wp1.selection.models.sparql",
+      "name": "permanent error",
+      "project": "en.wikipedia.org",
+      "s_content_type": "text/tab-separated-values",
+      "s_extension": "tsv",
+      "s_id": "1234-abcd",
+      "s_status": "FAILED",
+      "s_updated_at": 1670253950,
+      "s_url": null,
+      "updated_at": 1670247215
+    },
+    {
+      "created_at": 1669778531,
+      "id": "7368f534-27f5-4350-bfe3-23b90363df7b",
+      "model": "wp1.selection.models.sparql",
+      "name": "retryable error",
+      "project": "en.wikipedia.org",
+      "s_content_type": "text/tab-separated-values",
+      "s_extension": "tsv",
+      "s_id": "1234-abcd",
+      "s_status": "CAN_RETRY",
+      "s_updated_at": 1670253950,
+      "s_url": null,
+      "updated_at": 1670247215
+    },
+    {
+      "created_at": 1669778531,
+      "id": "7368f534-27f5-4350-bfe3-23b90363df7b",
+      "model": "wp1.selection.models.sparql",
+      "name": "in retry",
+      "project": "en.wikipedia.org",
+      "s_content_type": "text/tab-separated-values",
+      "s_extension": "tsv",
+      "s_id": "1234-abcd",
+      "s_status": "CAN_RETRY",
+      "s_updated_at": 1670253950,
+      "s_url": null,
+      "updated_at": 1670267215
     }
   ]
 }

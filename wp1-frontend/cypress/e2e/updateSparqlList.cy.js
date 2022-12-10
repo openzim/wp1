@@ -3,16 +3,21 @@
 describe('the update SPARQL list page', () => {
   describe('when the user is logged in', () => {
     beforeEach(() => {
-      cy.intercept('v1/sites/', { fixture: 'sites.json' });
-      cy.intercept('v1/oauth/identify', { fixture: 'identity.json' });
+      cy.intercept('v1/sites/', { fixture: 'sites.json' }).as('sites');
+      cy.intercept('v1/oauth/identify', { fixture: 'identity.json' }).as(
+        'identity'
+      );
     });
 
     describe('and the builder is found', () => {
       beforeEach(() => {
         cy.intercept('GET', 'v1/builders/2', {
           fixture: 'sparql_builder.json',
-        });
+        }).as('builder');
         cy.visit('/#/selections/sparql/2');
+        cy.wait('@sites');
+        cy.wait('@identity');
+        cy.wait('@builder');
       });
 
       it('successfully loads', () => {});
@@ -107,6 +112,40 @@ describe('the update SPARQL list page', () => {
           cy.get('#updateListButton').click();
           cy.get('#updateListButton').should('have.attr', 'disabled');
         });
+      });
+    });
+
+    describe('and the builder has fatal errors', () => {
+      beforeEach(() => {
+        cy.intercept('GET', 'v1/builders/1', {
+          fixture: 'sparql_builder_fatal_error.json',
+        });
+        cy.visit('/#/selections/simple/1');
+      });
+
+      it('displays the error div', () => {
+        cy.get('.materialize-error').should('be.visible');
+      });
+
+      it('disables the retry button', () => {
+        cy.get('.materialize-error .btn').should('have.attr', 'disabled');
+      });
+    });
+
+    describe('and the builder has retryable errors', () => {
+      beforeEach(() => {
+        cy.intercept('GET', 'v1/builders/1', {
+          fixture: 'sparql_builder_retryable_error.json',
+        });
+        cy.visit('/#/selections/simple/1');
+      });
+
+      it('displays the error div', () => {
+        cy.get('.materialize-error').should('be.visible');
+      });
+
+      it('enables the retry button', () => {
+        cy.get('.materialize-error .btn').should('not.have.attr', 'disabled');
       });
     });
 

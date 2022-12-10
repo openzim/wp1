@@ -1,0 +1,18 @@
+{
+  "params": {
+    "query": "SELECT ?foo WHERE {}",
+    "queryVariable": ""
+  },
+  "model": "wp1.selection.models.sparql",
+  "name": "Builder 2",
+  "project": "en.wiktionary.org",
+  "selection_errors": [
+    {
+      "error_messages": [
+        "Wikidata response was not valid JSON. This is usually caused by a timeout because the result set is too large."
+      ],
+      "ext": "tsv",
+      "status": "FAILED"
+    }
+  ]
+}
