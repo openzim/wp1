@@ -48,20 +48,20 @@
               <td v-if="!isPending(item) && !hasSelectionError(item)">
                 <a :href="item.s_url">Download {{ item.s_extension }}</a>
               </td>
-              <td v-else-if="!hasSelectionError(item)">
+              <td v-else-if="isPending(item)">
                 <pulse-loader
                   class="loader"
                   :color="loaderColor"
                   :size="loaderSize"
                 ></pulse-loader>
               </td>
-              <td v-else>
+              <td v-else-if="hasSelectionError(item)">
                 <div v-if="item.s_status === 'FAILED'">
                   <span class="failed">PERMANENTLY FAILED</span>
                   <span
                     data-toggle="tooltip"
                     data-placement="top"
-                    title="Materializing failed and cannot be retried"
+                    title="Creating the selection failed and cannot be retried"
                     ><i class="bi bi-info-circle"></i
                   ></span>
                 </div>
@@ -70,9 +70,9 @@
                   <span
                     data-toggle="tooltip"
                     data-placement="top"
-                    title="Materializing failed, but can be retried on the edit page"
-                    >[i]</span
-                  >
+                    title="Creating the selection failed, but can be retried on the edit page"
+                    ><i class="bi bi-info-circle"></i
+                  ></span>
                 </div>
               </td>
               <td>
@@ -120,7 +120,9 @@ export default {
   },
   methods: {
     isPending: function (item) {
-      return !item.s_url || item.updated_at > item.s_updated_at;
+      return (
+        (!item.s_url && !item.s_status) || item.updated_at > item.s_updated_at
+      );
     },
     hasSelectionError: function (item) {
       return item.s_status !== null;
@@ -146,6 +148,8 @@ export default {
             order: [[2, 'desc']],
           });
         });
+      } else {
+        $('#list-table').DataTable().columns.adjust().draw();
       }
 
       let hasPending = false;
