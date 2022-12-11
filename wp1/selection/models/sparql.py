@@ -1,4 +1,5 @@
 import json
+
 from pyparsing.exceptions import ParseException
 import requests
 from rdflib.term import Literal, URIRef, Variable
@@ -115,7 +116,7 @@ class Builder(AbstractBuilder):
     try:
       r.raise_for_status()
     except requests.exceptions.HTTPError as e:
-      raise Wp1FataSelectionError(
+      raise Wp1FatalSelectionError(
           f'Wikidata sent back a non-200 status code: {r.status_code}') from e
 
     try:
