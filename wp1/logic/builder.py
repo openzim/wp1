@@ -195,8 +195,6 @@ def latest_selections_with_errors(wp10db, builder_id):
         builder_id)
     return None
 
-  print(data)
-
   res = []
   for db_selection in data:
     status = {
@@ -206,8 +204,13 @@ def latest_selections_with_errors(wp10db, builder_id):
             CONTENT_TYPE_TO_EXT.get(
                 db_selection['s_content_type'].decode('utf-8'), '???')
     }
-    status.update(
-        **json.loads(db_selection['s_error_messages'].decode('utf-8')))
+    if 's_error_messages' in db_selection and db_selection['s_error_messages']:
+      try:
+        error_messages = json.loads(
+            db_selection['s_error_messages'].decode('utf-8'))
+      except json.decoder.JSONDecodeError:
+        error_messages = {'error_messages': []}
+      status.update(**error_messages)
     res.append(status)
 
   return res
