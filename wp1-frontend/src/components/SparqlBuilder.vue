@@ -80,7 +80,6 @@ export default {
       }
     },
     onBuilderLoaded: function (builder) {
-      console.log(builder);
       this.params = builder.params;
     },
     onBeforeSubmit: function () {

@@ -14,74 +14,151 @@
       Something went wrong and we couldn't retrieve the list with that ID. You
       might try again later.
     </div>
-    <div v-else class="row">
-      <div class="col-lg-6 col-md-9 m-4">
-        <h2 v-if="!isEditing" class="ml-4">New {{ listName }}</h2>
-        <h2 v-else class="ml-4">Editing {{ listName }}</h2>
-        <div v-if="!isEditing" class="ml-4 mb-4">
-          <slot name="create-desc"></slot>
+    <div v-else>
+      <div class="row">
+        <div class="col-lg-6 col-md-9 mx-4">
+          <h2 v-if="!isEditing" class="ml-4">New {{ listName }}</h2>
+          <h2 v-else class="ml-4">Editing {{ listName }}</h2>
+          <div v-if="!isEditing" class="ml-4 mb-4">
+            <slot name="create-desc"></slot>
+          </div>
         </div>
+      </div>
 
-        <form
-          ref="form"
-          v-on:submit.prevent="onSubmit"
-          class="needs-validation"
-          novalidate
-        >
-          <div ref="form_group" class="form-group">
-            <div id="project" class="m-4">
-              <label>Project</label>
-              <select v-model="builder.project" class="custom-select my-list">
-                <option v-if="wikiProjects.length == 0" selected>
-                  en.wikipedia.org
-                </option>
-                <option v-for="item in wikiProjects" v-bind:key="item">
-                  {{ item }}
-                </option>
-              </select>
+      <div class="row">
+        <div class="col-lg-6 col-md-9 mt-2 mb-0 mx-4">
+          <div v-if="hasMaterializeErrors" class="mx-4 materialize-error p-4">
+            <h4 class="materialize-header">
+              There was an error creating your selection
+            </h4>
+            <div
+              v-for="item in builder.selection_errors"
+              v-bind:key="item.error_messages[0]"
+            >
+              <div>
+                The following errors occurred when creating the .{{ item.ext }}
+                version:
+              </div>
+              <ul class="materialize-error-list">
+                <li v-for="msg in item.error_messages" v-bind:key="msg">
+                  {{ msg }}
+                </li>
+              </ul>
             </div>
-            <div id="listName" class="m-4">
-              <label for="listName">List Name</label>
-              <input
-                v-on:blur="validationOnBlur"
-                v-model="builder.name"
-                type="text"
-                placeholder="My List"
-                class="form-control my-list"
-                required
-              />
-              <div class="invalid-feedback">
-                Please provide a valid list name
+            <div v-if="materializeRetryable">
+              <div>You can attempt to retry processing this Builder.</div>
+            </div>
+            <div v-else>
+              <div>
+                Unfortunately, this error cannot be retried. Please update your
+                selection.
               </div>
             </div>
-            <slot name="extra-params" :success="success"></slot>
-          </div>
-          <div
-            v-if="this.success == false || this.deleteSuccess == false"
-            id="invalid_articles"
-            class="form-group m-4"
-          >
-            <div class="errors">{{ errors }}</div>
-            <textarea
-              v-if="this.success == false && this.computedInvalidItems"
-              class="form-control my-list is-invalid"
-              rows="6"
-              ref="invalid"
-              v-model="computedInvalidItems"
-            ></textarea>
-          </div>
-          <div v-if="isEditing">
-            <div>
+            <div class="py-2">
               <button
-                id="updateListButton"
-                type="submit"
+                v-on:click="onSubmit"
+                class="btn btn-light"
+                type="button"
+                :disabled="!materializeRetryable || processing"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-lg-6 col-md-9 mx-4">
+          <form
+            ref="form"
+            v-on:submit.prevent="onSubmit"
+            class="needs-validation"
+            novalidate
+          >
+            <div ref="form_group" class="form-group">
+              <div id="project" class="m-4">
+                <label>Project</label>
+                <select v-model="builder.project" class="custom-select my-list">
+                  <option v-if="wikiProjects.length == 0" selected>
+                    en.wikipedia.org
+                  </option>
+                  <option v-for="item in wikiProjects" v-bind:key="item">
+                    {{ item }}
+                  </option>
+                </select>
+              </div>
+              <div id="listName" class="m-4">
+                <label for="listName">List Name</label>
+                <input
+                  v-on:blur="validationOnBlur"
+                  v-model="builder.name"
+                  type="text"
+                  placeholder="My List"
+                  class="form-control my-list"
+                  required
+                />
+                <div class="invalid-feedback">
+                  Please provide a valid list name
+                </div>
+              </div>
+              <slot name="extra-params" :success="success"></slot>
+            </div>
+            <div
+              v-if="this.success == false || this.deleteSuccess == false"
+              id="invalid_articles"
+              class="form-group m-4"
+            >
+              <div class="errors">{{ errors }}</div>
+              <textarea
+                v-if="this.success == false && this.computedInvalidItems"
+                class="form-control my-list is-invalid"
+                rows="6"
+                ref="invalid"
+                v-model="computedInvalidItems"
+              ></textarea>
+            </div>
+            <div v-if="isEditing">
+              <div>
+                <button
+                  id="updateListButton"
+                  type="submit"
+                  :disabled="processing"
+                  class="btn btn-primary ml-4"
+                >
+                  Update List
+                </button>
+                <pulse-loader
+                  id="updateLoader"
+                  v-if="processing"
+                  class="loader"
+                  style="display: inline-block"
+                  :color="loaderColor"
+                  :size="loaderSize"
+                ></pulse-loader>
+              </div>
+              <div class="mt-4">
+                <button
+                  v-on:click.prevent="onDelete"
+                  id="deleteListButton"
+                  type="button"
+                  class="btn btn-danger ml-4"
+                >
+                  Delete List
+                </button>
+              </div>
+            </div>
+            <div v-else>
+              <button
+                id="saveListButton"
                 :disabled="processing"
+                type="submit"
                 class="btn-primary ml-4"
               >
-                Update List
+                Save List
               </button>
               <pulse-loader
-                id="updateLoader"
+                id="saveLoader"
                 v-if="processing"
                 class="loader"
                 style="display: inline-block"
@@ -89,40 +166,9 @@
                 :size="loaderSize"
               ></pulse-loader>
             </div>
-            <div class="mt-4">
-              <button
-                v-on:click.prevent="onDelete"
-                id="deleteListButton"
-                type="button"
-                class="btn-danger ml-4"
-              >
-                Delete List
-              </button>
-            </div>
-          </div>
-          <div v-else>
-            <button
-              id="saveListButton"
-              :disabled="processing"
-              type="submit"
-              class="btn-primary ml-4"
-            >
-              Save List
-            </button>
-            <pulse-loader
-              id="saveLoader"
-              v-if="processing"
-              class="loader"
-              style="display: inline-block"
-              :color="loaderColor"
-              :size="loaderSize"
-            ></pulse-loader>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
-    </div>
-    <div v-if="!notFound" class="row">
-      <div class="col-lg-6 col-md-9 m-4"></div>
     </div>
   </div>
   <div v-else>
@@ -163,6 +209,7 @@ export default {
       builder: {
         name: '',
         project: 'en.wikipedia.org',
+        selection_errors: [],
       },
     };
   },
@@ -178,6 +225,19 @@ export default {
     },
     computedInvalidItems: function () {
       return this.invalidItems;
+    },
+    hasMaterializeErrors: function () {
+      return (
+        this.isEditing &&
+        this.builder.selection_errors &&
+        this.builder.selection_errors.length > 0
+      );
+    },
+    materializeRetryable: function () {
+      return (
+        this.isEditing &&
+        !this.builder.selection_errors.some((item) => item.status == 'FAILED')
+      );
     },
   },
   created: function () {
@@ -309,6 +369,9 @@ export default {
   color: #dc3545;
 }
 
+.materialize-error {
+  background-color: pink;
+}
 .loader {
   margin-left: 1rem;
 }

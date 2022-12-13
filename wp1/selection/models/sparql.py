@@ -1,4 +1,5 @@
 import json
+
 from pyparsing.exceptions import ParseException
 import requests
 from rdflib.term import Literal, URIRef, Variable
@@ -7,6 +8,7 @@ from rdflib.plugins.sparql import parser
 from rdflib.plugins.sparql.parserutils import CompValue
 
 from wp1.constants import WIKIDATA_PREFIXES, WP1_USER_AGENT
+from wp1.exceptions import Wp1RetryableSelectionError, Wp1FatalSelectionError
 from wp1.selection.abstract_builder import AbstractBuilder
 
 DEFAULT_QUERY_VARIABLE = 'article'
@@ -80,15 +82,17 @@ class Builder(AbstractBuilder):
 
   def build(self, content_type, **params):
     if content_type != 'text/tab-separated-values':
-      raise ValueError('Unrecognized content type')
+      raise Wp1FatalSelectionError('Unrecognized content type')
 
     project = params.get('project')
     if not project:
-      raise ValueError('Expected project, got: %r' % project)
+      raise Wp1FatalSelectionError('Expected param "project", got: %r' %
+                                   project)
 
     params_query = params.get('query')
     if not params_query:
-      raise ValueError('Expected param "query", got: %r' % params_query)
+      raise Wp1FatalSelectionError('Expected param "query", got: %r' %
+                                   params_query)
 
     query_variable = params.get('queryVariable')
     parse_results = parser.parseQuery(params_query)
@@ -96,21 +100,34 @@ class Builder(AbstractBuilder):
     self.instrument_query(query.algebra, project, query_variable=query_variable)
     modified_query = algebra.translateAlgebra(query)
 
-    r = requests.post('https://query.wikidata.org/sparql',
-                      headers={'User-Agent': WP1_USER_AGENT},
-                      data={
-                          'query': modified_query,
-                          'format': 'json',
-                      })
-    r.raise_for_status()
+    try:
+      r = requests.post('https://query.wikidata.org/sparql',
+                        headers={'User-Agent': WP1_USER_AGENT},
+                        data={
+                            'query': modified_query,
+                            'format': 'json',
+                        })
+    except requests.exceptions.Timeout as e:
+      raise Wp1RetryableSelectionError(
+          'The request to Wikidata timed out') from e
+    except requests.exceptions.RequestException as e:
+      raise Wp1RetryableSelectionError('Could not connect to Wikidata') from e
 
-    if len(r.content) > 1024 * 1024 * 10:
-      raise ValueError('Response was larger than 10 MB')
+    try:
+      r.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+      raise Wp1FatalSelectionError(
+          f'Wikidata sent back a non-200 status code: {r.status_code}') from e
 
     try:
       data = r.json()
     except json.decoder.JSONDecodeError:
-      raise ValueError('Response was not valid JSON')
+      raise Wp1FatalSelectionError(
+          'Wikidata response was not valid JSON. This is usually caused '
+          'by a timeout because the result set is too large.') from None
+
+    if len(r.content) > 1024 * 1024 * 10:
+      raise Wp1FatalSelectionError('Wikidata response was larger than 10 MB')
 
     urls = [
         d['_wp1_0']['value']
@@ -139,6 +156,6 @@ class Builder(AbstractBuilder):
     except Exception as e:
       # In testing, this was most common when the query contained
       # an undefined prefix.
-      return ('', params['query'], [e.args[0]])
+      return ('', params['query'], [str(e)])
 
     return ('', '', [])

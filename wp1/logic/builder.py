@@ -164,8 +164,7 @@ def latest_selection_url(wp10db, builder_id, ext):
            FROM selections AS s JOIN builders as b
              ON s.s_builder_id = b.b_id
              AND s.s_version = b.b_current_version
-             AND s.s_content_type = %s
-           WHERE b.b_id = %s
+           WHERE s.s_content_type = %s AND b.b_id = %s
         ''', (content_type, builder_id))
     data = cursor.fetchone()
   if data is None:
@@ -174,7 +173,47 @@ def latest_selection_url(wp10db, builder_id, ext):
         builder_id, content_type)
     return None
 
+  if data['object_key'] is None:
+    return None
+
   return logic_selection.url_for(data['object_key'].decode('utf-8'))
+
+
+def latest_selections_with_errors(wp10db, builder_id):
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        '''SELECT s.s_status, s.s_error_messages, s.s_content_type
+           FROM selections AS s JOIN builders as b
+             ON s.s_builder_id = b.b_id
+             AND s.s_version = b.b_current_version
+           WHERE b.b_id = %s AND s.s_status IS NOT NULL
+        ''', (builder_id,))
+    data = cursor.fetchall()
+  if data is None:
+    logger.warning(
+        'Could not find latest selections with errors for builder id=%s',
+        builder_id)
+    return None
+
+  res = []
+  for db_selection in data:
+    status = {
+        'status':
+            db_selection['s_status'].decode('utf-8'),
+        'ext':
+            CONTENT_TYPE_TO_EXT.get(
+                db_selection['s_content_type'].decode('utf-8'), '???')
+    }
+    if 's_error_messages' in db_selection and db_selection['s_error_messages']:
+      try:
+        error_messages = json.loads(
+            db_selection['s_error_messages'].decode('utf-8'))
+      except json.decoder.JSONDecodeError:
+        error_messages = {'error_messages': []}
+      status.update(**error_messages)
+    res.append(status)
+
+  return res
 
 
 def get_builders_with_selections(wp10db, user_id):
@@ -182,9 +221,9 @@ def get_builders_with_selections(wp10db, user_id):
     cursor.execute(
         '''SELECT * FROM selections
            RIGHT JOIN builders
-             ON selections.s_builder_id=builders.b_id
-             AND selections.s_version=builders.b_current_version
-           WHERE b_user_id=%(b_user_id)s
+             ON selections.s_builder_id = builders.b_id
+             AND selections.s_version = builders.b_current_version
+           WHERE b_user_id = %(b_user_id)s
            ORDER BY builders.b_updated_at DESC
         ''', {'b_user_id': user_id})
     data = cursor.fetchall()
@@ -193,6 +232,7 @@ def get_builders_with_selections(wp10db, user_id):
   result = []
   for b in data:
     has_selection = b['s_id'] is not None
+    has_status = b['s_status'] is not None
     content_type = b['s_content_type'].decode(
         'utf-8') if has_selection else None
     selection_id = b['s_id'].decode('utf-8') if has_selection else None
@@ -221,6 +261,9 @@ def get_builders_with_selections(wp10db, user_id):
             if has_selection else None,
         's_url':
             latest_url_for(b['b_id'].decode('utf-8'), content_type)
-            if has_selection else None,
+            if has_selection and not has_status else None,
+        's_status':
+            b['s_status'].decode('utf-8')
+            if has_selection and has_status else None
     })
   return result

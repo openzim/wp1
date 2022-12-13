@@ -35,7 +35,9 @@ class SelectionTest(BaseWebTestcase):
           's_extension':
               'tsv',
           's_url':
-              'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv'
+              'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv',
+          's_status':
+              None,
       }],
   }
 
@@ -63,31 +65,23 @@ class SelectionTest(BaseWebTestcase):
               's_extension':
                   'xls',
               's_url':
-                  'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.xls'
+                  'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.xls',
+              's_status':
+                  None,
           },
           {
-              'id':
-                  '1a-2b-3c-4d',
-              'name':
-                  'name',
-              'project':
-                  'project_name',
-              'created_at':
-                  1608893744,
-              'updated_at':
-                  1608893744,
-              'model':
-                  'model',
-              's_id':
-                  '1',
-              's_updated_at':
-                  1608893744,
-              's_content_type':
-                  'text/tab-separated-values',
-              's_extension':
-                  'tsv',
-              's_url':
-                  'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv'
+              'id': '1a-2b-3c-4d',
+              'name': 'name',
+              'project': 'project_name',
+              'created_at': 1608893744,
+              'updated_at': 1608893744,
+              'model': 'model',
+              's_id': '1',
+              's_updated_at': 1608893744,
+              's_content_type': 'text/tab-separated-values',
+              's_extension': 'tsv',
+              's_url': None,
+              's_status': 'CAN_RETRY',
           },
       ]
   }
@@ -105,6 +99,7 @@ class SelectionTest(BaseWebTestcase):
           's_content_type': None,
           's_extension': None,
           's_url': None,
+          's_status': None,
       }]
   }
 
@@ -117,7 +112,7 @@ class SelectionTest(BaseWebTestcase):
         VALUES ('1a-2b-3c-4d', 'name', '1234', 'project_name', 'model', '20201225105544', '20201225105544', 1)
       ''')
         cursor.execute(
-            'INSERT INTO selections VALUES (1, \'1a-2b-3c-4d\', "text/tab-separated-values", "20201225105544", 1, "object_key")'
+            'INSERT INTO selections VALUES (1, \'1a-2b-3c-4d\', "text/tab-separated-values", "20201225105544", 1, "object_key", NULL, NULL)'
         )
       self.wp10db.commit()
       with client.session_transaction() as sess:
@@ -134,10 +129,10 @@ class SelectionTest(BaseWebTestcase):
         VALUES ('1a-2b-3c-4d', 'name', '1234', 'project_name', 'model', '20201225105544', '20201225105544', 1)
       ''')
         cursor.execute(
-            'INSERT INTO selections VALUES (1, \'1a-2b-3c-4d\', "text/tab-separated-values", "20201225105544", 1, "object_key_1")'
+            'INSERT INTO selections VALUES (1, \'1a-2b-3c-4d\', "text/tab-separated-values", "20201225105544", 1, "object_key_1", "CAN_RETRY", \'{"errors"["error1"]}\')'
         )
         cursor.execute(
-            'INSERT INTO selections VALUES (2, \'1a-2b-3c-4d\', "application/vnd.ms-excel", "20201225105544", 1, "object_key_2")'
+            'INSERT INTO selections VALUES (2, \'1a-2b-3c-4d\', "application/vnd.ms-excel", "20201225105544", 1, "object_key_2", NULL, NULL)'
         )
       self.wp10db.commit()
       with client.session_transaction() as sess:
@@ -168,7 +163,7 @@ class SelectionTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       with self.wp10db.cursor() as cursor:
         cursor.execute(
-            '''INSERT INTO selections VALUES (2, \'1a-2b-3c-4d\', "application/vnd.ms-excel", '20201225105544', 1, "object_key")'''
+            '''INSERT INTO selections VALUES (2, \'1a-2b-3c-4d\', "application/vnd.ms-excel", '20201225105544', 1, "object_key", NULL, NULL)'''
         )
       self.wp10db.commit()
       with client.session_transaction() as sess:
