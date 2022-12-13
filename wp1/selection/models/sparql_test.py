@@ -2,7 +2,10 @@ import json
 import unittest
 from unittest.mock import patch, MagicMock
 
+import requests
+
 from wp1.base_db_test import BaseWpOneDbTest, get_first_selection
+from wp1.exceptions import Wp1FatalSelectionError, Wp1RetryableSelectionError
 from wp1.models.wp10.builder import Builder
 from wp1.selection.models.sparql import Builder as SparqlBuilder
 
@@ -122,41 +125,79 @@ class SparqlBuilderTest(BaseWpOneDbTest):
     response.json.assert_called_once()
     self.assertEqual(b'Foo', actual)
 
-  @patch('wp1.selection.models.sparql.requests')
-  def test_build_server_error(self, mock_requests):
-    response = MagicMock()
-    mock_requests.post.return_value = response
-    response.raise_for_status.side_effect = Exception()
-
-    with self.assertRaises(Exception):
-      actual = self.builder.build('text/tab-separated-values',
+  def test_build_wrong_content_type(self):
+    with self.assertRaises(Wp1FatalSelectionError):
+      actual = self.builder.build(None,
                                   query=self.cats_uk_us_after_1950,
                                   queryVariable='cat')
 
-  @patch('wp1.selection.models.sparql.requests')
-  def test_build_not_valid_json(self, mock_requests):
+  def test_build_missing_query(self):
+    with self.assertRaises(Wp1FatalSelectionError):
+      actual = self.builder.build('text/tab-separated-values',
+                                  project='en.wikipedia.org',
+                                  queryVariable='cat')
+
+  @patch('wp1.selection.models.sparql.requests.post')
+  def test_build_server_error(self, mock_request_post):
+    response = MagicMock()
+    mock_request_post.return_value = response
+    response.raise_for_status.side_effect = requests.exceptions.HTTPError
+
+    with self.assertRaises(Wp1FatalSelectionError):
+      actual = self.builder.build('text/tab-separated-values',
+                                  project='en.wikipedia.org',
+                                  query=self.cats_uk_us_after_1950,
+                                  queryVariable='cat')
+
+  @patch('wp1.selection.models.sparql.requests.post')
+  def test_build_server_timeout(self, mock_request_post):
+    response = MagicMock()
+    mock_request_post.side_effect = requests.exceptions.Timeout
+
+    with self.assertRaises(Wp1RetryableSelectionError):
+      actual = self.builder.build('text/tab-separated-values',
+                                  project='en.wikipedia.org',
+                                  query=self.cats_uk_us_after_1950,
+                                  queryVariable='cat')
+
+  @patch('wp1.selection.models.sparql.requests.post')
+  def test_build_server_request_exception(self, mock_request_post):
+    response = MagicMock()
+    mock_request_post.side_effect = requests.exceptions.RequestException
+
+    with self.assertRaises(Wp1RetryableSelectionError):
+      actual = self.builder.build('text/tab-separated-values',
+                                  project='en.wikipedia.org',
+                                  query=self.cats_uk_us_after_1950,
+                                  queryVariable='cat')
+
+  @patch('wp1.selection.models.sparql.requests.post')
+  def test_build_not_valid_json(self, mock_request_post):
     response = MagicMock()
     response.json.side_effect = json.decoder.JSONDecodeError('foo', 'bar', 0)
-    mock_requests.post.return_value = response
+    mock_request_post.return_value = response
 
-    with self.assertRaises(ValueError):
+    with self.assertRaises(Wp1FatalSelectionError):
       actual = self.builder.build('text/tab-separated-values',
+                                  project='en.wikipedia.org',
                                   query=self.cats_uk_us_after_1950,
                                   queryVariable='cat')
 
-  @patch('wp1.selection.models.sparql.requests')
-  def test_build_not_resp_too_large(self, mock_requests):
+  @patch('wp1.selection.models.sparql.requests.post')
+  def test_build_not_resp_too_large(self, mock_request_post):
     response = MagicMock()
     response.content = 'a' * (1024 * 1024 * 20)
-    mock_requests.post.return_value = response
+    mock_request_post.return_value = response
 
-    with self.assertRaises(ValueError):
+    with self.assertRaises(Wp1FatalSelectionError):
       actual = self.builder.build('text/tab-separated-values',
+                                  project='en.wikipedia.org',
                                   query=self.cats_uk_us_after_1950,
                                   queryVariable='cat')
 
   def test_validate(self):
     actual = self.builder.validate(query=self.cats_uk_us_after_1950,
+                                   project='en.wikipedia.org',
                                    queryVariable='cat')
 
     self.assertEqual(('', '', []), actual)
@@ -181,12 +222,15 @@ class SparqlBuilderTest(BaseWpOneDbTest):
 
   def test_validate_missing_prefix(self):
     query = 'SELECT ?foo WHERE { ?foo blah:x ?bar }'
-    actual = self.builder.validate(query=query, queryVariable='foo')
+    actual = self.builder.validate(project='en.wikipedia.org',
+                                   query=query,
+                                   queryVariable='foo')
 
     self.assertEqual(('', query, ['Unknown namespace prefix : blah']), actual)
 
   def test_validate_missing_query_variable(self):
-    actual = self.builder.validate(query=self.cats_uk_us_after_1950)
+    actual = self.builder.validate(project='en.wikipedia.org',
+                                   query=self.cats_uk_us_after_1950)
     self.assertEqual(
         ('', self.cats_uk_us_after_1950,
          ['The query variable "article" did not appear in the query']), actual)

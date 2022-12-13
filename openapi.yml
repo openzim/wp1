@@ -459,23 +459,43 @@ paths:
                     type: array
                     items:
                       type: object
+                      description: 'Each item in this array represents a Selection, with the corresponding Builder data destructured and included as well.'
                       properties:
                         id:
                           type: string
+                        created_at:
+                          type: number
+                          description: 'Unix timestamp when the Builder was created.'
+                        updated_at:
+                          type: number
+                          description: 'Unix timestamp when the Builder was last updated.'
                         name:
                           type: string
                         project:
                           type: string
-                        selections:
-                          type: object
-                          description: Empty when selections are missing
-                          properties:
-                            s_id:
-                              type: string
-                            content_type:
-                              type: string
-                            selection_url:
-                              type: string
+                        model:
+                          type: string
+                        s_id:
+                          type: string
+                          description: 'The id of the latest materialized selection of this content_type.'
+                        s_created_at:
+                          type: number
+                          description: 'Unix timestamp when the Selection was created.'
+                        s_updated_at:
+                          type: number
+                          description: 'Unix timestamp when the Selection was last updated.'
+                        s_content_type:
+                          type: string
+                          description: 'MIME type of the content of this selection. A builder can have multiple selections with different content_types.'
+                        s_extension:
+                          type: string
+                          description: 'The three letter extension that corresponds to the content type.'
+                        s_url:
+                          type: string
+                          description: 'The URL for the data of this selection. This will likely be a redirect.'
+                        s_status:
+                          type: string
+                          description: 'An enum-like value that is either null (there is no meaningful status to report), FAILED (building the selection failed permanently), or CAN_RETRY (building the selection failed but can be retried).'
 
 components:
   schemas:
@@ -517,6 +537,24 @@ components:
         params:
           type: object
           description: 'The parameters of the Builder that are used to materialize the Selection. This varies depending on the model.'
+        selection_errors:
+          type: array
+          description: 'Any errors that occurred while materializing the Builder, and whether they are retryable'
+          items:
+            type: object
+            properties:
+              error_messages:
+                type: array
+                description: 'The raw error messages returned from the API server'
+                items:
+                  type: string
+              ext:
+                type: string
+                description: 'The extension for the selection for which materialization was attempted'
+              status:
+                type: string
+                description: 'Either "CAN_RETRY" if the error is retryable, or "FATAL" if not'
+
     Project:
       type: object
       properties:

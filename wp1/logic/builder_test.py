@@ -44,7 +44,9 @@ class BuilderTest(BaseWpOneDbTest):
       's_extension':
           'tsv',
       's_url':
-          'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv'
+          'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv',
+      's_status':
+          None,
   }]
 
   expected_lists_with_multiple_selections = [
@@ -71,6 +73,8 @@ class BuilderTest(BaseWpOneDbTest):
               'xls',
           's_url':
               'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.xls',
+          's_status':
+              None,
       },
       {
           'id':
@@ -95,6 +99,8 @@ class BuilderTest(BaseWpOneDbTest):
               'tsv',
           's_url':
               'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv',
+          's_status':
+              None,
       },
   ]
 
@@ -110,6 +116,7 @@ class BuilderTest(BaseWpOneDbTest):
       's_content_type': None,
       's_extension': None,
       's_url': None,
+      's_status': None,
   }]
 
   expected_lists_with_unmapped_selections = [{
@@ -124,6 +131,7 @@ class BuilderTest(BaseWpOneDbTest):
       's_content_type': 'foo/bar-baz',
       's_extension': '???',
       's_url': None,
+      's_status': None,
   }]
 
   def _insert_builder(self, current_version=None):
@@ -149,11 +157,20 @@ class BuilderTest(BaseWpOneDbTest):
                         content_type,
                         version=1,
                         object_key='selections/foo/1234/name.tsv',
-                        builder_id=b'1a-2b-3c-4d'):
+                        builder_id=b'1a-2b-3c-4d',
+                        has_errors=False):
+    if has_errors:
+      status = 'CAN_RETRY'
+      error_messages = '{"error_messages":["There was an error"]}'
+    else:
+      status = None
+      error_messages = None
+
     with self.wp10db.cursor() as cursor:
       cursor.execute(
-          'INSERT INTO selections VALUES (%s, %s, %s, "20191225044444", %s, %s)',
-          (id_, builder_id, content_type, version, object_key))
+          'INSERT INTO selections VALUES (%s, %s, %s, "20191225044444", %s, %s, %s, %s)',
+          (id_, builder_id, content_type, version, object_key, status,
+           error_messages))
     self.wp10db.commit()
 
   def _get_builder_by_user_id(self):
@@ -383,7 +400,7 @@ class BuilderTest(BaseWpOneDbTest):
     self.assertTrue(actual)
 
     with self.wp10db.cursor() as cursor:
-      cursor.execute('SELECT * FROM builders where b_id = %s', (1,))
+      cursor.execute('SELECT * FROM builders where b_id = %s', ('1a-2b-3c-4d',))
       db_builder = cursor.fetchone()
       actual_builder = Builder(**db_builder)
     self.assertEqual(builder, actual_builder)
@@ -427,7 +444,8 @@ class BuilderTest(BaseWpOneDbTest):
     builder_id = self._insert_builder()
     self._insert_selection(1, 'text/tab-separated-values')
 
-    actual = logic_builder.latest_selection_url(self.wp10db, -1, 'tsv')
+    actual = logic_builder.latest_selection_url(self.wp10db, 'foo-bar-baz',
+                                                'tsv')
 
     self.assertIsNone(actual)
 
@@ -527,3 +545,30 @@ class BuilderTest(BaseWpOneDbTest):
         b'object_key_1', b'object_key_2', b'object_key_3',
         b'proper/selection/4321/name.tsv'
     ])
+
+  def test_latest_selections_with_errors(self):
+    builder_id = self._insert_builder(current_version=2)
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           version=1,
+                           builder_id=builder_id,
+                           has_errors=True)
+    self._insert_selection(2,
+                           'text/tab-separated-values',
+                           version=2,
+                           builder_id=builder_id,
+                           has_errors=False)
+    self._insert_selection(3,
+                           'application/vnd.ms-excel',
+                           version=2,
+                           builder_id=builder_id,
+                           has_errors=True)
+
+    actual = logic_builder.latest_selections_with_errors(
+        self.wp10db, builder_id)
+
+    self.assertEqual([{
+        'status': 'CAN_RETRY',
+        'ext': 'xls',
+        'error_messages': ['There was an error']
+    }], actual)

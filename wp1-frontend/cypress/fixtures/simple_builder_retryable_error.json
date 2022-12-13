@@ -1,0 +1,15 @@
+{
+  "params": {
+    "list": ["Eiffel_Tower", "Statue_of_Liberty"]
+  },
+  "name": "Builder 10",
+  "model": "wp1.selection.models.simple",
+  "project": "en.wiktionary.org",
+  "selection_errors": [
+    {
+      "error_messages": ["There was a timeout."],
+      "ext": "tsv",
+      "status": "CAN_RETRY"
+    }
+  ]
+}
