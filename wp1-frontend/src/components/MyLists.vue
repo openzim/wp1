@@ -125,7 +125,7 @@ export default {
       );
     },
     hasSelectionError: function (item) {
-      return item.s_status !== null;
+      return item.s_status !== null && item.s_status !== 'OK';
     },
     getLists: async function () {
       let createDataTable = false;
