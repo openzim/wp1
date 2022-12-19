@@ -186,7 +186,7 @@ def latest_selections_with_errors(wp10db, builder_id):
            FROM selections AS s JOIN builders as b
              ON s.s_builder_id = b.b_id
              AND s.s_version = b.b_current_version
-           WHERE b.b_id = %s AND s.s_status IS NOT NULL
+           WHERE b.b_id = %s AND s.s_status IS NOT NULL AND s.s_status != 'OK'
         ''', (builder_id,))
     data = cursor.fetchall()
   if data is None:
@@ -233,6 +233,7 @@ def get_builders_with_selections(wp10db, user_id):
   for b in data:
     has_selection = b['s_id'] is not None
     has_status = b['s_status'] is not None
+    is_ok_status = b['s_status'] == b'OK'
     content_type = b['s_content_type'].decode(
         'utf-8') if has_selection else None
     selection_id = b['s_id'].decode('utf-8') if has_selection else None
@@ -261,7 +262,7 @@ def get_builders_with_selections(wp10db, user_id):
             if has_selection else None,
         's_url':
             latest_url_for(b['b_id'].decode('utf-8'), content_type)
-            if has_selection and not has_status else None,
+            if has_selection and (is_ok_status or not has_status) else None,
         's_status':
             b['s_status'].decode('utf-8')
             if has_selection and has_status else None
