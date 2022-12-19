@@ -49,6 +49,49 @@ describe('the create SPARQL builder page', () => {
       cy.get('.errors').contains('The query was not valid');
     });
 
+    describe('entering a query from a wikidata url', () => {
+      it('updates the query from a valid URL', () => {
+        cy.get('#toggleUpdateQuery').click();
+        cy.get('#updateQueryInput')
+          .click()
+          .type('https://query.wikidata.org/#SELECT%20%3Ffoo%20WHERE%20%7B%7D');
+        cy.get('#updateQuery').click();
+        cy.get('#items > .form-control').should(
+          'have.value',
+          'SELECT ?foo WHERE {}'
+        );
+      });
+
+      it('displays an error if the field is empty', () => {
+        cy.get('#toggleUpdateQuery').click();
+        cy.get('#updateQuery').click();
+        cy.get('#items > .form-control').should('have.value', '');
+        cy.get('#collapseUrlQuery .error').contains('Could not extract');
+      });
+
+      it('displays an error if the field contains a non-wikidata URL', () => {
+        cy.get('#toggleUpdateQuery').click();
+        cy.get('#updateQueryInput')
+          .click()
+          .type('https://www.google.com/?q=#SELECT%20%3Ffoo%20WHERE%20%7B%7D');
+        cy.get('#updateQuery').click();
+        cy.get('#items > .form-control').should('have.value', '');
+        cy.get('#collapseUrlQuery .error').contains('Could not extract');
+      });
+
+      it('displays an error if the field contains a wikidata URL without a query', () => {
+        cy.get('#toggleUpdateQuery').click();
+        cy.get('#updateQueryInput')
+          .click()
+          .type(
+            'https://www.wikidata.org/wiki/Wikidata:SPARQL_query_service/Wikidata_Query_Help'
+          );
+        cy.get('#updateQuery').click();
+        cy.get('#items > .form-control').should('have.value', '');
+        cy.get('#collapseUrlQuery .error').contains('Could not extract');
+      });
+    });
+
     it('saves successfully after fixing invalid query', () => {
       cy.intercept('v1/builders/', (req) => {
         if (req.body.params.query.indexOf('WHERE') === -1) {
