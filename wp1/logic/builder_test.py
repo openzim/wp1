@@ -46,7 +46,7 @@ class BuilderTest(BaseWpOneDbTest):
       's_url':
           'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv',
       's_status':
-          None,
+          'OK',
   }]
 
   expected_lists_with_multiple_selections = [
@@ -74,7 +74,7 @@ class BuilderTest(BaseWpOneDbTest):
           's_url':
               'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.xls',
           's_status':
-              None,
+              'OK',
       },
       {
           'id':
@@ -100,7 +100,7 @@ class BuilderTest(BaseWpOneDbTest):
           's_url':
               'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv',
           's_status':
-              None,
+              'OK',
       },
   ]
 
@@ -131,7 +131,7 @@ class BuilderTest(BaseWpOneDbTest):
       's_content_type': 'foo/bar-baz',
       's_extension': '???',
       's_url': None,
-      's_status': None,
+      's_status': 'OK',
   }]
 
   def _insert_builder(self, current_version=None):
@@ -163,7 +163,7 @@ class BuilderTest(BaseWpOneDbTest):
       status = 'CAN_RETRY'
       error_messages = '{"error_messages":["There was an error"]}'
     else:
-      status = None
+      status = 'OK'
       error_messages = None
 
     with self.wp10db.cursor() as cursor:
