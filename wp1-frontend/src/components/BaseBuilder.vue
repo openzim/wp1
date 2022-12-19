@@ -19,7 +19,7 @@
         <div class="col-lg-6 col-md-9 mx-4">
           <h2 v-if="!isEditing" class="ml-4">New {{ listName }}</h2>
           <h2 v-else class="ml-4">Editing {{ listName }}</h2>
-          <div v-if="!isEditing" class="ml-4 mb-4">
+          <div v-if="!isEditing" class="ml-4">
             <slot name="create-desc"></slot>
           </div>
         </div>
@@ -77,7 +77,7 @@
             novalidate
           >
             <div ref="form_group" class="form-group">
-              <div id="project" class="m-4">
+              <div id="project" class="mb-4 mx-4">
                 <label>Project</label>
                 <select v-model="builder.project" class="custom-select my-list">
                   <option v-if="wikiProjects.length == 0" selected>
