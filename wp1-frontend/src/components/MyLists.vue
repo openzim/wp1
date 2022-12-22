@@ -22,14 +22,14 @@
           <tbody>
             <tr v-for="item in list" :key="item.s_id">
               <td>{{ item.name }}</td>
-              <td>
+              <td :data-order="item.created_at">
                 {{
                   new Date(item.created_at * 1000).toLocaleDateString() +
                   ' ' +
                   new Date(item.created_at * 1000).toLocaleTimeString()
                 }}
               </td>
-              <td>
+              <td :data-order="item.updated_at">
                 {{
                   new Date(item.updated_at * 1000).toLocaleDateString() +
                   ' ' +
@@ -37,14 +37,14 @@
                 }}
               </td>
               <td>{{ item.project }}</td>
-              <td v-if="item.s_updated_at">
+              <td v-if="item.s_updated_at" :data-order="item.s_updated_at">
                 {{
                   new Date(item.s_updated_at * 1000).toLocaleDateString() +
                   ' ' +
                   new Date(item.s_updated_at * 1000).toLocaleTimeString()
                 }}
               </td>
-              <td v-else>-</td>
+              <td v-else data-order="0">-</td>
               <td v-if="!isPending(item) && !hasSelectionError(item)">
                 <a :href="item.s_url">Download {{ item.s_extension }}</a>
               </td>
@@ -145,6 +145,7 @@ export default {
       if (createDataTable) {
         this.$nextTick(function () {
           $('#list-table').DataTable({
+            columnDefs: [{ orderable: false, targets: [5, 6] }],
             order: [[2, 'desc']],
           });
         });
