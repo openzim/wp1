@@ -168,7 +168,7 @@ export default {
         this.queryUpdateError = true;
         return;
       }
-      const parts = url.split('wikidata.org/#');
+      const parts = url.split('#');
       if (parts.length < 2) {
         this.queryUpdateError = true;
         return;
