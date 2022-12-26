@@ -174,6 +174,8 @@ def latest_selection_url(wp10db, builder_id, ext):
     return None
 
   if data['object_key'] is None:
+    logger.warning('Object key for selection was None, builder id=%s',
+                   builder_id)
     return None
 
   return logic_selection.url_for(data['object_key'].decode('utf-8'))
@@ -189,11 +191,6 @@ def latest_selections_with_errors(wp10db, builder_id):
            WHERE b.b_id = %s AND s.s_status IS NOT NULL AND s.s_status != 'OK'
         ''', (builder_id,))
     data = cursor.fetchall()
-  if data is None:
-    logger.warning(
-        'Could not find latest selections with errors for builder id=%s',
-        builder_id)
-    return None
 
   res = []
   for db_selection in data:
