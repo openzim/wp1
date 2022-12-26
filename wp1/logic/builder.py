@@ -191,11 +191,6 @@ def latest_selections_with_errors(wp10db, builder_id):
            WHERE b.b_id = %s AND s.s_status IS NOT NULL AND s.s_status != 'OK'
         ''', (builder_id,))
     data = cursor.fetchall()
-  if data is None:
-    logger.warning(
-        'Could not find latest selections with errors for builder id=%s',
-        builder_id)
-    return None
 
   res = []
   for db_selection in data:

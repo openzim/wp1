@@ -456,6 +456,14 @@ class BuilderTest(BaseWpOneDbTest):
 
     self.assertIsNone(actual)
 
+  def test_latest_selection_url_no_object_key(self):
+    builder_id = self._insert_builder()
+    self._insert_selection(1, 'text/tab-separated-values', object_key=None)
+
+    actual = logic_builder.latest_selection_url(self.wp10db, builder_id, 'tsv')
+
+    self.assertIsNone(actual)
+
   def test_latest_selection_url_unrelated_selections(self):
     builder_id = self._insert_builder()
     self._insert_selection(1, 'text/tab-separated-values', builder_id=-1)
@@ -572,3 +580,19 @@ class BuilderTest(BaseWpOneDbTest):
         'ext': 'xls',
         'error_messages': ['There was an error']
     }], actual)
+
+  def test_latest_selection_with_errors_no_errors(self):
+    builder_id = self._insert_builder()
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           builder_id=builder_id,
+                           has_errors=False)
+    self._insert_selection(2,
+                           'application/vnd.ms-excel',
+                           builder_id=builder_id,
+                           has_errors=False)
+
+    actual = logic_builder.latest_selections_with_errors(
+        self.wp10db, builder_id)
+
+    self.assertEqual(0, len(actual))
