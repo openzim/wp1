@@ -174,6 +174,8 @@ def latest_selection_url(wp10db, builder_id, ext):
     return None
 
   if data['object_key'] is None:
+    logger.warning('Object key for selection was None, builder id=%s',
+                   builder_id)
     return None
 
   return logic_selection.url_for(data['object_key'].decode('utf-8'))

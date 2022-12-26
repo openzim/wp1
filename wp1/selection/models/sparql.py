@@ -34,6 +34,9 @@ class Builder(AbstractBuilder):
   abstract class.
   '''
 
+  def construct_query_variable(self, qv):
+    return DEFAULT_QUERY_VARIABLE if not qv else qv.lstrip('?')
+
   def instrument_query(self, a, project, query_variable=None):
     '''
     Takes a SPARQL query, and adds a binding for Wikipedia article names.
@@ -50,10 +53,7 @@ class Builder(AbstractBuilder):
     Note: this is only designed to work on SELECT queries and will likely have
     undefined behavior for anything else.
     '''
-    if not query_variable:
-      query_variable = DEFAULT_QUERY_VARIABLE
-    else:
-      query_variable = query_variable.lstrip('?')
+    query_variable = self.construct_query_variable(query_variable)
 
     def modify_query_in_place(node):
       if getattr(node, 'name', None) == 'Project':
@@ -136,7 +136,17 @@ class Builder(AbstractBuilder):
     ]
     articles = [self.extract_article(url) for url in urls]
 
-    return '\n'.join(articles).encode('utf-8')
+    if articles:
+      return '\n'.join(articles).encode('utf-8')
+
+    raise Wp1FatalSelectionError(
+        'The Wikidata response did not contain any URLs for subjects '
+        'in your query identified with the variable "?%(query_variable)s". '
+        'Check that "?%(query_variable)s" refers to a Wikidata "topic", '
+        'aka something with a QID. It may also be the case that none of '
+        'the subjects your query selected have articles in the project '
+        'you selected' %
+        {'query_variable': self.construct_query_variable(query_variable)})
 
   def validate(self, **params):
     try:
@@ -146,7 +156,7 @@ class Builder(AbstractBuilder):
       return ('', params['query'],
               ['Could not parse query, are you sure it\'s valid SPARQL?'])
 
-    qv = params.get('queryVariable', DEFAULT_QUERY_VARIABLE)
+    qv = self.construct_query_variable(params.get('queryVariable'))
     if qv not in params['query']:
       return ('', params['query'],
               ['The query variable "%s" did not appear in the query' % qv])
