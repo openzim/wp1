@@ -554,6 +554,26 @@ class BuilderTest(BaseWpOneDbTest):
         b'proper/selection/4321/name.tsv'
     ])
 
+  @patch('wp1.logic.builder.logic_selection.delete_keys_from_storage')
+  def test_delete_builder_object_keys_missing(self, patched_delete_keys):
+    builder_id = self._insert_builder_with_multiple_version_selections()
+    patched_delete_keys.return_value = True
+
+    self._insert_selection(5,
+                           'application/vnd.ms-excel',
+                           version=3,
+                           object_key=None,
+                           builder_id=builder_id)
+
+    actual = logic_builder.delete_builder(self.wp10db, 1234, builder_id)
+
+    self.assertTrue(actual['db_delete_success'])
+    self.assertTrue(actual['s3_delete_success'])
+    patched_delete_keys.assert_called_once_with([
+        b'object_key_1', b'object_key_2', b'object_key_3',
+        b'proper/selection/4321/name.tsv'
+    ])
+
   def test_latest_selections_with_errors(self):
     builder_id = self._insert_builder(current_version=2)
     self._insert_selection(1,
