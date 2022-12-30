@@ -96,6 +96,7 @@ def delete_builder(wp10db, user_id, builder_id):
         '''SELECT s.s_object_key as object_key FROM selections AS s
            JOIN builders AS b ON b.b_id = s.s_builder_id
            WHERE b.b_user_id = %s AND b.b_id = %s
+             AND s.s_object_key IS NOT NULL
         ''', (user_id, builder_id))
     keys_to_delete = [d['object_key'] for d in cursor.fetchall()]
     cursor.execute(
