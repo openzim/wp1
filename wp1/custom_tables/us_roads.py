@@ -64,7 +64,6 @@ class CustomTable(BaseCustomTable):
       if key in self.params:
         data[key] = self.params[key]
     data['projects'] = projects
-    print(data)
     return data
 
   def create_wikicode(self, table_data):

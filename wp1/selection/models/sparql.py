@@ -1,4 +1,5 @@
 import json
+import urllib.parse
 
 from pyparsing.exceptions import ParseException
 import requests
@@ -78,7 +79,7 @@ class Builder(AbstractBuilder):
     algebra.traverse(a, visitPre=modify_query_in_place)
 
   def extract_article(self, url):
-    return url.split('/')[-1]
+    return urllib.parse.unquote(url.split('/')[-1])
 
   def build(self, content_type, **params):
     if content_type != 'text/tab-separated-values':
