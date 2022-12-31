@@ -32,6 +32,11 @@ class SparqlBuilderTest(BaseWpOneDbTest):
               '_wp1_0': {
                   'value': 'https://en.wikipedia.org/wiki/Foo'
               }
+          }, {
+              'foo': {},
+              '_wp1_0': {
+                  'value': 'https://en.wikipedia.org/wiki/B%C3%A5r'
+              }
           }]
       }
   }
@@ -100,7 +105,7 @@ class SparqlBuilderTest(BaseWpOneDbTest):
             'format': 'json'
         })
     response.json.assert_called_once()
-    self.assertEqual(b'Foo', actual)
+    self.assertEqual('Foo\nBår'.encode('utf-8'), actual)
 
   @patch('wp1.selection.models.sparql.requests')
   def test_build_french_wikipedia(self, mock_requests):
@@ -123,7 +128,7 @@ class SparqlBuilderTest(BaseWpOneDbTest):
             'format': 'json'
         })
     response.json.assert_called_once()
-    self.assertEqual(b'Foo', actual)
+    self.assertEqual('Foo\nBår'.encode('utf-8'), actual)
 
   def test_build_wrong_content_type(self):
     with self.assertRaises(Wp1FatalSelectionError):
