@@ -189,6 +189,7 @@ export default {
   components: { SecondaryNav, LoginRequired, PulseLoader },
   name: 'BaseBuilder',
   props: {
+    builderId: String,
     invalidItems: String,
     listName: String,
     model: String,
@@ -219,9 +220,6 @@ export default {
     },
     isEditing: function () {
       return !!this.builderId;
-    },
-    builderId: function () {
-      return this.$route.params.builder_id;
     },
     computedInvalidItems: function () {
       return this.invalidItems;

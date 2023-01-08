@@ -1,8 +1,10 @@
 <template>
   <BaseBuilder
+    :key="$route.path"
     :listName="'SPARQL Selection'"
     :model="'wp1.selection.models.sparql'"
     :params="params"
+    :builderId="$route.params.builder_id"
     @onBeforeSubmit="onBeforeSubmit"
     @onValidationError="onValidationError"
     @onBuilderLoaded="onBuilderLoaded"
@@ -100,8 +102,7 @@
             '  ?article wdt:P31 wd:Q5741069 .\n' +
             '  ?article rdfs:label ?bandLabel .\n' +
             '  FILTER(LANG(?bandLabel) = &quot;en&quot;) .\n' +
-            '  FILTER(STRSTARTS(?bandLabel, \'M\')) .\n}' +
-            success
+            '  FILTER(STRSTARTS(?bandLabel, \'M\')) .\n}'
           "
           class="form-control my-list"
           :class="{ 'is-invalid': !success }"
