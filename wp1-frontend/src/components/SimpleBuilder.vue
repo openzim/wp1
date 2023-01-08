@@ -1,8 +1,10 @@
 <template>
   <BaseBuilder
+    :key="$route.path"
     :listName="'Simple Selection'"
     :model="'wp1.selection.models.simple'"
     :params="params"
+    :builderId="$route.params.builder_id"
     :invalidItems="invalidItems"
     @onBuilderLoaded="onBuilderLoaded"
     @onBeforeSubmit="onBeforeSubmit"
@@ -25,8 +27,7 @@
             'Eiffel_Tower\nStatue_of_Liberty\nFreedom_Monument_(Baghdad)\n' +
             'George-Étienne_Cartier_Monument\n\n# Whitespace and comments ' +
             'starting with # are ignored' +
-            '\n' +
-            success
+            '\n'
           "
           class="form-control my-list"
           :class="{ 'is-invalid': !success }"
