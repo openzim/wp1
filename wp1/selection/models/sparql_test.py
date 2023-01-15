@@ -18,6 +18,8 @@ class SparqlBuilderTest(BaseWpOneDbTest):
     {
       ?cat wdt:P31 wd:Q146;
           wdt:P569 ?birth.
+      ?url schema:isPartOf <https://en.wikipedia.org/> .
+      ?url schema:about ?cat .
       { ?cat wdt:P19 wd:Q30. }
       UNION
       { ?cat wdt:P19 wd:Q145. }
@@ -25,37 +27,60 @@ class SparqlBuilderTest(BaseWpOneDbTest):
     }
   '''
 
+  french_query = cats_uk_us_after_1950.replace('en.wikipedia.org',
+                                               'fr.wikipedia.org')
+
   json_return_value = {
       'results': {
           'bindings': [{
-              'foo': {},
-              '_wp1_0': {
+              'cat': {
+                  'value': 'Sparkles'
+              },
+              'birth': {
+                  'value': '1960-01-01'
+              },
+              'url': {
                   'value': 'https://en.wikipedia.org/wiki/Foo'
               }
           }, {
-              'foo': {},
-              '_wp1_0': {
+              'cat': {
+                  'value': 'Sprinkles'
+              },
+              'birth': {
+                  'value': '1965-01-01'
+              },
+              'url': {
                   'value': 'https://en.wikipedia.org/wiki/B%C3%A5r'
               }
           }]
       }
   }
 
-  expanded_query = (
-      'SELECT ?cat ?_wp1_0{FILTER(YEAR(?birth) > '
-      '"1950"^^<http://www.w3.org/2001/XMLSchema#integer>) ?cat '
-      '<http://www.wikidata.org/prop/direct/P31> '
-      '<http://www.wikidata.org/entity/Q146>.?cat '
-      '<http://www.wikidata.org/prop/direct/P569> ?birth.OPTIONAL{?_wp1_0 <http://schema.org/isPartOf> '
-      '<https://en.wikipedia.org/>.?_wp1_0 <http://schema.org/about> ?cat.}{?cat '
-      '<http://www.wikidata.org/prop/direct/P19> '
-      '<http://www.wikidata.org/entity/Q30>.OPTIONAL{?_wp1_0 <http://schema.org/isPartOf> '
-      '<https://en.wikipedia.org/>.?_wp1_0 <http://schema.org/about> '
-      '?cat.}}UNION{?cat <http://www.wikidata.org/prop/direct/P19> '
-      '<http://www.wikidata.org/entity/Q145>.OPTIONAL{?_wp1_0 <http://schema.org/isPartOf> '
-      '<https://en.wikipedia.org/>.?_wp1_0 <http://schema.org/about> ?cat.}}}')
-
-  french_query = expanded_query.replace('en.wikipedia.org', 'fr.wikipedia.org')
+  french_return_value = {
+      'results': {
+          'bindings': [{
+              'cat': {
+                  'value': 'Sparkles'
+              },
+              'birth': {
+                  'value': '1960-01-01'
+              },
+              'url': {
+                  'value': 'https://fr.wikipedia.org/wiki/Foo'
+              }
+          }, {
+              'cat': {
+                  'value': 'Sprinkles'
+              },
+              'birth': {
+                  'value': '1965-01-01'
+              },
+              'url': {
+                  'value': 'https://fr.wikipedia.org/wiki/B%C3%A5r'
+              }
+          }]
+      }
+  }
 
   def setUp(self):
     super().setUp()
@@ -67,7 +92,6 @@ class SparqlBuilderTest(BaseWpOneDbTest):
                                  b_model=b'wp1.selection.models.sparql',
                                  b_params=json.dumps({
                                      'query': self.cats_uk_us_after_1950,
-                                     'queryVariable': 'cat',
                                  }).encode('utf-8'))
     self.builder = SparqlBuilder()
 
@@ -81,8 +105,11 @@ class SparqlBuilderTest(BaseWpOneDbTest):
                              'text/tab-separated-values')
 
     actual = get_first_selection(self.wp10db)
-    self.assertEqual(actual.s_content_type, b'text/tab-separated-values')
-    self.assertEqual(actual.s_builder_id, b'1a-2b-3c-4d')
+    self.assertEqual(b'text/tab-separated-values', actual.s_content_type)
+    self.assertEqual(
+        b'1a-2b-3c-4d',
+        actual.s_builder_id,
+    )
 
   @patch('wp1.selection.models.sparql.requests')
   def test_build(self, mock_requests):
@@ -92,8 +119,7 @@ class SparqlBuilderTest(BaseWpOneDbTest):
 
     actual = self.builder.build('text/tab-separated-values',
                                 project='en.wikipedia.org',
-                                query=self.cats_uk_us_after_1950,
-                                queryVariable='cat')
+                                query=self.cats_uk_us_after_1950)
 
     mock_requests.post.assert_called_once_with(
         'https://query.wikidata.org/sparql',
@@ -101,7 +127,7 @@ class SparqlBuilderTest(BaseWpOneDbTest):
             'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
         },
         data={
-            'query': self.expanded_query,
+            'query': self.cats_uk_us_after_1950,
             'format': 'json'
         })
     response.json.assert_called_once()
@@ -110,13 +136,12 @@ class SparqlBuilderTest(BaseWpOneDbTest):
   @patch('wp1.selection.models.sparql.requests')
   def test_build_french_wikipedia(self, mock_requests):
     response = MagicMock()
-    response.json.return_value = self.json_return_value
+    response.json.return_value = self.french_return_value
     mock_requests.post.return_value = response
 
     actual = self.builder.build('text/tab-separated-values',
                                 project='fr.wikipedia.org',
-                                query=self.cats_uk_us_after_1950,
-                                queryVariable='cat')
+                                query=self.french_query)
 
     mock_requests.post.assert_called_once_with(
         'https://query.wikidata.org/sparql',
@@ -232,10 +257,3 @@ class SparqlBuilderTest(BaseWpOneDbTest):
                                    queryVariable='foo')
 
     self.assertEqual(('', query, ['Unknown namespace prefix : blah']), actual)
-
-  def test_validate_missing_query_variable(self):
-    actual = self.builder.validate(project='en.wikipedia.org',
-                                   query=self.cats_uk_us_after_1950)
-    self.assertEqual(
-        ('', self.cats_uk_us_after_1950,
-         ['The query variable "article" did not appear in the query']), actual)
