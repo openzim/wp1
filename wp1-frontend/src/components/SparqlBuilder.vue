@@ -111,23 +111,6 @@
         ></textarea>
         <div class="invalid-feedback">Please provide a valid query</div>
       </div>
-      <div id="queryVariable" class="m-4">
-        <label for="queryVariable">Query variable</label>
-        <p class="explanation">
-          The variable in your query that represents the Wikidata entity whose
-          article URLs should be retrieved. This will default to
-          <span style="white-space: nowrap">"?article"</span>, for when your
-          query already selects a variable named "?article". Note: this variable
-          must appear in the SELECT clause of your query.
-        </p>
-        <input
-          v-on:blur="validationOnBlur"
-          v-model="params.queryVariable"
-          type="text"
-          placeholder="?article"
-          class="form-control my-list"
-        />
-      </div>
     </template>
   </BaseBuilder>
 </template>
