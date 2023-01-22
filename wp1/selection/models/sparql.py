@@ -118,9 +118,11 @@ class Builder(AbstractBuilder):
       return '\n'.join(articles).encode('utf-8')
 
     raise Wp1FatalSelectionError(
-        'Did not find any articles for query. Make sure you are selecting '
-        'a ?url in your query using the "schema:about" predicate. '
-        'For more information, check the WP1 user documentation.')
+        'Did not find any articles in query results. Make sure you are selecting '
+        'a ?url in your query using the "schema:about" predicate, and that you are '
+        'using the schema:isPartOf predicate to limit your URLs to a project that '
+        'matches the project you selected on the Selection edit screen. '
+        'For more information, check the WP1 end user documentation.')
 
   def validate(self, **params):
     try:
