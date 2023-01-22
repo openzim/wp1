@@ -26,7 +26,7 @@ site.
 
 # Main navigation links
 
-![Screenshot of WP 1.0 website with navigation highlighted](/img/header.png)
+![Screenshot of WP 1.0 website with navigation highlighted](img/header.png)
 
 At the top of the WP 1.0 [website](https://wp1.openzim.org), there are various
 navigation links. Here is a brief description of the page that each one leads
