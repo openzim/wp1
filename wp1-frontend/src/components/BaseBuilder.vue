@@ -53,6 +53,12 @@
                 Unfortunately, this error cannot be retried. Please update your
                 selection.
               </div>
+              <div>
+                For more information on creating a selection, see the
+                <a href="https://wp1.readthedocs.io/en/latest/user/selections/"
+                  >end user documentation</a
+                >
+              </div>
             </div>
             <div class="py-2">
               <button

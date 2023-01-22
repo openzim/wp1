@@ -12,8 +12,6 @@ from wp1.constants import WIKIDATA_PREFIXES, WP1_USER_AGENT
 from wp1.exceptions import Wp1RetryableSelectionError, Wp1FatalSelectionError
 from wp1.selection.abstract_builder import AbstractBuilder
 
-DEFAULT_QUERY_VARIABLE = 'article'
-
 
 class Builder(AbstractBuilder):
   '''
@@ -35,51 +33,41 @@ class Builder(AbstractBuilder):
   abstract class.
   '''
 
-  def construct_query_variable(self, qv):
-    return DEFAULT_QUERY_VARIABLE if not qv else qv.lstrip('?')
-
-  def instrument_query(self, a, project, query_variable=None):
-    '''
-    Takes a SPARQL query, and adds a binding for Wikipedia article names.
-
-    Given a pre-parsed SPARQL Algebra 'a' (from the rdflib sparql library), this method
-    adds a variable to the SELECT clause, '_wp1_0'. It also adds an OPTIONAL (LEFT JOIN)
-    binding for this variable, such that the variable is bound to the English Wikipedia
-    URL of the main subject of the query (which is derived from the 'query_variable'
-    parameter). When the instrumented query is sent to the Wikidata SPARQL endpoint,
-    the values of '_wp1_0' are the primary data that is retrieved.
-
-    Modifies the algebra 'a' in place. No return value.
-
-    Note: this is only designed to work on SELECT queries and will likely have
-    undefined behavior for anything else.
-    '''
-    query_variable = self.construct_query_variable(query_variable)
-
-    def modify_query_in_place(node):
-      if getattr(node, 'name', None) == 'Project':
-        node.PV.append(Variable('_wp1_0'))
-      elif getattr(node, 'name', None) == 'BGP':
-        if not node.triples:
-          return
-        p1 = node
-        p2_vars = set((Variable('_wp1_0'), Variable(query_variable)))
-        p2 = CompValue('BGP',
-                       _vars=p2_vars,
-                       triples=[(Variable('_wp1_0'),
-                                 URIRef('http://schema.org/isPartOf'),
-                                 URIRef('https://%s/' % project)),
-                                (Variable('_wp1_0'),
-                                 URIRef('http://schema.org/about'),
-                                 Variable(query_variable))])
-        total_vars = node._vars.union(p2_vars)
-        join = CompValue('LeftJoin', _vars=total_vars, p1=p1, p2=p2)
-        return join
-
-    algebra.traverse(a, visitPre=modify_query_in_place)
-
-  def extract_article(self, url):
+  def _article_id_from_url(self, url):
     return urllib.parse.unquote(url.split('/')[-1])
+
+  def _extract_articles(self, project, query, data):
+    '''
+    Method for getting article ids from the query results.
+
+    Takes the project that the query is for (like 'en.wikipedia.org'), the
+    original query, and the data returned from the SPARQL endpoint.
+    '''
+    # Parse the query so we can extract the variables that appear in it.
+    parse_results = parser.parseQuery(query)
+    q = algebra.translateQuery(parse_results, initNs=WIKIDATA_PREFIXES)
+
+    urls = []
+    # Check every variable that appears in the query graph.
+    for variable in [str(v) for v in q.algebra._vars]:
+      if not data['results']['bindings'][0].get(variable):
+        # There is no binding for this variable. Maybe it's some kind of
+        # special variable. Just skip it.
+        continue
+      test_url = data['results']['bindings'][0][variable]['value']
+      if project in test_url:
+        # If the project, which is a URL, appears in the binding, it's probably
+        # an article URL on that project's site. Collect all the urls and break
+        # because we've got the list.
+        urls = [
+            d[variable]['value']
+            for d in data['results']['bindings']
+            if variable in d
+        ]
+        break
+
+    # The final return value is the article ID for each url.
+    return [self._article_id_from_url(url) for url in urls]
 
   def build(self, content_type, **params):
     if content_type != 'text/tab-separated-values':
@@ -95,17 +83,11 @@ class Builder(AbstractBuilder):
       raise Wp1FatalSelectionError('Expected param "query", got: %r' %
                                    params_query)
 
-    query_variable = params.get('queryVariable')
-    parse_results = parser.parseQuery(params_query)
-    query = algebra.translateQuery(parse_results, initNs=WIKIDATA_PREFIXES)
-    self.instrument_query(query.algebra, project, query_variable=query_variable)
-    modified_query = algebra.translateAlgebra(query)
-
     try:
       r = requests.post('https://query.wikidata.org/sparql',
                         headers={'User-Agent': WP1_USER_AGENT},
                         data={
-                            'query': modified_query,
+                            'query': params_query,
                             'format': 'json',
                         })
     except requests.exceptions.Timeout as e:
@@ -130,24 +112,17 @@ class Builder(AbstractBuilder):
     if len(r.content) > 1024 * 1024 * 10:
       raise Wp1FatalSelectionError('Wikidata response was larger than 10 MB')
 
-    urls = [
-        d['_wp1_0']['value']
-        for d in data['results']['bindings']
-        if '_wp1_0' in d
-    ]
-    articles = [self.extract_article(url) for url in urls]
+    articles = self._extract_articles(project, params_query, data)
 
     if articles:
       return '\n'.join(articles).encode('utf-8')
 
     raise Wp1FatalSelectionError(
-        'The Wikidata response did not contain any URLs for subjects '
-        'in your query identified with the variable "?%(query_variable)s". '
-        'Check that "?%(query_variable)s" refers to a Wikidata "topic", '
-        'aka something with a QID. It may also be the case that none of '
-        'the subjects your query selected have articles in the project '
-        'you selected' %
-        {'query_variable': self.construct_query_variable(query_variable)})
+        'Did not find any articles in query results. Make sure you are selecting '
+        'a ?url in your query using the "schema:about" predicate, and that you are '
+        'using the schema:isPartOf predicate to limit your URLs to a project that '
+        'matches the project you selected on the Selection edit screen. '
+        'For more information, check the WP1 end user documentation.')
 
   def validate(self, **params):
     try:
@@ -156,12 +131,6 @@ class Builder(AbstractBuilder):
       # The query cannot be parsed as SPARQL, invalid syntax.
       return ('', params['query'],
               ['Could not parse query, are you sure it\'s valid SPARQL?'])
-
-    qv = self.construct_query_variable(params.get('queryVariable'))
-    if qv not in params['query']:
-      return ('', params['query'],
-              ['The query variable "%s" did not appear in the query' % qv])
-
     try:
       query = algebra.translateQuery(parse_results, initNs=WIKIDATA_PREFIXES)
     except Exception as e:
