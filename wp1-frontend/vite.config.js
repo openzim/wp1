@@ -20,4 +20,10 @@ export default defineConfig({
   optimizeDeps: {
     include: ['jquery'],
   },
+  server: {
+    port: 5173,
+  },
+  preview: {
+    port: 5173,
+  },
 });
