@@ -11,13 +11,13 @@ Selections are created and managed by a logged in user to the WP 1.0
 The selections page can be found by using the main navigation on every page of
 the site. Simply click on "Selections".
 
-![Screenshot of WP 1.0 website with navigation highlighted](/img/header.png)
+![Screenshot of WP 1.0 website with navigation highlighted](img/header.png)
 
 Once you're there, you will see the Selections **sub-navigation** which contains
 options for:
 
 ![Screenshot of WP 1.0 website with selection header
-highlighted](/img/selections_header.png)
+highlighted](img/selections_header.png)
 
 1. My Selections: Viewing your own selections (this will be empty when you first
    start out)
@@ -43,7 +43,7 @@ choose 'Simple Selection'. You will be presented with an empty form to fill out
 to create your selection.
 
 ![Screenshot of form in WP 1.0 website for creating a Simple
-selection](/img/simple_selection_create.png)
+selection](img/simple_selection_create.png)
 
 1. The first form item is the Wikimedia project that this selection applies to.
    If you're creating a selection of a list of articles on English Wikipedia,
@@ -120,13 +120,13 @@ a SPARQL selection are largely the same. There are two main differences:
 Use the [secondary navigation](http://localhost:8000/user/selections/#getting-to-the-selections-page) under "Selections" to choose "SPARQL Selection". You should see the following form:
 
 ![Screenshot of form in WP 1.0 website for creating a SPARQL
-selection](/img/sparql_selection_create.png)
+selection](img/sparql_selection_create.png)
 
 1. The first item is the Wikimedia project this query applies to. In general this, works the same as for Simple selections, except that for SPARQL, the project URL must appear in the query. We'll discuss that more below.
 2. Next is the name of the selection, which works exactly the same as Simple selections.
 3. For SPARQL selections, you can click the "Option: Update the query using a WikiData Query URL" link to expand that section. Then, you will be able to populate your query field using a URL taken from the [WikiData Query Service](https://query.wikidata.org/). For example, suppose you have this URL: `https://query.wikidata.org/#%23Goats%0ASELECT%20%3Fitem%20%3FitemLabel%20%0AWHERE%20%0A%7B%0A%20%20%3Fitem%20wdt%3AP31%20wd%3AQ2934.%0A%20%20SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20%22%5BAUTO_LANGUAGE%5D%2Cen%22.%20%7D%0A%7D`.
    1. Click on the "Optional..." link, and the input is revealed:
-      ![Screenshot of section that appears when the Optional link is clicked](/img/sparql_wdqs_url.png)
+      ![Screenshot of section that appears when the Optional link is clicked](img/sparql_wdqs_url.png)
    2. If you then paste in the URL given above and click "Update", the query embedded in that URL (about "Goats") will appear in the Query field
 4. In the actual Query field, you can type your own query, or paste it in from somewhere. You can also use a query from WikiData Query Service that you have a link to buy using the inputs in option (3) above.
 5. Finally, you can click "Save list" to save your selection. This will cause it to be immediately sent to the WikiData Query Service to be processed.
@@ -200,7 +200,7 @@ Note that it's important that that URL in the `schema:isPartOf` triple (in this 
 
 Sometimes, you might end up with this error message, along with a "PERMANENTLY FAILED" status for your selection:
 
-![Screenshot of error message that may appear on SPARQL selections about article in query results](/img/sparql_error.png)
+![Screenshot of error message that may appear on SPARQL selections about article in query results](img/sparql_error.png)
 
 It reads:
 
