@@ -11,10 +11,18 @@
     @onValidationError="onValidationError"
   >
     <template #create-desc>
-      Use this tool to create an article selection list for the Wikipedia
-      project of your choice. Your selection will be saved in public cloud
-      storage and can be accessed through URLs that will be provided once it has
-      been saved.
+      <p>
+        Use this tool to create an article selection list for the Wikipedia
+        project of your choice. Your selection will be saved in public cloud
+        storage and can be accessed through URLs that will be provided once it
+        has been saved.
+      </p>
+      <p class="mb-0">
+        For more information on creating a Simple selection, see the
+        <a href="https://wp1.readthedocs.io/en/latest/user/selections/"
+          >end user documentation</a
+        >
+      </p>
     </template>
     <template #extra-params="{ success }">
       <div id="items" class="form-group m-4">
