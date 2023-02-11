@@ -14,6 +14,7 @@ import ArticlePage from './components/ArticlePage.vue';
 import SimpleBuilder from './components/SimpleBuilder.vue';
 import SparqlBuilder from './components/SparqlBuilder.vue';
 import ComparePage from './components/ComparePage.vue';
+import CreateZimFile from './components/CreateZimFile.vue';
 import IndexPage from './components/IndexPage.vue';
 import MyLists from './components/MyLists.vue';
 import ProjectPage from './components/ProjectPage.vue';
@@ -121,6 +122,13 @@ const routes = [
     component: SparqlBuilder,
     meta: {
       title: () => BASE_TITLE + ' - Edit SPARQL Selection',
+    },
+  },
+  {
+    path: '/selections/:builder_id/zim',
+    component: CreateZimFile,
+    meta: {
+      title: () => BASE_TITLE + ' - Create ZIM file',
     },
   },
 ];
