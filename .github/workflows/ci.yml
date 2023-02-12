@@ -9,7 +9,7 @@ on:
 
 jobs:
   python-nose:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     services:
       # Unit test rely on a local MySQL instance with an empty root password.
