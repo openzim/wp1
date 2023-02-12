@@ -1,7 +1,11 @@
 # Run Python unit tests in continuous integration mode.
 name: Continuous Integration
 
-on: [push, pull_request]
+on:
+  pull_request:
+  push:
+    branches:
+      - main
 
 jobs:
   python-nose:
