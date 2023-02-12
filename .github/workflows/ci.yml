@@ -29,10 +29,10 @@ jobs:
         options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         # Don't need lfs because we're not referencing the dev-db in this workflow.
       - name: Set up Python 3.9
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.9
       - name: Install dependencies
@@ -56,7 +56,7 @@ jobs:
           nosetests --with-coverage
 
       - name: Upload to Codecov
-        uses: codecov/codecov-action@v1.3.1
+        uses: codecov/codecov-action@v3
         with:
           fail_ci_if_error: true
 
@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           lfs: true
 
@@ -86,7 +86,7 @@ jobs:
         id: yarn-dep-cache-dir-path
         run: cd wp1-frontend && echo "YARN_CACHE_DIR=$(yarn cache dir)" >> $GITHUB_OUTPUT
 
-      - uses: actions/cache@v1
+      - uses: actions/cache@v3
         name: Setup Yarn dep cache
         id: yarn-dep-cache
         with:
@@ -143,7 +143,7 @@ jobs:
         if: always()
         run: docker-compose -f "docker-compose-dev.yml" down
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         continue-on-error: true
         if: always()
         with:
