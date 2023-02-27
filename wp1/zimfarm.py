@@ -1,5 +1,6 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from functools import wraps
+import logging
 import time
 
 import requests
@@ -10,11 +11,82 @@ from wp1.logic import util
 import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
 from wp1.timestamp import utcnow
+from wp1.time import get_current_datetime
 
 TASK_CPU = 2
-TASK_MEMORY = 1024
-TASK_DISK = 2048
+TASK_MEMORY = 1024 * 1024 * 1024
+TASK_DISK = 2048 * 1024 * 100
 MWOFFLINER_IMAGE = 'ghcr.io/openzim/mwoffliner:1.12.1'
+REDIS_AUTH_KEY = 'zimfarm.auth'
+
+logger = logging.getLogger(__name__)
+
+
+def store_zimfarm_token(redis, data):
+  redis.hset(REDIS_AUTH_KEY, mapping=data)
+
+
+def request_zimfarm_token(redis):
+  user = CREDENTIALS[ENV].get('ZIMFARM', {}).get('user')
+  password = CREDENTIALS[ENV].get('ZIMFARM', {}).get('password')
+
+  if user is None or password is None:
+    raise ZimFarmError(
+        'Could not log into zimfarm, user/password not found in credentials.py')
+
+  logger.debug('Requesting auth token from %s with username/password',
+               get_zimfarm_url())
+  r = requests.post('%s/auth/authorize' % get_zimfarm_url(),
+                    headers={'User-Agent': WP1_USER_AGENT},
+                    data={
+                        'username': user,
+                        'password': password
+                    })
+  r.raise_for_status()
+
+  data = r.json()
+  store_zimfarm_token(redis, data)
+  return data['access_token']
+
+
+def refresh_zimfarm_token(redis, refresh_token):
+  logger.debug('Requesting access_token from %s using refresh_token',
+               get_zimfarm_url())
+  r = requests.post(
+      '%s/auth/token' % get_zimfarm_url(),
+      headers={
+          'User-Agent': WP1_USER_AGENT,
+          'refresh-token': refresh_token
+      },
+  )
+  r.raise_for_status()
+
+  data = r.json()
+  # TODO: DO NOT SUBMIT, remove debug print
+  print(data)
+
+  return data['access_token']
+
+
+def get_zimfarm_token(redis):
+  data = redis.hgetall(REDIS_AUTH_KEY)
+  if data is None or data.get('refresh_token') is None:
+    logger.debug('No saved zimfarm refresh_token, requesting')
+    return request_zimfarm_token(redis)
+
+  access_expired = datetime.strptime(
+      data.get('expires_at', '1970-01-01T00:00:00Z'),
+      '%Y-%m-%dT%H:%M:%SZ') < get_current_datetime()
+
+  if data.get('expires_at', 0) < time.mktime(utcnow().timetuple()):
+    logger.debug('Zimfarm access_token is expired, refreshing')
+    return refresh_zimfarm_token(redis, data['refresh_token'])
+
+  return data.get('access_token')
+
+
+def get_zimfarm_url():
+  return CREDENTIALS[ENV].get('ZIMFARM', {}).get('url', '')
 
 
 def _get_params(wp10db, builder_id):
@@ -28,7 +100,7 @@ def _get_params(wp10db, builder_id):
 
   config = {
       'task_name': 'zimit',
-      'warehouse_path': '/wp1',
+      'warehouse_path': '/wikipedia',
       'image': {
           'name': MWOFFLINER_IMAGE.split(':')[0],
           'tag': MWOFFLINER_IMAGE.split(':')[1],
@@ -48,14 +120,16 @@ def _get_params(wp10db, builder_id):
       }
   }
 
+  name = 'wp1_selection_%s' % selection.s_sid.decode('utf-8').split('-')[-1]
+
   return {
-      'name': 'wp1_selection_%s' % selection.s_id.decode('utf-8'),
+      'name': name,
       'language': {
           'code': 'eng',
           'name_en': 'English',
           'name_native': 'English'
       },
-      'category': 'other',
+      'category': 'wikipedia',
       'periodicity': 'manually',
       'tags': [],
       'enabled': True,
@@ -63,96 +137,45 @@ def _get_params(wp10db, builder_id):
   }
 
 
-def store_zimfarm_token(wp10db, data):
-  data['expires_at'] = utcnow() + timedelta(seconds=data['expires_in'])
-
-  with wp10db.cursor() as cursor:
-    cursor.execute(
-        'INSERT INTO zimfarm_auth (access_token, expires_at, refresh_token) '
-        'VALUES (%(access_token)s, %(expires_at)s, %(refresh_token)s)', data)
+def _get_zimfarm_headers(token):
+  if token is None:
+    raise ZimfarmError('Could not retrieve auth token for request')
+  return {"Authorization": "Token %s" % token, 'User-Agent': WP1_USER_AGENT}
 
 
-def request_zimfarm_token(wp10db):
-  user = CREDENTIALS[ENV].get('ZIMFARM', {}).get('user')
-  password = CREDENTIALS[ENV].get('ZIMFARM', {}).get('password')
-
-  if user is None or password is None:
-    raise ZimFarmError(
-        'Could not log into zimfarm, user/password not found in credentials.py')
-
-  r = requests.post('%s/auth/authorize' % get_zimfarm_url,
-                    headers={'User-Agent': WP1_USER_AGENT},
-                    data={
-                        'username': user,
-                        'password': password
-                    })
-  r.raise_for_status()
-
-  data = r.json()
-  print(data)
-
-  store_zimfarm_token(wp10db, data)
-
-  return data['access_token']
-
-
-def refresh_zimfarm_token(wp10db, refresh_token):
-  r = requests.post(
-      '%s/auth/token',
-      headers={
-          'User-Agent': WP1_USER_AGENT,
-          'refresh-token': refresh_token
-      },
-  )
-  r.raise_for_status()
-
-  data = r.json()
-  print(data)
-
-  store_zimfarm_token(wp10db, data)
-
-  return data['access_token']
-
-
-def get_zimfarm_token(wp10db):
-  with wp10db.cursor() as cursor:
-    cursor.execute(
-        'SELECT access_token, expires_at, refresh_token FROM zimfarm_auth LIMIT 1'
-    )
-    data = cursor.fetchone()
-    if data is None:
-      return request_zimfarm_token(wp10db)
-
-  if data['expires_at'] < time.mktime(utcnow().timetuple()):
-    # Token is expired, refresh
-    return refresh_zimfarm_token(wp10db, data['refresh_token'])
-
-  return data['access_token']
-
-
-def get_zimfarm_url():
-  return CREDENTIALS[ENV].get('ZIMFARM', {}).get('url', '')
-
-
-def schedule_zim_file(wp10db, builder_id):
-  token = get_zimfarm_token(wp10db)
+def schedule_zim_file(redis, wp10db, builder_id):
+  token = get_zimfarm_token(redis)
 
   params = _get_params(wp10db, builder_id)
   base_url = get_zimfarm_url()
+  headers = _get_zimfarm_headers(token)
 
-  r = requests.post('%s/schedules/' % base_url,
-                    headers={'User-Agent': WP1_USER_AGENT},
-                    json=params)
+  r = requests.post('%s/schedules/' % base_url, headers=headers, json=params)
 
-  r.raise_for_status()
+  try:
+    r.raise_for_status()
+  except Exception:
+    logger.exception(r.text)
+    raise
 
-  r = requests.post('%s/requested_tasks/' % base_url,
-                    headers={'User-Agent': WP1_USER_AGENT},
-                    json={schedule_names: [params['name'],]})
+  r = requests.post('%s/requested-tasks/' % base_url,
+                    headers=headers,
+                    json={'schedule_names': [params['name'],]})
 
-  r.raise_for_status()
+  try:
+    r.raise_for_status()
 
-  task_id = r.json()['requested'][0]
-  print(task_id)
+    data = r.json()
+    requested = data.get('requested')
+    task_id = requested[0] if requested else None
 
-  r = requets.delete('%s/schedules/%s' % (base_url, params['name']))
+    if task_id is None:
+      raise ZimfarmError('Did not get scheduled task id')
+  except Exception:
+    logger.exception(r.text)
+    raise
+  finally:
+    r = requests.delete('%s/schedules/%s' % (base_url, params['name']),
+                        headers=headers)
+
+  return task_id
