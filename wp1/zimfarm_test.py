@@ -1,5 +1,11 @@
-import attr
+import datetime
+from unittest.mock import call, patch, MagicMock
 
+import attr
+import requests
+
+from wp1.environment import Environment
+from wp1.exceptions import ZimFarmError
 from wp1 import zimfarm
 from wp1.base_db_test import BaseWpOneDbTest
 from wp1.models.wp10.builder import Builder
@@ -59,27 +65,27 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     self.assertEqual(
         {
-            'name': 'wp1_selection_abc-12345-def',
+            'name': 'wp1_selection_def',
             'language': {
                 'code': 'eng',
                 'name_en': 'English',
                 'name_native': 'English'
             },
-            'category': 'other',
+            'category': 'wikipedia',
             'periodicity': 'manually',
             'tags': [],
             'enabled': True,
             'config': {
                 'task_name': 'mwoffliner',
-                'warehouse_path': '/wp1',
+                'warehouse_path': '/wikipedia',
                 'image': {
                     'name': 'ghcr.io/openzim/mwoffliner',
-                    'tag': '1.12.1'
+                    'tag': 'latest'
                 },
                 'resources': {
                     'cpu': 2,
-                    'memory': 1024,
-                    'disk': 2048
+                    'memory': 1073741824,
+                    'disk': 209715200,
                 },
                 'platform': None,
                 'monitor': False,
@@ -87,7 +93,7 @@ class ZimFarmTest(BaseWpOneDbTest):
                     'mwUrl':
                         'https://en.wikipedia.fake/',
                     'adminEmail':
-                        'admin@wp1.openzim.org',
+                        'contact+wp1@kiwix.org',
                     'articleList':
                         'http://credentials.not.found.fake/selections/foo/1234/name.tsv',
                     'customZimTitle':
@@ -95,3 +101,285 @@ class ZimFarmTest(BaseWpOneDbTest):
                 }
             }
         }, actual)
+
+  @patch('wp1.zimfarm.requests')
+  def test_request_zimfarm_token(self, mock_requests):
+    redis = MagicMock()
+    mock_response = MagicMock()
+    mock_response.json.return_value = {'access_token': 'abcdef'}
+    mock_requests.post.return_value = mock_response
+
+    actual = zimfarm.request_zimfarm_token(redis)
+
+    self.assertEqual('abcdef', actual)
+
+  @patch('wp1.zimfarm.requests')
+  def test_request_zimfarm_token_posts_with_correct_data(self, mock_requests):
+    redis = MagicMock()
+    mock_response = MagicMock()
+    mock_response.json.return_value = {'access_token': 'abcdef'}
+    mock_requests.post.return_value = mock_response
+
+    actual = zimfarm.request_zimfarm_token(redis)
+
+    mock_requests.post.assert_called_once_with(
+        'https://fake.farm/v1/auth/authorize',
+        headers={
+            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
+        },
+        data={
+            'username': 'farmuser',
+            'password': 'farmpass'
+        })
+
+  @patch('wp1.zimfarm.requests')
+  def test_request_zimfarm_token_raises_for_status(self, mock_requests):
+    redis = MagicMock()
+    mock_response = MagicMock()
+    mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError
+    mock_requests.post.return_value = mock_response
+
+    with self.assertRaises(requests.exceptions.HTTPError):
+      actual = zimfarm.request_zimfarm_token(redis)
+
+  @patch('wp1.zimfarm.CREDENTIALS', {Environment.TEST: {}})
+  def test_request_zimfarm_token_no_creds(self):
+    redis = MagicMock()
+
+    with self.assertRaises(ZimFarmError):
+      zimfarm.request_zimfarm_token(redis)
+
+  @patch('wp1.zimfarm.requests')
+  def test_refresh_zimfarm_token(self, mock_requests):
+    redis = MagicMock()
+    mock_response = MagicMock()
+    mock_response.json.return_value = {'access_token': 'abcdef'}
+    mock_requests.post.return_value = mock_response
+
+    refresh_token = '12345'
+    actual = zimfarm.refresh_zimfarm_token(redis, refresh_token)
+
+    self.assertEqual('abcdef', actual)
+
+  @patch('wp1.zimfarm.requests')
+  def test_refresh_zimfarm_token_posts_with_correct_data(self, mock_requests):
+    redis = MagicMock()
+    mock_response = MagicMock()
+    mock_response.json.return_value = {'access_token': 'abcdef'}
+    mock_requests.post.return_value = mock_response
+
+    refresh_token = '12345'
+    actual = zimfarm.refresh_zimfarm_token(redis, refresh_token)
+
+    mock_requests.post.assert_called_once_with(
+        'https://fake.farm/v1/auth/token',
+        headers={
+            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>',
+            'refresh-token': '12345'
+        })
+
+  @patch('wp1.zimfarm.requests')
+  def test_refresh_zimfarm_token_raises_for_status(self, mock_requests):
+    redis = MagicMock()
+    mock_response = MagicMock()
+    mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError
+    mock_requests.post.return_value = mock_response
+
+    with self.assertRaises(requests.exceptions.HTTPError):
+      actual = zimfarm.refresh_zimfarm_token(redis, '12345')
+
+  @patch('wp1.zimfarm.CREDENTIALS', {Environment.TEST: {}})
+  def test_refresh_zimfarm_token_no_creds(self):
+    redis = MagicMock()
+
+    with self.assertRaises(ZimFarmError):
+      zimfarm.refresh_zimfarm_token(redis, '12345')
+
+  @patch('wp1.zimfarm.request_zimfarm_token')
+  def test_get_zimfarm_token_no_data(self, request_token_mock):
+    redis = MagicMock()
+    redis.hgetall.return_value = None
+
+    request_token_mock.return_value = 'bcdefg'
+    actual = zimfarm.get_zimfarm_token(redis)
+    self.assertEqual(actual, 'bcdefg')
+
+  @patch('wp1.zimfarm.request_zimfarm_token')
+  def test_get_zimfarm_token_no_refresh_token(self, request_token_mock):
+    redis = MagicMock()
+    redis.hgetall.return_value = {
+        'expires_in': '2023-01-01T00:00:01Z',
+        'access_token': 'abcdef',
+    }
+
+    request_token_mock.return_value = 'bcdefg'
+    actual = zimfarm.get_zimfarm_token(redis)
+    self.assertEqual(actual, 'bcdefg')
+
+  @patch('wp1.zimfarm.get_current_datetime')
+  def test_get_zimfarm_token_access_token_not_expired(self,
+                                                      current_datetime_mock):
+    current_datetime_mock.return_value = datetime.datetime(
+        2022, 12, 25, 5, 5, 55)
+
+    redis = MagicMock()
+    redis.hgetall.return_value = {
+        'expires_in': '2023-01-01T00:00:01Z',
+        'refresh_token': '12345',
+        'access_token': 'abcdef',
+    }
+
+    actual = zimfarm.get_zimfarm_token(redis)
+
+    self.assertEqual(actual, 'abcdef')
+
+  @patch('wp1.zimfarm.get_current_datetime')
+  @patch('wp1.zimfarm.refresh_zimfarm_token')
+  def test_get_zimfarm_token_access_token_expired(self, refresh_token_mock,
+                                                  current_datetime_mock):
+    current_datetime_mock.return_value = datetime.datetime(
+        2022, 12, 25, 5, 5, 55)
+    refresh_token_mock.return_value = 'bcdefg'
+
+    redis = MagicMock()
+    redis.hgetall.return_value = {
+        'expires_in': '2022-12-01T00:00:01Z',
+        'refresh_token': '12345',
+        'access_token': 'abcdef',
+    }
+
+    actual = zimfarm.get_zimfarm_token(redis)
+
+    self.assertEqual(actual, 'bcdefg')
+
+  @patch('wp1.zimfarm.requests')
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm._get_params')
+  def test_schedule_zim_file(self, get_params_mock, get_token_mock,
+                             mock_requests):
+    redis = MagicMock()
+    wp10db = MagicMock()
+    get_params_mock.return_value = {'name': 'bar'}
+    get_token_mock.return_value = 'abcdef'
+    mock_response = MagicMock()
+    mock_response.json.return_value = {'requested': ['9876']}
+    mock_requests.post.side_effect = (MagicMock(), mock_response, MagicMock())
+
+    actual = zimfarm.schedule_zim_file(redis, wp10db, 'builder-1234-abcd')
+
+    self.assertEqual('9876', actual)
+
+  @patch('wp1.zimfarm.requests')
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm._get_params')
+  def test_schedule_zim_file_post_requests(self, get_params_mock,
+                                           get_token_mock, mock_requests):
+    redis = MagicMock()
+    wp10db = MagicMock()
+    get_params_mock.return_value = {'name': 'bar'}
+    get_token_mock.return_value = 'abcdef'
+    mock_response = MagicMock()
+    mock_response.json.return_value = {'requested': ['9876']}
+    mock_requests.post.side_effect = (MagicMock(), mock_response)
+
+    actual = zimfarm.schedule_zim_file(redis, wp10db, 'builder-1234-abcd')
+
+    schedule_create_call = call(
+        'https://fake.farm/v1/schedules/',
+        headers={
+            'Authorization': 'Token abcdef',
+            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
+        },
+        json={'name': 'bar'})
+    task_request_call = call(
+        'https://fake.farm/v1/requested-tasks/',
+        headers={
+            'Authorization': 'Token abcdef',
+            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
+        },
+        json={'schedule_names': ['bar']})
+
+    mock_requests.post.assert_has_calls(
+        (schedule_create_call, task_request_call))
+    mock_requests.delete.assert_called_once_with(
+        'https://fake.farm/v1/schedules/bar',
+        headers={
+            'Authorization': 'Token abcdef',
+            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
+        },
+    )
+
+  @patch('wp1.zimfarm.requests')
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm._get_params')
+  def test_schedule_zim_file_schedule_create_raises(self, get_params_mock,
+                                                    get_token_mock,
+                                                    mock_requests):
+    redis = MagicMock()
+    wp10db = MagicMock()
+    get_params_mock.return_value = {'name': 'bar'}
+    get_token_mock.return_value = 'abcdef'
+    mock_response = MagicMock()
+    mock_response.json.return_value = {'requested': ['9876']}
+    create_schedule_response = MagicMock()
+    create_schedule_response.raise_for_status.side_effect = requests.exceptions.HTTPError
+    mock_requests.post.side_effect = (create_schedule_response, mock_response)
+
+    with self.assertRaises(requests.exceptions.HTTPError):
+      actual = zimfarm.schedule_zim_file(redis, wp10db, 'builder-1234-abcd')
+
+  @patch('wp1.zimfarm.requests')
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm._get_params')
+  def test_schedule_zim_file_task_create_raises(self, get_params_mock,
+                                                get_token_mock, mock_requests):
+    redis = MagicMock()
+    wp10db = MagicMock()
+    get_params_mock.return_value = {'name': 'bar'}
+    get_token_mock.return_value = 'abcdef'
+    mock_response = MagicMock()
+    mock_response.json.side_effect = requests.exceptions.HTTPError
+    mock_requests.post.side_effect = (
+        MagicMock(),
+        mock_response,
+    )
+
+    with self.assertRaises(requests.exceptions.HTTPError):
+      actual = zimfarm.schedule_zim_file(redis, wp10db, 'builder-1234-abcd')
+
+  @patch('wp1.zimfarm.requests')
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm._get_params')
+  def test_schedule_zim_file_delete_schedule_even_if_task_create_raises(
+      self, get_params_mock, get_token_mock, mock_requests):
+    redis = MagicMock()
+    wp10db = MagicMock()
+    get_params_mock.return_value = {'name': 'bar'}
+    get_token_mock.return_value = 'abcdef'
+    mock_response = MagicMock()
+    mock_response.json.side_effect = requests.exceptions.HTTPError
+    mock_requests.post.side_effect = (
+        MagicMock(),
+        mock_response,
+    )
+
+    with self.assertRaises(requests.exceptions.HTTPError):
+      actual = zimfarm.schedule_zim_file(redis, wp10db, 'builder-1234-abcd')
+
+    mock_requests.delete.assert_called_once()
+
+  @patch('wp1.zimfarm.requests')
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm._get_params')
+  def test_schedule_zim_file_missing_task_id(self, get_params_mock,
+                                             get_token_mock, mock_requests):
+    redis = MagicMock()
+    wp10db = MagicMock()
+    get_params_mock.return_value = {'name': 'bar'}
+    get_token_mock.return_value = 'abcdef'
+    mock_response = MagicMock()
+    mock_response.json.return_value = {'requested': []}
+    mock_requests.post.side_effect = (MagicMock(), mock_response, MagicMock())
+
+    with self.assertRaises(ZimFarmError):
+      actual = zimfarm.schedule_zim_file(redis, wp10db, 'builder-1234-abcd')
