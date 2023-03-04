@@ -8,6 +8,7 @@ import attr
 from wp1.constants import CONTENT_TYPE_TO_EXT
 from wp1.models.wp10.selection import Selection
 from wp1.storage import connect_storage
+from wp1.logic import util
 
 try:
   from wp1.credentials import ENV, CREDENTIALS
@@ -85,7 +86,7 @@ def object_key_for(selection_id,
       'model': model,
       'id': selection_id,
       'ext': ext,
-      'name': name,
+      'name': util.safe_name(name),
   }
 
 
