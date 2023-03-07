@@ -14,5 +14,4 @@ class TestUtil(unittest.TestCase):
   def test_safe_name(self):
     for test, expected in self.safe_name_tests:
       actual = util.safe_name(test)
-      print(test, expected, actual)
       self.assertEqual(expected, actual)

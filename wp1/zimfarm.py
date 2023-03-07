@@ -123,7 +123,7 @@ def _get_params(wp10db, builder_id):
           'memory': TASK_MEMORY,
           'disk': TASK_DISK,
       },
-      'platform': None,
+      'platform': 'wikimedia',
       'monitor': False,
       'flags': {
           'mwUrl': 'https://%s/' % project,

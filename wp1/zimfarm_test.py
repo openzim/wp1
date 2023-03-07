@@ -87,7 +87,7 @@ class ZimFarmTest(BaseWpOneDbTest):
                     'memory': 1073741824,
                     'disk': 209715200,
                 },
-                'platform': None,
+                'platform': 'wikimedia',
                 'monitor': False,
                 'flags': {
                     'mwUrl':
