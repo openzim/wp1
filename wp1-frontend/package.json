@@ -61,7 +61,7 @@
     "vue-spinner": "^1.0.3",
     "vue-template-compiler": "^2.7.14",
     "wait-on": "^5.2.0",
-    "webpack": "^5.74.0"
+    "webpack": "^5.76.0"
   },
   "postcss": {
     "plugins": {
