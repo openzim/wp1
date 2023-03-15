@@ -8,6 +8,7 @@ from wp1.credentials import CREDENTIALS, ENV
 import wp1.logic.selection as logic_selection
 import wp1.logic.util as logic_util
 from wp1.models.wp10.builder import Builder
+from wp1.models.wp10.selection import Selection
 from wp1.storage import connect_storage
 from wp1.wp10_db import connect as wp10_connect
 
@@ -152,6 +153,25 @@ def latest_url_for(builder_id, content_type):
   return '%s/v1/builders/%s/selection/latest.%s' % (server_url, builder_id, ext)
 
 
+def latest_selection_for(wp10db, builder_id, content_type):
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        '''SELECT s.*
+           FROM selections AS s JOIN builders as b
+             ON s.s_builder_id = b.b_id
+             AND s.s_version = b.b_current_version
+           WHERE s.s_content_type = %s AND b.b_id = %s
+        ''', (content_type, builder_id))
+    db_selection = cursor.fetchone()
+  if db_selection is None:
+    logger.warning(
+        'Could not find latest selection for builder id=%s, content_type=%s',
+        builder_id, content_type)
+    return None
+
+  return Selection(**db_selection)
+
+
 def latest_selection_url(wp10db, builder_id, ext):
   content_type = EXT_TO_CONTENT_TYPE.get(ext)
   if content_type is None:
@@ -159,27 +179,16 @@ def latest_selection_url(wp10db, builder_id, ext):
         'Attempt to get latest selection with unrecognized extension: %r', ext)
     return None
 
-  with wp10db.cursor() as cursor:
-    cursor.execute(
-        '''SELECT s.s_object_key AS object_key
-           FROM selections AS s JOIN builders as b
-             ON s.s_builder_id = b.b_id
-             AND s.s_version = b.b_current_version
-           WHERE s.s_content_type = %s AND b.b_id = %s
-        ''', (content_type, builder_id))
-    data = cursor.fetchone()
-  if data is None:
-    logger.warning(
-        'Could not find latest selection for builder id=%s, content_type=%s',
-        builder_id, content_type)
+  selection = latest_selection_for(wp10db, builder_id, content_type)
+  if selection is None:
     return None
 
-  if data['object_key'] is None:
+  if selection is None or selection.s_object_key is None:
     logger.warning('Object key for selection was None, builder id=%s',
                    builder_id)
     return None
 
-  return logic_selection.url_for(data['object_key'].decode('utf-8'))
+  return logic_selection.url_for(selection.s_object_key.decode('utf-8'))
 
 
 def latest_selections_with_errors(wp10db, builder_id):

@@ -8,3 +8,7 @@ class Wp1RetryableSelectionError(Wp1SelectionError):
 
 class Wp1FatalSelectionError(Wp1SelectionError):
   pass
+
+
+class ZimFarmError(Exception):
+  pass
