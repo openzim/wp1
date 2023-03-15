@@ -6,7 +6,9 @@ import urllib.parse
 import attr
 
 from wp1.constants import CONTENT_TYPE_TO_EXT
+from wp1.models.wp10.selection import Selection
 from wp1.storage import connect_storage
+from wp1.logic import util
 
 try:
   from wp1.credentials import ENV, CREDENTIALS
@@ -24,10 +26,11 @@ def insert_selection(wp10db, selection):
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''INSERT INTO selections
-      (s_id, s_builder_id, s_version, s_content_type, s_updated_at,
-       s_object_key, s_status, s_error_messages)
-      VALUES (%(s_id)s, %(s_builder_id)s, %(s_version)s, %(s_content_type)s,
-      %(s_updated_at)s, %(s_object_key)s, %(s_status)s, %(s_error_messages)s)
+             (s_id, s_builder_id, s_version, s_content_type, s_updated_at,
+              s_object_key, s_status, s_error_messages)
+             VALUES
+             (%(s_id)s, %(s_builder_id)s, %(s_version)s, %(s_content_type)s,
+              %(s_updated_at)s, %(s_object_key)s, %(s_status)s, %(s_error_messages)s)
     ''', attr.asdict(selection))
   wp10db.commit()
 
@@ -83,7 +86,7 @@ def object_key_for(selection_id,
       'model': model,
       'id': selection_id,
       'ext': ext,
-      'name': name,
+      'name': util.safe_name(name),
   }
 
 

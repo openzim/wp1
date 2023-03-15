@@ -1,4 +1,5 @@
 import datetime
+import re
 import time
 
 from wp1.conf import get_conf
@@ -96,3 +97,7 @@ def int_to_ns(wp10db):
   if _INT_TO_NS is None:
     _INT_TO_NS = {v: k for k, v in ns_to_int(wp10db).items()}
   return _INT_TO_NS
+
+
+def safe_name(name):
+  return ''.join(c for c in name if re.match(r'\w|\.|-|_', c)).strip()

@@ -88,7 +88,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
 
     self.assertEqual(
         actual.s_object_key, b'selections/wp1.selection.models.fake/'
-        b'abcd-1234/My Builder.tsv')
+        b'abcd-1234/MyBuilder.tsv')
 
   @patch('wp1.models.wp10.selection.utcnow',
          return_value=datetime(2020, 12, 25, 10, 55, 44))
@@ -109,7 +109,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
     object_key = self.s3.upload_fileobj.call_args[1]['key']
     self.assertEqual(b'a\nb\nc', data.read())
     self.assertEqual(
-        'selections/wp1.selection.models.fake/abcd-1234/My Builder.tsv',
+        'selections/wp1.selection.models.fake/abcd-1234/MyBuilder.tsv',
         object_key)
 
   def test_materialize_retryable_error(self):
