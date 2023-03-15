@@ -14,7 +14,8 @@ import wp1.logic.selection as logic_selection
 from wp1.timestamp import utcnow
 from wp1.time import get_current_datetime
 
-TASK_CPU = 2
+# TODO(#582): Determine resource profile from Selection list size.
+TASK_CPU = 3
 TASK_MEMORY = 1024 * 1024 * 1024
 TASK_DISK = 2048 * 1024 * 100
 MWOFFLINER_IMAGE = 'ghcr.io/openzim/mwoffliner:latest'
@@ -107,6 +108,9 @@ def _get_params(wp10db, builder_id):
     builder_id = builder_id.encode('utf-8')
 
   builder = logic_builder.get_builder(wp10db, builder_id)
+  if builder is None:
+    raise ZimFarmError('Could not find builder with id: %s', builder_id)
+
   project = builder.b_project.decode('utf-8')
   selection = logic_builder.latest_selection_for(wp10db, builder_id,
                                                  'text/tab-separated-values')
@@ -130,6 +134,9 @@ def _get_params(wp10db, builder_id):
           'adminEmail': 'contact+wp1@kiwix.org',
           'articleList': logic_selection.url_for_selection(selection),
           'customZimTitle': util.safe_name(builder.b_name.decode('utf-8')),
+          # TODO(#584): Replace these placeholders with input from the user.
+          'customZimDescription': 'ZIM file created from a WP1 Selection',
+          'customZimLongDescription': 'ZIM file created from a WP1 Selection',
       }
   }
 
