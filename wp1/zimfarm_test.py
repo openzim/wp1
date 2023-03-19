@@ -5,7 +5,7 @@ import attr
 import requests
 
 from wp1.environment import Environment
-from wp1.exceptions import ZimFarmError
+from wp1.exceptions import ObjectNotFoundError, ZimFarmError
 from wp1 import zimfarm
 from wp1.base_db_test import BaseWpOneDbTest
 from wp1.models.wp10.builder import Builder
@@ -57,13 +57,21 @@ class ZimFarmTest(BaseWpOneDbTest):
         b_current_version=1,
     )
 
+    self.builder_2 = Builder(
+        b_id=b'1a-2b-3c-4d',
+        b_name=b'My Builder',
+        b_user_id=1234,
+        b_project=b'en.wikipedia.fake',
+        b_model=b'wp1.selection.models.simple',
+        b_params=b'{"list": ["a", "b", "c"]}',
+    )
+
   def test_get_params(self):
     self._insert_builder()
     self._insert_selection(b'abc-12345-def')
 
-    actual = zimfarm._get_params(self.wp10db, self.builder.b_id)
+    actual = zimfarm._get_params(self.wp10db, self.builder)
 
-    self.maxDiff = None
     self.assertEqual(
         {
             'name': 'wp1_selection_def',
@@ -111,8 +119,8 @@ class ZimFarmTest(BaseWpOneDbTest):
     self._insert_builder()
     self._insert_selection(b'abc-12345-def')
 
-    with self.assertRaises(ZimFarmError):
-      zimfarm._get_params(self.wp10db, 'foobarmissing')
+    with self.assertRaises(ObjectNotFoundError):
+      zimfarm._get_params(self.wp10db, None)
 
   @patch('wp1.zimfarm.requests')
   def test_request_zimfarm_token(self, mock_requests):
@@ -149,9 +157,10 @@ class ZimFarmTest(BaseWpOneDbTest):
     redis = MagicMock()
     mock_response = MagicMock()
     mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError
+    mock_requests.exceptions.HTTPError = requests.exceptions.HTTPError
     mock_requests.post.return_value = mock_response
 
-    with self.assertRaises(requests.exceptions.HTTPError):
+    with self.assertRaises(ZimFarmError):
       actual = zimfarm.request_zimfarm_token(redis)
 
   @patch('wp1.zimfarm.CREDENTIALS', {Environment.TEST: {}})
@@ -195,9 +204,10 @@ class ZimFarmTest(BaseWpOneDbTest):
     redis = MagicMock()
     mock_response = MagicMock()
     mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError
+    mock_requests.exceptions.HTTPError = requests.exceptions.HTTPError
     mock_requests.post.return_value = mock_response
 
-    with self.assertRaises(requests.exceptions.HTTPError):
+    with self.assertRaises(ZimFarmError):
       actual = zimfarm.refresh_zimfarm_token(redis, '12345')
 
   @patch('wp1.zimfarm.CREDENTIALS', {Environment.TEST: {}})
@@ -293,8 +303,8 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_response.json.return_value = {'requested': ['9876']}
     mock_requests.post.side_effect = (MagicMock(), mock_response, MagicMock())
 
-    with self.assertRaises(ZimFarmError):
-      actual = zimfarm.schedule_zim_file(redis, self.wp10db, 'foobarmissing')
+    with self.assertRaises(ObjectNotFoundError):
+      actual = zimfarm.schedule_zim_file(redis, self.wp10db, None)
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
@@ -348,9 +358,10 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_response.json.return_value = {'requested': ['9876']}
     create_schedule_response = MagicMock()
     create_schedule_response.raise_for_status.side_effect = requests.exceptions.HTTPError
+    mock_requests.exceptions.HTTPError = requests.exceptions.HTTPError
     mock_requests.post.side_effect = (create_schedule_response, mock_response)
 
-    with self.assertRaises(requests.exceptions.HTTPError):
+    with self.assertRaises(ZimFarmError):
       actual = zimfarm.schedule_zim_file(redis, self.wp10db,
                                          'builder-1234-abcd')
 
@@ -364,12 +375,13 @@ class ZimFarmTest(BaseWpOneDbTest):
     get_token_mock.return_value = 'abcdef'
     mock_response = MagicMock()
     mock_response.json.side_effect = requests.exceptions.HTTPError
+    mock_requests.exceptions.HTTPError = requests.exceptions.HTTPError
     mock_requests.post.side_effect = (
         MagicMock(),
         mock_response,
     )
 
-    with self.assertRaises(requests.exceptions.HTTPError):
+    with self.assertRaises(ZimFarmError):
       actual = zimfarm.schedule_zim_file(redis, self.wp10db,
                                          'builder-1234-abcd')
 
@@ -387,8 +399,9 @@ class ZimFarmTest(BaseWpOneDbTest):
         MagicMock(),
         mock_response,
     )
+    mock_requests.exceptions.HTTPError = requests.exceptions.HTTPError
 
-    with self.assertRaises(requests.exceptions.HTTPError):
+    with self.assertRaises(ZimFarmError):
       actual = zimfarm.schedule_zim_file(redis, self.wp10db,
                                          'builder-1234-abcd')
 
@@ -404,6 +417,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     get_token_mock.return_value = 'abcdef'
     mock_response = MagicMock()
     mock_response.json.return_value = {'requested': []}
+    mock_requests.exceptions.HTTPError = requests.exceptions.HTTPError
     mock_requests.post.side_effect = (MagicMock(), mock_response, MagicMock())
 
     with self.assertRaises(ZimFarmError):

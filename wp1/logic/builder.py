@@ -5,12 +5,14 @@ import attr
 
 from wp1.constants import CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE
 from wp1.credentials import CREDENTIALS, ENV
+from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError
 import wp1.logic.selection as logic_selection
 import wp1.logic.util as logic_util
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
 from wp1.storage import connect_storage
 from wp1.wp10_db import connect as wp10_connect
+from wp1 import zimfarm
 
 logger = logging.getLogger(__name__)
 
@@ -221,6 +223,33 @@ def latest_selections_with_errors(wp10db, builder_id):
     res.append(status)
 
   return res
+
+
+def schedule_zim_file(redis, wp10db, user_id, builder_id):
+  if isinstance(builder_id, str):
+    builder_id = builder_id.encode('utf-8')
+  builder = get_builder(wp10db, builder_id)
+  if builder is None:
+    raise ObjectNotFoundError('Could not find builder with id = %s' %
+                              builder_id)
+
+  if builder.b_user_id != user_id:
+    raise UserNotAuthorizedError(
+        'Could not use builder id = %s for user id = %s' %
+        (builder_id, user_id))
+
+  task_id = zimfarm.schedule_zim_file(redis, wp10db, builder)
+  selection = latest_selection_for(wp10db, builder_id,
+                                   'text/tab-separated-values')
+
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        '''UPDATE selections SET
+             s_zimfarm_status = 'REQUESTED', s_zimfarm_task_id = %s,
+             s_zimfarm_error_messages = NULL
+           WHERE s_id = %s
+        ''', (task_id, selection.s_id))
+  wp10db.commit()
 
 
 def get_builders_with_selections(wp10db, user_id):

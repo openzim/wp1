@@ -112,7 +112,10 @@ CREATE TABLE `selections` (
   s_version int(11) NOT NULL,
   s_object_key VARBINARY(255),
   s_status VARBINARY(255) DEFAULT 'OK',
-  s_error_messages BLOB
+  s_error_messages BLOB,
+  s_zimfarm_task_id VARBINARY(255),
+  s_zimfarm_error_messages BLOB,
+  s_zimfarm_status VARBINARY(255) DEFAULT "REQUESTED"
 );
 
 CREATE TABLE custom (
