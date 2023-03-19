@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from functools import wraps
 import logging
 import time
+import urllib.parse
 
 import requests
 
@@ -111,6 +112,19 @@ def get_zimfarm_url():
   return url
 
 
+def get_webhook_url():
+  token = CREDENTIALS[ENV].get('ZIMFARM', {}).get('hook_token')
+  if token is None:
+    return None
+
+  base_url = CREDENTIALS[ENV].get('CLIENT_URL', {}).get('api')
+  if base_url is None:
+    return None
+
+  return '%s/v1/builders/zim/status?token=%s' % (base_url,
+                                                 urllib.parse.quote(token))
+
+
 def _get_params(wp10db, builder):
   if builder is None:
     raise ObjectNotFoundError('Given builder was None: %r' % builder)
@@ -145,6 +159,7 @@ def _get_params(wp10db, builder):
   }
 
   name = 'wp1_selection_%s' % selection.s_id.decode('utf-8').split('-')[-1]
+  webhook_url = get_webhook_url()
 
   return {
       'name': name,
@@ -157,6 +172,11 @@ def _get_params(wp10db, builder):
       'periodicity': 'manually',
       'tags': [],
       'enabled': True,
+      'notification': {
+          'ended': {
+              'webhook': [webhook_url],
+          },
+      },
       'config': config,
   }
 

@@ -88,10 +88,11 @@ class BuildersTest(BaseWebTestcase):
       cursor.execute(
           '''INSERT INTO selections
                (s_id, s_builder_id, s_content_type, s_updated_at,
-                s_version, s_object_key)
+                s_version, s_object_key, s_zimfarm_task_id, s_zimfarm_status)
              VALUES
                (3, %s, "text/tab-separated-values", "20201225105544",
-                2, "latest_object_key_tsv")''', builder_id)
+                2, "latest_object_key_tsv", "task-id-1234", "REQUESTED")''',
+          builder_id)
       cursor.execute(
           '''INSERT INTO selections
                (s_id, s_builder_id, s_content_type, s_updated_at,
@@ -471,3 +472,72 @@ class BuildersTest(BaseWebTestcase):
         sess['user'] = self.USER
       rv = client.post('/v1/builders/%s/zim' % builder_id)
       self.assertEqual('500 INTERNAL SERVER ERROR', rv.status)
+
+  def test_zimfarm_status(self):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/zim/status?token=hook-token-abc',
+                       json={
+                           '_id': 'task-id-1234',
+                           'foo': 'bar'
+                       })
+      self.assertEqual('204 NO CONTENT', rv.status)
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+          'SELECT s_zimfarm_status FROM selections WHERE s_zimfarm_task_id = "task-id-1234"'
+      )
+      status = cursor.fetchone()
+
+    self.assertIsNotNone(status)
+    self.assertEqual(b'ENDED', status['s_zimfarm_status'])
+
+  def test_zimfarm_status_bad_token(self):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/zim/status?token=foo-bad-token',
+                       json={
+                           '_id': 'task-id-1234',
+                           'foo': 'bar'
+                       })
+      self.assertEqual('403 FORBIDDEN', rv.status)
+
+  def test_zimfarm_status_invalid_payload(self):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/zim/status?token=hook-token-abc',
+                       json={
+                           'baz': 'task-id-1234',
+                           'foo': 'bar'
+                       })
+      self.assertEqual('400 BAD REQUEST', rv.status)
+
+  def test_zimfarm_status_not_found_task_id(self):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/zim/status?token=hook-token-abc',
+                       json={
+                           '_id': 'task-id-not-found',
+                           'foo': 'bar'
+                       })
+      self.assertEqual('204 NO CONTENT', rv.status)

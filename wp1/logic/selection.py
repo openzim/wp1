@@ -138,3 +138,11 @@ def set_error_messages(selection, e):
   if e.__cause__:
     messages.append(str(e.__cause__))
   selection.s_error_messages = json.dumps({'error_messages': messages})
+
+
+def update_zimfarm_task(wp10db, task_id, status):
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        'UPDATE selections SET s_zimfarm_status = %s WHERE s_zimfarm_task_id = %s',
+        (status, task_id))
+  wp10db.commit()

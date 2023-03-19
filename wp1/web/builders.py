@@ -2,8 +2,10 @@ import flask
 import importlib
 import logging
 
+from wp1.credentials import CREDENTIALS, ENV
 from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError
 import wp1.logic.builder as logic_builder
+import wp1.logic.selection as logic_selection
 from wp1 import queues
 from wp1 import zimfarm
 from wp1.web import authenticate
@@ -150,5 +152,23 @@ def create_zim_file_for_builder(builder_id):
     if e.__cause__:
       error_messages.append(str(e.__cause__))
     return flask.jsonify({'error_messages': error_messages}), 500
+
+  return '', 204
+
+
+@builders.route('/zim/status', methods=['POST'])
+def zimfarm_status():
+  token = CREDENTIALS[ENV].get('ZIMFARM', {}).get('hook_token')
+  provided_token = flask.request.args.get('token')
+  if token and provided_token != token:
+    flask.abort(403)
+
+  data = flask.request.get_json()
+  task_id = data.get('_id')
+  if task_id is None:
+    flask.abort(400)
+
+  wp10db = get_db('wp10db')
+  logic_selection.update_zimfarm_task(wp10db, task_id, 'ENDED')
 
   return '', 204
