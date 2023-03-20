@@ -258,8 +258,7 @@ def on_zim_file_status_poll(task_id):
   wp10db = wp10_connect()
   redis = redis_connect()
 
-  ready = zimfarm.is_zim_file_ready(redis, task_id)
-  if ready:
+  if zimfarm.is_zim_file_ready(redis, task_id):
     with wp10db.cursor() as cursor:
       cursor.execute(
           'UPDATE selections '
