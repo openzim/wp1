@@ -73,7 +73,7 @@ toml==0.10.0
 urllib3==1.26.5
 virtualenv==20.17.1
 watchdog==2.2.0
-Werkzeug==0.15.5
+Werkzeug==2.2.3
 wrapt==1.14.1
 yapf==0.28.0
 yoyo-migrations==7.3.2
