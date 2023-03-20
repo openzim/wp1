@@ -169,6 +169,14 @@ def zimfarm_status():
     flask.abort(400)
 
   wp10db = get_db('wp10db')
-  logic_selection.update_zimfarm_task(wp10db, task_id, 'ENDED')
 
+  files = data.get('files', {})
+  for key, value in files.items():
+    if value['status'] == 'uploaded':
+      logic_selection.update_zimfarm_task(wp10db, task_id, 'FILE_READY')
+      return '', 204
+
+  redis = get_redis()
+  queues.poll_for_zimfile_status(redis, task_id)
+  logic_selection.update_zimfarm_task(wp10db, task_id, 'ENDED')
   return '', 204

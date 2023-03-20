@@ -10,6 +10,8 @@ import wp1.logic.selection as logic_selection
 import wp1.logic.util as logic_util
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
+from wp1 import queues
+from wp1.redis_db import connect as redis_connect
 from wp1.storage import connect_storage
 from wp1.wp10_db import connect as wp10_connect
 from wp1 import zimfarm
@@ -250,6 +252,24 @@ def schedule_zim_file(redis, wp10db, user_id, builder_id):
            WHERE s_id = %s
         ''', (task_id, selection.s_id))
   wp10db.commit()
+
+
+def on_zim_file_status_poll(task_id):
+  wp10db = wp10_connect()
+  redis = redis_connect()
+
+  ready = zimfarm.is_zim_file_ready(redis, task_id)
+  if ready:
+    with wp10db.cursor() as cursor:
+      cursor.execute(
+          'UPDATE selections '
+          'SET s_zimfarm_status = "FILE_READY" '
+          'WHERE s_zimfarm_task_id = %s', (task_id,))
+    wp10db.commit()
+  else:
+    queues.poll_for_zim_file_status(redis, task_id)
+
+  wp10db.close()
 
 
 def get_builders_with_selections(wp10db, user_id):

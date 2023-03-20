@@ -223,3 +223,23 @@ def schedule_zim_file(redis, wp10db, builder):
                     headers=headers)
 
   return task_id
+
+
+def is_zim_file_ready(redis, task_id):
+  token = get_zimfarm_token(redis)
+  if token is None:
+    raise ZimfarmError('Error retrieving auth token for request')
+
+  base_url = get_zimfarm_url()
+  headers = _get_zimfarm_headers(token)
+
+  r = requests.get('%s/tasks/%s' % (base_url, task_id))
+  r.raise_for_status()
+
+  data = r.json()
+  files = data.get('files', {})
+
+  for key, value in files.items():
+    if value.get('status') == 'uploaded':
+      return True
+  return False
