@@ -671,7 +671,8 @@ class BuilderTest(BaseWpOneDbTest):
 
   @patch('wp1.logic.builder.zimfarm.is_zim_file_ready')
   @patch('wp1.logic.builder.wp10_connect')
-  def test_on_zim_file_status_poll_true(self, patched_connect,
+  @patch('wp1.logic.builder.redis_connect')
+  def test_on_zim_file_status_poll_true(self, patched_redis, patched_connect,
                                         patched_is_ready):
     patched_is_ready.return_value = True
     builder_id = self._insert_builder()
@@ -698,7 +699,8 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.zimfarm.is_zim_file_ready')
   @patch('wp1.logic.builder.queues.poll_for_zim_file_status')
   @patch('wp1.logic.builder.wp10_connect')
-  def test_on_zim_file_status_poll_false(self, patched_connect,
+  @patch('wp1.logic.builder.redis_connect')
+  def test_on_zim_file_status_poll_false(self, patched_redis, patched_connect,
                                          patched_poll_for_status,
                                          patched_is_ready):
     patched_is_ready.return_value = False
