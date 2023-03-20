@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 import attr
 
+from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError
 from wp1.models.wp10.builder import Builder
 from wp1.web.app import create_app
 from wp1.web.base_web_testcase import BaseWebTestcase
@@ -13,6 +14,13 @@ class BuildersTest(BaseWebTestcase):
       'identity': {
           'username': 'WP1_user',
           'sub': 1234,
+      },
+  }
+  UNAUTHORIZED_USER = {
+      'access_token': 'access_token',
+      'identity': {
+          'username': 'WP1_user_2',
+          'sub': 5678,
       },
   }
   invalid_article_name = ['Eiffel_Tower', 'Statue of#Liberty']
@@ -64,17 +72,34 @@ class BuildersTest(BaseWebTestcase):
   def _insert_selections(self, builder_id):
     with self.wp10db.cursor() as cursor:
       cursor.execute(
-          'INSERT INTO selections VALUES (1, %s, "text/tab-separated-values", "20201225105544", 1, "object_key1", NULL, NULL)',
+          '''INSERT INTO selections
+               (s_id, s_builder_id, s_content_type, s_updated_at,
+                s_version, s_object_key)
+             VALUES
+               (1, %s, "text/tab-separated-values", "20201225105544",
+                1, "object_key1")''', builder_id)
+      cursor.execute(
+          '''INSERT INTO selections
+                (s_id, s_builder_id, s_content_type, s_updated_at,
+                 s_version, s_object_key)
+              VALUES
+                (2, %s, "application/vnd.ms-excel", "20201225105544",
+                 1, "object_key2")''', builder_id)
+      cursor.execute(
+          '''INSERT INTO selections
+               (s_id, s_builder_id, s_content_type, s_updated_at,
+                s_version, s_object_key, s_zimfarm_task_id, s_zimfarm_status)
+             VALUES
+               (3, %s, "text/tab-separated-values", "20201225105544",
+                2, "latest_object_key_tsv", "task-id-1234", "REQUESTED")''',
           builder_id)
       cursor.execute(
-          'INSERT INTO selections VALUES (2, %s, "application/vnd.ms-excel", "20201225105544", 1, "object_key2", NULL, NULL)',
-          builder_id)
-      cursor.execute(
-          'INSERT INTO selections VALUES (3, %s, "text/tab-separated-values", "20201225105544", 2, "latest_object_key_tsv", NULL, NULL)',
-          builder_id)
-      cursor.execute(
-          'INSERT INTO selections VALUES (4, %s, "application/vnd.ms-excel", "20201225105544", 2, "latest_object_key_xls", NULL, NULL)',
-          builder_id)
+          '''INSERT INTO selections
+               (s_id, s_builder_id, s_content_type, s_updated_at,
+                s_version, s_object_key)
+             VALUES
+               (4, %s, "application/vnd.ms-excel", "20201225105544",
+                2, "latest_object_key_xls")''', builder_id)
     self.wp10db.commit()
 
   def test_create_unsuccessful(self):
@@ -381,3 +406,143 @@ class BuildersTest(BaseWebTestcase):
         sess['user'] = self.USER
       rv = client.post('/v1/builders/-1/delete')
       self.assertEqual('404 NOT FOUND', rv.status)
+
+  @patch('wp1.zimfarm.schedule_zim_file')
+  def test_create_zim_file_for_builder(self, patched_schedule_zim_file):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    patched_schedule_zim_file.return_value = '1234-a'
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/%s/zim' % builder_id)
+      self.assertEqual('204 NO CONTENT', rv.status)
+
+    patched_schedule_zim_file.assert_called_once()
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('''SELECT s_zimfarm_task_id, s_zimfarm_status,
+                               s_zimfarm_error_messages
+                        FROM selections
+                        WHERE s_id = 3''')
+      data = cursor.fetchone()
+
+    self.assertEqual(b'1234-a', data['s_zimfarm_task_id'])
+    self.assertEqual(b'REQUESTED', data['s_zimfarm_status'])
+    self.assertIsNone(data['s_zimfarm_error_messages'])
+
+  @patch('wp1.zimfarm.schedule_zim_file')
+  def test_create_zim_file_for_builder_not_found(self,
+                                                 patched_schedule_zim_file):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/1234-not-found/zim')
+      self.assertEqual('404 NOT FOUND', rv.status)
+
+  @patch('wp1.zimfarm.schedule_zim_file')
+  def test_create_zim_file_for_builder_unauthorized(self,
+                                                    patched_schedule_zim_file):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.UNAUTHORIZED_USER
+      rv = client.post('/v1/builders/%s/zim' % builder_id)
+      self.assertEqual('403 FORBIDDEN', rv.status)
+
+  @patch('wp1.zimfarm.schedule_zim_file')
+  def test_create_zim_file_for_builder_500(self, patched_schedule_zim_file):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    patched_schedule_zim_file.side_effect = ZimFarmError
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/%s/zim' % builder_id)
+      self.assertEqual('500 INTERNAL SERVER ERROR', rv.status)
+
+  @patch('wp1.web.builders.queues.poll_for_zim_file_status')
+  def test_zimfarm_status(self, patched_poll):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/zim/status?token=hook-token-abc',
+                       json={
+                           '_id': 'task-id-1234',
+                           'foo': 'bar'
+                       })
+      self.assertEqual('204 NO CONTENT', rv.status)
+      patched_poll.assert_called_once()
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+          'SELECT s_zimfarm_status FROM selections WHERE s_zimfarm_task_id = "task-id-1234"'
+      )
+      status = cursor.fetchone()
+
+    self.assertIsNotNone(status)
+    self.assertEqual(b'ENDED', status['s_zimfarm_status'])
+
+  def test_zimfarm_status_bad_token(self):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/zim/status?token=foo-bad-token',
+                       json={
+                           '_id': 'task-id-1234',
+                           'foo': 'bar'
+                       })
+      self.assertEqual('403 FORBIDDEN', rv.status)
+
+  def test_zimfarm_status_invalid_payload(self):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/zim/status?token=hook-token-abc',
+                       json={
+                           'baz': 'task-id-1234',
+                           'foo': 'bar'
+                       })
+      self.assertEqual('400 BAD REQUEST', rv.status)
+
+  @patch('wp1.web.builders.queues.poll_for_zim_file_status')
+  def test_zimfarm_status_not_found_task_id(self, patched_poll):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/zim/status?token=hook-token-abc',
+                       json={
+                           '_id': 'task-id-not-found',
+                           'foo': 'bar'
+                       })
+      self.assertEqual('204 NO CONTENT', rv.status)
+
+    patched_poll.assert_not_called()

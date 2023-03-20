@@ -2,8 +2,12 @@ import flask
 import importlib
 import logging
 
+from wp1.credentials import CREDENTIALS, ENV
+from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError
 import wp1.logic.builder as logic_builder
+import wp1.logic.selection as logic_selection
 from wp1 import queues
+from wp1 import zimfarm
 from wp1.web import authenticate
 from wp1.web.db import get_db
 from wp1.web.redis import get_redis
@@ -121,3 +125,59 @@ def latest_selection_for_builder(builder_id, ext):
     flask.abort(404)
 
   return flask.redirect(url, code=302)
+
+
+@builders.route('/<builder_id>/zim', methods=['POST'])
+@authenticate
+def create_zim_file_for_builder(builder_id):
+  redis = get_redis()
+  wp10db = get_db('wp10db')
+
+  user_id = flask.session['user']['identity']['sub']
+
+  try:
+    logic_builder.schedule_zim_file(redis, wp10db, user_id, builder_id)
+  except ObjectNotFoundError:
+    return flask.jsonify({
+        'error_messages': ['No builder found with id = %s\n' % builder_id]
+    }), 404
+  except UserNotAuthorizedError:
+    return flask.jsonify({
+        'error_messages': [
+            'Not authorized to perform this operation on that builder'
+        ]
+    }), 403
+  except ZimFarmError as e:
+    error_messages = [str(e)]
+    if e.__cause__:
+      error_messages.append(str(e.__cause__))
+    return flask.jsonify({'error_messages': error_messages}), 500
+
+  return '', 204
+
+
+@builders.route('/zim/status', methods=['POST'])
+def zimfarm_status():
+  token = CREDENTIALS[ENV].get('ZIMFARM', {}).get('hook_token')
+  provided_token = flask.request.args.get('token')
+  if token and provided_token != token:
+    flask.abort(403)
+
+  data = flask.request.get_json()
+  task_id = data.get('_id')
+  if task_id is None:
+    flask.abort(400)
+
+  wp10db = get_db('wp10db')
+
+  files = data.get('files', {})
+  for key, value in files.items():
+    if value['status'] == 'uploaded':
+      logic_selection.update_zimfarm_task(wp10db, task_id, 'FILE_READY')
+      return '', 204
+
+  found = logic_selection.update_zimfarm_task(wp10db, task_id, 'ENDED')
+  if found:
+    redis = get_redis()
+    queues.poll_for_zim_file_status(redis, task_id)
+  return '', 204

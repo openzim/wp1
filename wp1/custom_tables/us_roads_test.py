@@ -88,5 +88,4 @@ class UsRoadsCustomTableTest(BaseWpOneDbTest):
     table_data = custom.generate(self.wp10db)
     actual = custom.create_wikicode(table_data)
 
-    self.maxDiff = None
     self.assertEqual(self.expected_wikicode, actual)

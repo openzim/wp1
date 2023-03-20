@@ -5,6 +5,8 @@ services:
     container_name: wp1bot-redis-dev
     ports:
       - '9736:6379'
+    networks:
+      - wp1bot-dev
     restart: always
 
   dev-database:
@@ -12,6 +14,8 @@ services:
     container_name: wp1bot-db-dev
     ports:
       - '6300:3306'
+    networks:
+      - wp1bot-dev
     restart: always
 
   dev-workers:
@@ -23,14 +27,12 @@ services:
       - ./wp1:/usr/src/app/wp1/
       - ./wp1/credentials.py.dev:/usr/src/app/wp1/credentials.py
       - ./log/:/var/log/wp1bot/
-    links:
-      - redis
-      - dev-database
+    networks:
+      - wp1bot-dev
     restart: always
     depends_on:
       - redis
       - dev-database
 
 networks:
-  default:
-    name: dev.openzim.org
+  wp1bot-dev:

@@ -26,6 +26,9 @@ class Selection:
   data = attr.ib(default=None)
   s_status = attr.ib(default=None)
   s_error_messages = attr.ib(default=None)
+  s_zimfarm_task_id = attr.ib(default=None)
+  s_zimfarm_status = attr.ib(default=None)
+  s_zimfarm_error_messages = attr.ib(default=None)
 
   @property
   def updated_at_dt(self):
