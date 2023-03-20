@@ -24,7 +24,8 @@ class SelectionTest(BaseWpOneDbTest):
         s_content_type=b'text/tab-separated-values',
         s_version=1,
         s_updated_at=b'20190830112844',
-        s_object_key=b'selections/foo.bar.model/deadbeef/name.tsv')
+        s_object_key=b'selections/foo.bar.model/deadbeef/name.tsv',
+        s_zimfarm_status=b'REQUESTED')
 
   def _insert_selections(self, selections=None):
     if selections is None:
@@ -34,16 +35,17 @@ class SelectionTest(BaseWpOneDbTest):
     with self.wp10db.cursor() as cursor:
       cursor.executemany(
           '''INSERT INTO selections
-      (s_id, s_builder_id, s_version, s_content_type, s_updated_at, s_object_key, s_status, s_error_messages)
-      VALUES (%(s_id)s, %(s_builder_id)s, %(s_version)s, %(s_content_type)s,
-              %(s_updated_at)s, %(s_object_key)s, NULL, NULL)
-    ''', selections)
+              (s_id, s_builder_id, s_version, s_content_type, s_updated_at, s_object_key, s_zimfarm_status)
+             VALUES
+              (%(s_id)s, %(s_builder_id)s, %(s_version)s, %(s_content_type)s,
+               %(s_updated_at)s, %(s_object_key)s, "REQUESTED")
+          ''', selections)
     self.wp10db.commit()
 
   def test_insert_selection(self):
-    self.maxDiff = None
     logic_selection.insert_selection(self.wp10db, self.selection)
     actual = _get_selection(self.wp10db)
+    self.maxDiff = None
     self.assertEqual(self.selection, actual)
 
   def test_get_next_version_empty_table(self):

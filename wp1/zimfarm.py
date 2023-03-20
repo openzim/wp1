@@ -2,12 +2,13 @@ from datetime import datetime, timedelta
 from functools import wraps
 import logging
 import time
+import urllib.parse
 
 import requests
 
 from wp1.constants import WP1_USER_AGENT
 from wp1.credentials import CREDENTIALS, ENV
-from wp1.exceptions import ZimFarmError
+from wp1.exceptions import ZimFarmError, ObjectNotFoundError
 from wp1.logic import util
 import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
@@ -33,8 +34,8 @@ def request_zimfarm_token(redis):
   password = CREDENTIALS[ENV].get('ZIMFARM', {}).get('password')
 
   if user is None or password is None:
-    raise ZimFarmError(
-        'Could not log into zimfarm, user/password not found in credentials.py')
+    raise ZimFarmError('Could not log into zimfarm, user/password not found in '
+                       'site credentials')
 
   logger.debug('Requesting auth token from %s with username/password',
                get_zimfarm_url())
@@ -44,7 +45,11 @@ def request_zimfarm_token(redis):
                         'username': user,
                         'password': password
                     })
-  r.raise_for_status()
+  try:
+    r.raise_for_status()
+  except requests.exceptions.HTTPError as e:
+    logger.exception(r.text)
+    raise ZimFarmError('Error getting authentication token for Zimfarm') from e
 
   data = r.json()
   store_zimfarm_token(redis, data)
@@ -66,7 +71,11 @@ def refresh_zimfarm_token(redis, refresh_token):
           'refresh-token': refresh_token
       },
   )
-  r.raise_for_status()
+  try:
+    r.raise_for_status()
+  except requests.exceptions.HTTPError as e:
+    logger.exception(r.text)
+    raise ZimFarmError('Error getting authentication token for Zimfarm') from e
 
   data = r.json()
   access_token = data.get('access_token')
@@ -103,16 +112,25 @@ def get_zimfarm_url():
   return url
 
 
-def _get_params(wp10db, builder_id):
-  if isinstance(builder_id, str):
-    builder_id = builder_id.encode('utf-8')
+def get_webhook_url():
+  token = CREDENTIALS[ENV].get('ZIMFARM', {}).get('hook_token')
+  if token is None:
+    return None
 
-  builder = logic_builder.get_builder(wp10db, builder_id)
+  base_url = CREDENTIALS[ENV].get('CLIENT_URL', {}).get('api')
+  if base_url is None:
+    return None
+
+  return '%s/v1/builders/zim/status?token=%s' % (base_url,
+                                                 urllib.parse.quote(token))
+
+
+def _get_params(wp10db, builder):
   if builder is None:
-    raise ZimFarmError('Could not find builder with id: %s', builder_id)
+    raise ObjectNotFoundError('Given builder was None: %r' % builder)
 
   project = builder.b_project.decode('utf-8')
-  selection = logic_builder.latest_selection_for(wp10db, builder_id,
+  selection = logic_builder.latest_selection_for(wp10db, builder.b_id,
                                                  'text/tab-separated-values')
 
   config = {
@@ -141,6 +159,7 @@ def _get_params(wp10db, builder_id):
   }
 
   name = 'wp1_selection_%s' % selection.s_id.decode('utf-8').split('-')[-1]
+  webhook_url = get_webhook_url()
 
   return {
       'name': name,
@@ -153,6 +172,11 @@ def _get_params(wp10db, builder_id):
       'periodicity': 'manually',
       'tags': [],
       'enabled': True,
+      'notification': {
+          'ended': {
+              'webhook': [webhook_url],
+          },
+      },
       'config': config,
   }
 
@@ -161,12 +185,12 @@ def _get_zimfarm_headers(token):
   return {"Authorization": "Token %s" % token, 'User-Agent': WP1_USER_AGENT}
 
 
-def schedule_zim_file(redis, wp10db, builder_id):
+def schedule_zim_file(redis, wp10db, builder):
   token = get_zimfarm_token(redis)
   if token is None:
-    raise ZimfarmError('Could not retrieve auth token for request')
+    raise ZimfarmError('Error retrieving auth token for request')
 
-  params = _get_params(wp10db, builder_id)
+  params = _get_params(wp10db, builder)
   base_url = get_zimfarm_url()
   headers = _get_zimfarm_headers(token)
 
@@ -174,9 +198,9 @@ def schedule_zim_file(redis, wp10db, builder_id):
 
   try:
     r.raise_for_status()
-  except Exception:
+  except requests.exceptions.HTTPError as e:
     logger.exception(r.text)
-    raise
+    raise ZimFarmError('Error creating schedule for ZIM file creation') from e
 
   r = requests.post('%s/requested-tasks/' % base_url,
                     headers=headers,
@@ -191,11 +215,31 @@ def schedule_zim_file(redis, wp10db, builder_id):
 
     if task_id is None:
       raise ZimFarmError('Did not get scheduled task id')
-  except Exception:
+  except requests.exceptions.HTTPError as e:
     logger.exception(r.text)
-    raise
+    raise ZimFarmError('Error requesting task for ZIM file creation') from e
   finally:
     requests.delete('%s/schedules/%s' % (base_url, params['name']),
                     headers=headers)
 
   return task_id
+
+
+def is_zim_file_ready(redis, task_id):
+  token = get_zimfarm_token(redis)
+  if token is None:
+    raise ZimfarmError('Error retrieving auth token for request')
+
+  base_url = get_zimfarm_url()
+  headers = _get_zimfarm_headers(token)
+
+  r = requests.get('%s/tasks/%s' % (base_url, task_id))
+  r.raise_for_status()
+
+  data = r.json()
+  files = data.get('files', {})
+
+  for key, value in files.items():
+    if value.get('status') == 'uploaded':
+      return True
+  return False

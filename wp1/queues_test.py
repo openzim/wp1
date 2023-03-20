@@ -180,3 +180,15 @@ class QueuesTest(BaseWpOneDbTest):
         'text/tab-separated-values',
         job_timeout=constants.JOB_TIMEOUT,
         failure_ttl=constants.JOB_FAILURE_TTL)
+
+  @patch('wp1.queues.Queue')
+  @patch('wp1.queues.Scheduler')
+  def test_poll_for_zim_file_status(self, patched_scheduler, patched_queue):
+    poll_q_mock = MagicMock()
+    patched_queue.return_value = poll_q_mock
+    scheduler_mock = MagicMock()
+    patched_scheduler.return_value = scheduler_mock
+
+    queues.poll_for_zim_file_status(self.redis, '1234')
+
+    scheduler_mock.enqueue_in.assert_called_once()

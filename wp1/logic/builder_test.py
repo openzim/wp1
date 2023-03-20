@@ -4,6 +4,7 @@ from unittest.mock import patch, MagicMock, ANY
 import attr
 
 from wp1.base_db_test import BaseWpOneDbTest
+from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError
 from wp1.logic import builder as logic_builder
 from wp1.models.wp10.builder import Builder
 
@@ -168,9 +169,13 @@ class BuilderTest(BaseWpOneDbTest):
 
     with self.wp10db.cursor() as cursor:
       cursor.execute(
-          'INSERT INTO selections VALUES (%s, %s, %s, "20191225044444", %s, %s, %s, %s)',
-          (id_, builder_id, content_type, version, object_key, status,
-           error_messages))
+          '''INSERT INTO selections
+               (s_id, s_builder_id, s_content_type, s_updated_at, s_version,
+                s_object_key, s_status, s_error_messages, s_zimfarm_task_id)
+             VALUES
+               (%s, %s, %s, "20191225044444", %s, %s, %s, %s, "5678")
+          ''', (id_, builder_id, content_type, version, object_key, status,
+                error_messages))
     self.wp10db.commit()
 
   def _get_builder_by_user_id(self):
@@ -616,3 +621,101 @@ class BuilderTest(BaseWpOneDbTest):
         self.wp10db, builder_id)
 
     self.assertEqual(0, len(actual))
+
+  @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
+  def test_schedule_zim_file(self, patched_schedule_zim_file):
+    redis = MagicMock()
+    patched_schedule_zim_file.return_value = '1234-a'
+
+    builder_id = self._insert_builder()
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           builder_id=builder_id,
+                           has_errors=False)
+
+    logic_builder.schedule_zim_file(redis, self.wp10db, 1234, builder_id)
+
+    patched_schedule_zim_file.assert_called_once_with(redis, self.wp10db,
+                                                      self.builder)
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT s_zimfarm_task_id, s_zimfarm_status, '
+                     ' s_zimfarm_error_messages FROM selections '
+                     ' WHERE s_id = 1')
+      data = cursor.fetchone()
+
+    self.assertEqual(b'1234-a', data['s_zimfarm_task_id'])
+    self.assertEqual(b'REQUESTED', data['s_zimfarm_status'])
+    self.assertIsNone(data['s_zimfarm_error_messages'])
+
+  @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
+  def test_schedule_zim_file(self, patched_schedule_zim_file):
+    redis = MagicMock()
+    patched_schedule_zim_file.return_value = '1234-a'
+
+    with self.assertRaises(ObjectNotFoundError):
+      logic_builder.schedule_zim_file(redis, self.wp10db, 1234, '404builder')
+
+  @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
+  def test_schedule_zim_file(self, patched_schedule_zim_file):
+    redis = MagicMock()
+    patched_schedule_zim_file.return_value = '1234-a'
+
+    builder_id = self._insert_builder()
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           builder_id=builder_id,
+                           has_errors=False)
+
+    with self.assertRaises(UserNotAuthorizedError):
+      logic_builder.schedule_zim_file(redis, self.wp10db, 5678, builder_id)
+
+  @patch('wp1.logic.builder.zimfarm.is_zim_file_ready')
+  @patch('wp1.logic.builder.wp10_connect')
+  @patch('wp1.logic.builder.redis_connect')
+  def test_on_zim_file_status_poll_true(self, patched_redis, patched_connect,
+                                        patched_is_ready):
+    patched_is_ready.return_value = True
+    builder_id = self._insert_builder()
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           builder_id=builder_id,
+                           has_errors=False)
+
+    orig_close = self.wp10db.close
+    try:
+      self.wp10db.close = lambda: True
+      patched_connect.return_value = self.wp10db
+      logic_builder.on_zim_file_status_poll('5678')
+    finally:
+      self.wp10db.close = orig_close
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT s_zimfarm_status FROM selections WHERE s_id = 1')
+      data = cursor.fetchone()
+
+    self.assertIsNotNone(data)
+    self.assertEqual(b'FILE_READY', data['s_zimfarm_status'])
+
+  @patch('wp1.logic.builder.zimfarm.is_zim_file_ready')
+  @patch('wp1.logic.builder.queues.poll_for_zim_file_status')
+  @patch('wp1.logic.builder.wp10_connect')
+  @patch('wp1.logic.builder.redis_connect')
+  def test_on_zim_file_status_poll_false(self, patched_redis, patched_connect,
+                                         patched_poll_for_status,
+                                         patched_is_ready):
+    patched_is_ready.return_value = False
+    builder_id = self._insert_builder()
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           builder_id=builder_id,
+                           has_errors=False)
+
+    orig_close = self.wp10db.close
+    try:
+      self.wp10db.close = lambda: True
+      patched_connect.return_value = self.wp10db
+      logic_builder.on_zim_file_status_poll('5678')
+    finally:
+      self.wp10db.close = orig_close
+
+    patched_poll_for_status.assert_called_once()
