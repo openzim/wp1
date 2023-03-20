@@ -72,6 +72,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     actual = zimfarm._get_params(self.wp10db, self.builder)
 
+    self.maxDiff = None
     self.assertEqual(
         {
             'name': 'wp1_selection_def',
@@ -84,6 +85,13 @@ class ZimFarmTest(BaseWpOneDbTest):
             'periodicity': 'manually',
             'tags': [],
             'enabled': True,
+            'notification': {
+                'ended': {
+                    'webhook': [
+                        'http://test.server.fake/v1/builders/zim/status?token=hook-token-abc'
+                    ],
+                },
+            },
             'config': {
                 'task_name': 'mwoffliner',
                 'warehouse_path': '/wikipedia',

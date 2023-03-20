@@ -145,4 +145,6 @@ def update_zimfarm_task(wp10db, task_id, status):
     cursor.execute(
         'UPDATE selections SET s_zimfarm_status = %s WHERE s_zimfarm_task_id = %s',
         (status, task_id))
+    found = bool(cursor.rowcount)
   wp10db.commit()
+  return found

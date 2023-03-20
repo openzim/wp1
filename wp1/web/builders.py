@@ -176,7 +176,8 @@ def zimfarm_status():
       logic_selection.update_zimfarm_task(wp10db, task_id, 'FILE_READY')
       return '', 204
 
-  redis = get_redis()
-  queues.poll_for_zimfile_status(redis, task_id)
-  logic_selection.update_zimfarm_task(wp10db, task_id, 'ENDED')
+  found = logic_selection.update_zimfarm_task(wp10db, task_id, 'ENDED')
+  if found:
+    redis = get_redis()
+    queues.poll_for_zim_file_status(redis, task_id)
   return '', 204

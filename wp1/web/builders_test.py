@@ -473,7 +473,8 @@ class BuildersTest(BaseWebTestcase):
       rv = client.post('/v1/builders/%s/zim' % builder_id)
       self.assertEqual('500 INTERNAL SERVER ERROR', rv.status)
 
-  def test_zimfarm_status(self):
+  @patch('wp1.web.builders.queues.poll_for_zim_file_status')
+  def test_zimfarm_status(self, patched_poll):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
 
@@ -487,6 +488,7 @@ class BuildersTest(BaseWebTestcase):
                            'foo': 'bar'
                        })
       self.assertEqual('204 NO CONTENT', rv.status)
+      patched_poll.assert_called_once()
 
     with self.wp10db.cursor() as cursor:
       cursor.execute(
@@ -527,7 +529,8 @@ class BuildersTest(BaseWebTestcase):
                        })
       self.assertEqual('400 BAD REQUEST', rv.status)
 
-  def test_zimfarm_status_not_found_task_id(self):
+  @patch('wp1.web.builders.queues.poll_for_zim_file_status')
+  def test_zimfarm_status_not_found_task_id(self, patched_poll):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
 
@@ -541,3 +544,5 @@ class BuildersTest(BaseWebTestcase):
                            'foo': 'bar'
                        })
       self.assertEqual('204 NO CONTENT', rv.status)
+
+    patched_poll.assert_not_called()
