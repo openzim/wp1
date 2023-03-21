@@ -89,7 +89,7 @@ def create_app():
     if redis_creds is not None:
       app.config.update(
           {'RQ_DASHBOARD_REDIS_URL': 'redis://%(host)s:%(port)s' % redis_creds})
-    add_basic_auth(rq_dashboard.blueprint, rq_user, rq_pass)
+    app.config.update({'RQ_DASHBOARD_BASIC_AUTH': (rq_user, rq_pass)})
     app.register_blueprint(rq_dashboard.blueprint, url_prefix="/rq")
   else:
     print('No RQ_USER/RQ_PASS found in env. RQ dashboard not created.')
