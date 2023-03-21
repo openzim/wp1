@@ -23,17 +23,21 @@ class AppTest(BaseWebTestcase):
 
 class RqTest(unittest.TestCase):
 
-  def test_rq_no_login(self):
+  def setUp(self):
     os.environ['RQ_USER'] = 'testuser'
     os.environ['RQ_PASS'] = 'testpass'  # nosec
+
+  def tearDown(self):
+    del os.environ['RQ_USER']
+    del os.environ['RQ_PASS']
+
+  def test_rq_no_login(self):
     self.app = create_app()
     with self.app.test_client() as client:
       rv = client.get('/rq', follow_redirects=True)
       self.assertTrue(b'Please login' in rv.data)
 
   def test_rq_login(self):
-    os.environ['RQ_USER'] = 'testuser'
-    os.environ['RQ_PASS'] = 'testpass'  # nosec
     self.app = create_app()
     with self.app.test_client() as client:
       rv = client.get(
