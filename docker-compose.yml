@@ -106,7 +106,7 @@ services:
     restart: always
 
   backup:
-    image: kiwix/borg-backup:latest
+    image: ghcr.io/kiwix/borg-backup:latest
     env_file:
       - /data/wp1bot/db/.wp1db_backup.env
     restart: always
