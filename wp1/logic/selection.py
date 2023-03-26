@@ -10,6 +10,7 @@ from wp1.models.wp10.selection import Selection
 from wp1.storage import connect_storage
 from wp1.logic import util
 from wp1.timestamp import utcnow
+from wp1 import zimfarm
 
 try:
   from wp1.credentials import ENV, CREDENTIALS
@@ -62,6 +63,16 @@ def url_for(object_key):
   path = urllib.parse.quote(
       object_key if isinstance(object_key, str) else object_key.decode('utf-8'))
   return '%s/%s' % (S3_PUBLIC_URL, path)
+
+
+def zim_file_url_for_selection(selection):
+  if not selection:
+    raise ValueError('Cannot get zim file url for empty selection')
+  return zim_file_url_for(selection.s_zimfarm_task_id)
+
+
+def zim_file_url_for(task_id):
+  return zimfarm.zim_file_url_for_task_id(task_id)
 
 
 def object_key_for(selection_id,

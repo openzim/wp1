@@ -184,3 +184,16 @@ def zimfarm_status():
     redis = get_redis()
     queues.poll_for_zim_file_status(redis, task_id)
   return '', 204
+
+
+@builders.route('/<builder_id>/zim/latest')
+def latest_zim_file_for_builder(builder_id):
+  wp10db = get_db('wp10db')
+
+  url = logic_builder.latest_zim_file_url_for(wp10db, builder_id)
+  if not url:
+    flask.abort(404)
+
+  print(url)
+
+  return flask.redirect(url, code=302)

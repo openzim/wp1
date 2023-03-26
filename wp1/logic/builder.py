@@ -144,6 +144,10 @@ def materialize_builder(builder_cls, builder_id, content_type):
 
 
 def latest_url_for(builder_id, content_type):
+  """Returns the redirect URL for the latest selection for a builder.
+
+  This is the URL on this API server that redirects to S3-storage.
+  """
   ext = CONTENT_TYPE_TO_EXT.get(content_type)
   if ext is None:
     logger.warning(
@@ -157,7 +161,20 @@ def latest_url_for(builder_id, content_type):
   return '%s/v1/builders/%s/selection/latest.%s' % (server_url, builder_id, ext)
 
 
+def latest_zim_for(builder_id):
+  """Returns the redirect URL for the latest ZIM file for a builder."""
+  server_url = CREDENTIALS.get(ENV, {}).get('CLIENT_URL', {}).get('api')
+  if server_url is None:
+    logger.warning('Could not determine server API URL. Check credentials.py')
+    return None
+  return '%s/v1/builders/%s/zim/latest' % (server_url, builder_id)
+
+
 def latest_selection_for(wp10db, builder_id, content_type):
+  """Returns the latest Selection with the given content type for a builder.
+
+  Returns the value as a Selection model.
+  """
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''SELECT s.*
@@ -177,6 +194,12 @@ def latest_selection_for(wp10db, builder_id, content_type):
 
 
 def latest_selection_url(wp10db, builder_id, ext):
+  """Returns the raw S3-like storage URL for the latest selection for the given builder.
+
+  This is in contrast with latest_url_for, which returns the redirect URL on this API
+  server for a selection. This function is used when resolving the redirect, to return
+  the actual URL.
+  """
   content_type = EXT_TO_CONTENT_TYPE.get(ext)
   if content_type is None:
     logger.warning(
@@ -187,12 +210,26 @@ def latest_selection_url(wp10db, builder_id, ext):
   if selection is None:
     return None
 
-  if selection is None or selection.s_object_key is None:
+  if selection.s_object_key is None:
     logger.warning('Object key for selection was None, builder id=%s',
                    builder_id)
     return None
 
   return logic_selection.url_for(selection.s_object_key.decode('utf-8'))
+
+
+def latest_zim_file_url_for(wp10db, builder_id):
+  selection = latest_selection_for(wp10db, builder_id,
+                                   'text/tab-separated-values')
+  if selection is None:
+    return None
+
+  if selection.s_zimfarm_status != b'FILE_READY':
+    logger.warning('Attempt to get ZIM URL before file ready, builder id=%s',
+                   builder_id)
+    return None
+
+  return logic_selection.zim_file_url_for_selection(selection)
 
 
 def latest_selections_with_errors(wp10db, builder_id):
@@ -258,7 +295,7 @@ def on_zim_file_status_poll(task_id):
   wp10db = wp10_connect()
   redis = redis_connect()
 
-  if zimfarm.is_zim_file_ready(redis, task_id):
+  if zimfarm.is_zim_file_ready(task_id):
     logic_selection.update_zimfarm_task(wp10db,
                                         task_id,
                                         'FILE_READY',
@@ -318,6 +355,14 @@ def get_builders_with_selections(wp10db, user_id):
             if has_selection and (is_ok_status or not has_status) else None,
         's_status':
             b['s_status'].decode('utf-8')
-            if has_selection and has_status else None
+            if has_selection and has_status else None,
+        's_zimfarm_status':
+            b['s_zimfarm_status'].decode('utf-8') if has_selection else None,
+        's_zim_file_updated_at':
+            logic_util.wp10_timestamp_to_unix(b['s_zim_file_updated_at']) if
+            has_selection and b['s_zim_file_updated_at'] is not None else None,
+        's_zim_file_url':
+            latest_zim_for(b['b_id'].decode('utf-8'))
+            if content_type == 'text/tab-separated-values' else None,
     })
   return result

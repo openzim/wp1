@@ -225,21 +225,48 @@ def schedule_zim_file(redis, wp10db, builder):
   return task_id
 
 
-def is_zim_file_ready(redis, task_id):
-  token = get_zimfarm_token(redis)
-  if token is None:
-    raise ZimfarmError('Error retrieving auth token for request')
-
+def _get_task_by_id(task_id):
+  if isinstance(task_id, bytes):
+    task_id = task_id.decode('utf-8')
   base_url = get_zimfarm_url()
-  headers = _get_zimfarm_headers(token)
 
   r = requests.get('%s/tasks/%s' % (base_url, task_id))
   r.raise_for_status()
 
-  data = r.json()
+  return r.json()
+
+
+def is_zim_file_ready(task_id):
+  data = _get_task_by_id(task_id)
   files = data.get('files', {})
 
   for key, value in files.items():
     if value.get('status') == 'uploaded':
       return True
   return False
+
+
+def zim_file_url_for_task_id(task_id):
+  data = _get_task_by_id(task_id)
+
+  files = data.get('files', {})
+  name = None
+  for _, value in files.items():
+    name = value.get('name')
+    break
+
+  if name is None:
+    raise ZimFarmError('Could not find filename for ZIM file, task_id = %s' %
+                       task_id)
+
+  warehouse_path = data.get('config', {}).get('warehouse_path')
+  if warehouse_path is None:
+    raise ZimFarmError(
+        'Could not get warehouse path for ZIM file, task_id = %s' % task_id)
+
+  base_url = CREDENTIALS[ENV].get('ZIMFARM', {}).get('s3_url')
+  if base_url is None:
+    raise ZimFarmError(
+        'Configuration error, could not find ZIMFARM["s3_url"] in credentials')
+
+  return f'{base_url}{warehouse_path}/{name}'
