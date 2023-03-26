@@ -5,10 +5,11 @@ import urllib.parse
 
 import attr
 
-from wp1.constants import CONTENT_TYPE_TO_EXT
+from wp1.constants import CONTENT_TYPE_TO_EXT, TS_FORMAT_WP10
 from wp1.models.wp10.selection import Selection
 from wp1.storage import connect_storage
 from wp1.logic import util
+from wp1.timestamp import utcnow
 
 try:
   from wp1.credentials import ENV, CREDENTIALS
@@ -140,11 +141,20 @@ def set_error_messages(selection, e):
   selection.s_error_messages = json.dumps({'error_messages': messages})
 
 
-def update_zimfarm_task(wp10db, task_id, status):
+def update_zimfarm_task(wp10db, task_id, status, set_updated_now=False):
   with wp10db.cursor() as cursor:
-    cursor.execute(
-        'UPDATE selections SET s_zimfarm_status = %s WHERE s_zimfarm_task_id = %s',
-        (status, task_id))
-    found = bool(cursor.rowcount)
+    if set_updated_now:
+      updated_at = utcnow().strftime(TS_FORMAT_WP10).encode('utf-8')
+      with wp10db.cursor() as cursor:
+        cursor.execute(
+            '''UPDATE selections SET
+                s_zimfarm_status = %s, s_zim_file_updated_at = %s
+               WHERE s_zimfarm_task_id = %s''', (status, updated_at, task_id))
+        found = bool(cursor.rowcount)
+    else:
+      cursor.execute(
+          'UPDATE selections SET s_zimfarm_status = %s WHERE s_zimfarm_task_id = %s',
+          (status, task_id))
+      found = bool(cursor.rowcount)
   wp10db.commit()
   return found

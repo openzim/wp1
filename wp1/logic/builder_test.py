@@ -672,8 +672,10 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.zimfarm.is_zim_file_ready')
   @patch('wp1.logic.builder.wp10_connect')
   @patch('wp1.logic.builder.redis_connect')
-  def test_on_zim_file_status_poll_true(self, patched_redis, patched_connect,
-                                        patched_is_ready):
+  @patch('wp1.logic.selection.utcnow',
+         return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
+  def test_on_zim_file_status_poll_true(self, patched_utcnow, patched_redis,
+                                        patched_connect, patched_is_ready):
     patched_is_ready.return_value = True
     builder_id = self._insert_builder()
     self._insert_selection(1,
@@ -690,11 +692,13 @@ class BuilderTest(BaseWpOneDbTest):
       self.wp10db.close = orig_close
 
     with self.wp10db.cursor() as cursor:
-      cursor.execute('SELECT s_zimfarm_status FROM selections WHERE s_id = 1')
+      cursor.execute('SELECT s_zimfarm_status, s_zim_file_updated_at '
+                     'FROM selections WHERE s_id = 1')
       data = cursor.fetchone()
 
     self.assertIsNotNone(data)
     self.assertEqual(b'FILE_READY', data['s_zimfarm_status'])
+    self.assertEqual(b'20221225000102', data['s_zim_file_updated_at'])
 
   @patch('wp1.logic.builder.zimfarm.is_zim_file_ready')
   @patch('wp1.logic.builder.queues.poll_for_zim_file_status')

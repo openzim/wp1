@@ -173,7 +173,10 @@ def zimfarm_status():
   files = data.get('files', {})
   for key, value in files.items():
     if value['status'] == 'uploaded':
-      logic_selection.update_zimfarm_task(wp10db, task_id, 'FILE_READY')
+      logic_selection.update_zimfarm_task(wp10db,
+                                          task_id,
+                                          'FILE_READY',
+                                          set_updated_now=True)
       return '', 204
 
   found = logic_selection.update_zimfarm_task(wp10db, task_id, 'ENDED')

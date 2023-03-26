@@ -1,3 +1,4 @@
+import datetime
 from unittest.mock import patch
 
 import attr
@@ -491,13 +492,45 @@ class BuildersTest(BaseWebTestcase):
       patched_poll.assert_called_once()
 
     with self.wp10db.cursor() as cursor:
-      cursor.execute(
-          'SELECT s_zimfarm_status FROM selections WHERE s_zimfarm_task_id = "task-id-1234"'
-      )
+      cursor.execute('SELECT s_zimfarm_status, s_zim_file_updated_at '
+                     'FROM selections WHERE s_zimfarm_task_id = "task-id-1234"')
       status = cursor.fetchone()
 
     self.assertIsNotNone(status)
     self.assertEqual(b'ENDED', status['s_zimfarm_status'])
+    self.assertIsNone(status['s_zim_file_updated_at'])
+
+  @patch('wp1.web.builders.queues.poll_for_zim_file_status')
+  @patch('wp1.logic.selection.utcnow',
+         return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
+  def test_zimfarm_status_file_ready(self, patched_utcnow, patched_poll):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/zim/status?token=hook-token-abc',
+                       json={
+                           '_id': 'task-id-1234',
+                           'foo': 'bar',
+                           'files': {
+                               'zimfile.1234': {
+                                   'status': 'uploaded'
+                               }
+                           }
+                       })
+      self.assertEqual('204 NO CONTENT', rv.status)
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT s_zimfarm_status, s_zim_file_updated_at '
+                     'FROM selections WHERE s_zimfarm_task_id = "task-id-1234"')
+      status = cursor.fetchone()
+
+    self.assertIsNotNone(status)
+    self.assertEqual(b'FILE_READY', status['s_zimfarm_status'])
+    self.assertEqual(b'20221225000102', status['s_zim_file_updated_at'])
 
   def test_zimfarm_status_bad_token(self):
     builder_id = self._insert_builder()
