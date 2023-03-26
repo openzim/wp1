@@ -14,11 +14,11 @@ import ArticlePage from './components/ArticlePage.vue';
 import SimpleBuilder from './components/SimpleBuilder.vue';
 import SparqlBuilder from './components/SparqlBuilder.vue';
 import ComparePage from './components/ComparePage.vue';
-import CreateZimFile from './components/CreateZimFile.vue';
 import IndexPage from './components/IndexPage.vue';
 import MyLists from './components/MyLists.vue';
 import ProjectPage from './components/ProjectPage.vue';
 import UpdatePage from './components/UpdatePage.vue';
+import ZimFile from './components/ZimFile.vue';
 
 Vue.config.productionTip = false;
 
@@ -126,9 +126,9 @@ const routes = [
   },
   {
     path: '/selections/:builder_id/zim',
-    component: CreateZimFile,
+    component: ZimFile,
     meta: {
-      title: () => BASE_TITLE + ' - Create ZIM file',
+      title: () => BASE_TITLE + ' - ZIM file',
     },
   },
 ];

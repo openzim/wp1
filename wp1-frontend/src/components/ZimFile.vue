@@ -3,6 +3,17 @@
     <div>
       <SecondaryNav></SecondaryNav>
     </div>
+    <div v-if="notFound">
+      <div id="404" class="col-lg-6 m-4">
+        <h2>404 Not Found</h2>
+        Sorry, the list with that ID either doesn't exist or isn't owned by you.
+      </div>
+    </div>
+    <div v-else-if="serverError">
+      <h2>500 Server error</h2>
+      Something went wrong and we couldn't retrieve the list with that ID. You
+      might try again later.
+    </div>
   </div>
   <div v-else>
     <LoginRequired></LoginRequired>
@@ -16,10 +27,10 @@ import SecondaryNav from './SecondaryNav.vue';
 import LoginRequired from './LoginRequired.vue';
 
 export default {
-  name: 'CreateZimFile',
+  name: 'ZimFile',
   components: { SecondaryNav, LoginRequired, PulseLoader },
   data: function () {
-    return {};
+    return { notFound: false, serverError: false };
   },
   created: function () {
     this.getBuilder();

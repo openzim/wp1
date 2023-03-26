@@ -324,6 +324,7 @@ def get_builders_with_selections(wp10db, user_id):
     has_selection = b['s_id'] is not None
     has_status = b['s_status'] is not None
     is_ok_status = b['s_status'] == b'OK'
+    is_zim_ready = b['s_zimfarm_status'] == b'FILE_READY'
     content_type = b['s_content_type'].decode(
         'utf-8') if has_selection else None
     selection_id = b['s_id'].decode('utf-8') if has_selection else None
@@ -363,6 +364,7 @@ def get_builders_with_selections(wp10db, user_id):
             has_selection and b['s_zim_file_updated_at'] is not None else None,
         's_zim_file_url':
             latest_zim_for(b['b_id'].decode('utf-8'))
-            if content_type == 'text/tab-separated-values' else None,
+            if content_type == 'text/tab-separated-values' and is_zim_ready else
+            None,
     })
   return result
