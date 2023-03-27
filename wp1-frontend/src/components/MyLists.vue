@@ -65,20 +65,21 @@
                   ></span>
                 </div>
               </td>
-              <td v-if="item.s_zim_file_url">
+              <td v-if="item.s_zim_file_url && !isPending(item)">
                 {{ localDate(item.s_zim_file_updated_at) }}
               </td>
               <td v-else>-</td>
-              <td v-if="item.s_zim_file_url">
+              <td v-if="item.s_zim_file_url && !isPending(item)">
                 <a :href="item.s_zim_file_url">Download ZIM</a>
               </td>
-              <td v-else>
+              <td v-else-if="!isPending(item) && !hasSelectionError(item)">
                 <router-link :to="zimPathFor(item)"
                   ><button type="button" class="btn btn-primary">
                     Create ZIM
                   </button></router-link
                 >
               </td>
+              <td v-else>-</td>
               <td>
                 <router-link :to="editPathFor(item)"
                   ><button type="button" class="btn btn-primary">

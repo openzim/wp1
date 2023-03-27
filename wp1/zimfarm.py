@@ -125,7 +125,7 @@ def get_webhook_url():
                                                  urllib.parse.quote(token))
 
 
-def _get_params(wp10db, builder):
+def _get_params(wp10db, builder, description='', long_description=''):
   if builder is None:
     raise ObjectNotFoundError('Given builder was None: %r' % builder)
 
@@ -148,13 +148,21 @@ def _get_params(wp10db, builder):
       'platform': 'wikimedia',
       'monitor': False,
       'flags': {
-          'mwUrl': 'https://%s/' % project,
-          'adminEmail': 'contact+wp1@kiwix.org',
-          'articleList': logic_selection.url_for_selection(selection),
-          'customZimTitle': util.safe_name(builder.b_name.decode('utf-8')),
+          'mwUrl':
+              'https://%s/' % project,
+          'adminEmail':
+              'contact+wp1@kiwix.org',
+          'articleList':
+              logic_selection.url_for_selection(selection),
+          'customZimTitle':
+              util.safe_name(builder.b_name.decode('utf-8')),
           # TODO(#584): Replace these placeholders with input from the user.
-          'customZimDescription': 'ZIM file created from a WP1 Selection',
-          'customZimLongDescription': 'ZIM file created from a WP1 Selection',
+          'customZimDescription':
+              description
+              if description else 'ZIM file created from a WP1 Selection',
+          'customZimLongDescription':
+              long_description
+              if long_description else 'ZIM file created from a WP1 Selection',
       }
   }
 
@@ -185,12 +193,19 @@ def _get_zimfarm_headers(token):
   return {"Authorization": "Token %s" % token, 'User-Agent': WP1_USER_AGENT}
 
 
-def schedule_zim_file(redis, wp10db, builder):
+def schedule_zim_file(redis,
+                      wp10db,
+                      builder,
+                      description='',
+                      long_description=''):
   token = get_zimfarm_token(redis)
   if token is None:
     raise ZimfarmError('Error retrieving auth token for request')
 
-  params = _get_params(wp10db, builder)
+  params = _get_params(wp10db,
+                       builder,
+                       description=description,
+                       long_description=long_description)
   base_url = get_zimfarm_url()
   headers = _get_zimfarm_headers(token)
 

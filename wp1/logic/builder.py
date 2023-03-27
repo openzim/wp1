@@ -264,7 +264,12 @@ def latest_selections_with_errors(wp10db, builder_id):
   return res
 
 
-def schedule_zim_file(redis, wp10db, user_id, builder_id):
+def schedule_zim_file(redis,
+                      wp10db,
+                      user_id,
+                      builder_id,
+                      description='',
+                      long_description=''):
   if isinstance(builder_id, str):
     builder_id = builder_id.encode('utf-8')
   builder = get_builder(wp10db, builder_id)
@@ -277,7 +282,11 @@ def schedule_zim_file(redis, wp10db, user_id, builder_id):
         'Could not use builder id = %s for user id = %s' %
         (builder_id, user_id))
 
-  task_id = zimfarm.schedule_zim_file(redis, wp10db, builder)
+  task_id = zimfarm.schedule_zim_file(redis,
+                                      wp10db,
+                                      builder,
+                                      description=description,
+                                      long_description=long_description)
   selection = latest_selection_for(wp10db, builder_id,
                                    'text/tab-separated-values')
 
@@ -289,6 +298,14 @@ def schedule_zim_file(redis, wp10db, user_id, builder_id):
            WHERE s_id = %s
         ''', (task_id, selection.s_id))
   wp10db.commit()
+
+  return task_id
+
+
+def latest_zimfarm_status(wp10db, builder_id):
+  selection = latest_selection_for(wp10db, builder_id,
+                                   'text/tab-separated-values')
+  return selection.s_zimfarm_status.decode('utf-8')
 
 
 def on_zim_file_status_poll(task_id):

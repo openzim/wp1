@@ -3,6 +3,7 @@ import importlib
 import logging
 
 from wp1.credentials import CREDENTIALS, ENV
+from wp1.environment import Environment
 from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError
 import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
@@ -135,8 +136,17 @@ def create_zim_file_for_builder(builder_id):
 
   user_id = flask.session['user']['identity']['sub']
 
+  data = flask.request.get_json()
+  desc = data.get('description')
+  long_desc = data.get('long_description')
+
   try:
-    logic_builder.schedule_zim_file(redis, wp10db, user_id, builder_id)
+    task_id = logic_builder.schedule_zim_file(redis,
+                                              wp10db,
+                                              user_id,
+                                              builder_id,
+                                              description=desc,
+                                              long_description=long_desc)
   except ObjectNotFoundError:
     return flask.jsonify({
         'error_messages': ['No builder found with id = %s\n' % builder_id]
@@ -153,11 +163,26 @@ def create_zim_file_for_builder(builder_id):
       error_messages.append(str(e.__cause__))
     return flask.jsonify({'error_messages': error_messages}), 500
 
+  # In production, there is a web hook from the Zimfarm that notifies us
+  # that the task is finished and we can start polling for the ZIM file
+  # to be uploaded. The web hook obviously doesn't work in development
+  # because the localhost server is not routable. To make ZIM file
+  # creation work end to end, start polling immediately in Development.
+  if ENV == Environment.DEVELOPMENT:
+    queues.poll_for_zim_file_status(redis, task_id)
+
   return '', 204
 
 
+@builders.route('/<builder_id>/zim/status')
+def zimfarm_status(builder_id):
+  wp10db = get_db('wp10db')
+  status = logic_builder.latest_zimfarm_status(wp10db, builder_id)
+  return flask.jsonify({'status': status})
+
+
 @builders.route('/zim/status', methods=['POST'])
-def zimfarm_status():
+def update_zimfarm_status():
   token = CREDENTIALS[ENV].get('ZIMFARM', {}).get('hook_token')
   provided_token = flask.request.args.get('token')
   if token and provided_token != token:
