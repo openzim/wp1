@@ -141,7 +141,7 @@ def set_project_update_job_id(redis, project_name, job_id):
     return
 
   key = _update_job_status_key(project_name)
-  redis.hmset(key, {'job_id': job_id})
+  redis.hset(key, mapping={'job_id': job_id})
 
 
 def enqueue_project(project_name,
