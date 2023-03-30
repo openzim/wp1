@@ -92,6 +92,12 @@
               Download ZIM
             </button></a
           >
+          <pulse-loader
+            class="loader"
+            :loading="processing || showLoader"
+            :color="loaderColor"
+            :size="loaderSize"
+          ></pulse-loader>
         </div>
       </div>
     </div>
@@ -113,6 +119,8 @@ export default {
   data: function () {
     return {
       description: '',
+      loaderColor: '#007bff',
+      loaderSize: '1rem',
       longDescription: '',
       notFound: false,
       pollId: null,
@@ -215,6 +223,13 @@ export default {
     builderId: function () {
       return this.$route.params.builder_id;
     },
+    showLoader: function () {
+      return (
+        this.processing ||
+        this.status === 'REQUESTED' ||
+        this.status === 'ENDED'
+      );
+    },
   },
   watch: {
     builderId: function () {
@@ -228,8 +243,14 @@ export default {
 .errors {
   color: #dc3545;
 }
-
 .error-list {
   background-color: pink;
+}
+.loader {
+  position: relative;
+  top: 5px;
+  display: inline-block;
+  margin: 0 20px;
+  text-align: center;
 }
 </style>
