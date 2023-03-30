@@ -38,6 +38,12 @@ class SelectionTest(BaseWebTestcase):
               'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv',
           's_status':
               'OK',
+          's_zim_file_updated_at':
+              None,
+          's_zim_file_url':
+              None,
+          's_zimfarm_status':
+              'NOT_REQUESTED',
       }],
   }
 
@@ -68,6 +74,12 @@ class SelectionTest(BaseWebTestcase):
                   'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.xls',
               's_status':
                   None,
+              's_zim_file_updated_at':
+                  None,
+              's_zim_file_url':
+                  None,
+              's_zimfarm_status':
+                  'NOT_REQUESTED',
           },
           {
               'id': '1a-2b-3c-4d',
@@ -82,6 +94,9 @@ class SelectionTest(BaseWebTestcase):
               's_extension': 'tsv',
               's_url': None,
               's_status': 'CAN_RETRY',
+              's_zim_file_updated_at': None,
+              's_zim_file_url': None,
+              's_zimfarm_status': 'NOT_REQUESTED',
           },
       ]
   }
@@ -100,6 +115,9 @@ class SelectionTest(BaseWebTestcase):
           's_extension': None,
           's_url': None,
           's_status': None,
+          's_zim_file_updated_at': None,
+          's_zim_file_url': None,
+          's_zimfarm_status': None,
       }]
   }
 
@@ -147,7 +165,7 @@ class SelectionTest(BaseWebTestcase):
                s_status, s_error_messages, s_zimfarm_status)
             VALUES
               (2, \'1a-2b-3c-4d\', "application/vnd.ms-excel", "20201225105544", 1,
-               "object_key_2", NULL, NULL, NULL)
+               "object_key_2", NULL, NULL, 'NOT_REQUESTED')
         ''')
       self.wp10db.commit()
       with client.session_transaction() as sess:
