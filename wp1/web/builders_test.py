@@ -419,7 +419,7 @@ class BuildersTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['user'] = self.USER
-      rv = client.post('/v1/builders/%s/zim' % builder_id)
+      rv = client.post('/v1/builders/%s/zim' % builder_id, json={})
       self.assertEqual('204 NO CONTENT', rv.status)
 
     patched_schedule_zim_file.assert_called_once()
@@ -444,7 +444,7 @@ class BuildersTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['user'] = self.USER
-      rv = client.post('/v1/builders/1234-not-found/zim')
+      rv = client.post('/v1/builders/1234-not-found/zim', json={})
       self.assertEqual('404 NOT FOUND', rv.status)
 
   @patch('wp1.zimfarm.schedule_zim_file')
@@ -457,7 +457,7 @@ class BuildersTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['user'] = self.UNAUTHORIZED_USER
-      rv = client.post('/v1/builders/%s/zim' % builder_id)
+      rv = client.post('/v1/builders/%s/zim' % builder_id, json={})
       self.assertEqual('403 FORBIDDEN', rv.status)
 
   @patch('wp1.zimfarm.schedule_zim_file')
@@ -471,7 +471,7 @@ class BuildersTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['user'] = self.USER
-      rv = client.post('/v1/builders/%s/zim' % builder_id)
+      rv = client.post('/v1/builders/%s/zim' % builder_id, json={})
       self.assertEqual('500 INTERNAL SERVER ERROR', rv.status)
 
   @patch('wp1.web.builders.queues.poll_for_zim_file_status')
