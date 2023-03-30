@@ -219,6 +219,4 @@ def latest_zim_file_for_builder(builder_id):
   if not url:
     flask.abort(404)
 
-  print(url)
-
   return flask.redirect(url, code=302)
