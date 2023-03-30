@@ -323,6 +323,58 @@ def on_zim_file_status_poll(task_id):
   wp10db.close()
 
 
+def _get_builder_data(b):
+  return {
+      'id': b['b_id'].decode('utf-8'),
+      'name': b['b_name'].decode('utf-8'),
+      'project': b['b_project'].decode('utf-8'),
+      'model': b['b_model'].decode('utf-8'),
+      'created_at': logic_util.wp10_timestamp_to_unix(b['b_created_at']),
+      'updated_at': logic_util.wp10_timestamp_to_unix(b['b_updated_at']),
+  }
+
+
+def _get_selection_data(b):
+  data = {
+      's_id': None,
+      's_updated_at': None,
+      's_content_type': None,
+      's_extension': None,
+      's_url': None,
+      's_status': None,
+      's_zimfarm_status': None,
+      's_zim_file_updated_at': None,
+      's_zim_file_url': None,
+  }
+
+  has_selection = b['s_id'] is not None
+  has_status = b['s_status'] is not None
+  is_ok_status = b['s_status'] == b'OK'
+  is_zim_ready = b['s_zimfarm_status'] == b'FILE_READY'
+
+  if has_selection:
+    content_type = b['s_content_type'].decode('utf-8')
+    data['s_id'] = b['s_id'].decode('utf-8')
+    data['s_updated_at'] = logic_util.wp10_timestamp_to_unix(b['s_updated_at'])
+    data['s_content_type'] = content_type
+    data['s_extension'] = CONTENT_TYPE_TO_EXT.get(content_type, '???')
+    data['s_zimfarm_status'] = b['s_zimfarm_status'].decode('utf-8')
+    if has_status:
+      data['s_status'] = b['s_status'].decode('utf-8')
+
+    if is_ok_status or not has_status:
+      data['s_url'] = latest_url_for(b['b_id'].decode('utf-8'), content_type)
+
+    if b['s_zim_file_updated_at'] is not None:
+      data['s_zim_file_updated_at'] = logic_util.wp10_timestamp_to_unix(
+          b['s_zim_file_updated_at'])
+
+    if content_type == 'text/tab-separated-values' and is_zim_ready:
+      data['s_zim_file_url'] = latest_zim_for(b['b_id'].decode('utf-8'))
+
+  return data
+
+
 def get_builders_with_selections(wp10db, user_id):
   with wp10db.cursor() as cursor:
     cursor.execute(
@@ -338,50 +390,9 @@ def get_builders_with_selections(wp10db, user_id):
   builders = {}
   result = []
   for b in data:
-    has_selection = b['s_id'] is not None
-    has_status = b['s_status'] is not None
-    is_ok_status = b['s_status'] == b'OK'
-    is_zim_ready = b['s_zimfarm_status'] == b'FILE_READY'
-    content_type = b['s_content_type'].decode(
-        'utf-8') if has_selection else None
-    selection_id = b['s_id'].decode('utf-8') if has_selection else None
-    result.append({
-        'id':
-            b['b_id'].decode('utf-8'),
-        'name':
-            b['b_name'].decode('utf-8'),
-        'project':
-            b['b_project'].decode('utf-8'),
-        'model':
-            b['b_model'].decode('utf-8'),
-        'created_at':
-            logic_util.wp10_timestamp_to_unix(b['b_created_at']),
-        'updated_at':
-            logic_util.wp10_timestamp_to_unix(b['b_updated_at']),
-        's_id':
-            selection_id,
-        's_updated_at':
-            logic_util.wp10_timestamp_to_unix(b['s_updated_at'])
-            if has_selection else None,
-        's_content_type':
-            content_type,
-        's_extension':
-            CONTENT_TYPE_TO_EXT.get(content_type, '???')
-            if has_selection else None,
-        's_url':
-            latest_url_for(b['b_id'].decode('utf-8'), content_type)
-            if has_selection and (is_ok_status or not has_status) else None,
-        's_status':
-            b['s_status'].decode('utf-8')
-            if has_selection and has_status else None,
-        's_zimfarm_status':
-            b['s_zimfarm_status'].decode('utf-8') if has_selection else None,
-        's_zim_file_updated_at':
-            logic_util.wp10_timestamp_to_unix(b['s_zim_file_updated_at']) if
-            has_selection and b['s_zim_file_updated_at'] is not None else None,
-        's_zim_file_url':
-            latest_zim_for(b['b_id'].decode('utf-8'))
-            if content_type == 'text/tab-separated-values' and is_zim_ready else
-            None,
-    })
+    builder = {}
+    builder.update(_get_builder_data(b))
+    builder.update(_get_selection_data(b))
+    result.append(builder)
+
   return result
