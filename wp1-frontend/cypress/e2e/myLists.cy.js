@@ -11,7 +11,7 @@ describe('the user selection list page', () => {
     it('successfully loads', () => {});
 
     it('displays the datatables view', () => {
-      cy.get('.dataTables_info').contains('Showing 1 to 6 of 6 entries');
+      cy.get('.dataTables_info').contains('Showing 1 to 9 of 9 entries');
     });
 
     it('displays list and its contents', () => {
@@ -77,6 +77,78 @@ describe('the user selection list page', () => {
         .contains('.btn-primary', 'Edit')
         .click();
       cy.url().should('eq', 'http://localhost:5173/#/selections/sparql/2');
+    });
+
+    describe('when the selection has not been materialized', () => {
+      it('does not display the Create Zim button', () => {
+        cy.contains('td', 'in retry')
+          .parent('tr')
+          .within(() => {
+            cy.get('td').eq(7).should('contain', '-');
+          });
+      });
+
+      it('does not display the ZIM updated date', () => {
+        cy.contains('td', 'in retry')
+          .parent('tr')
+          .within(() => {
+            cy.get('td').eq(6).should('contain', '-');
+          });
+      });
+    });
+
+    describe('when the selection is materialized', () => {
+      it('displays the Create Zim button', () => {
+        cy.contains('td', 'selection ready, no zim')
+          .parent('tr')
+          .within(() => {
+            cy.get('td').eq(7).should('contain', 'Create ZIM');
+          });
+      });
+
+      it('does not display the ZIM updated date', () => {
+        cy.contains('td', 'selection ready, no zim')
+          .parent('tr')
+          .within(() => {
+            cy.get('td').eq(6).should('contain', '-');
+          });
+      });
+    });
+
+    describe('when the ZIM file has been requested but is not yet ready', () => {
+      it('displays a spinner', () => {
+        cy.contains('td', 'zim requested')
+          .parent('tr')
+          .within(() => {
+            cy.get('td').eq(7).get('div').should('have.class', 'loader');
+          });
+      });
+
+      it('does not display the ZIM updated date', () => {
+        cy.contains('td', 'zim requested')
+          .parent('tr')
+          .within(() => {
+            cy.get('td').eq(6).should('contain', '-');
+          });
+      });
+    });
+
+    describe('when the ZIM file is ready', () => {
+      it('displays the download ZIM link', () => {
+        cy.contains('td', 'zim ready')
+          .parent('tr')
+          .within(() => {
+            cy.get('td').eq(7).get('a').should('contain', 'Download ZIM');
+          });
+      });
+
+      it('displays the ZIM updated date', () => {
+        cy.contains('td', 'zim ready')
+          .parent('tr')
+          .within(() => {
+            cy.get('td').eq(6).should('contain', '12/17/22');
+          });
+      });
     });
   });
 

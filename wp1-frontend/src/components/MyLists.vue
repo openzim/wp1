@@ -72,6 +72,13 @@
               <td v-if="item.s_zim_file_url && !isPending(item)">
                 <a :href="item.s_zim_file_url">Download ZIM</a>
               </td>
+              <td v-else-if="hasPendingZim(item)">
+                <pulse-loader
+                  class="loader"
+                  :color="loaderColor"
+                  :size="loaderSize"
+                ></pulse-loader>
+              </td>
               <td v-else-if="!isPending(item) && !hasSelectionError(item)">
                 <router-link :to="zimPathFor(item)"
                   ><button type="button" class="btn btn-primary">
@@ -127,6 +134,13 @@ export default {
     isPending: function (item) {
       return (
         (!item.s_url && !item.s_status) || item.updated_at > item.s_updated_at
+      );
+    },
+    hasPendingZim: function (item) {
+      return (
+        item.s_status === 'OK' &&
+        item.s_zimfarm_status !== 'NOT_REQUESTED' &&
+        item.s_zimfarm_status !== 'FILE_READY'
       );
     },
     hasSelectionError: function (item) {

@@ -45,6 +45,7 @@
           <div id="desc" class="form-group">
             <label for="desc">Description</label>
             <input
+              id="desc"
               ref="desc"
               v-model="description"
               class="form-control"
@@ -54,6 +55,7 @@
           <div id="longdesc" class="form-group">
             <label for="longdesc">Long Description</label>
             <textarea
+              id="longdesc"
               ref="longdesc"
               v-model="longDescription"
               rows="6"
@@ -71,6 +73,7 @@
           </div>
           <div>
             <button
+              id="request"
               v-on:click.prevent="onSubmit"
               class="btn btn-primary"
               type="button"
@@ -85,6 +88,7 @@
         <div class="col-lg-6 col-md-9 mx-4">
           <a :href="zimPathFor()"
             ><button
+              id="download"
               type="button"
               class="btn btn-primary"
               :disabled="status !== 'FILE_READY'"
@@ -93,6 +97,7 @@
             </button></a
           >
           <pulse-loader
+            id="loader"
             class="loader"
             :loading="processing || showLoader"
             :color="loaderColor"
