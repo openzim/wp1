@@ -31,7 +31,7 @@ describe('the zim file creation page', () => {
           cy.get('#longdesc').should('be.visible');
         });
 
-        it('Displays the Request ZIM file button', () => {
+        it('displays the Request ZIM file button', () => {
           cy.get('#request').should('be.visible');
           cy.get('#request').should('not.have.attr', 'disabled');
         });
@@ -98,7 +98,7 @@ describe('the zim file creation page', () => {
         });
 
         it('does not show the spinner', () => {
-          cy.get('#loader').should('not.exist');
+          cy.get('#loader').should('not.be.visible');
         });
       });
     });
