@@ -31,14 +31,14 @@
             <h4 class="materialize-header">
               There was an error creating your selection
             </h4>
-            <div>
-              The following errors occurred when creating the .{{ item.ext }}
-              version:
-            </div>
             <div
               v-for="item in builder.selection_errors"
               v-bind:key="item.error_messages[0]"
             >
+              <div>
+                The following errors occurred when creating the .{{ item.ext }}
+                version:
+              </div>
               <ul class="materialize-error-list">
                 <li v-for="msg in item.error_messages" v-bind:key="msg">
                   {{ msg }}

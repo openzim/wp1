@@ -17,7 +17,7 @@ describe('the user selection list page', () => {
     it('displays list and its contents', () => {
       const listTd = cy.contains('td', 'simple list');
       listTd.siblings().contains('td', 'en.wikipedia.org');
-      listTd.siblings().contains('td', '9/5/2021');
+      listTd.siblings().contains('td', '9/5/21');
       listTd.siblings().contains('.btn-primary', 'Edit');
     });
 
