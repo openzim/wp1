@@ -49,6 +49,7 @@
               ref="desc"
               v-model="description"
               class="form-control"
+              maxlength="10"
               placeholder="ZIM file created from a WP1 Selection"
             />
           </div>
@@ -60,6 +61,7 @@
               v-model="longDescription"
               rows="6"
               class="form-control"
+              maxlength="4000"
               placeholder="ZIM file created from a WP1 Selection"
             ></textarea>
           </div>
