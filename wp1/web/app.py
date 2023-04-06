@@ -6,8 +6,6 @@ import flask
 import flask_cors
 import flask_gzip
 import redis
-import rq_dashboard
-from rq_dashboard.cli import add_basic_auth
 
 import wp1.logic.project as logic_project
 from wp1 import environment
@@ -80,19 +78,7 @@ def create_app():
                          supports_credentials=True)
   gzip = flask_gzip.Gzip(app, minimum_size=256)
 
-  rq_user = os.environ.get('RQ_USER')
-  rq_pass = os.environ.get('RQ_PASS')
   redis_creds = get_redis_creds()
-
-  if rq_user is not None and rq_pass is not None:
-    app.config.from_object(rq_dashboard.default_settings)
-    if redis_creds is not None:
-      app.config.update({'RQ_DASHBOARD_REDIS_HOST': redis_creds['host']})
-      app.config.update({'RQ_DASHBOARD_REDIS_PORT': redis_creds['port']})
-    add_basic_auth(rq_dashboard.blueprint, rq_user, rq_pass)
-    app.register_blueprint(rq_dashboard.blueprint, url_prefix="/rq")
-  else:
-    print('No RQ_USER/RQ_PASS found in env. RQ dashboard not created.')
 
   if redis_creds is not None:
     app.config['SESSION_REDIS'] = redis.from_url('redis://{}:{}'.format(

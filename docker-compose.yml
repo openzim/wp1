@@ -37,7 +37,6 @@ services:
       - 6555
     volumes:
       - /data/wp1bot/credentials.py:/usr/src/app/wp1/credentials.py
-      - /data/wp1bot/rq-credentials.txt:/usr/src/app/rq-credentials.txt
     links:
       - redis
     logging:
