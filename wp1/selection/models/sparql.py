@@ -50,6 +50,9 @@ class Builder(AbstractBuilder):
     urls = []
     # Check every variable that appears in the query graph.
     for variable in [str(v) for v in q.algebra._vars]:
+      has_struct = len(data.get('results', {}).get('bindings', [])) > 0
+      if not has_struct:
+        continue
       if not data['results']['bindings'][0].get(variable):
         # There is no binding for this variable. Maybe it's some kind of
         # special variable. Just skip it.

@@ -431,3 +431,85 @@ class ZimFarmTest(BaseWpOneDbTest):
     with self.assertRaises(ZimFarmError):
       actual = zimfarm.schedule_zim_file(redis, self.wp10db,
                                          'builder-1234-abcd')
+
+  @patch('wp1.zimfarm.requests.get')
+  def test_is_zim_file_ready(self, patched_get):
+    resp = MagicMock()
+    resp.json.return_value = {'files': {'foo.zim': {'status': 'uploaded'}}}
+    patched_get.return_value = resp
+    actual = zimfarm.is_zim_file_ready('foo-bar')
+    self.assertTrue(actual)
+
+  @patch('wp1.zimfarm.requests.get')
+  def test_is_zim_file_ready_false(self, patched_get):
+    resp = MagicMock()
+    resp.json.return_value = {'files': {'foo.zim': {'status': 'success'}}}
+    patched_get.return_value = resp
+    actual = zimfarm.is_zim_file_ready('foo-bar')
+    self.assertFalse(actual)
+
+  @patch('wp1.zimfarm.requests.get')
+  def test_zim_file_url_for_task_id(self, patched_get):
+    resp = MagicMock()
+    resp.json.return_value = {
+        'config': {
+            'warehouse_path': '/wikipedia'
+        },
+        'files': {
+            'foo.zim': {
+                'name': 'foo.zim'
+            }
+        }
+    }
+    patched_get.return_value = resp
+    actual = zimfarm.zim_file_url_for_task_id('foo-bar')
+    self.assertEqual(
+        'https://fake.wasabisys.com/org-kiwix-zimit/wikipedia/foo.zim', actual)
+
+  @patch('wp1.zimfarm.requests.get')
+  def test_zim_file_url_for_task_id_missing_name(self, patched_get):
+    resp = MagicMock()
+    resp.json.return_value = {
+        'config': {
+            'warehouse_path': '/wikipedia'
+        },
+        'files': {
+            'foo.zim': {}
+        }
+    }
+    patched_get.return_value = resp
+    with self.assertRaises(ZimFarmError):
+      actual = zimfarm.zim_file_url_for_task_id('foo-bar')
+
+  @patch('wp1.zimfarm.requests.get')
+  def test_zim_file_url_for_task_id_missing_warehouse_path(self, patched_get):
+    resp = MagicMock()
+    resp.json.return_value = {
+        'config': {},
+        'files': {
+            'foo.zim': {
+                'name': 'foo.zim'
+            }
+        }
+    }
+    patched_get.return_value = resp
+    with self.assertRaises(ZimFarmError):
+      actual = zimfarm.zim_file_url_for_task_id('foo-bar')
+
+  @patch('wp1.zimfarm.requests.get')
+  @patch('wp1.zimfarm.CREDENTIALS', {Environment.TEST: {}})
+  def test_zim_file_url_for_task_id_missing_s3_url(self, patched_get):
+    resp = MagicMock()
+    resp.json.return_value = {
+        'config': {
+            'warehouse_path': '/wikipedia'
+        },
+        'files': {
+            'foo.zim': {
+                'name': 'foo.zim'
+            }
+        }
+    }
+    patched_get.return_value = resp
+    with self.assertRaises(ZimFarmError):
+      actual = zimfarm.zim_file_url_for_task_id('foo-bar')

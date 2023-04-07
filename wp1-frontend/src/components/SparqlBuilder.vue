@@ -104,7 +104,7 @@
           v-model="params.query"
           :placeholder="
             '#Rock bands that start with &quot;M&quot;\n' +
-            'SELECT ?band ?bandLabel\n' +
+            'SELECT ?band ?bandLabel ?article\n' +
             'WHERE\n' +
             '{\n' +
             '  ?band wdt:P31 wd:Q5741069 .\n' +

@@ -29,6 +29,10 @@ class Selection:
   s_zimfarm_task_id = attr.ib(default=None)
   s_zimfarm_status = attr.ib(default=None)
   s_zimfarm_error_messages = attr.ib(default=None)
+  s_zim_file_updated_at = attr.ib(default=None)
+
+  def set_id(self):
+    self.s_id = str(uuid.uuid4()).encode('utf-8')
 
   @property
   def updated_at_dt(self):
@@ -47,5 +51,20 @@ class Selection:
     """Sets the updated_at field to a timestamp that is equal to now"""
     self.set_updated_at_dt(utcnow())
 
-  def set_id(self):
-    self.s_id = str(uuid.uuid4()).encode('utf-8')
+  @property
+  def zim_file_updated_at_dt(self):
+    """The timestamp parsed into a datetime.datetime object."""
+    return datetime.datetime.strptime(
+        self.s_zim_file_updated_at.decode('utf-8'), TS_FORMAT_WP10)
+
+  def set_zim_file_updated_at_dt(self, dt):
+    """Sets the zim_file_updated_at field using a datetime.datetime object"""
+    if dt is None:
+      logger.warning(
+          'Attempt to set selection zim_file_updated_at to None ignored')
+      return
+    self.s_zim_file_updated_at = dt.strftime(TS_FORMAT_WP10).encode('utf-8')
+
+  def set_zim_file_updated_at_now(self):
+    """Sets the zim_file_updated_at field to a timestamp that is equal to now"""
+    self.set_zim_file_updated_at_dt(utcnow())
