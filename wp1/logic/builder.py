@@ -144,6 +144,10 @@ def materialize_builder(builder_cls, builder_id, content_type):
 
 
 def latest_url_for(builder_id, content_type):
+  """Returns the redirect URL for the latest selection for a builder.
+
+  This is the URL on this API server that redirects to S3-storage.
+  """
   ext = CONTENT_TYPE_TO_EXT.get(content_type)
   if ext is None:
     logger.warning(
@@ -157,7 +161,20 @@ def latest_url_for(builder_id, content_type):
   return '%s/v1/builders/%s/selection/latest.%s' % (server_url, builder_id, ext)
 
 
+def latest_zim_for(builder_id):
+  """Returns the redirect URL for the latest ZIM file for a builder."""
+  server_url = CREDENTIALS.get(ENV, {}).get('CLIENT_URL', {}).get('api')
+  if server_url is None:
+    logger.warning('Could not determine server API URL. Check credentials.py')
+    return None
+  return '%s/v1/builders/%s/zim/latest' % (server_url, builder_id)
+
+
 def latest_selection_for(wp10db, builder_id, content_type):
+  """Returns the latest Selection with the given content type for a builder.
+
+  Returns the value as a Selection model.
+  """
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''SELECT s.*
@@ -177,6 +194,12 @@ def latest_selection_for(wp10db, builder_id, content_type):
 
 
 def latest_selection_url(wp10db, builder_id, ext):
+  """Returns the raw S3-like storage URL for the latest selection for the given builder.
+
+  This is in contrast with latest_url_for, which returns the redirect URL on this API
+  server for a selection. This function is used when resolving the redirect, to return
+  the actual URL.
+  """
   content_type = EXT_TO_CONTENT_TYPE.get(ext)
   if content_type is None:
     logger.warning(
@@ -187,12 +210,26 @@ def latest_selection_url(wp10db, builder_id, ext):
   if selection is None:
     return None
 
-  if selection is None or selection.s_object_key is None:
+  if selection.s_object_key is None:
     logger.warning('Object key for selection was None, builder id=%s',
                    builder_id)
     return None
 
   return logic_selection.url_for(selection.s_object_key.decode('utf-8'))
+
+
+def latest_zim_file_url_for(wp10db, builder_id):
+  selection = latest_selection_for(wp10db, builder_id,
+                                   'text/tab-separated-values')
+  if selection is None:
+    return None
+
+  if selection.s_zimfarm_status != b'FILE_READY':
+    logger.warning('Attempt to get ZIM URL before file ready, builder id=%s',
+                   builder_id)
+    return None
+
+  return logic_selection.zim_file_url_for_selection(selection)
 
 
 def latest_selections_with_errors(wp10db, builder_id):
@@ -227,7 +264,12 @@ def latest_selections_with_errors(wp10db, builder_id):
   return res
 
 
-def schedule_zim_file(redis, wp10db, user_id, builder_id):
+def schedule_zim_file(redis,
+                      wp10db,
+                      user_id,
+                      builder_id,
+                      description='',
+                      long_description=''):
   if isinstance(builder_id, str):
     builder_id = builder_id.encode('utf-8')
   builder = get_builder(wp10db, builder_id)
@@ -240,7 +282,11 @@ def schedule_zim_file(redis, wp10db, user_id, builder_id):
         'Could not use builder id = %s for user id = %s' %
         (builder_id, user_id))
 
-  task_id = zimfarm.schedule_zim_file(redis, wp10db, builder)
+  task_id = zimfarm.schedule_zim_file(redis,
+                                      wp10db,
+                                      builder,
+                                      description=description,
+                                      long_description=long_description)
   selection = latest_selection_for(wp10db, builder_id,
                                    'text/tab-separated-values')
 
@@ -253,22 +299,82 @@ def schedule_zim_file(redis, wp10db, user_id, builder_id):
         ''', (task_id, selection.s_id))
   wp10db.commit()
 
+  return task_id
+
+
+def latest_zimfarm_status(wp10db, builder_id):
+  selection = latest_selection_for(wp10db, builder_id,
+                                   'text/tab-separated-values')
+  return selection.s_zimfarm_status.decode('utf-8')
+
 
 def on_zim_file_status_poll(task_id):
   wp10db = wp10_connect()
   redis = redis_connect()
 
-  if zimfarm.is_zim_file_ready(redis, task_id):
-    with wp10db.cursor() as cursor:
-      cursor.execute(
-          'UPDATE selections '
-          'SET s_zimfarm_status = "FILE_READY" '
-          'WHERE s_zimfarm_task_id = %s', (task_id,))
-    wp10db.commit()
+  if zimfarm.is_zim_file_ready(task_id):
+    logic_selection.update_zimfarm_task(wp10db,
+                                        task_id,
+                                        'FILE_READY',
+                                        set_updated_now=True)
   else:
     queues.poll_for_zim_file_status(redis, task_id)
 
   wp10db.close()
+
+
+def _get_builder_data(builder):
+  return {
+      'id': builder['b_id'].decode('utf-8'),
+      'name': builder['b_name'].decode('utf-8'),
+      'project': builder['b_project'].decode('utf-8'),
+      'model': builder['b_model'].decode('utf-8'),
+      'created_at': logic_util.wp10_timestamp_to_unix(builder['b_created_at']),
+      'updated_at': logic_util.wp10_timestamp_to_unix(builder['b_updated_at']),
+  }
+
+
+def _get_selection_data(builder):
+  data = {
+      's_id': None,
+      's_updated_at': None,
+      's_content_type': None,
+      's_extension': None,
+      's_url': None,
+      's_status': None,
+      's_zimfarm_status': None,
+      's_zim_file_updated_at': None,
+      's_zim_file_url': None,
+  }
+
+  has_selection = builder['s_id'] is not None
+  has_status = builder['s_status'] is not None
+  is_ok_status = builder['s_status'] == b'OK'
+  is_zim_ready = builder['s_zimfarm_status'] == b'FILE_READY'
+
+  if has_selection:
+    content_type = builder['s_content_type'].decode('utf-8')
+    data['s_id'] = builder['s_id'].decode('utf-8')
+    data['s_updated_at'] = logic_util.wp10_timestamp_to_unix(
+        builder['s_updated_at'])
+    data['s_content_type'] = content_type
+    data['s_extension'] = CONTENT_TYPE_TO_EXT.get(content_type, '???')
+    data['s_zimfarm_status'] = builder['s_zimfarm_status'].decode('utf-8')
+    if has_status:
+      data['s_status'] = builder['s_status'].decode('utf-8')
+
+    if is_ok_status or not has_status:
+      data['s_url'] = latest_url_for(builder['b_id'].decode('utf-8'),
+                                     content_type)
+
+    if builder['s_zim_file_updated_at'] is not None:
+      data['s_zim_file_updated_at'] = logic_util.wp10_timestamp_to_unix(
+          builder['s_zim_file_updated_at'])
+
+    if content_type == 'text/tab-separated-values' and is_zim_ready:
+      data['s_zim_file_url'] = latest_zim_for(builder['b_id'].decode('utf-8'))
+
+  return data
 
 
 def get_builders_with_selections(wp10db, user_id):
@@ -285,41 +391,10 @@ def get_builders_with_selections(wp10db, user_id):
 
   builders = {}
   result = []
-  for b in data:
-    has_selection = b['s_id'] is not None
-    has_status = b['s_status'] is not None
-    is_ok_status = b['s_status'] == b'OK'
-    content_type = b['s_content_type'].decode(
-        'utf-8') if has_selection else None
-    selection_id = b['s_id'].decode('utf-8') if has_selection else None
-    result.append({
-        'id':
-            b['b_id'].decode('utf-8'),
-        'name':
-            b['b_name'].decode('utf-8'),
-        'project':
-            b['b_project'].decode('utf-8'),
-        'model':
-            b['b_model'].decode('utf-8'),
-        'created_at':
-            logic_util.wp10_timestamp_to_unix(b['b_created_at']),
-        'updated_at':
-            logic_util.wp10_timestamp_to_unix(b['b_updated_at']),
-        's_id':
-            selection_id,
-        's_updated_at':
-            logic_util.wp10_timestamp_to_unix(b['s_updated_at'])
-            if has_selection else None,
-        's_content_type':
-            content_type,
-        's_extension':
-            CONTENT_TYPE_TO_EXT.get(content_type, '???')
-            if has_selection else None,
-        's_url':
-            latest_url_for(b['b_id'].decode('utf-8'), content_type)
-            if has_selection and (is_ok_status or not has_status) else None,
-        's_status':
-            b['s_status'].decode('utf-8')
-            if has_selection and has_status else None
-    })
+  for db_builder in data:
+    builder = {}
+    builder.update(_get_builder_data(db_builder))
+    builder.update(_get_selection_data(db_builder))
+    result.append(builder)
+
   return result

@@ -12,7 +12,10 @@
       "s_updated_at": 1630880303,
       "s_content_type": "text/tab-separated-values",
       "s_extension": "tsv",
-      "s_url": "https://www.example.fake/abcd-efgh"
+      "s_url": "https://www.example.fake/abcd-efgh",
+      "s_zim_file_updated_at": null,
+      "s_zim_file_url": null,
+      "s_zimfarm_status": "NOT_REQUESTED"
     },
     {
       "id": 2,
@@ -26,7 +29,10 @@
       "s_updated_at": null,
       "s_content_type": null,
       "s_extension": null,
-      "s_url": null
+      "s_url": null,
+      "s_zim_file_updated_at": null,
+      "s_zim_file_url": null,
+      "s_zimfarm_status": "NOT_REQUESTED"
     },
     {
       "created_at": 1670251154,
@@ -40,7 +46,10 @@
       "s_status": null,
       "s_updated_at": 1670251157,
       "s_url": null,
-      "updated_at": 1670261154
+      "updated_at": 1670261154,
+      "s_zim_file_updated_at": null,
+      "s_zim_file_url": null,
+      "s_zimfarm_status": "NOT_REQUESTED"
     },
     {
       "created_at": 1669778531,
@@ -54,7 +63,10 @@
       "s_status": "FAILED",
       "s_updated_at": 1670253950,
       "s_url": null,
-      "updated_at": 1670247215
+      "updated_at": 1670247215,
+      "s_zim_file_updated_at": null,
+      "s_zim_file_url": null,
+      "s_zimfarm_status": "NOT_REQUESTED"
     },
     {
       "created_at": 1669778531,
@@ -64,11 +76,14 @@
       "project": "en.wikipedia.org",
       "s_content_type": "text/tab-separated-values",
       "s_extension": "tsv",
-      "s_id": "1234-abcd",
+      "s_id": "1234-efgh",
       "s_status": "CAN_RETRY",
       "s_updated_at": 1670253950,
       "s_url": null,
-      "updated_at": 1670247215
+      "updated_at": 1670247215,
+      "s_zim_file_updated_at": null,
+      "s_zim_file_url": null,
+      "s_zimfarm_status": "NOT_REQUESTED"
     },
     {
       "created_at": 1669778531,
@@ -82,7 +97,61 @@
       "s_status": "CAN_RETRY",
       "s_updated_at": 1670253950,
       "s_url": null,
-      "updated_at": 1670267215
+      "updated_at": 1670267215,
+      "s_zim_file_updated_at": null,
+      "s_zim_file_url": null,
+      "s_zimfarm_status": "NOT_REQUESTED"
+    },
+    {
+      "created_at": 1669678531,
+      "id": "7368f534-27f5-4350-bfe3-23b90363df7b",
+      "model": "wp1.selection.models.sparql",
+      "name": "selection ready, no zim",
+      "project": "en.wikipedia.org",
+      "s_content_type": "text/tab-separated-values",
+      "s_extension": "tsv",
+      "s_id": "1234-hijk",
+      "s_status": "OK",
+      "s_updated_at": 1671253950,
+      "s_url": "https://www.example.fake/1234-hijk",
+      "updated_at": 1670267215,
+      "s_zim_file_updated_at": null,
+      "s_zim_file_url": null,
+      "s_zimfarm_status": "NOT_REQUESTED"
+    },
+    {
+      "created_at": 1669679000,
+      "id": "7368f534-27f5-4350-bfe3-23b90363df7b",
+      "model": "wp1.selection.models.sparql",
+      "name": "zim requested",
+      "project": "en.wikipedia.org",
+      "s_content_type": "text/tab-separated-values",
+      "s_extension": "tsv",
+      "s_id": "1234-hijk",
+      "s_status": "OK",
+      "s_updated_at": 1671263950,
+      "s_url": "https://www.example.fake/1234-hijk",
+      "updated_at": 1670287215,
+      "s_zim_file_updated_at": null,
+      "s_zim_file_url": null,
+      "s_zimfarm_status": "REQUESTED"
+    },
+    {
+      "created_at": 1669679000,
+      "id": "7368f534-27f5-4350-bfe3-23b90363df7b",
+      "model": "wp1.selection.models.sparql",
+      "name": "zim ready",
+      "project": "en.wikipedia.org",
+      "s_content_type": "text/tab-separated-values",
+      "s_extension": "tsv",
+      "s_id": "1234-hijk",
+      "s_status": "OK",
+      "s_updated_at": 1671263950,
+      "s_url": "https://www.example.fake/1234-hijk",
+      "updated_at": 1670287215,
+      "s_zim_file_updated_at": 1671287215,
+      "s_zim_file_url": "https://localhost/zim/latest",
+      "s_zimfarm_status": "FILE_READY"
     }
   ]
 }

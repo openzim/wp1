@@ -1,3 +1,4 @@
+import datetime
 from unittest.mock import patch
 
 import attr
@@ -91,7 +92,7 @@ class BuildersTest(BaseWebTestcase):
                 s_version, s_object_key, s_zimfarm_task_id, s_zimfarm_status)
              VALUES
                (3, %s, "text/tab-separated-values", "20201225105544",
-                2, "latest_object_key_tsv", "task-id-1234", "REQUESTED")''',
+                2, "latest_object_key_tsv", "task-id-1234", "FILE_READY")''',
           builder_id)
       cursor.execute(
           '''INSERT INTO selections
@@ -418,7 +419,7 @@ class BuildersTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['user'] = self.USER
-      rv = client.post('/v1/builders/%s/zim' % builder_id)
+      rv = client.post('/v1/builders/%s/zim' % builder_id, json={})
       self.assertEqual('204 NO CONTENT', rv.status)
 
     patched_schedule_zim_file.assert_called_once()
@@ -443,7 +444,7 @@ class BuildersTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['user'] = self.USER
-      rv = client.post('/v1/builders/1234-not-found/zim')
+      rv = client.post('/v1/builders/1234-not-found/zim', json={})
       self.assertEqual('404 NOT FOUND', rv.status)
 
   @patch('wp1.zimfarm.schedule_zim_file')
@@ -456,7 +457,7 @@ class BuildersTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['user'] = self.UNAUTHORIZED_USER
-      rv = client.post('/v1/builders/%s/zim' % builder_id)
+      rv = client.post('/v1/builders/%s/zim' % builder_id, json={})
       self.assertEqual('403 FORBIDDEN', rv.status)
 
   @patch('wp1.zimfarm.schedule_zim_file')
@@ -470,11 +471,11 @@ class BuildersTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['user'] = self.USER
-      rv = client.post('/v1/builders/%s/zim' % builder_id)
+      rv = client.post('/v1/builders/%s/zim' % builder_id, json={})
       self.assertEqual('500 INTERNAL SERVER ERROR', rv.status)
 
   @patch('wp1.web.builders.queues.poll_for_zim_file_status')
-  def test_zimfarm_status(self, patched_poll):
+  def test_update_zimfarm_status(self, patched_poll):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
 
@@ -491,15 +492,47 @@ class BuildersTest(BaseWebTestcase):
       patched_poll.assert_called_once()
 
     with self.wp10db.cursor() as cursor:
-      cursor.execute(
-          'SELECT s_zimfarm_status FROM selections WHERE s_zimfarm_task_id = "task-id-1234"'
-      )
+      cursor.execute('SELECT s_zimfarm_status, s_zim_file_updated_at '
+                     'FROM selections WHERE s_zimfarm_task_id = "task-id-1234"')
       status = cursor.fetchone()
 
     self.assertIsNotNone(status)
     self.assertEqual(b'ENDED', status['s_zimfarm_status'])
+    self.assertIsNone(status['s_zim_file_updated_at'])
 
-  def test_zimfarm_status_bad_token(self):
+  @patch('wp1.web.builders.queues.poll_for_zim_file_status')
+  @patch('wp1.logic.selection.utcnow',
+         return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
+  def test_update_zimfarm_status_file_ready(self, patched_utcnow, patched_poll):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/zim/status?token=hook-token-abc',
+                       json={
+                           '_id': 'task-id-1234',
+                           'foo': 'bar',
+                           'files': {
+                               'zimfile.1234': {
+                                   'status': 'uploaded'
+                               }
+                           }
+                       })
+      self.assertEqual('204 NO CONTENT', rv.status)
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT s_zimfarm_status, s_zim_file_updated_at '
+                     'FROM selections WHERE s_zimfarm_task_id = "task-id-1234"')
+      status = cursor.fetchone()
+
+    self.assertIsNotNone(status)
+    self.assertEqual(b'FILE_READY', status['s_zimfarm_status'])
+    self.assertEqual(b'20221225000102', status['s_zim_file_updated_at'])
+
+  def test_update_zimfarm_status_bad_token(self):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
 
@@ -514,7 +547,7 @@ class BuildersTest(BaseWebTestcase):
                        })
       self.assertEqual('403 FORBIDDEN', rv.status)
 
-  def test_zimfarm_status_invalid_payload(self):
+  def test_update_zimfarm_status_invalid_payload(self):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
 
@@ -530,7 +563,7 @@ class BuildersTest(BaseWebTestcase):
       self.assertEqual('400 BAD REQUEST', rv.status)
 
   @patch('wp1.web.builders.queues.poll_for_zim_file_status')
-  def test_zimfarm_status_not_found_task_id(self, patched_poll):
+  def test_update_zimfarm_status_not_found_task_id(self, patched_poll):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
 
@@ -546,3 +579,31 @@ class BuildersTest(BaseWebTestcase):
       self.assertEqual('204 NO CONTENT', rv.status)
 
     patched_poll.assert_not_called()
+
+  def test_zimfarm_status(self):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+    with self.app.test_client() as client:
+      rv = client.get('/v1/builders/%s/zim/status' % builder_id)
+    self.assertEqual('200 OK', rv.status)
+    self.assertEqual({'status': 'FILE_READY'}, rv.get_json())
+
+  @patch('wp1.logic.builder.zimfarm.zim_file_url_for_task_id',
+         return_value='http://fake-file-host.fake/1234/file.zim')
+  def test_latest_zim_file_for_builder(self, mock_zimfarm):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+    self.app = create_app()
+    with self.app.test_client() as client:
+      rv = client.get('/v1/builders/%s/zim/latest' % builder_id)
+    self.assertEqual('302 FOUND', rv.status)
+    self.assertEqual('http://fake-file-host.fake/1234/file.zim',
+                     rv.headers['Location'])
+
+  def test_latest_zim_file_for_builder_404(self):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+    self.app = create_app()
+    with self.app.test_client() as client:
+      rv = client.get('/v1/builders/abcd-1234/zim/latest')
+    self.assertEqual('404 NOT FOUND', rv.status)

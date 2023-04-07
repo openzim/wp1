@@ -18,6 +18,7 @@ import IndexPage from './components/IndexPage.vue';
 import MyLists from './components/MyLists.vue';
 import ProjectPage from './components/ProjectPage.vue';
 import UpdatePage from './components/UpdatePage.vue';
+import ZimFile from './components/ZimFile.vue';
 
 Vue.config.productionTip = false;
 
@@ -121,6 +122,13 @@ const routes = [
     component: SparqlBuilder,
     meta: {
       title: () => BASE_TITLE + ' - Edit SPARQL Selection',
+    },
+  },
+  {
+    path: '/selections/:builder_id/zim',
+    component: ZimFile,
+    meta: {
+      title: () => BASE_TITLE + ' - ZIM file',
     },
   },
 ];

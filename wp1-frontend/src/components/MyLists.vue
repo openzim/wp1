@@ -16,6 +16,8 @@
               <th>Project</th>
               <th>Download Updated</th>
               <th>Download</th>
+              <th>ZIM updated</th>
+              <th>Download ZIM</th>
               <th></th>
             </tr>
           </thead>
@@ -23,26 +25,14 @@
             <tr v-for="item in list" :key="item.s_id">
               <td>{{ item.name }}</td>
               <td :data-order="item.created_at">
-                {{
-                  new Date(item.created_at * 1000).toLocaleDateString() +
-                  ' ' +
-                  new Date(item.created_at * 1000).toLocaleTimeString()
-                }}
+                {{ localDate(item.created_at) }}
               </td>
               <td :data-order="item.updated_at">
-                {{
-                  new Date(item.updated_at * 1000).toLocaleDateString() +
-                  ' ' +
-                  new Date(item.updated_at * 1000).toLocaleTimeString()
-                }}
+                {{ localDate(item.updated_at) }}
               </td>
               <td>{{ item.project }}</td>
               <td v-if="item.s_updated_at" :data-order="item.s_updated_at">
-                {{
-                  new Date(item.s_updated_at * 1000).toLocaleDateString() +
-                  ' ' +
-                  new Date(item.s_updated_at * 1000).toLocaleTimeString()
-                }}
+                {{ localDate(item.s_updated_at) }}
               </td>
               <td v-else data-order="0">-</td>
               <td v-if="!isPending(item) && !hasSelectionError(item)">
@@ -75,6 +65,28 @@
                   ></span>
                 </div>
               </td>
+              <td v-if="item.s_zim_file_url && !isPending(item)">
+                {{ localDate(item.s_zim_file_updated_at) }}
+              </td>
+              <td v-else>-</td>
+              <td v-if="item.s_zim_file_url && !isPending(item)">
+                <a :href="item.s_zim_file_url">Download ZIM</a>
+              </td>
+              <td v-else-if="hasPendingZim(item)">
+                <pulse-loader
+                  class="loader"
+                  :color="loaderColor"
+                  :size="loaderSize"
+                ></pulse-loader>
+              </td>
+              <td v-else-if="!isPending(item) && !hasSelectionError(item)">
+                <router-link :to="zimPathFor(item)"
+                  ><button type="button" class="btn btn-primary">
+                    Create ZIM
+                  </button></router-link
+                >
+              </td>
+              <td v-else>-</td>
               <td>
                 <router-link :to="editPathFor(item)"
                   ><button type="button" class="btn btn-primary">
@@ -124,8 +136,22 @@ export default {
         (!item.s_url && !item.s_status) || item.updated_at > item.s_updated_at
       );
     },
+    hasPendingZim: function (item) {
+      return (
+        item.s_status === 'OK' &&
+        item.s_zimfarm_status !== 'NOT_REQUESTED' &&
+        item.s_zimfarm_status !== 'FILE_READY'
+      );
+    },
     hasSelectionError: function (item) {
       return item.s_status !== null && item.s_status !== 'OK';
+    },
+    localDate: function (secs) {
+      const fmt = new Intl.DateTimeFormat('en-US', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+      });
+      return fmt.format(new Date(secs * 1000));
     },
     getLists: async function () {
       let createDataTable = false;
@@ -145,7 +171,7 @@ export default {
       if (createDataTable) {
         this.$nextTick(function () {
           $('#list-table').DataTable({
-            columnDefs: [{ orderable: false, targets: [5, 6] }],
+            columnDefs: [{ orderable: false, targets: [5, 7, 8] }],
             order: [[2, 'desc']],
           });
         });
@@ -169,6 +195,9 @@ export default {
       const fragments = item.model.split('.');
       const modelFragment = fragments[fragments.length - 1];
       return { path: `/selections/${modelFragment}/${item.id}` };
+    },
+    zimPathFor: (item) => {
+      return { path: `/selections/${item.id}/zim` };
     },
     startProgressPolling: function () {
       if (this.pollId) {

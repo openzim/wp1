@@ -25,7 +25,7 @@ class SelectionTest(BaseWpOneDbTest):
         s_version=1,
         s_updated_at=b'20190830112844',
         s_object_key=b'selections/foo.bar.model/deadbeef/name.tsv',
-        s_zimfarm_status=b'REQUESTED')
+        s_zimfarm_status=b'NOT_REQUESTED')
 
   def _insert_selections(self, selections=None):
     if selections is None:
