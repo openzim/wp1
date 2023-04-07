@@ -31,9 +31,34 @@ describe('the zim file creation page', () => {
           cy.get('#longdesc').should('be.visible');
         });
 
+        it('validates the description input on losing focus', () => {
+          cy.get('#desc').click();
+          cy.get('#longdesc').click();
+          cy.get('#desc-group > .invalid-feedback').should('be.visible');
+        });
+
         it('displays the Request ZIM file button', () => {
           cy.get('#request').should('be.visible');
           cy.get('#request').should('not.have.attr', 'disabled');
+        });
+
+        describe('when the description is missing and the submit button is clicked', () => {
+          beforeEach(() => {
+            cy.intercept('POST', 'v1/builders/1/zim', (req) => {
+              throw new Error(
+                'POST to create ZIM should not have been requested'
+              );
+            }).as('request');
+          });
+
+          it('does not submit the form', () => {
+            cy.get('#request').click();
+          });
+
+          it('shows the error message', () => {
+            cy.get('#request').click();
+            cy.get('#desc-group > .invalid-feedback').should('be.visible');
+          });
         });
 
         describe('when the Request ZIM file button is clicked', () => {
@@ -41,6 +66,8 @@ describe('the zim file creation page', () => {
             cy.intercept('POST', 'v1/builders/1/zim', {
               statusCode: 204,
             }).as('request');
+
+            cy.get('#desc').click().type('Description from user');
             cy.get('#request').click();
           });
 

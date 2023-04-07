@@ -42,48 +42,65 @@
       </div>
       <div v-if="status === 'NOT_REQUESTED'" class="row">
         <div class="col-lg-6 col-md-9 mx-4">
-          <div id="desc" class="form-group">
-            <label for="desc">Description</label>
-            <input
-              id="desc"
-              ref="desc"
-              v-model="description"
-              class="form-control"
-              maxlength="10"
-              placeholder="ZIM file created from a WP1 Selection"
-            />
-          </div>
-          <div id="longdesc" class="form-group">
-            <label for="longdesc">Long Description</label>
-            <textarea
-              id="longdesc"
-              ref="longdesc"
-              v-model="longDescription"
-              rows="6"
-              class="form-control"
-              maxlength="4000"
-              placeholder="ZIM file created from a WP1 Selection"
-            ></textarea>
-          </div>
-          <div v-if="!success" class="error-list error">
-            <p>The following errors occurred:</p>
-            <ul>
-              <li v-for="msg in errorMessages" v-bind:key="msg">
-                {{ msg }}
-              </li>
-            </ul>
-          </div>
-          <div>
-            <button
-              id="request"
-              v-on:click.prevent="onSubmit"
-              class="btn btn-primary"
-              type="button"
-              :disabled="processing"
-            >
-              Request ZIM file
-            </button>
-          </div>
+          <form
+            ref="form"
+            v-on:submit.prevent="onSubmit"
+            class="needs-validation"
+            novalidate
+          >
+            <div id="desc-group" ref="form_group" class="form-group">
+              <label for="desc">Description</label>
+              <input
+                id="desc"
+                ref="desc"
+                v-on:blur="validationOnBlur"
+                v-model="description"
+                class="form-control"
+                maxlength="80"
+                placeholder="ZIM file created from a WP1 Selection"
+                required
+              />
+              <div class="invalid-feedback">Please provide a description</div>
+            </div>
+            <div class="form-group">
+              <label for="longdesc">Long Description</label>
+              <textarea
+                id="longdesc"
+                ref="longdesc"
+                v-model="longDescription"
+                rows="6"
+                class="form-control"
+                maxlength="4000"
+                placeholder="ZIM file created from a WP1 Selection"
+              ></textarea>
+            </div>
+            <div v-if="!success" class="error-list error">
+              <p>The following errors occurred:</p>
+              <ul>
+                <li v-for="msg in errorMessages" v-bind:key="msg">
+                  {{ msg }}
+                </li>
+              </ul>
+            </div>
+            <div>
+              <button
+                id="request"
+                v-on:click.prevent="onSubmit"
+                class="btn btn-primary"
+                type="button"
+                :disabled="processing"
+              >
+                Request ZIM file
+              </button>
+              <pulse-loader
+                id="loader"
+                class="loader"
+                :loading="processing || showLoader"
+                :color="loaderColor"
+                :size="loaderSize"
+              ></pulse-loader>
+            </div>
+          </form>
         </div>
       </div>
       <div v-else class="row">
@@ -183,6 +200,12 @@ export default {
       }
     },
     onSubmit: async function () {
+      const form = this.$refs.form;
+      if (!form.checkValidity()) {
+        this.$refs.form_group.classList.add('was-validated');
+        return;
+      }
+
       const postUrl = `${import.meta.env.VITE_API_URL}/builders/${
         this.builderId
       }/zim`;
@@ -221,6 +244,13 @@ export default {
     },
     stopProgressPolling: function () {
       clearInterval(this.pollId);
+    },
+    validationOnBlur: function (event) {
+      if (event.target.value) {
+        event.target.classList.remove('is-invalid');
+      } else {
+        event.target.classList.add('is-invalid');
+      }
     },
   },
   computed: {
