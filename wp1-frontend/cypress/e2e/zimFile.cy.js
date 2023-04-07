@@ -44,7 +44,7 @@ describe('the zim file creation page', () => {
 
         describe('when the description is missing and the submit button is clicked', () => {
           beforeEach(() => {
-            cy.intercept('POST', 'v1/builders/1/zim', (req) => {
+            cy.intercept('POST', 'v1/builders/1/zim', () => {
               throw new Error(
                 'POST to create ZIM should not have been requested'
               );
