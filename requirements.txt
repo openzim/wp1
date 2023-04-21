@@ -67,7 +67,7 @@ rq-scheduler==0.13.0
 s3transfer==0.4.2
 six==1.16.0
 sortedcontainers==2.4.0
-sqlparse==0.4.2
+sqlparse==0.4.4
 supervisor==4.2.2
 tabulate==0.8.9
 toml==0.10.0
