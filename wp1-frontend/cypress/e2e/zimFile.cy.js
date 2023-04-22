@@ -128,6 +128,47 @@ describe('the zim file creation page', () => {
           cy.get('#loader').should('not.be.visible');
         });
       });
+
+      describe('when the zim file has failed', () => {
+        beforeEach(() => {
+          cy.intercept('v1/builders/1/zim/status', {
+            fixture: 'zim_status_failed.json',
+          }).as('status');
+          cy.visit('/#/selections/1/zim');
+          cy.wait('@identity');
+          cy.wait('@builder');
+          cy.wait('@status');
+        });
+
+        it('displays the form for entering descriptions', () => {
+          cy.get('#desc').should('be.visible');
+          cy.get('#longdesc').should('be.visible');
+        });
+
+        it('does not show the spinner', () => {
+          cy.get('#loader').should('not.be.visible');
+        });
+
+        it('displays the Request ZIM file button', () => {
+          cy.get('#request').should('be.visible');
+          cy.get('#request').should('not.have.attr', 'disabled');
+        });
+
+        describe('when the Request ZIM file button is clicked', () => {
+          beforeEach(() => {
+            cy.intercept('POST', 'v1/builders/1/zim', {
+              statusCode: 204,
+            }).as('request');
+
+            cy.get('#desc').click().type('Description from user');
+            cy.get('#request').click();
+          });
+
+          it('makes the ZIM file request', () => {
+            cy.wait('@request');
+          });
+        });
+      });
     });
 
     describe('and the builder is not found', () => {

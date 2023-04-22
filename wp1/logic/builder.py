@@ -305,20 +305,35 @@ def schedule_zim_file(redis,
 def latest_zimfarm_status(wp10db, builder_id):
   selection = latest_selection_for(wp10db, builder_id,
                                    'text/tab-separated-values')
+  if selection is None:
+    return None
   return selection.s_zimfarm_status.decode('utf-8')
+
+
+def latest_zimfarm_task_url(wp10db, builder_id):
+  selection = latest_selection_for(wp10db, builder_id,
+                                   'text/tab-separated-values')
+  if selection is None or not selection.s_zimfarm_task_id:
+    return None
+
+  base_url = zimfarm.get_zimfarm_url()
+  return '%s/tasks/%s' % (base_url, selection.s_zimfarm_task_id.decode('utf-8'))
 
 
 def on_zim_file_status_poll(task_id):
   wp10db = wp10_connect()
   redis = redis_connect()
 
-  if zimfarm.is_zim_file_ready(task_id):
+  result = zimfarm.is_zim_file_ready(task_id)
+  if result == 'FILE_READY':
     logic_selection.update_zimfarm_task(wp10db,
                                         task_id,
                                         'FILE_READY',
                                         set_updated_now=True)
-  else:
+  elif result == 'REQUESTED':
     queues.poll_for_zim_file_status(redis, task_id)
+  elif result == 'FAILED':
+    logic_selection.update_zimfarm_task(wp10db, task_id, 'FAILED')
 
   wp10db.close()
 

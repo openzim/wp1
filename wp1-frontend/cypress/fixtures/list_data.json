@@ -152,6 +152,23 @@
       "s_zim_file_updated_at": 1671287215,
       "s_zim_file_url": "https://localhost/zim/latest",
       "s_zimfarm_status": "FILE_READY"
+    },
+    {
+      "created_at": 1682181321,
+      "id": "3a3d4c8e",
+      "model": "wp1.selection.models.simple",
+      "name": "zim failed",
+      "project": "en.wikipedia.org",
+      "s_content_type": "text/tab-separated-values",
+      "s_extension": "tsv",
+      "s_id": "f2b74880-5c89-446b-80e1-460006d2199d",
+      "s_status": null,
+      "s_updated_at": 1682181322,
+      "s_url": "http://example.fake/latest.tsv",
+      "s_zim_file_updated_at": null,
+      "s_zim_file_url": null,
+      "s_zimfarm_status": "FAILED",
+      "updated_at": 1682181321
     }
   ]
 }
