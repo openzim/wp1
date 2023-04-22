@@ -168,7 +168,7 @@ nosetests
 
 For frontend tests, you need to have a full working local development
 environment. You should follow the steps in 'Installation' above, as well as the
-steps in 'Development' below. Your frontend should be running on port 3000 (the
+steps in 'Development' below. Your frontend should be running on port 5173 (the
 default) and the backend should be on port 5000 (also the default).
 
 To run the tests:
