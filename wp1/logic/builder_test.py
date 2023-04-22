@@ -588,6 +588,13 @@ class BuilderTest(BaseWpOneDbTest):
         actual,
         'http://credentials.not.found.fake/proper/selection/4321/name.tsv')
 
+  def test_latest_zimfarm_task_url(self):
+    builder_id = self._insert_builder_with_multiple_version_selections()
+
+    actual = logic_builder.latest_zimfarm_task_url(self.wp10db, builder_id)
+
+    self.assertEqual('https://fake.farm/v1/tasks/5678', actual)
+
   @patch('wp1.logic.builder.logic_selection')
   def test_delete_builder(self, patched_selection):
     builder_id = self._insert_builder_with_multiple_version_selections()
@@ -749,9 +756,10 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.redis_connect')
   @patch('wp1.logic.selection.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
-  def test_on_zim_file_status_poll_true(self, patched_utcnow, patched_redis,
-                                        patched_connect, patched_is_ready):
-    patched_is_ready.return_value = True
+  def test_on_zim_file_status_poll_file_ready(self, patched_utcnow,
+                                              patched_redis, patched_connect,
+                                              patched_is_ready):
+    patched_is_ready.return_value = 'FILE_READY'
     builder_id = self._insert_builder()
     self._insert_selection(1,
                            'text/tab-separated-values',
@@ -779,10 +787,11 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.queues.poll_for_zim_file_status')
   @patch('wp1.logic.builder.wp10_connect')
   @patch('wp1.logic.builder.redis_connect')
-  def test_on_zim_file_status_poll_false(self, patched_redis, patched_connect,
-                                         patched_poll_for_status,
-                                         patched_is_ready):
-    patched_is_ready.return_value = False
+  def test_on_zim_file_status_poll_requested(self, patched_redis,
+                                             patched_connect,
+                                             patched_poll_for_status,
+                                             patched_is_ready):
+    patched_is_ready.return_value = 'REQUESTED'
     builder_id = self._insert_builder()
     self._insert_selection(1,
                            'text/tab-separated-values',
@@ -798,3 +807,34 @@ class BuilderTest(BaseWpOneDbTest):
       self.wp10db.close = orig_close
 
     patched_poll_for_status.assert_called_once()
+
+  @patch('wp1.logic.builder.zimfarm.is_zim_file_ready')
+  @patch('wp1.logic.builder.queues.poll_for_zim_file_status')
+  @patch('wp1.logic.builder.wp10_connect')
+  @patch('wp1.logic.builder.redis_connect')
+  def test_on_zim_file_status_poll_failed(self, patched_redis, patched_connect,
+                                          patched_poll_for_status,
+                                          patched_is_ready):
+    patched_is_ready.return_value = 'FAILED'
+    builder_id = self._insert_builder()
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           builder_id=builder_id,
+                           has_errors=False)
+
+    orig_close = self.wp10db.close
+    try:
+      self.wp10db.close = lambda: True
+      patched_connect.return_value = self.wp10db
+      logic_builder.on_zim_file_status_poll('5678')
+    finally:
+      self.wp10db.close = orig_close
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT s_zimfarm_status, s_zim_file_updated_at '
+                     'FROM selections WHERE s_id = 1')
+      data = cursor.fetchone()
+
+    self.assertIsNotNone(data)
+    self.assertEqual(b'FAILED', data['s_zimfarm_status'])
+    self.assertIsNone(data['s_zim_file_updated_at'])

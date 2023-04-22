@@ -178,7 +178,8 @@ def create_zim_file_for_builder(builder_id):
 def zimfarm_status(builder_id):
   wp10db = get_db('wp10db')
   status = logic_builder.latest_zimfarm_status(wp10db, builder_id)
-  return flask.jsonify({'status': status})
+  error_url = logic_builder.latest_zimfarm_task_url(wp10db, builder_id)
+  return flask.jsonify({'status': status, 'error_url': error_url})
 
 
 @builders.route('/zim/status', methods=['POST'])
@@ -195,9 +196,15 @@ def update_zimfarm_status():
 
   wp10db = get_db('wp10db')
 
+  if data.get('status') == 'failed':
+    # Update the status as FAILED and return.
+    logic_selection.update_zimfarm_task(wp10db, task_id, 'FAILED')
+    return '', 204
+
   files = data.get('files', {})
   for key, value in files.items():
     if value['status'] == 'uploaded':
+      # Update the status as FILE_READY and return.
       logic_selection.update_zimfarm_task(wp10db,
                                           task_id,
                                           'FILE_READY',
@@ -206,6 +213,7 @@ def update_zimfarm_status():
 
   found = logic_selection.update_zimfarm_task(wp10db, task_id, 'ENDED')
   if found:
+    # If the task_id exists, start polling for the file to be ready.
     redis = get_redis()
     queues.poll_for_zim_file_status(redis, task_id)
   return '', 204
