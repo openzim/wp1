@@ -79,6 +79,13 @@
                   :size="loaderSize"
                 ></pulse-loader>
               </td>
+              <td v-else-if="zimFailed(item)">
+                <span class="zim-failed"
+                  ><router-link :to="zimPathFor(item)"
+                    >Failed</router-link
+                  ></span
+                >
+              </td>
               <td v-else-if="!isPending(item) && !hasSelectionError(item)">
                 <router-link :to="zimPathFor(item)"
                   ><button type="button" class="btn btn-primary">
@@ -142,6 +149,9 @@ export default {
         item.s_zimfarm_status !== 'NOT_REQUESTED' &&
         item.s_zimfarm_status !== 'FILE_READY'
       );
+    },
+    zimFailed: function (item) {
+      return item.s_zimfarm_status === 'FAILED';
     },
     hasSelectionError: function (item) {
       return item.s_status !== null && item.s_status !== 'OK';
@@ -220,6 +230,10 @@ export default {
 
 <style scoped>
 @import '../cards.scss';
+
+.zim-failed a {
+  color: #dc3545 !important;
+}
 
 .failed {
   display: inline-block;

@@ -246,23 +246,38 @@ def _get_task_by_id(task_id):
   base_url = get_zimfarm_url()
 
   r = requests.get('%s/tasks/%s' % (base_url, task_id))
-  r.raise_for_status()
+  try:
+    r.raise_for_status()
+  except requests.exceptions.HTTPError:
+    logger.exception(r.text)
+    return None
 
   return r.json()
 
 
 def is_zim_file_ready(task_id):
   data = _get_task_by_id(task_id)
+  if data is None:
+    # Some kind of HTTP error (could be 404 if the task hasn't moved
+    # from requested-tasks to tasks yet). Ignore and we'll retry.
+    return 'REQUESTED'
+
+  if data.get('status') == 'failed':
+    return 'FAILED'
+
   files = data.get('files', {})
 
   for key, value in files.items():
     if value.get('status') == 'uploaded':
-      return True
-  return False
+      return 'FILE_READY'
+  return 'REQUESTED'
 
 
 def zim_file_url_for_task_id(task_id):
   data = _get_task_by_id(task_id)
+
+  if data is None:
+    return None
 
   files = data.get('files', {})
   name = None

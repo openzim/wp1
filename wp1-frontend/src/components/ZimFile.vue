@@ -38,9 +38,15 @@
             Your ZIM file is ready! Click the button below to download it. You
             can also always download it from the My Selections page.
           </p>
+          <p v-else-if="status === 'FAILED'" class="errors">
+            There was an error creating your ZIM file. More information may be
+            available <a :href="error_url">via the Zimfarm API</a>. If you feel
+            this was a transient or external error, you can try requesting your
+            ZIM file again below.
+          </p>
         </div>
       </div>
-      <div v-if="status === 'NOT_REQUESTED'" class="row">
+      <div v-if="status === 'NOT_REQUESTED' || status === 'FAILED'" class="row">
         <div class="col-lg-6 col-md-9 mx-4">
           <form
             ref="form"
@@ -74,7 +80,7 @@
                 placeholder="ZIM file created from a WP1 Selection"
               ></textarea>
             </div>
-            <div v-if="!success" class="error-list error">
+            <div v-if="!success" class="error-list errors">
               <p>The following errors occurred:</p>
               <ul>
                 <li v-for="msg in errorMessages" v-bind:key="msg">
@@ -82,25 +88,25 @@
                 </li>
               </ul>
             </div>
-            <div>
-              <button
-                id="request"
-                v-on:click.prevent="onSubmit"
-                class="btn btn-primary"
-                type="button"
-                :disabled="processing"
-              >
-                Request ZIM file
-              </button>
-              <pulse-loader
-                id="loader"
-                class="loader"
-                :loading="processing || showLoader"
-                :color="loaderColor"
-                :size="loaderSize"
-              ></pulse-loader>
-            </div>
           </form>
+          <div>
+            <button
+              id="request"
+              v-on:click.prevent="onSubmit"
+              class="btn btn-primary"
+              type="button"
+              :disabled="processing"
+            >
+              Request ZIM file
+            </button>
+            <pulse-loader
+              id="loader"
+              class="loader"
+              :loading="processing || showLoader"
+              :color="loaderColor"
+              :size="loaderSize"
+            ></pulse-loader>
+          </div>
         </div>
       </div>
       <div v-else class="row">
@@ -153,6 +159,7 @@ export default {
       serverError: false,
       errorMessages: [],
       status: null,
+      error_url: '',
       success: true,
     };
   },
@@ -195,6 +202,8 @@ export default {
       this.status = data.status;
       if (this.status === 'FILE_READY') {
         this.stopProgressPolling();
+      } else if (this.status === 'FAILED') {
+        this.error_url = data.error_url;
       } else if (this.status !== 'NOT_REQUESTED') {
         this.startProgressPolling();
       }

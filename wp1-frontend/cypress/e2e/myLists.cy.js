@@ -11,7 +11,7 @@ describe('the user selection list page', () => {
     it('successfully loads', () => {});
 
     it('displays the datatables view', () => {
-      cy.get('.dataTables_info').contains('Showing 1 to 9 of 9 entries');
+      cy.get('.dataTables_info').contains('Showing 1 to 10 of 10 entries');
     });
 
     it('displays list and its contents', () => {
@@ -77,6 +77,23 @@ describe('the user selection list page', () => {
         .contains('.btn-primary', 'Edit')
         .click();
       cy.url().should('eq', 'http://localhost:5173/#/selections/sparql/2');
+    });
+
+    it('displays a failed link for selection with failed ZIM', () => {
+      cy.contains('td', 'zim failed')
+        .parent('tr')
+        .within(() => {
+          cy.get('td').eq(7).get('span').should('contain', 'Failed');
+        });
+    });
+
+    it('goes to the zim page when the failed link is clicked', () => {
+      cy.contains('td', 'zim failed')
+        .parent('tr')
+        .within(() => {
+          cy.get('td').eq(7).get('span a').click();
+        });
+      cy.url().should('eq', 'http://localhost:5173/#/selections/3a3d4c8e/zim');
     });
 
     describe('when the selection has not been materialized', () => {

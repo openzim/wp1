@@ -586,7 +586,11 @@ class BuildersTest(BaseWebTestcase):
     with self.app.test_client() as client:
       rv = client.get('/v1/builders/%s/zim/status' % builder_id)
     self.assertEqual('200 OK', rv.status)
-    self.assertEqual({'status': 'FILE_READY'}, rv.get_json())
+    self.assertEqual(
+        {
+            'error_url': 'https://fake.farm/v1/tasks/task-id-1234',
+            'status': 'FILE_READY'
+        }, rv.get_json())
 
   @patch('wp1.logic.builder.zimfarm.zim_file_url_for_task_id',
          return_value='http://fake-file-host.fake/1234/file.zim')
