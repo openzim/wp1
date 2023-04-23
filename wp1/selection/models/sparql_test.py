@@ -154,7 +154,6 @@ class SparqlBuilderTest(BaseWpOneDbTest):
         })
     response.json.assert_called_once()
     self.assertEqual('Foo\nBår'.encode('utf-8'), actual)
-    self.assertTrue(False)
 
   def test_build_wrong_content_type(self):
     with self.assertRaises(Wp1FatalSelectionError):
