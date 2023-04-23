@@ -29,10 +29,13 @@ def insert_selection(wp10db, selection):
     cursor.execute(
         '''INSERT INTO selections
              (s_id, s_builder_id, s_version, s_content_type, s_updated_at,
-              s_object_key, s_status, s_error_messages)
+              s_object_key, s_status, s_error_messages, s_zimfarm_task_id,
+              s_zim_file_updated_at, s_zim_file_requested_at)
              VALUES
              (%(s_id)s, %(s_builder_id)s, %(s_version)s, %(s_content_type)s,
-              %(s_updated_at)s, %(s_object_key)s, %(s_status)s, %(s_error_messages)s)
+              %(s_updated_at)s, %(s_object_key)s, %(s_status)s, %(s_error_messages)s,
+              %(s_zimfarm_task_id)s, %(s_zim_file_updated_at)s,
+              %(s_zim_file_requested_at)s)
     ''', attr.asdict(selection))
   wp10db.commit()
 
@@ -73,6 +76,18 @@ def zim_file_url_for_selection(selection):
 
 def zim_file_url_for(task_id):
   return zimfarm.zim_file_url_for_task_id(task_id)
+
+
+def zim_file_requested_at_for(wp10db, task_id):
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        'SELECT s_zim_file_requested_at '
+        'FROM selections WHERE s_zimfarm_task_id = %s', task_id)
+    data = cursor.fetchone()
+    if data is None or data['s_zim_file_requested_at'] is None:
+      return None
+
+  return util.wp10_timestamp_to_unix(data['s_zim_file_requested_at'])
 
 
 def object_key_for(selection_id,
