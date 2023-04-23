@@ -116,6 +116,7 @@ class Builder(AbstractBuilder):
       raise Wp1FatalSelectionError('Wikidata response was larger than 10 MB')
 
     articles = self._extract_articles(project, params_query, data)
+    print(articles)
 
     if articles:
       return '\n'.join(articles).encode('utf-8')

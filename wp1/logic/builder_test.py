@@ -705,7 +705,9 @@ class BuilderTest(BaseWpOneDbTest):
     self.assertEqual(0, len(actual))
 
   @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
-  def test_schedule_zim_file(self, patched_schedule_zim_file):
+  @patch('wp1.logic.builder.utcnow',
+         return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
+  def test_schedule_zim_file(self, patched_utcnow, patched_schedule_zim_file):
     redis = MagicMock()
     patched_schedule_zim_file.return_value = '1234-a'
 
@@ -715,22 +717,32 @@ class BuilderTest(BaseWpOneDbTest):
                            builder_id=builder_id,
                            has_errors=False)
 
-    logic_builder.schedule_zim_file(redis, self.wp10db, 1234, builder_id)
+    logic_builder.schedule_zim_file(redis,
+                                    self.wp10db,
+                                    1234,
+                                    builder_id,
+                                    description='a',
+                                    long_description='z')
 
-    patched_schedule_zim_file.assert_called_once_with(redis, self.wp10db,
-                                                      self.builder)
+    patched_schedule_zim_file.assert_called_once_with(redis,
+                                                      self.wp10db,
+                                                      self.builder,
+                                                      description='a',
+                                                      long_description='z')
     with self.wp10db.cursor() as cursor:
       cursor.execute('SELECT s_zimfarm_task_id, s_zimfarm_status, '
-                     ' s_zimfarm_error_messages FROM selections '
+                     ' s_zimfarm_error_messages, s_zim_file_requested_at'
+                     ' FROM selections'
                      ' WHERE s_id = 1')
       data = cursor.fetchone()
 
     self.assertEqual(b'1234-a', data['s_zimfarm_task_id'])
     self.assertEqual(b'REQUESTED', data['s_zimfarm_status'])
+    self.assertEqual(b'20221225000102', data['s_zim_file_requested_at'])
     self.assertIsNone(data['s_zimfarm_error_messages'])
 
   @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
-  def test_schedule_zim_file(self, patched_schedule_zim_file):
+  def test_schedule_zim_file_404(self, patched_schedule_zim_file):
     redis = MagicMock()
     patched_schedule_zim_file.return_value = '1234-a'
 
@@ -738,7 +750,7 @@ class BuilderTest(BaseWpOneDbTest):
       logic_builder.schedule_zim_file(redis, self.wp10db, 1234, '404builder')
 
   @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
-  def test_schedule_zim_file(self, patched_schedule_zim_file):
+  def test_schedule_zim_file_not_authorized(self, patched_schedule_zim_file):
     redis = MagicMock()
     patched_schedule_zim_file.return_value = '1234-a'
 

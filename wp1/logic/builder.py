@@ -3,7 +3,7 @@ import logging
 
 import attr
 
-from wp1.constants import CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE
+from wp1.constants import CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE, TS_FORMAT_WP10
 from wp1.credentials import CREDENTIALS, ENV
 from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError
 import wp1.logic.selection as logic_selection
@@ -13,6 +13,7 @@ from wp1.models.wp10.selection import Selection
 from wp1 import queues
 from wp1.redis_db import connect as redis_connect
 from wp1.storage import connect_storage
+from wp1.timestamp import utcnow
 from wp1.wp10_db import connect as wp10_connect
 from wp1 import zimfarm
 
@@ -294,9 +295,9 @@ def schedule_zim_file(redis,
     cursor.execute(
         '''UPDATE selections SET
              s_zimfarm_status = 'REQUESTED', s_zimfarm_task_id = %s,
-             s_zimfarm_error_messages = NULL
+             s_zimfarm_error_messages = NULL, s_zim_file_requested_at = %s
            WHERE s_id = %s
-        ''', (task_id, selection.s_id))
+        ''', (task_id, utcnow().strftime(TS_FORMAT_WP10), selection.s_id))
   wp10db.commit()
 
   return task_id
