@@ -336,7 +336,6 @@ def on_zim_file_status_poll(task_id):
     requested = logic_selection.zim_file_requested_at_for(wp10db, task_id)
     if requested is not None:
       now = utcnow().timestamp()
-      print(now, requested, now - requested)
       if now - requested > MAX_ZIM_FILE_POLL_TIME:
         logic_selection.update_zimfarm_task(wp10db, task_id, 'FAILED')
         return
