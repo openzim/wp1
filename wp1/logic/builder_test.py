@@ -236,9 +236,10 @@ class BuilderTest(BaseWpOneDbTest):
           '''INSERT INTO selections
                (s_id, s_builder_id, s_content_type, s_updated_at, s_version,
                 s_object_key, s_status, s_error_messages, s_zimfarm_task_id,
-                s_zimfarm_status, s_zim_file_updated_at)
+                s_zimfarm_status, s_zim_file_updated_at, s_zim_file_requested_at)
              VALUES
-               (%s, %s, %s, "20191225044444", %s, %s, %s, %s, "5678", %s, %s)
+               (%s, %s, %s, "20191225044444", %s, %s, %s, %s, "5678",
+                %s, %s, '20230101020202')
           ''', (id_, builder_id, content_type, version, object_key, status,
                 error_messages, zimfarm_status, zim_file_updated_at))
     self.wp10db.commit()
@@ -705,7 +706,9 @@ class BuilderTest(BaseWpOneDbTest):
     self.assertEqual(0, len(actual))
 
   @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
-  def test_schedule_zim_file(self, patched_schedule_zim_file):
+  @patch('wp1.logic.builder.utcnow',
+         return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
+  def test_schedule_zim_file(self, patched_utcnow, patched_schedule_zim_file):
     redis = MagicMock()
     patched_schedule_zim_file.return_value = '1234-a'
 
@@ -715,22 +718,32 @@ class BuilderTest(BaseWpOneDbTest):
                            builder_id=builder_id,
                            has_errors=False)
 
-    logic_builder.schedule_zim_file(redis, self.wp10db, 1234, builder_id)
+    logic_builder.schedule_zim_file(redis,
+                                    self.wp10db,
+                                    1234,
+                                    builder_id,
+                                    description='a',
+                                    long_description='z')
 
-    patched_schedule_zim_file.assert_called_once_with(redis, self.wp10db,
-                                                      self.builder)
+    patched_schedule_zim_file.assert_called_once_with(redis,
+                                                      self.wp10db,
+                                                      self.builder,
+                                                      description='a',
+                                                      long_description='z')
     with self.wp10db.cursor() as cursor:
       cursor.execute('SELECT s_zimfarm_task_id, s_zimfarm_status, '
-                     ' s_zimfarm_error_messages FROM selections '
+                     ' s_zimfarm_error_messages, s_zim_file_requested_at'
+                     ' FROM selections'
                      ' WHERE s_id = 1')
       data = cursor.fetchone()
 
     self.assertEqual(b'1234-a', data['s_zimfarm_task_id'])
     self.assertEqual(b'REQUESTED', data['s_zimfarm_status'])
+    self.assertEqual(b'20221225000102', data['s_zim_file_requested_at'])
     self.assertIsNone(data['s_zimfarm_error_messages'])
 
   @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
-  def test_schedule_zim_file(self, patched_schedule_zim_file):
+  def test_schedule_zim_file_404(self, patched_schedule_zim_file):
     redis = MagicMock()
     patched_schedule_zim_file.return_value = '1234-a'
 
@@ -738,7 +751,7 @@ class BuilderTest(BaseWpOneDbTest):
       logic_builder.schedule_zim_file(redis, self.wp10db, 1234, '404builder')
 
   @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
-  def test_schedule_zim_file(self, patched_schedule_zim_file):
+  def test_schedule_zim_file_not_authorized(self, patched_schedule_zim_file):
     redis = MagicMock()
     patched_schedule_zim_file.return_value = '1234-a'
 
@@ -783,6 +796,9 @@ class BuilderTest(BaseWpOneDbTest):
     self.assertEqual(b'FILE_READY', data['s_zimfarm_status'])
     self.assertEqual(b'20221225000102', data['s_zim_file_updated_at'])
 
+  @patch('wp1.logic.builder.utcnow',
+         return_value=datetime.datetime(2023, 1, 1, 2, 30, 0, 0,
+                                        datetime.timezone.utc))
   @patch('wp1.logic.builder.zimfarm.is_zim_file_ready')
   @patch('wp1.logic.builder.queues.poll_for_zim_file_status')
   @patch('wp1.logic.builder.wp10_connect')
@@ -790,7 +806,7 @@ class BuilderTest(BaseWpOneDbTest):
   def test_on_zim_file_status_poll_requested(self, patched_redis,
                                              patched_connect,
                                              patched_poll_for_status,
-                                             patched_is_ready):
+                                             patched_is_ready, patched_utcnow):
     patched_is_ready.return_value = 'REQUESTED'
     builder_id = self._insert_builder()
     self._insert_selection(1,
@@ -807,6 +823,41 @@ class BuilderTest(BaseWpOneDbTest):
       self.wp10db.close = orig_close
 
     patched_poll_for_status.assert_called_once()
+
+  @patch('wp1.logic.builder.utcnow',
+         return_value=datetime.datetime(2023, 1, 1, 5, 5, 5))
+  @patch('wp1.logic.builder.zimfarm.is_zim_file_ready')
+  @patch('wp1.logic.builder.queues.poll_for_zim_file_status')
+  @patch('wp1.logic.builder.wp10_connect')
+  @patch('wp1.logic.builder.redis_connect')
+  def test_on_zim_file_status_poll_expired(self, patched_redis, patched_connect,
+                                           patched_poll_for_status,
+                                           patched_is_ready, patched_utcnow):
+    patched_is_ready.return_value = 'REQUESTED'
+    builder_id = self._insert_builder()
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           builder_id=builder_id,
+                           has_errors=False)
+
+    orig_close = self.wp10db.close
+    try:
+      self.wp10db.close = lambda: True
+      patched_connect.return_value = self.wp10db
+      logic_builder.on_zim_file_status_poll('5678')
+    finally:
+      self.wp10db.close = orig_close
+
+    patched_poll_for_status.assert_not_called()
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT s_zimfarm_status, s_zim_file_updated_at '
+                     'FROM selections WHERE s_id = 1')
+      data = cursor.fetchone()
+
+    self.assertIsNotNone(data)
+    self.assertEqual(b'FAILED', data['s_zimfarm_status'])
+    self.assertIsNone(data['s_zim_file_updated_at'])
 
   @patch('wp1.logic.builder.zimfarm.is_zim_file_ready')
   @patch('wp1.logic.builder.queues.poll_for_zim_file_status')

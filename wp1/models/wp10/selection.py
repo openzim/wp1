@@ -30,6 +30,7 @@ class Selection:
   s_zimfarm_status = attr.ib(default=None)
   s_zimfarm_error_messages = attr.ib(default=None)
   s_zim_file_updated_at = attr.ib(default=None)
+  s_zim_file_requested_at = attr.ib(default=None)
 
   def set_id(self):
     self.s_id = str(uuid.uuid4()).encode('utf-8')

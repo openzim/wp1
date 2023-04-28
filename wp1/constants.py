@@ -81,3 +81,6 @@ WIKIDATA_PREFIXES = {
 }
 
 WP1_USER_AGENT = 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
+
+# 2 hours
+MAX_ZIM_FILE_POLL_TIME = 2 * 60 * 60

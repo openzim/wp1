@@ -25,7 +25,9 @@ class SelectionTest(BaseWpOneDbTest):
         s_version=1,
         s_updated_at=b'20190830112844',
         s_object_key=b'selections/foo.bar.model/deadbeef/name.tsv',
-        s_zimfarm_status=b'NOT_REQUESTED')
+        s_zimfarm_status=b'NOT_REQUESTED',
+        s_zimfarm_task_id=b'xyz1',
+        s_zim_file_requested_at=b'20230101020202')
 
   def _insert_selections(self, selections=None):
     if selections is None:
@@ -35,10 +37,12 @@ class SelectionTest(BaseWpOneDbTest):
     with self.wp10db.cursor() as cursor:
       cursor.executemany(
           '''INSERT INTO selections
-              (s_id, s_builder_id, s_version, s_content_type, s_updated_at, s_object_key, s_zimfarm_status)
+              (s_id, s_builder_id, s_version, s_content_type, s_updated_at,
+               s_object_key, s_zimfarm_task_id, s_zim_file_requested_at, s_zimfarm_status)
              VALUES
               (%(s_id)s, %(s_builder_id)s, %(s_version)s, %(s_content_type)s,
-               %(s_updated_at)s, %(s_object_key)s, "REQUESTED")
+               %(s_updated_at)s, %(s_object_key)s, %(s_zimfarm_task_id)s,
+               %(s_zim_file_requested_at)s, %(s_zimfarm_status)s)
           ''', selections)
     self.wp10db.commit()
 
@@ -304,3 +308,8 @@ class SelectionTest(BaseWpOneDbTest):
     with self.assertRaises(ValueError):
       logic_selection.delete_keys_from_storage(
           [b'object/key/1', 'object/key/2'])
+
+  def test_zim_file_requested_at_for(self):
+    self._insert_selections()
+    actual = logic_selection.zim_file_requested_at_for(self.wp10db, 'xyz1')
+    self.assertEqual(1672538522, actual)
