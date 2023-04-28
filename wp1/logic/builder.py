@@ -1,9 +1,10 @@
 import json
 import logging
+import time
 
 import attr
 
-from wp1.constants import CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE
+from wp1.constants import CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE, MAX_ZIM_FILE_POLL_TIME, TS_FORMAT_WP10
 from wp1.credentials import CREDENTIALS, ENV
 from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError
 import wp1.logic.selection as logic_selection
@@ -13,6 +14,7 @@ from wp1.models.wp10.selection import Selection
 from wp1 import queues
 from wp1.redis_db import connect as redis_connect
 from wp1.storage import connect_storage
+from wp1.timestamp import utcnow
 from wp1.wp10_db import connect as wp10_connect
 from wp1 import zimfarm
 
@@ -294,9 +296,9 @@ def schedule_zim_file(redis,
     cursor.execute(
         '''UPDATE selections SET
              s_zimfarm_status = 'REQUESTED', s_zimfarm_task_id = %s,
-             s_zimfarm_error_messages = NULL
+             s_zimfarm_error_messages = NULL, s_zim_file_requested_at = %s
            WHERE s_id = %s
-        ''', (task_id, selection.s_id))
+        ''', (task_id, utcnow().strftime(TS_FORMAT_WP10), selection.s_id))
   wp10db.commit()
 
   return task_id
@@ -331,6 +333,14 @@ def on_zim_file_status_poll(task_id):
                                         'FILE_READY',
                                         set_updated_now=True)
   elif result == 'REQUESTED':
+    requested = logic_selection.zim_file_requested_at_for(wp10db, task_id)
+    if requested is not None:
+      now = utcnow().timestamp()
+      if now - requested > MAX_ZIM_FILE_POLL_TIME:
+        logic_selection.update_zimfarm_task(wp10db, task_id, 'FAILED')
+        return
+
+    # There was no requested time, or the time hasn't expired, re-request
     queues.poll_for_zim_file_status(redis, task_id)
   elif result == 'FAILED':
     logic_selection.update_zimfarm_task(wp10db, task_id, 'FAILED')
