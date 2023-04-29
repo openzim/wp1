@@ -112,7 +112,8 @@ CREATE TABLE `selections` (
   s_version int(11) NOT NULL,
   s_object_key VARBINARY(255),
   s_status VARBINARY(255) DEFAULT 'OK',
-  s_error_messages BLOB
+  s_error_messages BLOB,
+  s_zim_version INTEGER
 );
 
 CREATE TABLE custom (
@@ -132,7 +133,8 @@ CREATE TABLE zim_files (
   z_task_id VARBINARY(255) NOT NULL,
   z_status VARBINARY(255) DEFAULT "NOT_REQUESTED",
   z_requested_at BINARY(14),
-  z_updated_at BINARY(14)
+  z_updated_at BINARY(14),
+  z_version INTEGER
 );
 
 INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'Unknown-Class', 0);
