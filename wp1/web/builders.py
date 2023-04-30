@@ -138,6 +138,8 @@ def create_zim_file_for_builder(builder_id):
 
   data = flask.request.get_json()
   desc = data.get('description')
+  if not desc:
+    return 'Description is required for ZIM file', 400
   long_desc = data.get('long_description')
 
   try:

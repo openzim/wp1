@@ -83,10 +83,10 @@ def latest_zim_file_for_selection(wp10db, selection):
     return ZimFile(**db_zim)
 
 
-def zim_file_url_for_selection(selection):
-  if not selection:
-    raise ValueError('Cannot get zim file url for empty selection')
-  return zim_file_url_for(selection.s_zimfarm_task_id)
+def url_from_zim_file(zim_file):
+  if not zim_file:
+    raise ValueError('Cannot get url from empty zim file')
+  return zim_file_url_for(zim_file.z_task_id)
 
 
 def zim_file_url_for(task_id):

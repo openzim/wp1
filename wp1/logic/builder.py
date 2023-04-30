@@ -226,12 +226,15 @@ def latest_zim_file_url_for(wp10db, builder_id):
   if selection is None:
     return None
 
-  if selection.s_zimfarm_status != b'FILE_READY':
+  zim_file = logic_selection.latest_zim_file_for_selection(wp10db, selection)
+  if zim_file is None:
+    return None
+  if zim_file.z_status != b'FILE_READY':
     logger.warning('Attempt to get ZIM URL before file ready, builder id=%s',
                    builder_id)
     return None
 
-  return logic_selection.zim_file_url_for_selection(selection)
+  return logic_selection.url_from_zim_file(zim_file)
 
 
 def latest_selections_with_errors(wp10db, builder_id):
@@ -308,7 +311,11 @@ def latest_zimfarm_status(wp10db, builder_id):
                                    'text/tab-separated-values')
   if selection is None:
     return None
-  return selection.s_zimfarm_status.decode('utf-8')
+
+  zim_file = logic_selection.latest_zim_file_for_selection(wp10db, selection)
+  if zim_file is None:
+    return None
+  return zim_file.z_status.decode('utf-8')
 
 
 def latest_zimfarm_task_url(wp10db, builder_id):
@@ -318,7 +325,7 @@ def latest_zimfarm_task_url(wp10db, builder_id):
     return None
 
   zim_file = logic_selection.latest_zim_file_for_selection(wp10db, selection)
-  if zim_file.z_task_id is None:
+  if zim_file is None or zim_file.z_task_id is None:
     return None
 
   base_url = zimfarm.get_zimfarm_url()
