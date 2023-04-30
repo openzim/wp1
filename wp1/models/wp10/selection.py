@@ -47,21 +47,3 @@ class Selection:
   def set_updated_at_now(self):
     """Sets the updated_at field to a timestamp that is equal to now"""
     self.set_updated_at_dt(utcnow())
-
-  @property
-  def zim_file_updated_at_dt(self):
-    """The timestamp parsed into a datetime.datetime object."""
-    return datetime.datetime.strptime(
-        self.s_zim_file_updated_at.decode('utf-8'), TS_FORMAT_WP10)
-
-  def set_zim_file_updated_at_dt(self, dt):
-    """Sets the zim_file_updated_at field using a datetime.datetime object"""
-    if dt is None:
-      logger.warning(
-          'Attempt to set selection zim_file_updated_at to None ignored')
-      return
-    self.s_zim_file_updated_at = dt.strftime(TS_FORMAT_WP10).encode('utf-8')
-
-  def set_zim_file_updated_at_now(self):
-    """Sets the zim_file_updated_at field to a timestamp that is equal to now"""
-    self.set_zim_file_updated_at_dt(utcnow())
