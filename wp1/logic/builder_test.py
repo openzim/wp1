@@ -48,11 +48,11 @@ class BuilderTest(BaseWpOneDbTest):
           'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv',
       's_status':
           'OK',
-      's_zim_file_updated_at':
+      'z_updated_at':
           None,
-      's_zim_file_url':
+      'z_url':
           None,
-      's_zimfarm_status':
+      'z_status':
           'NOT_REQUESTED',
   }]
 
@@ -82,11 +82,11 @@ class BuilderTest(BaseWpOneDbTest):
               'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.xls',
           's_status':
               'OK',
-          's_zim_file_updated_at':
+          'z_updated_at':
               None,
-          's_zim_file_url':
+          'z_url':
               None,
-          's_zimfarm_status':
+          'z_status':
               'NOT_REQUESTED',
       },
       {
@@ -114,11 +114,11 @@ class BuilderTest(BaseWpOneDbTest):
               'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv',
           's_status':
               'OK',
-          's_zim_file_updated_at':
+          'z_updated_at':
               None,
-          's_zim_file_url':
+          'z_url':
               None,
-          's_zimfarm_status':
+          'z_status':
               'NOT_REQUESTED',
       },
   ]
@@ -136,9 +136,9 @@ class BuilderTest(BaseWpOneDbTest):
       's_extension': None,
       's_url': None,
       's_status': None,
-      's_zim_file_updated_at': None,
-      's_zim_file_url': None,
-      's_zimfarm_status': None,
+      'z_updated_at': None,
+      'z_url': None,
+      'z_status': None,
   }]
 
   expected_lists_with_unmapped_selections = [{
@@ -154,9 +154,9 @@ class BuilderTest(BaseWpOneDbTest):
       's_extension': '???',
       's_url': None,
       's_status': 'OK',
-      's_zim_file_updated_at': None,
-      's_zim_file_url': None,
-      's_zimfarm_status': 'NOT_REQUESTED',
+      'z_updated_at': None,
+      'z_url': None,
+      'z_status': 'NOT_REQUESTED',
   }]
 
   expected_list_with_zimfarm_status = [{
@@ -184,11 +184,11 @@ class BuilderTest(BaseWpOneDbTest):
           'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv',
       's_status':
           'OK',
-      's_zim_file_updated_at':
+      'z_updated_at':
           1671927082,
-      's_zim_file_url':
+      'z_url':
           'http://test.server.fake/v1/builders/1a-2b-3c-4d/zim/latest',
-      's_zimfarm_status':
+      'z_status':
           'FILE_READY',
   }]
 
@@ -235,13 +235,17 @@ class BuilderTest(BaseWpOneDbTest):
       cursor.execute(
           '''INSERT INTO selections
                (s_id, s_builder_id, s_content_type, s_updated_at, s_version,
-                s_object_key, s_status, s_error_messages, s_zimfarm_task_id,
-                s_zimfarm_status, s_zim_file_updated_at, s_zim_file_requested_at)
+                s_object_key, s_status, s_error_messages)
              VALUES
-               (%s, %s, %s, "20191225044444", %s, %s, %s, %s, "5678",
-                %s, %s, '20230101020202')
+               (%s, %s, %s, "20191225044444", %s, %s, %s, %s)
           ''', (id_, builder_id, content_type, version, object_key, status,
-                error_messages, zimfarm_status, zim_file_updated_at))
+                error_messages))
+      cursor.execute(
+          '''INSERT INTO zim_files
+               (z_selection_id, z_task_id, z_status, z_updated_at, z_requested_at)
+             VALUES
+               (%s, "5678", %s, %s, "20230101020202")
+          ''', (id_, zimfarm_status, zim_file_updated_at))
     self.wp10db.commit()
 
   def _get_builder_by_user_id(self):
@@ -731,16 +735,14 @@ class BuilderTest(BaseWpOneDbTest):
                                                       description='a',
                                                       long_description='z')
     with self.wp10db.cursor() as cursor:
-      cursor.execute('SELECT s_zimfarm_task_id, s_zimfarm_status, '
-                     ' s_zimfarm_error_messages, s_zim_file_requested_at'
-                     ' FROM selections'
-                     ' WHERE s_id = 1')
+      cursor.execute('SELECT z_task_id, z_status, z_requested_at'
+                     ' FROM zim_files'
+                     ' WHERE z_selection_id = 1')
       data = cursor.fetchone()
 
-    self.assertEqual(b'1234-a', data['s_zimfarm_task_id'])
-    self.assertEqual(b'REQUESTED', data['s_zimfarm_status'])
-    self.assertEqual(b'20221225000102', data['s_zim_file_requested_at'])
-    self.assertIsNone(data['s_zimfarm_error_messages'])
+    self.assertEqual(b'1234-a', data['z_task_id'])
+    self.assertEqual(b'REQUESTED', data['z_status'])
+    self.assertEqual(b'20221225000102', data['z_requested_at'])
 
   @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
   def test_schedule_zim_file_404(self, patched_schedule_zim_file):
@@ -788,13 +790,13 @@ class BuilderTest(BaseWpOneDbTest):
       self.wp10db.close = orig_close
 
     with self.wp10db.cursor() as cursor:
-      cursor.execute('SELECT s_zimfarm_status, s_zim_file_updated_at '
-                     'FROM selections WHERE s_id = 1')
+      cursor.execute('SELECT z_status, z_updated_at '
+                     'FROM zim_files WHERE z_selection_id = 1')
       data = cursor.fetchone()
 
     self.assertIsNotNone(data)
-    self.assertEqual(b'FILE_READY', data['s_zimfarm_status'])
-    self.assertEqual(b'20221225000102', data['s_zim_file_updated_at'])
+    self.assertEqual(b'FILE_READY', data['z_status'])
+    self.assertEqual(b'20221225000102', data['z_updated_at'])
 
   @patch('wp1.logic.builder.utcnow',
          return_value=datetime.datetime(2023, 1, 1, 2, 30, 0, 0,
@@ -851,13 +853,13 @@ class BuilderTest(BaseWpOneDbTest):
     patched_poll_for_status.assert_not_called()
 
     with self.wp10db.cursor() as cursor:
-      cursor.execute('SELECT s_zimfarm_status, s_zim_file_updated_at '
-                     'FROM selections WHERE s_id = 1')
+      cursor.execute('SELECT z_status, z_updated_at '
+                     'FROM zim_files WHERE z_selection_id = 1')
       data = cursor.fetchone()
 
     self.assertIsNotNone(data)
-    self.assertEqual(b'FAILED', data['s_zimfarm_status'])
-    self.assertIsNone(data['s_zim_file_updated_at'])
+    self.assertEqual(b'FAILED', data['z_status'])
+    self.assertIsNone(data['z_updated_at'])
 
   @patch('wp1.logic.builder.zimfarm.is_zim_file_ready')
   @patch('wp1.logic.builder.queues.poll_for_zim_file_status')
@@ -882,10 +884,10 @@ class BuilderTest(BaseWpOneDbTest):
       self.wp10db.close = orig_close
 
     with self.wp10db.cursor() as cursor:
-      cursor.execute('SELECT s_zimfarm_status, s_zim_file_updated_at '
-                     'FROM selections WHERE s_id = 1')
+      cursor.execute('SELECT z_status, z_updated_at '
+                     'FROM zim_files WHERE z_selection_id = 1')
       data = cursor.fetchone()
 
     self.assertIsNotNone(data)
-    self.assertEqual(b'FAILED', data['s_zimfarm_status'])
-    self.assertIsNone(data['s_zim_file_updated_at'])
+    self.assertEqual(b'FAILED', data['z_status'])
+    self.assertIsNone(data['z_updated_at'])
