@@ -410,17 +410,21 @@ def _get_zimfile_data(builder):
   }
 
   has_selection = builder['s_id'] is not None
+  has_zim = builder['z_id'] is not None
   is_zim_ready = builder['z_status'] == b'FILE_READY'
 
   if has_selection:
-    content_type = builder['s_content_type'].decode('utf-8')
-    data['z_status'] = builder['z_status'].decode('utf-8')
-    if builder['z_updated_at'] is not None:
-      data['z_updated_at'] = logic_util.wp10_timestamp_to_unix(
-          builder['z_updated_at'])
+    if has_zim:
+      content_type = builder['s_content_type'].decode('utf-8')
+      data['z_status'] = builder['z_status'].decode('utf-8')
+      if builder['z_updated_at'] is not None:
+        data['z_updated_at'] = logic_util.wp10_timestamp_to_unix(
+            builder['z_updated_at'])
 
-    if content_type == 'text/tab-separated-values' and is_zim_ready:
-      data['z_url'] = latest_zim_for(builder['b_id'].decode('utf-8'))
+      if content_type == 'text/tab-separated-values' and is_zim_ready:
+        data['z_url'] = latest_zim_for(builder['b_id'].decode('utf-8'))
+    else:
+      data['z_status'] = 'NOT_REQUESTED'
 
   return data
 
@@ -429,8 +433,9 @@ def get_builders_with_selections(wp10db, user_id):
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''SELECT * FROM selections
-           RIGHT JOIN zim_files
+           LEFT JOIN zim_files
              ON selections.s_id = zim_files.z_selection_id
+             AND selections.s_zim_version = zim_files.z_version
            RIGHT JOIN builders
              ON selections.s_builder_id = builders.b_id
              AND selections.s_version = builders.b_current_version
