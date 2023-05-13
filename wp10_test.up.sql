@@ -134,7 +134,9 @@ CREATE TABLE zim_files (
   z_task_id VARBINARY(255),
   z_requested_at BINARY(14),
   z_updated_at BINARY(14),
-  z_version INTEGER
+  z_version INTEGER,
+  z_long_description blob,
+  z_description tinyblob
 );
 
 INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'Unknown-Class', 0);

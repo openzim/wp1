@@ -298,9 +298,11 @@ def schedule_zim_file(redis,
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''UPDATE zim_files SET
-             z_status = 'REQUESTED', z_task_id = %s, z_requested_at = %s
+             z_status = 'REQUESTED', z_task_id = %s, z_requested_at = %s,
+             z_long_description = %s, z_description = %s
            WHERE z_selection_id = %s
-        ''', (task_id, utcnow().strftime(TS_FORMAT_WP10), selection.s_id))
+        ''', (task_id, utcnow().strftime(TS_FORMAT_WP10), description or
+              None, long_description or None, selection.s_id))
   wp10db.commit()
 
   return task_id
