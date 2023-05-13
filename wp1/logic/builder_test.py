@@ -235,16 +235,17 @@ class BuilderTest(BaseWpOneDbTest):
       cursor.execute(
           '''INSERT INTO selections
                (s_id, s_builder_id, s_content_type, s_updated_at, s_version,
-                s_object_key, s_status, s_error_messages)
+                s_object_key, s_status, s_error_messages, s_zim_version)
              VALUES
-               (%s, %s, %s, "20191225044444", %s, %s, %s, %s)
+               (%s, %s, %s, "20191225044444", %s, %s, %s, %s, 1)
           ''', (id_, builder_id, content_type, version, object_key, status,
                 error_messages))
       cursor.execute(
           '''INSERT INTO zim_files
-               (z_selection_id, z_task_id, z_status, z_updated_at, z_requested_at)
+               (z_selection_id, z_task_id, z_status, z_updated_at,
+                z_requested_at, z_version)
              VALUES
-               (%s, "5678", %s, %s, "20230101020202")
+               (%s, "5678", %s, %s, "20230101020202", 1)
           ''', (id_, zimfarm_status, zim_file_updated_at))
     self.wp10db.commit()
 

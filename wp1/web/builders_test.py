@@ -83,14 +83,14 @@ class BuildersTest(BaseWebTestcase):
       cursor.executemany(
           '''INSERT INTO selections
                (s_id, s_builder_id, s_content_type, s_updated_at,
-                s_version, s_object_key)
-             VALUES (%s, %s, %s, %s, %s, %s)
+                s_version, s_object_key, s_zim_version)
+             VALUES (%s, %s, %s, %s, %s, %s, 1)
       ''', [s[:6] for s in selections])
       cursor.execute(
           '''INSERT INTO zim_files
-               (z_id, z_selection_id, z_task_id, z_status)
+               (z_id, z_selection_id, z_task_id, z_status, z_version)
              VALUES
-               (1, %s, %s, %s)''', (
+               (1, %s, %s, %s, 1)''', (
               selections[2][0],
               selections[2][6],
               selections[2][7],
