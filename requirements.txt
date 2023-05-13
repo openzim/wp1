@@ -73,7 +73,7 @@ tabulate==0.8.9
 toml==0.10.0
 urllib3==1.26.5
 virtualenv==20.17.1
-watchdog==2.2.0
+watchdog==3.0.0
 Werkzeug==2.3.3
 wrapt==1.14.1
 yapf==0.28.0
