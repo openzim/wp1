@@ -38,11 +38,11 @@ class SelectionTest(BaseWebTestcase):
               'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv',
           's_status':
               'OK',
-          's_zim_file_updated_at':
+          'z_updated_at':
               None,
-          's_zim_file_url':
+          'z_url':
               None,
-          's_zimfarm_status':
+          'z_status':
               'NOT_REQUESTED',
       }],
   }
@@ -74,11 +74,11 @@ class SelectionTest(BaseWebTestcase):
                   'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.xls',
               's_status':
                   None,
-              's_zim_file_updated_at':
+              'z_updated_at':
                   None,
-              's_zim_file_url':
+              'z_url':
                   None,
-              's_zimfarm_status':
+              'z_status':
                   'NOT_REQUESTED',
           },
           {
@@ -94,9 +94,9 @@ class SelectionTest(BaseWebTestcase):
               's_extension': 'tsv',
               's_url': None,
               's_status': 'CAN_RETRY',
-              's_zim_file_updated_at': None,
-              's_zim_file_url': None,
-              's_zimfarm_status': 'NOT_REQUESTED',
+              'z_updated_at': None,
+              'z_url': None,
+              'z_status': 'NOT_REQUESTED',
           },
       ]
   }
@@ -115,29 +115,48 @@ class SelectionTest(BaseWebTestcase):
           's_extension': None,
           's_url': None,
           's_status': None,
-          's_zim_file_updated_at': None,
-          's_zim_file_url': None,
-          's_zimfarm_status': None,
+          'z_updated_at': None,
+          'z_url': None,
+          'z_status': None,
       }]
   }
+
+  def _insert_builder(self, values):
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+          '''INSERT INTO builders
+               (b_id, b_name, b_user_id, b_project, b_model, b_created_at,
+                b_updated_at, b_current_version)
+             VALUES
+               (%s, %s, %s, %s, %s, %s, %s, %s)
+          ''', values)
+    self.wp10db.commit()
+
+  def _insert_selection(self, values, zim_values=None):
+    if zim_values is None:
+      zim_values = ('NOT_REQUESTED', 1)
+    zim_values = zim_values + (values[0],)
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+          '''INSERT INTO selections
+              (s_id, s_builder_id, s_content_type, s_updated_at, s_version,
+               s_object_key, s_status, s_error_messages, s_zim_version)
+            VALUES
+              (%s, %s, %s, %s, %s, %s, %s, %s, 1)
+        ''', values)
+      cursor.execute(
+          'INSERT INTO zim_files (z_status, z_version, z_selection_id) VALUES (%s, %s, %s)',
+          zim_values)
+    self.wp10db.commit()
 
   def test_get_list_data(self):
     self.app = create_app()
     with self.override_db(self.app), self.app.test_client() as client:
-      with self.wp10db.cursor() as cursor:
-        cursor.execute('''
-          INSERT INTO builders
-            (b_id, b_name, b_user_id, b_project, b_model, b_created_at, b_updated_at, b_current_version)
-          VALUES
-            ('1a-2b-3c-4d', 'name', '1234', 'project_name', 'model', '20201225105544', '20201225105544', 1)
-        ''')
-        cursor.execute('''
-            INSERT INTO selections
-              (s_id, s_builder_id, s_content_type, s_updated_at, s_version, s_object_key)
-            VALUES
-              (1, \'1a-2b-3c-4d\', "text/tab-separated-values", "20201225105544", 1, "object_key")
-        ''')
-      self.wp10db.commit()
+      self._insert_builder(('1a-2b-3c-4d', 'name', '1234', 'project_name',
+                            'model', '20201225105544', '20201225105544', 1))
+      self._insert_selection((1, '1a-2b-3c-4d', 'text/tab-separated-values',
+                              '20201225105544', 1, 'object_key', 'OK', None))
       with client.session_transaction() as sess:
         sess['user'] = self.USER
       rv = client.get('/v1/selection/simple/lists')
@@ -146,27 +165,14 @@ class SelectionTest(BaseWebTestcase):
   def test_list_with_multiple_selections(self):
     self.app = create_app()
     with self.override_db(self.app), self.app.test_client() as client:
-      with self.wp10db.cursor() as cursor:
-        cursor.execute('''INSERT INTO builders
-        (b_id, b_name, b_user_id, b_project, b_model, b_created_at, b_updated_at, b_current_version)
-        VALUES ('1a-2b-3c-4d', 'name', '1234', 'project_name', 'model', '20201225105544', '20201225105544', 1)
-      ''')
-        cursor.execute('''
-            INSERT INTO selections
-              (s_id, s_builder_id, s_content_type, s_updated_at, s_version, s_object_key,
-               s_status, s_error_messages)
-            VALUES
-              (1, \'1a-2b-3c-4d\', "text/tab-separated-values", "20201225105544", 1,
-               "object_key_1", "CAN_RETRY", \'{"errors"["error1"]}\')
-        ''')
-        cursor.execute('''
-            INSERT INTO selections
-              (s_id, s_builder_id, s_content_type, s_updated_at, s_version, s_object_key,
-               s_status, s_error_messages, s_zimfarm_status)
-            VALUES
-              (2, \'1a-2b-3c-4d\', "application/vnd.ms-excel", "20201225105544", 1,
-               "object_key_2", NULL, NULL, 'NOT_REQUESTED')
-        ''')
+      self._insert_builder(('1a-2b-3c-4d', 'name', '1234', 'project_name',
+                            'model', '20201225105544', '20201225105544', 1))
+      self._insert_selection(
+          (1, '1a-2b-3c-4d', 'text/tab-separated-values', '20201225105544', 1,
+           'object_key_1', 'CAN_RETRY', '{"errors"["error1"]}'))
+      self._insert_selection((2, '1a-2b-3c-4d', 'application/vnd.ms-excel',
+                              '20201225105544', 1, 'object_key_2', None, None),
+                             ('NOT_REQUESTED', 1))
       self.wp10db.commit()
       with client.session_transaction() as sess:
         sess['user'] = self.USER

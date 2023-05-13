@@ -226,12 +226,15 @@ def latest_zim_file_url_for(wp10db, builder_id):
   if selection is None:
     return None
 
-  if selection.s_zimfarm_status != b'FILE_READY':
+  zim_file = logic_selection.latest_zim_file_for_selection(wp10db, selection)
+  if zim_file is None:
+    return None
+  if zim_file.z_status != b'FILE_READY':
     logger.warning('Attempt to get ZIM URL before file ready, builder id=%s',
                    builder_id)
     return None
 
-  return logic_selection.zim_file_url_for_selection(selection)
+  return logic_selection.url_from_zim_file(zim_file)
 
 
 def latest_selections_with_errors(wp10db, builder_id):
@@ -294,11 +297,12 @@ def schedule_zim_file(redis,
 
   with wp10db.cursor() as cursor:
     cursor.execute(
-        '''UPDATE selections SET
-             s_zimfarm_status = 'REQUESTED', s_zimfarm_task_id = %s,
-             s_zimfarm_error_messages = NULL, s_zim_file_requested_at = %s
-           WHERE s_id = %s
-        ''', (task_id, utcnow().strftime(TS_FORMAT_WP10), selection.s_id))
+        '''UPDATE zim_files SET
+             z_status = 'REQUESTED', z_task_id = %s, z_requested_at = %s,
+             z_long_description = %s, z_description = %s
+           WHERE z_selection_id = %s
+        ''', (task_id, utcnow().strftime(TS_FORMAT_WP10), description or
+              None, long_description or None, selection.s_id))
   wp10db.commit()
 
   return task_id
@@ -309,17 +313,25 @@ def latest_zimfarm_status(wp10db, builder_id):
                                    'text/tab-separated-values')
   if selection is None:
     return None
-  return selection.s_zimfarm_status.decode('utf-8')
+
+  zim_file = logic_selection.latest_zim_file_for_selection(wp10db, selection)
+  if zim_file is None:
+    return None
+  return zim_file.z_status.decode('utf-8')
 
 
 def latest_zimfarm_task_url(wp10db, builder_id):
   selection = latest_selection_for(wp10db, builder_id,
                                    'text/tab-separated-values')
-  if selection is None or not selection.s_zimfarm_task_id:
+  if selection is None:
+    return None
+
+  zim_file = logic_selection.latest_zim_file_for_selection(wp10db, selection)
+  if zim_file is None or zim_file.z_task_id is None:
     return None
 
   base_url = zimfarm.get_zimfarm_url()
-  return '%s/tasks/%s' % (base_url, selection.s_zimfarm_task_id.decode('utf-8'))
+  return '%s/tasks/%s' % (base_url, zim_file.z_task_id.decode('utf-8'))
 
 
 def on_zim_file_status_poll(task_id):
@@ -367,15 +379,11 @@ def _get_selection_data(builder):
       's_extension': None,
       's_url': None,
       's_status': None,
-      's_zimfarm_status': None,
-      's_zim_file_updated_at': None,
-      's_zim_file_url': None,
   }
 
   has_selection = builder['s_id'] is not None
   has_status = builder['s_status'] is not None
   is_ok_status = builder['s_status'] == b'OK'
-  is_zim_ready = builder['s_zimfarm_status'] == b'FILE_READY'
 
   if has_selection:
     content_type = builder['s_content_type'].decode('utf-8')
@@ -384,7 +392,6 @@ def _get_selection_data(builder):
         builder['s_updated_at'])
     data['s_content_type'] = content_type
     data['s_extension'] = CONTENT_TYPE_TO_EXT.get(content_type, '???')
-    data['s_zimfarm_status'] = builder['s_zimfarm_status'].decode('utf-8')
     if has_status:
       data['s_status'] = builder['s_status'].decode('utf-8')
 
@@ -392,12 +399,28 @@ def _get_selection_data(builder):
       data['s_url'] = latest_url_for(builder['b_id'].decode('utf-8'),
                                      content_type)
 
-    if builder['s_zim_file_updated_at'] is not None:
-      data['s_zim_file_updated_at'] = logic_util.wp10_timestamp_to_unix(
-          builder['s_zim_file_updated_at'])
+  return data
+
+
+def _get_zimfile_data(builder):
+  data = {
+      'z_status': None,
+      'z_updated_at': None,
+      'z_url': None,
+  }
+
+  has_selection = builder['s_id'] is not None
+  is_zim_ready = builder['z_status'] == b'FILE_READY'
+
+  if has_selection:
+    content_type = builder['s_content_type'].decode('utf-8')
+    data['z_status'] = builder['z_status'].decode('utf-8')
+    if builder['z_updated_at'] is not None:
+      data['z_updated_at'] = logic_util.wp10_timestamp_to_unix(
+          builder['z_updated_at'])
 
     if content_type == 'text/tab-separated-values' and is_zim_ready:
-      data['s_zim_file_url'] = latest_zim_for(builder['b_id'].decode('utf-8'))
+      data['z_url'] = latest_zim_for(builder['b_id'].decode('utf-8'))
 
   return data
 
@@ -406,6 +429,8 @@ def get_builders_with_selections(wp10db, user_id):
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''SELECT * FROM selections
+           RIGHT JOIN zim_files
+             ON selections.s_id = zim_files.z_selection_id
            RIGHT JOIN builders
              ON selections.s_builder_id = builders.b_id
              AND selections.s_version = builders.b_current_version
@@ -420,6 +445,7 @@ def get_builders_with_selections(wp10db, user_id):
     builder = {}
     builder.update(_get_builder_data(db_builder))
     builder.update(_get_selection_data(db_builder))
+    builder.update(_get_zimfile_data(db_builder))
     result.append(builder)
 
   return result

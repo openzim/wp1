@@ -113,11 +113,7 @@ CREATE TABLE `selections` (
   s_object_key VARBINARY(255),
   s_status VARBINARY(255) DEFAULT 'OK',
   s_error_messages BLOB,
-  s_zimfarm_task_id VARBINARY(255),
-  s_zimfarm_error_messages BLOB,
-  s_zimfarm_status VARBINARY(255) DEFAULT "NOT_REQUESTED",
-  s_zim_file_updated_at BINARY(14),
-  s_zim_file_requested_at BINARY(14)
+  s_zim_version INTEGER
 );
 
 CREATE TABLE custom (
@@ -129,6 +125,18 @@ CREATE TABLE custom (
   c_created_at BINARY(20),
   c_updated_at BINARY(20),
   c_is_active TINYINT
+);
+
+CREATE TABLE zim_files (
+  z_id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
+  z_selection_id VARBINARY(255) NOT NULL,
+  z_status VARBINARY(255) DEFAULT "NOT_REQUESTED",
+  z_task_id VARBINARY(255),
+  z_requested_at BINARY(14),
+  z_updated_at BINARY(14),
+  z_version INTEGER,
+  z_long_description blob,
+  z_description tinyblob
 );
 
 INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'Unknown-Class', 0);
