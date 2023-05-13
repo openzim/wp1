@@ -71,36 +71,30 @@ class BuildersTest(BaseWebTestcase):
     return self.builder.b_id.decode('utf-8')
 
   def _insert_selections(self, builder_id):
+    selections = [(1, builder_id, 'text/tab-separated-values', '20201225105544',
+                   1, 'object_key1'),
+                  (2, builder_id, 'application/vnd.ms-excel', '20201225105544',
+                   1, 'object_key2'),
+                  (3, builder_id, 'text/tab-separated-values', '20201225105544',
+                   2, 'latest_object_key_tsv', 'task-id-1234', 'FILE_READY'),
+                  (4, builder_id, 'application/vnd.ms-excel', '20201225105544',
+                   2, 'latest_object_key_xls')]
     with self.wp10db.cursor() as cursor:
-      cursor.execute(
+      cursor.executemany(
           '''INSERT INTO selections
                (s_id, s_builder_id, s_content_type, s_updated_at,
-                s_version, s_object_key)
-             VALUES
-               (1, %s, "text/tab-separated-values", "20201225105544",
-                1, "object_key1")''', builder_id)
+                s_version, s_object_key, s_zim_version)
+             VALUES (%s, %s, %s, %s, %s, %s, 1)
+      ''', [s[:6] for s in selections])
       cursor.execute(
-          '''INSERT INTO selections
-                (s_id, s_builder_id, s_content_type, s_updated_at,
-                 s_version, s_object_key)
-              VALUES
-                (2, %s, "application/vnd.ms-excel", "20201225105544",
-                 1, "object_key2")''', builder_id)
-      cursor.execute(
-          '''INSERT INTO selections
-               (s_id, s_builder_id, s_content_type, s_updated_at,
-                s_version, s_object_key, s_zimfarm_task_id, s_zimfarm_status)
+          '''INSERT INTO zim_files
+               (z_id, z_selection_id, z_task_id, z_status, z_version)
              VALUES
-               (3, %s, "text/tab-separated-values", "20201225105544",
-                2, "latest_object_key_tsv", "task-id-1234", "FILE_READY")''',
-          builder_id)
-      cursor.execute(
-          '''INSERT INTO selections
-               (s_id, s_builder_id, s_content_type, s_updated_at,
-                s_version, s_object_key)
-             VALUES
-               (4, %s, "application/vnd.ms-excel", "20201225105544",
-                2, "latest_object_key_xls")''', builder_id)
+               (1, %s, %s, %s, 1)''', (
+              selections[2][0],
+              selections[2][6],
+              selections[2][7],
+          ))
     self.wp10db.commit()
 
   def test_create_unsuccessful(self):
@@ -419,20 +413,18 @@ class BuildersTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['user'] = self.USER
-      rv = client.post('/v1/builders/%s/zim' % builder_id, json={})
+      rv = client.post('/v1/builders/%s/zim' % builder_id,
+                       json={'description': 'Test description'})
       self.assertEqual('204 NO CONTENT', rv.status)
 
     patched_schedule_zim_file.assert_called_once()
     with self.wp10db.cursor() as cursor:
-      cursor.execute('''SELECT s_zimfarm_task_id, s_zimfarm_status,
-                               s_zimfarm_error_messages
-                        FROM selections
-                        WHERE s_id = 3''')
+      cursor.execute('SELECT z_task_id, z_status FROM zim_files '
+                     'WHERE z_selection_id = 3')
       data = cursor.fetchone()
 
-    self.assertEqual(b'1234-a', data['s_zimfarm_task_id'])
-    self.assertEqual(b'REQUESTED', data['s_zimfarm_status'])
-    self.assertIsNone(data['s_zimfarm_error_messages'])
+    self.assertEqual(b'1234-a', data['z_task_id'])
+    self.assertEqual(b'REQUESTED', data['z_status'])
 
   @patch('wp1.zimfarm.schedule_zim_file')
   def test_create_zim_file_for_builder_not_found(self,
@@ -444,7 +436,8 @@ class BuildersTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['user'] = self.USER
-      rv = client.post('/v1/builders/1234-not-found/zim', json={})
+      rv = client.post('/v1/builders/1234-not-found/zim',
+                       json={'description': 'Test description'})
       self.assertEqual('404 NOT FOUND', rv.status)
 
   @patch('wp1.zimfarm.schedule_zim_file')
@@ -457,7 +450,8 @@ class BuildersTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['user'] = self.UNAUTHORIZED_USER
-      rv = client.post('/v1/builders/%s/zim' % builder_id, json={})
+      rv = client.post('/v1/builders/%s/zim' % builder_id,
+                       json={'description': 'Test description'})
       self.assertEqual('403 FORBIDDEN', rv.status)
 
   @patch('wp1.zimfarm.schedule_zim_file')
@@ -471,8 +465,21 @@ class BuildersTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['user'] = self.USER
-      rv = client.post('/v1/builders/%s/zim' % builder_id, json={})
+      rv = client.post('/v1/builders/%s/zim' % builder_id,
+                       json={'description': 'Test description'})
       self.assertEqual('500 INTERNAL SERVER ERROR', rv.status)
+
+  @patch('wp1.zimfarm.schedule_zim_file')
+  def test_create_zim_file_for_builder_400(self, patched_schedule_zim_file):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/%s/zim' % builder_id, json={})
+      self.assertEqual('400 BAD REQUEST', rv.status)
 
   @patch('wp1.web.builders.queues.poll_for_zim_file_status')
   def test_update_zimfarm_status(self, patched_poll):
@@ -492,13 +499,13 @@ class BuildersTest(BaseWebTestcase):
       patched_poll.assert_called_once()
 
     with self.wp10db.cursor() as cursor:
-      cursor.execute('SELECT s_zimfarm_status, s_zim_file_updated_at '
-                     'FROM selections WHERE s_zimfarm_task_id = "task-id-1234"')
+      cursor.execute('SELECT z_status, z_updated_at '
+                     'FROM zim_files WHERE z_task_id = "task-id-1234"')
       status = cursor.fetchone()
 
     self.assertIsNotNone(status)
-    self.assertEqual(b'ENDED', status['s_zimfarm_status'])
-    self.assertIsNone(status['s_zim_file_updated_at'])
+    self.assertEqual(b'ENDED', status['z_status'])
+    self.assertIsNone(status['z_updated_at'])
 
   @patch('wp1.web.builders.queues.poll_for_zim_file_status')
   @patch('wp1.logic.selection.utcnow',
@@ -524,13 +531,13 @@ class BuildersTest(BaseWebTestcase):
       self.assertEqual('204 NO CONTENT', rv.status)
 
     with self.wp10db.cursor() as cursor:
-      cursor.execute('SELECT s_zimfarm_status, s_zim_file_updated_at '
-                     'FROM selections WHERE s_zimfarm_task_id = "task-id-1234"')
+      cursor.execute('SELECT z_status, z_updated_at '
+                     'FROM zim_files WHERE z_task_id = "task-id-1234"')
       status = cursor.fetchone()
 
     self.assertIsNotNone(status)
-    self.assertEqual(b'FILE_READY', status['s_zimfarm_status'])
-    self.assertEqual(b'20221225000102', status['s_zim_file_updated_at'])
+    self.assertEqual(b'FILE_READY', status['z_status'])
+    self.assertEqual(b'20221225000102', status['z_updated_at'])
 
   def test_update_zimfarm_status_bad_token(self):
     builder_id = self._insert_builder()

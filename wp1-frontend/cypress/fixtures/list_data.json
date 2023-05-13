@@ -13,9 +13,9 @@
       "s_content_type": "text/tab-separated-values",
       "s_extension": "tsv",
       "s_url": "https://www.example.fake/abcd-efgh",
-      "s_zim_file_updated_at": null,
-      "s_zim_file_url": null,
-      "s_zimfarm_status": "NOT_REQUESTED"
+      "z_updated_at": null,
+      "z_url": null,
+      "z_status": "NOT_REQUESTED"
     },
     {
       "id": 2,
@@ -30,9 +30,9 @@
       "s_content_type": null,
       "s_extension": null,
       "s_url": null,
-      "s_zim_file_updated_at": null,
-      "s_zim_file_url": null,
-      "s_zimfarm_status": "NOT_REQUESTED"
+      "z_updated_at": null,
+      "z_url": null,
+      "z_status": "NOT_REQUESTED"
     },
     {
       "created_at": 1670251154,
@@ -47,9 +47,9 @@
       "s_updated_at": 1670251157,
       "s_url": null,
       "updated_at": 1670261154,
-      "s_zim_file_updated_at": null,
-      "s_zim_file_url": null,
-      "s_zimfarm_status": "NOT_REQUESTED"
+      "z_updated_at": null,
+      "z_url": null,
+      "z_status": "NOT_REQUESTED"
     },
     {
       "created_at": 1669778531,
@@ -64,9 +64,9 @@
       "s_updated_at": 1670253950,
       "s_url": null,
       "updated_at": 1670247215,
-      "s_zim_file_updated_at": null,
-      "s_zim_file_url": null,
-      "s_zimfarm_status": "NOT_REQUESTED"
+      "z_updated_at": null,
+      "z_url": null,
+      "z_status": "NOT_REQUESTED"
     },
     {
       "created_at": 1669778531,
@@ -81,9 +81,9 @@
       "s_updated_at": 1670253950,
       "s_url": null,
       "updated_at": 1670247215,
-      "s_zim_file_updated_at": null,
-      "s_zim_file_url": null,
-      "s_zimfarm_status": "NOT_REQUESTED"
+      "z_updated_at": null,
+      "z_url": null,
+      "z_status": "NOT_REQUESTED"
     },
     {
       "created_at": 1669778531,
@@ -98,9 +98,9 @@
       "s_updated_at": 1670253950,
       "s_url": null,
       "updated_at": 1670267215,
-      "s_zim_file_updated_at": null,
-      "s_zim_file_url": null,
-      "s_zimfarm_status": "NOT_REQUESTED"
+      "z_updated_at": null,
+      "z_url": null,
+      "z_status": "NOT_REQUESTED"
     },
     {
       "created_at": 1669678531,
@@ -115,9 +115,9 @@
       "s_updated_at": 1671253950,
       "s_url": "https://www.example.fake/1234-hijk",
       "updated_at": 1670267215,
-      "s_zim_file_updated_at": null,
-      "s_zim_file_url": null,
-      "s_zimfarm_status": "NOT_REQUESTED"
+      "z_updated_at": null,
+      "z_url": null,
+      "z_status": "NOT_REQUESTED"
     },
     {
       "created_at": 1669679000,
@@ -132,9 +132,9 @@
       "s_updated_at": 1671263950,
       "s_url": "https://www.example.fake/1234-hijk",
       "updated_at": 1670287215,
-      "s_zim_file_updated_at": null,
-      "s_zim_file_url": null,
-      "s_zimfarm_status": "REQUESTED"
+      "z_updated_at": null,
+      "z_url": null,
+      "z_status": "REQUESTED"
     },
     {
       "created_at": 1669679000,
@@ -149,9 +149,9 @@
       "s_updated_at": 1671263950,
       "s_url": "https://www.example.fake/1234-hijk",
       "updated_at": 1670287215,
-      "s_zim_file_updated_at": 1671287215,
-      "s_zim_file_url": "https://localhost/zim/latest",
-      "s_zimfarm_status": "FILE_READY"
+      "z_updated_at": 1671287215,
+      "z_url": "https://localhost/zim/latest",
+      "z_status": "FILE_READY"
     },
     {
       "created_at": 1682181321,
@@ -165,10 +165,10 @@
       "s_status": null,
       "s_updated_at": 1682181322,
       "s_url": "http://example.fake/latest.tsv",
-      "s_zim_file_updated_at": null,
-      "s_zim_file_url": null,
-      "s_zimfarm_status": "FAILED",
-      "updated_at": 1682181321
+      "updated_at": 1682181321,
+      "z_updated_at": null,
+      "z_url": null,
+      "z_status": "FAILED"
     }
   ]
 }

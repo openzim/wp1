@@ -65,12 +65,12 @@
                   ></span>
                 </div>
               </td>
-              <td v-if="item.s_zim_file_url && !isPending(item)">
-                {{ localDate(item.s_zim_file_updated_at) }}
+              <td v-if="item.z_url && !isPending(item)">
+                {{ localDate(item.z_updated_at) }}
               </td>
               <td v-else>-</td>
-              <td v-if="item.s_zim_file_url && !isPending(item)">
-                <a :href="item.s_zim_file_url">Download ZIM</a>
+              <td v-if="item.z_url && !isPending(item)">
+                <a :href="item.z_url">Download ZIM</a>
               </td>
               <td v-else-if="hasPendingZim(item)">
                 <pulse-loader
@@ -146,12 +146,12 @@ export default {
     hasPendingZim: function (item) {
       return (
         item.s_status === 'OK' &&
-        item.s_zimfarm_status !== 'NOT_REQUESTED' &&
-        item.s_zimfarm_status !== 'FILE_READY'
+        item.z_status !== 'NOT_REQUESTED' &&
+        item.z_status !== 'FILE_READY'
       );
     },
     zimFailed: function (item) {
-      return item.s_zimfarm_status === 'FAILED';
+      return item.z_status === 'FAILED';
     },
     hasSelectionError: function (item) {
       return item.s_status !== null && item.s_status !== 'OK';
