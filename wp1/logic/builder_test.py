@@ -217,7 +217,8 @@ class BuilderTest(BaseWpOneDbTest):
                         object_key='selections/foo/1234/name.tsv',
                         builder_id=b'1a-2b-3c-4d',
                         has_errors=False,
-                        zim_file_ready=False):
+                        zim_file_ready=False,
+                        skip_zim=False):
     if has_errors:
       status = 'CAN_RETRY'
       error_messages = '{"error_messages":["There was an error"]}'
@@ -240,13 +241,14 @@ class BuilderTest(BaseWpOneDbTest):
                (%s, %s, %s, "20191225044444", %s, %s, %s, %s, 1)
           ''', (id_, builder_id, content_type, version, object_key, status,
                 error_messages))
-      cursor.execute(
-          '''INSERT INTO zim_files
-               (z_selection_id, z_task_id, z_status, z_updated_at,
-                z_requested_at, z_version)
-             VALUES
-               (%s, "5678", %s, %s, "20230101020202", 1)
-          ''', (id_, zimfarm_status, zim_file_updated_at))
+      if not skip_zim:
+        cursor.execute(
+            '''INSERT INTO zim_files
+                 (z_selection_id, z_task_id, z_status, z_updated_at,
+                  z_requested_at, z_version)
+               VALUES
+                 (%s, "5678", %s, %s, "20230101020202", 1)
+            ''', (id_, zimfarm_status, zim_file_updated_at))
     self.wp10db.commit()
 
   def _get_builder_by_user_id(self):
@@ -375,6 +377,14 @@ class BuilderTest(BaseWpOneDbTest):
     self._insert_builder()
     article_data = logic_builder.get_builders_with_selections(self.wp10db, 1234)
     self.assertEqual(self.expected_lists_with_no_selections, article_data)
+
+  @patch('wp1.models.wp10.builder.utcnow',
+         return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
+  def test_get_builders_with_selections_no_zim_files(self, mock_utcnow):
+    id_ = self._insert_builder()
+    self._insert_selection(1, 'text/tab-separated-values', skip_zim=True)
+    article_data = logic_builder.get_builders_with_selections(self.wp10db, 1234)
+    self.assertEqual(self.expected_lists, article_data)
 
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
