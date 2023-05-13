@@ -75,8 +75,10 @@ def latest_zim_file_for_selection(wp10db, selection):
     raise ValueError('Cannot get zim file for empty selection')
 
   with wp10db.cursor() as cursor:
-    cursor.execute('SELECT * FROM zim_files WHERE z_selection_id = %s',
-                   (selection.s_id,))
+    cursor.execute(
+        'SELECT * FROM zim_files WHERE'
+        ' z_selection_id = %s AND z_version = %s',
+        (selection.s_id, selection.s_zim_version))
     db_zim = cursor.fetchone()
     if db_zim is None:
       return None
