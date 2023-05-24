@@ -746,7 +746,8 @@ class BuilderTest(BaseWpOneDbTest):
                                                       description='a',
                                                       long_description='z')
     with self.wp10db.cursor() as cursor:
-      cursor.execute('SELECT z_task_id, z_status, z_requested_at'
+      cursor.execute('SELECT z_task_id, z_status, z_requested_at,'
+                     '       z_description, z_long_description'
                      ' FROM zim_files'
                      ' WHERE z_selection_id = 1')
       data = cursor.fetchone()
@@ -754,6 +755,8 @@ class BuilderTest(BaseWpOneDbTest):
     self.assertEqual(b'1234-a', data['z_task_id'])
     self.assertEqual(b'REQUESTED', data['z_status'])
     self.assertEqual(b'20221225000102', data['z_requested_at'])
+    self.assertEqual(b'a', data['z_description'])
+    self.assertEqual(b'z', data['z_long_description'])
 
   @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
   def test_schedule_zim_file_404(self, patched_schedule_zim_file):
