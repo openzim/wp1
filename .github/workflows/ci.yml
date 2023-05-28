@@ -106,7 +106,7 @@ jobs:
       # This is the dev database, the dev redis, and the dev workers.
       # We don't technically need that last one.
       - name: Start Docker dev services
-        run: docker-compose -f docker-compose-dev.yml up -d --build
+        run: docker compose -f docker-compose-dev.yml up -d --build
 
       - name: Wait for Docker dev services to be up (30s)
         run: sleep 30s
@@ -141,7 +141,7 @@ jobs:
       - name: Stop containers
         continue-on-error: true
         if: always()
-        run: docker-compose -f "docker-compose-dev.yml" down
+        run: docker compose -f "docker-compose-dev.yml" down
 
       - uses: actions/upload-artifact@v3
         continue-on-error: true
