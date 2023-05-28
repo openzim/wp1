@@ -101,7 +101,8 @@ CREATE TABLE `builders` (
   b_current_version int(11) NOT NULL DEFAULT '0',
   b_params BLOB,
   b_created_at BINARY(14),
-  b_updated_at BINARY(14)
+  b_updated_at BINARY(14),
+  b_selection_zim_version INTEGER
 );
 
 CREATE TABLE `selections` (
@@ -112,8 +113,7 @@ CREATE TABLE `selections` (
   s_version int(11) NOT NULL,
   s_object_key VARBINARY(255),
   s_status VARBINARY(255) DEFAULT 'OK',
-  s_error_messages BLOB,
-  s_zim_version INTEGER
+  s_error_messages BLOB
 );
 
 CREATE TABLE custom (
@@ -134,7 +134,6 @@ CREATE TABLE zim_files (
   z_task_id VARBINARY(255),
   z_requested_at BINARY(14),
   z_updated_at BINARY(14),
-  z_version INTEGER,
   z_long_description blob,
   z_description tinyblob
 );
