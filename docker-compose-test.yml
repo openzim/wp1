@@ -1,5 +1,6 @@
 version: '3.5'
 
+name: wp1-test
 services:
   redis:
     image: redis
