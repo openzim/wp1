@@ -11,6 +11,7 @@ import wp1.logic.selection as logic_selection
 import wp1.logic.util as logic_util
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
+from wp1.models.wp10.zim_file import ZimFile
 from wp1 import queues
 from wp1.redis_db import connect as redis_connect
 from wp1.storage import connect_storage
@@ -56,10 +57,12 @@ def insert_builder(wp10db, builder):
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''INSERT INTO builders
-             (b_id, b_name, b_user_id, b_project, b_params, b_model, b_created_at, b_updated_at)
+             (b_id, b_name, b_user_id, b_project, b_params, b_model,
+              b_created_at, b_updated_at)
            VALUES
-             (%(b_id)s, %(b_name)s, %(b_user_id)s, %(b_project)s, %(b_params)s, %(b_model)s,
-              %(b_created_at)s, %(b_updated_at)s)
+             (%(b_id)s, %(b_name)s, %(b_user_id)s, %(b_project)s,
+              %(b_params)s, %(b_model)s, %(b_created_at)s,
+              %(b_updated_at)s)
         ''', attr.asdict(builder))
   wp10db.commit()
   return builder.b_id
@@ -220,21 +223,31 @@ def latest_selection_url(wp10db, builder_id, ext):
   return logic_selection.url_for(selection.s_object_key.decode('utf-8'))
 
 
-def latest_zim_file_url_for(wp10db, builder_id):
-  selection = latest_selection_for(wp10db, builder_id,
-                                   'text/tab-separated-values')
-  if selection is None:
-    return None
+def latest_zim_file_for(wp10db, builder_id):
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        '''SELECT z.* FROM zim_files z
+           INNER JOIN selections s
+             ON s.s_id = z.z_selection_id
+           INNER JOIN builders b
+             ON b.b_selection_zim_version = s.s_version
+           WHERE b.b_id = %s
+        ''', (builder_id,))
+    db_zim = cursor.fetchone()
+    if db_zim is None:
+      return None
+    return ZimFile(**db_zim)
 
-  zim_file = logic_selection.latest_zim_file_for_selection(wp10db, selection)
-  if zim_file is None:
-    return None
-  if zim_file.z_status != b'FILE_READY':
+
+def latest_zim_file_url_for(wp10db, builder_id):
+  zim = latest_zim_file_for(wp10db, builder_id)
+
+  if zim is None or zim.z_status != b'FILE_READY':
     logger.warning('Attempt to get ZIM URL before file ready, builder id=%s',
                    builder_id)
     return None
 
-  return logic_selection.url_from_zim_file(zim_file)
+  return zimfarm.zim_file_url_for_task_id(zim.z_task_id)
 
 
 def latest_selections_with_errors(wp10db, builder_id):
@@ -311,24 +324,14 @@ def schedule_zim_file(s3,
 
 
 def latest_zimfarm_status(wp10db, builder_id):
-  selection = latest_selection_for(wp10db, builder_id,
-                                   'text/tab-separated-values')
-  if selection is None:
-    return None
-
-  zim_file = logic_selection.latest_zim_file_for_selection(wp10db, selection)
+  zim_file = latest_zim_file_for(wp10db, builder_id)
   if zim_file is None:
     return None
   return zim_file.z_status.decode('utf-8')
 
 
 def latest_zimfarm_task_url(wp10db, builder_id):
-  selection = latest_selection_for(wp10db, builder_id,
-                                   'text/tab-separated-values')
-  if selection is None:
-    return None
-
-  zim_file = logic_selection.latest_zim_file_for_selection(wp10db, selection)
+  zim_file = latest_zim_file_for(wp10db, builder_id)
   if zim_file is None or zim_file.z_task_id is None:
     return None
 
@@ -434,16 +437,27 @@ def _get_zimfile_data(builder):
 def get_builders_with_selections(wp10db, user_id):
   with wp10db.cursor() as cursor:
     cursor.execute(
-        '''SELECT * FROM selections
-           LEFT JOIN zim_files
-             ON selections.s_id = zim_files.z_selection_id
-             AND selections.s_zim_version = zim_files.z_version
-           RIGHT JOIN builders
-             ON selections.s_builder_id = builders.b_id
-             AND selections.s_version = builders.b_current_version
-           WHERE b_user_id = %(b_user_id)s
-           ORDER BY builders.b_updated_at DESC
-        ''', {'b_user_id': user_id})
+        '''SELECT * FROM builders b
+           LEFT JOIN selections s
+             ON s.s_builder_id = b.b_id
+             AND s.s_version = b.b_current_version
+           LEFT JOIN zim_files z
+             ON z.z_selection_id = s.s_id
+             AND s.s_version = b.b_selection_zim_version
+           WHERE b_user_id = %s
+           ORDER BY b.b_updated_at DESC
+      ''', (user_id,))
+    # cursor.execute(
+    #     '''SELECT * FROM selections
+    #        LEFT JOIN zim_files
+    #          ON selections.s_id = zim_files.z_selection_id
+    #          AND selections.s_zim_version = zim_files.z_version
+    #        RIGHT JOIN builders
+    #          ON selections.s_builder_id = builders.b_id
+    #          AND selections.s_version = builders.b_current_version
+    #        WHERE b_user_id = %(b_user_id)s
+    #        ORDER BY builders.b_updated_at DESC
+    #     ''', {'b_user_id': user_id})
     data = cursor.fetchall()
 
   builders = {}

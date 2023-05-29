@@ -21,6 +21,7 @@ class BuilderTest(BaseWpOneDbTest):
       'b_created_at': b'20191225044444',
       'b_updated_at': b'20191225044444',
       'b_current_version': 0,
+      'b_selection_zim_version': 0,
   }
 
   expected_lists = [{
@@ -192,20 +193,23 @@ class BuilderTest(BaseWpOneDbTest):
           'FILE_READY',
   }]
 
-  def _insert_builder(self, current_version=None):
+  def _insert_builder(self, current_version=None, zim_version=None):
     if current_version is None:
       current_version = 1
     value_dict = attr.asdict(self.builder)
     value_dict['b_current_version'] = current_version
     value_dict['b_id'] = b'1a-2b-3c-4d'
+    if zim_version is not None:
+      value_dict['b_selection_zim_version'] = zim_version
     with self.wp10db.cursor() as cursor:
       cursor.execute(
           '''INSERT INTO builders
                (b_id, b_name, b_user_id, b_project, b_params, b_model, b_created_at,
-                b_updated_at, b_current_version)
+                b_updated_at, b_current_version, b_selection_zim_version)
              VALUES
                (%(b_id)s, %(b_name)s, %(b_user_id)s, %(b_project)s, %(b_params)s,
-                %(b_model)s, %(b_created_at)s, %(b_updated_at)s, %(b_current_version)s)
+                %(b_model)s, %(b_created_at)s, %(b_updated_at)s, %(b_current_version)s,
+                %(b_selection_zim_version)s)
           ''', value_dict)
     self.wp10db.commit()
     return value_dict['b_id']
@@ -236,18 +240,18 @@ class BuilderTest(BaseWpOneDbTest):
       cursor.execute(
           '''INSERT INTO selections
                (s_id, s_builder_id, s_content_type, s_updated_at, s_version,
-                s_object_key, s_status, s_error_messages, s_zim_version)
+                s_object_key, s_status, s_error_messages)
              VALUES
-               (%s, %s, %s, "20191225044444", %s, %s, %s, %s, 1)
+               (%s, %s, %s, "20191225044444", %s, %s, %s, %s)
           ''', (id_, builder_id, content_type, version, object_key, status,
                 error_messages))
       if not skip_zim:
         cursor.execute(
             '''INSERT INTO zim_files
                  (z_selection_id, z_task_id, z_status, z_updated_at,
-                  z_requested_at, z_version)
+                  z_requested_at)
                VALUES
-                 (%s, "5678", %s, %s, "20230101020202", 1)
+                 (%s, "5678", %s, %s, "20230101020202")
             ''', (id_, zimfarm_status, zim_file_updated_at))
     self.wp10db.commit()
 
@@ -270,6 +274,7 @@ class BuilderTest(BaseWpOneDbTest):
         b_created_at=b'20191225044444',
         b_updated_at=b'20191225044444',
         b_current_version=1,
+        b_selection_zim_version=1,
     )
 
   @patch('wp1.models.wp10.builder.utcnow',
@@ -301,6 +306,7 @@ class BuilderTest(BaseWpOneDbTest):
     expected['b_params'] = b'{"list": ["a", "b", "c", "d"]}'
     expected['b_updated_at'] = b'20200101055555'
     expected['b_current_version'] = 1
+    expected['b_selection_zim_version'] = 1
     actual = self._get_builder_by_user_id()
     self.assertEqual(expected, actual)
 
@@ -327,7 +333,8 @@ class BuilderTest(BaseWpOneDbTest):
 
   @patch('wp1.logic.builder.wp10_connect')
   @patch('wp1.logic.builder.connect_storage')
-  def test_materialize(self, patched_connect_storage, patched_connect_wp10):
+  def test_materialize_builder(self, patched_connect_storage,
+                               patched_connect_wp10):
     patched_connect_wp10.return_value = self.wp10db
     TestBuilderClass = MagicMock()
     materialize_mock = MagicMock()
@@ -347,6 +354,7 @@ class BuilderTest(BaseWpOneDbTest):
     builder = self._get_builder_by_user_id()
     expected = dict(**self.expected_builder)
     expected['b_current_version'] = 1
+    expected['b_selection_zim_version'] = 1
     self.assertEqual(expected, builder)
 
   @patch('wp1.models.wp10.builder.utcnow',
@@ -491,7 +499,8 @@ class BuilderTest(BaseWpOneDbTest):
                       b_params=b'{"list": ["1", "b", "c"]}',
                       b_created_at=b'20191225044444',
                       b_updated_at=b'20211111044444',
-                      b_current_version=1)
+                      b_current_version=1,
+                      b_selection_zim_version=1)
     actual = logic_builder.update_builder(self.wp10db, builder)
     self.assertTrue(actual)
 
@@ -571,7 +580,7 @@ class BuilderTest(BaseWpOneDbTest):
     self.assertIsNone(actual)
 
   def _insert_builder_with_multiple_version_selections(self):
-    builder_id = self._insert_builder(current_version=3)
+    builder_id = self._insert_builder(current_version=3, zim_version=2)
     self._insert_selection(1,
                            'text/tab-separated-values',
                            version=1,
@@ -610,6 +619,29 @@ class BuilderTest(BaseWpOneDbTest):
     actual = logic_builder.latest_zimfarm_task_url(self.wp10db, builder_id)
 
     self.assertEqual('https://fake.farm/v1/tasks/5678', actual)
+
+  @patch('wp1.logic.builder.zimfarm.zim_file_url_for_task_id',
+         return_value='https://zim.fake/1234')
+  def test_latest_zim_file_url_for(self, mock_zimfarm_url_for):
+    builder_id = self._insert_builder_with_multiple_version_selections()
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('''UPDATE zim_files z
+                          INNER JOIN selections s ON s.s_id = z.z_selection_id
+                          INNER JOIN builders b ON b.b_selection_zim_version = s.s_version
+                        SET z_status = "FILE_READY"''')
+
+    actual = logic_builder.latest_zim_file_url_for(self.wp10db, builder_id)
+
+    self.assertEqual('https://zim.fake/1234', actual)
+
+  @patch('wp1.logic.builder.zimfarm.zim_file_url_for_task_id',
+         return_value='https://zim.fake/1234')
+  def test_latest_zim_file_url_for_not_ready(self, mock_zimfarm_url_for):
+    builder_id = self._insert_builder_with_multiple_version_selections()
+
+    actual = logic_builder.latest_zim_file_url_for(self.wp10db, builder_id)
+
+    self.assertIsNone(actual)
 
   @patch('wp1.logic.builder.logic_selection')
   def test_delete_builder(self, patched_selection):
