@@ -344,16 +344,50 @@ class BuilderTest(BaseWpOneDbTest):
     try:
       self.wp10db.close = lambda: True
       id_ = self._insert_builder()
+      self._insert_selection(1, 'text/tab-separated-values')
 
       logic_builder.materialize_builder(TestBuilderClass, id_,
                                         'text/tab-separated-values')
       materialize_mock.materialize.assert_called_once_with(
-          ANY, ANY, self.builder, 'text/tab-separated-values')
+          ANY, ANY, self.builder, 'text/tab-separated-values', 2)
     finally:
       self.wp10db.close = orig_close
+
     builder = self._get_builder_by_user_id()
     expected = dict(**self.expected_builder)
-    expected['b_current_version'] = 1
+    expected['b_current_version'] = 2
+    expected['b_selection_zim_version'] = 2
+    self.assertEqual(expected, builder)
+
+  @patch('wp1.logic.builder.wp10_connect')
+  @patch('wp1.logic.builder.connect_storage')
+  @patch('wp1.logic.builder.schedule_zim_file')
+  def test_materialize_builder_no_update_zim_version(self,
+                                                     patched_schedule_zim_file,
+                                                     patched_connect_storage,
+                                                     patched_connect_wp10):
+    patched_connect_wp10.return_value = self.wp10db
+    TestBuilderClass = MagicMock()
+    materialize_mock = MagicMock()
+    TestBuilderClass.return_value = materialize_mock
+
+    orig_close = self.wp10db.close
+    try:
+      self.wp10db.close = lambda: True
+      id_ = self._insert_builder()
+      self._insert_selection(1,
+                             'text/tab-separated-values',
+                             zim_file_ready=True)
+
+      logic_builder.materialize_builder(TestBuilderClass, id_,
+                                        'text/tab-separated-values')
+      patched_schedule_zim_file.assert_called_once()
+    finally:
+      self.wp10db.close = orig_close
+
+    builder = self._get_builder_by_user_id()
+    expected = dict(**self.expected_builder)
+    expected['b_current_version'] = 2
     expected['b_selection_zim_version'] = 1
     self.assertEqual(expected, builder)
 
@@ -769,8 +803,8 @@ class BuilderTest(BaseWpOneDbTest):
     logic_builder.schedule_zim_file(s3,
                                     redis,
                                     self.wp10db,
-                                    1234,
                                     builder_id,
+                                    user_id=1234,
                                     description='a',
                                     long_description='z')
 
@@ -800,8 +834,11 @@ class BuilderTest(BaseWpOneDbTest):
     patched_schedule_zim_file.return_value = '1234-a'
 
     with self.assertRaises(ObjectNotFoundError):
-      logic_builder.schedule_zim_file(s3, redis, self.wp10db, 1234,
-                                      '404builder')
+      logic_builder.schedule_zim_file(s3,
+                                      redis,
+                                      self.wp10db,
+                                      '404builder',
+                                      user_id=1234)
 
   @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
   def test_schedule_zim_file_not_authorized(self, patched_schedule_zim_file):
@@ -816,7 +853,11 @@ class BuilderTest(BaseWpOneDbTest):
                            has_errors=False)
 
     with self.assertRaises(UserNotAuthorizedError):
-      logic_builder.schedule_zim_file(s3, redis, self.wp10db, 5678, builder_id)
+      logic_builder.schedule_zim_file(s3,
+                                      redis,
+                                      self.wp10db,
+                                      builder_id,
+                                      user_id=5678)
 
   @patch('wp1.logic.builder.zimfarm.is_zim_file_ready')
   @patch('wp1.logic.builder.wp10_connect')

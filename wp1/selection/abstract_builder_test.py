@@ -63,7 +63,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
 
   def test_materialize_creates_selection(self):
     self.test_builder.materialize(self.s3, self.wp10db, self.builder,
-                                  'text/tab-separated-values')
+                                  'text/tab-separated-values', 1)
 
     actual = get_first_selection(self.wp10db)
 
@@ -73,7 +73,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
   @patch('wp1.models.wp10.selection.uuid.uuid4', return_value='abcd-1234')
   def test_materialize_selection_id(self, mock_uuid4):
     self.test_builder.materialize(self.s3, self.wp10db, self.builder,
-                                  'text/tab-separated-values')
+                                  'text/tab-separated-values', 1)
 
     actual = get_first_selection(self.wp10db)
 
@@ -82,7 +82,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
   @patch('wp1.models.wp10.selection.uuid.uuid4', return_value='abcd-1234')
   def test_materialize_selection_object_key(self, mock_uuid4):
     self.test_builder.materialize(self.s3, self.wp10db, self.builder,
-                                  'text/tab-separated-values')
+                                  'text/tab-separated-values', 1)
 
     actual = get_first_selection(self.wp10db)
 
@@ -94,7 +94,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
          return_value=datetime(2020, 12, 25, 10, 55, 44))
   def test_materialize_selection_updated_at(self, mock_utcnow):
     self.test_builder.materialize(self.s3, self.wp10db, self.builder,
-                                  'text/tab-separated-values')
+                                  'text/tab-separated-values', 1)
 
     actual = get_first_selection(self.wp10db)
 
@@ -103,7 +103,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
   @patch('wp1.models.wp10.selection.uuid.uuid4', return_value='abcd-1234')
   def test_materialize_uploads_to_s3(self, mock_uuid4):
     self.test_builder.materialize(self.s3, self.wp10db, self.builder,
-                                  'text/tab-separated-values')
+                                  'text/tab-separated-values', 1)
 
     data = self.s3.upload_fileobj.call_args[0][0]
     object_key = self.s3.upload_fileobj.call_args[1]['key']
@@ -112,10 +112,18 @@ class AbstractBuilderTest(BaseWpOneDbTest):
         'selections/wp1.selection.models.fake/abcd-1234/MyBuilder.tsv',
         object_key)
 
+  def test_materialize_version(self):
+    self.test_builder.materialize(self.s3, self.wp10db, self.builder,
+                                  'text/tab-separated-values', 5)
+
+    actual = get_first_selection(self.wp10db)
+
+    self.assertEqual(5, actual.s_version)
+
   def test_materialize_retryable_error(self):
     builder_obj = TestBuilderRetryable()
     builder_obj.materialize(self.s3, self.wp10db, self.builder,
-                            'text/tab-separated-values')
+                            'text/tab-separated-values', 1)
 
     actual = get_first_selection(self.wp10db)
 
@@ -124,7 +132,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
   def test_materialize_retryable_error_messages(self):
     builder_obj = TestBuilderRetryable()
     builder_obj.materialize(self.s3, self.wp10db, self.builder,
-                            'text/tab-separated-values')
+                            'text/tab-separated-values', 1)
 
     actual = get_first_selection(self.wp10db)
 
@@ -139,7 +147,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
   def test_materialize_fatal_error(self):
     builder_obj = TestBuilderFatal()
     builder_obj.materialize(self.s3, self.wp10db, self.builder,
-                            'text/tab-separated-values')
+                            'text/tab-separated-values', 1)
 
     actual = get_first_selection(self.wp10db)
 
@@ -148,7 +156,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
   def test_materialize_fatal_error_messages(self):
     builder_obj = TestBuilderFatal()
     builder_obj.materialize(self.s3, self.wp10db, self.builder,
-                            'text/tab-separated-values')
+                            'text/tab-separated-values', 1)
 
     actual = get_first_selection(self.wp10db)
 
@@ -163,7 +171,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
   def test_materialize_no_context_messages(self):
     builder_obj = TestBuilderNoContext()
     builder_obj.materialize(self.s3, self.wp10db, self.builder,
-                            'text/tab-separated-values')
+                            'text/tab-separated-values', 1)
 
     actual = get_first_selection(self.wp10db)
 
@@ -173,7 +181,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
   def test_materialize_suppressed_message(self):
     builder_obj = TestBuilderSuppressedException()
     builder_obj.materialize(self.s3, self.wp10db, self.builder,
-                            'text/tab-separated-values')
+                            'text/tab-separated-values', 1)
 
     actual = get_first_selection(self.wp10db)
 

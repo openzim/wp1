@@ -135,6 +135,7 @@ def get_builder(wp10db, id_):
 
 def materialize_builder(builder_cls, builder_id, content_type):
   wp10db = wp10_connect()
+  redis = redis_connect()
   s3 = connect_storage()
   logging.basicConfig(level=logging.INFO)
 
@@ -143,9 +144,38 @@ def materialize_builder(builder_cls, builder_id, content_type):
     materializer = builder_cls()
     logger.info('Materializing builder id=%s, content_type=%s with class=%s' %
                 (builder_id, content_type, builder_cls))
-    materializer.materialize(s3, wp10db, builder, content_type)
+    next_version = logic_selection.get_next_version(wp10db, builder.b_id,
+                                                    content_type)
+    materializer.materialize(s3, wp10db, builder, content_type, next_version)
+    update_current_version(wp10db, builder, next_version)
+    updated = maybe_update_selection_zim_version(wp10db, builder, next_version)
+    if not updated:
+      # The ZIM file was not updated, which means there's an existing ZIM
+      # that's ready that needs to be replaced. Schedule the ZIM file to
+      # be automatically created. We don't need to do this if the ZIM
+      # version was updated, because that indicates that the ZIM file
+      # was never requested or errored and should remain in that state.
+      schedule_zim_file(redis, wp10db, builder_id)
   finally:
     wp10db.close()
+
+
+def maybe_update_selection_zim_version(wp10db, builder, selection_version):
+  current_zim = latest_zim_file_for(wp10db, builder.b_id)
+  if current_zim is None:
+    raise ValueError('Tried to update selection_zim_version but zim was None')
+
+  if current_zim.z_status == b'FILE_READY':
+    # There is an existing ZIM that's ready. Leave it for now and
+    # the version will get updated when the new ZIM is uploaded.
+    return False
+
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        'UPDATE builders b SET b.b_selection_zim_version = %s '
+        'WHERE b.b_id = %s', (selection_version, builder.b_id))
+  wp10db.commit()
+  return True
 
 
 def latest_url_for(builder_id, content_type):
@@ -166,7 +196,7 @@ def latest_url_for(builder_id, content_type):
   return '%s/v1/builders/%s/selection/latest.%s' % (server_url, builder_id, ext)
 
 
-def latest_zim_for(builder_id):
+def local_url_for_latest_zim(builder_id):
   """Returns the redirect URL for the latest ZIM file for a builder."""
   server_url = CREDENTIALS.get(ENV, {}).get('CLIENT_URL', {}).get('api')
   if server_url is None:
@@ -285,8 +315,8 @@ def latest_selections_with_errors(wp10db, builder_id):
 def schedule_zim_file(s3,
                       redis,
                       wp10db,
-                      user_id,
                       builder_id,
+                      user_id=None,
                       description='',
                       long_description=''):
   if isinstance(builder_id, str):
@@ -296,7 +326,7 @@ def schedule_zim_file(s3,
     raise ObjectNotFoundError('Could not find builder with id = %s' %
                               builder_id)
 
-  if builder.b_user_id != user_id:
+  if user_id is not None and builder.b_user_id != user_id:
     raise UserNotAuthorizedError(
         'Could not use builder id = %s for user id = %s' %
         (builder_id, user_id))
@@ -427,7 +457,8 @@ def _get_zimfile_data(builder):
             builder['z_updated_at'])
 
       if content_type == 'text/tab-separated-values' and is_zim_ready:
-        data['z_url'] = latest_zim_for(builder['b_id'].decode('utf-8'))
+        data['z_url'] = local_url_for_latest_zim(
+            builder['b_id'].decode('utf-8'))
     else:
       data['z_status'] = 'NOT_REQUESTED'
 
