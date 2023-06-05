@@ -162,10 +162,8 @@ def materialize_builder(builder_cls, builder_id, content_type):
 
 def maybe_update_selection_zim_version(wp10db, builder, selection_version):
   current_zim = latest_zim_file_for(wp10db, builder.b_id)
-  if current_zim is None:
-    raise ValueError('Tried to update selection_zim_version but zim was None')
 
-  if current_zim.z_status == b'FILE_READY':
+  if current_zim is not None and current_zim.z_status == b'FILE_READY':
     # There is an existing ZIM that's ready. Leave it for now and
     # the version will get updated when the new ZIM is uploaded.
     return False

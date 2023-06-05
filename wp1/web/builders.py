@@ -148,14 +148,13 @@ def create_zim_file_for_builder(builder_id):
     task_id = logic_builder.schedule_zim_file(s3,
                                               redis,
                                               wp10db,
-                                              user_id,
                                               builder_id,
+                                              user_id=user_id,
                                               description=desc,
                                               long_description=long_desc)
   except ObjectNotFoundError:
-    return flask.jsonify({
-        'error_messages': ['No builder found with id = %s\n' % builder_id]
-    }), 404
+    return flask.jsonify(
+        {'error_messages': ['No builder found with id = %s' % builder_id]}), 404
   except UserNotAuthorizedError:
     return flask.jsonify({
         'error_messages': [

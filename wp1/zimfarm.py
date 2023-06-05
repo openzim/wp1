@@ -128,6 +128,9 @@ def _get_params(s3, wp10db, builder, description='', long_description=''):
   project = builder.b_project.decode('utf-8')
   selection = logic_builder.latest_selection_for(wp10db, builder.b_id,
                                                  'text/tab-separated-values')
+  selection_id_frag = selection.s_id.decode('utf-8').split('-')[-1]
+  custom_title = '%s-%s' % (util.safe_name(
+      builder.b_name.decode('utf-8')), selection_id_frag)
 
   config = {
       'task_name': 'mwoffliner',
@@ -147,8 +150,7 @@ def _get_params(s3, wp10db, builder, description='', long_description=''):
           'articleList':
               logic_selection.url_for_selection(selection),
           'customZimTitle':
-              util.safe_name(builder.b_name.decode('utf-8')),
-          # TODO(#584): Replace these placeholders with input from the user.
+              custom_title,
           'customZimDescription':
               description
               if description else 'ZIM file created from a WP1 Selection',
@@ -158,7 +160,7 @@ def _get_params(s3, wp10db, builder, description='', long_description=''):
       }
   }
 
-  name = 'wp1_selection_%s' % selection.s_id.decode('utf-8').split('-')[-1]
+  name = 'wp1_selection_%s' % selection_id_frag
   webhook_url = get_webhook_url()
 
   return {
