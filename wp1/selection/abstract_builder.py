@@ -33,7 +33,8 @@ class AbstractBuilder:
 
     selection = Selection(s_content_type=content_type.encode('utf-8'),
                           s_builder_id=builder.b_id,
-                          s_version=next_version)
+                          s_version=next_version,
+                          s_status=b'OK')
     selection.set_id()
     try:
       selection.data = self.build(content_type,
