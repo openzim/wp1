@@ -189,14 +189,24 @@ export default {
         $('#list-table').DataTable().columns.adjust().draw();
       }
 
-      let hasPending = false;
+      let hasPendingSelections = false;
+      let hasPendingZim = false;
       this.list.forEach((item) => {
         if (this.isPending(item)) {
-          hasPending = true;
+          hasPendingSelections = true;
+        }
+        if (this.hasPendingZim(item)) {
+          hasPendingZim = true;
         }
       });
-      if (hasPending) {
-        this.startProgressPolling();
+      const pollTimeoutMs = hasPendingSelections
+        ? 20000
+        : hasPendingZim
+        ? 300000
+        : 0;
+
+      if (pollTimeoutMs) {
+        this.startProgressPolling(pollTimeoutMs);
       } else {
         this.stopProgressPolling();
       }
@@ -209,11 +219,11 @@ export default {
     zimPathFor: (item) => {
       return { path: `/selections/${item.id}/zim` };
     },
-    startProgressPolling: function () {
+    startProgressPolling: function (pollTimeoutMs) {
       if (this.pollId) {
         return;
       }
-      this.pollId = setInterval(() => this.getLists(), 3000);
+      this.pollId = setInterval(() => this.getLists(), pollTimeoutMs);
     },
     stopProgressPolling: function () {
       clearInterval(this.pollId);
