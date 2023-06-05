@@ -199,3 +199,24 @@ def update_zimfarm_task(wp10db, task_id, status, set_updated_now=False):
       found = bool(cursor.rowcount)
   wp10db.commit()
   return found
+
+
+TASK_CPU = 3
+TASK_MEMORY = 1024 * 1024 * 1024
+TASK_DISK = 2048 * 1024 * 100
+
+
+def get_resource_profile(s3, selection):
+  data = s3.client.head_object(Bucket=s3.bucket_name,
+                               Key=selection.s_object_key.decode('utf-8'))
+  length = data.get('ContentLength', 1024)
+  article_estimate = length / 15  # Assume each article name is 15 chars long.
+  multiplier = (
+      (article_estimate // 1000000) + 1)  # 1 multiplier for every 1M articles
+  return {
+      'cpu': TASK_CPU,
+      # 3 GB of mem for each 1M articles
+      'memory': int(TASK_MEMORY * 3 * multiplier),
+      # 20 GB of disk for each 1M articles
+      'disk': int(TASK_DISK * 20 * multiplier),
+  }

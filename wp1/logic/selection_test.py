@@ -339,3 +339,17 @@ class SelectionTest(BaseWpOneDbTest):
     self._insert_selections()
     actual = logic_selection.zim_file_requested_at_for(self.wp10db, 'xyz1')
     self.assertEqual(1672538522, actual)
+
+  def test_get_resource_profile(self):
+    s3 = MagicMock()
+    s3.client.head_object.return_value = {'ContentLength': 20000000}
+    selection = Selection(s_builder_id=b'abcd',
+                          s_content_type=b'text/tab-separated-values',
+                          s_version=1,
+                          s_object_key=b'foo/bar/1234.tsv')
+    actual = logic_selection.get_resource_profile(s3, selection)
+    self.assertEqual({
+        'cpu': 3,
+        'disk': 8388608000,
+        'memory': 6442450944
+    }, actual)

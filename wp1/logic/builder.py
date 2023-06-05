@@ -269,7 +269,8 @@ def latest_selections_with_errors(wp10db, builder_id):
   return res
 
 
-def schedule_zim_file(redis,
+def schedule_zim_file(s3,
+                      redis,
                       wp10db,
                       user_id,
                       builder_id,
@@ -287,7 +288,8 @@ def schedule_zim_file(redis,
         'Could not use builder id = %s for user id = %s' %
         (builder_id, user_id))
 
-  task_id = zimfarm.schedule_zim_file(redis,
+  task_id = zimfarm.schedule_zim_file(s3,
+                                      redis,
                                       wp10db,
                                       builder,
                                       description=description,
