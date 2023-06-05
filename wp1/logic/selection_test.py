@@ -350,6 +350,6 @@ class SelectionTest(BaseWpOneDbTest):
     actual = logic_selection.get_resource_profile(s3, selection)
     self.assertEqual({
         'cpu': 3,
-        'disk': 8388608000,
+        'disk': 42949672960,
         'memory': 6442450944
     }, actual)

@@ -202,8 +202,8 @@ def update_zimfarm_task(wp10db, task_id, status, set_updated_now=False):
 
 
 TASK_CPU = 3
-TASK_MEMORY = 1024 * 1024 * 1024
-TASK_DISK = 2048 * 1024 * 100
+TASK_MEMORY = 1024 * 1024 * 1024 * 3  # Base memory is 3 GB
+TASK_DISK = 1024 * 1024 * 1024 * 20  # Base disk space is 20 GB
 
 
 def get_resource_profile(s3, selection):
@@ -215,8 +215,8 @@ def get_resource_profile(s3, selection):
       (article_estimate // 1000000) + 1)  # 1 multiplier for every 1M articles
   return {
       'cpu': TASK_CPU,
-      # 3 GB of mem for each 1M articles
-      'memory': int(TASK_MEMORY * 3 * multiplier),
+      # 3 GB of memory for each 1M articles
+      'memory': int(TASK_MEMORY * multiplier),
       # 20 GB of disk for each 1M articles
-      'disk': int(TASK_DISK * 20 * multiplier),
+      'disk': int(TASK_DISK * multiplier),
   }

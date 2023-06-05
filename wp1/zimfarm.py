@@ -136,7 +136,7 @@ def _get_params(s3, wp10db, builder, description='', long_description=''):
           'name': MWOFFLINER_IMAGE.split(':')[0],
           'tag': MWOFFLINER_IMAGE.split(':')[1],
       },
-      'resources': logic_selection.get_resource_profile(wp10db, selection),
+      'resources': logic_selection.get_resource_profile(s3, selection),
       'platform': 'wikimedia',
       'monitor': False,
       'flags': {
@@ -145,7 +145,7 @@ def _get_params(s3, wp10db, builder, description='', long_description=''):
           'adminEmail':
               'contact+wp1@kiwix.org',
           'articleList':
-              logic_selection.url_for_selection(s3, selection),
+              logic_selection.url_for_selection(selection),
           'customZimTitle':
               util.safe_name(builder.b_name.decode('utf-8')),
           # TODO(#584): Replace these placeholders with input from the user.
