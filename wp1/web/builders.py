@@ -12,6 +12,7 @@ from wp1 import zimfarm
 from wp1.web import authenticate
 from wp1.web.db import get_db
 from wp1.web.redis import get_redis
+from wp1.web.storage import get_storage
 
 builders = flask.Blueprint('builders', __name__)
 
@@ -133,6 +134,7 @@ def latest_selection_for_builder(builder_id, ext):
 def create_zim_file_for_builder(builder_id):
   redis = get_redis()
   wp10db = get_db('wp10db')
+  s3 = get_storage()
 
   user_id = flask.session['user']['identity']['sub']
 
@@ -143,7 +145,8 @@ def create_zim_file_for_builder(builder_id):
   long_desc = data.get('long_description')
 
   try:
-    task_id = logic_builder.schedule_zim_file(redis,
+    task_id = logic_builder.schedule_zim_file(s3,
+                                              redis,
                                               wp10db,
                                               user_id,
                                               builder_id,

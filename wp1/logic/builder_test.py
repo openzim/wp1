@@ -725,6 +725,7 @@ class BuilderTest(BaseWpOneDbTest):
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
   def test_schedule_zim_file(self, patched_utcnow, patched_schedule_zim_file):
     redis = MagicMock()
+    s3 = MagicMock()
     patched_schedule_zim_file.return_value = '1234-a'
 
     builder_id = self._insert_builder()
@@ -733,14 +734,16 @@ class BuilderTest(BaseWpOneDbTest):
                            builder_id=builder_id,
                            has_errors=False)
 
-    logic_builder.schedule_zim_file(redis,
+    logic_builder.schedule_zim_file(s3,
+                                    redis,
                                     self.wp10db,
                                     1234,
                                     builder_id,
                                     description='a',
                                     long_description='z')
 
-    patched_schedule_zim_file.assert_called_once_with(redis,
+    patched_schedule_zim_file.assert_called_once_with(s3,
+                                                      redis,
                                                       self.wp10db,
                                                       self.builder,
                                                       description='a',
@@ -761,14 +764,17 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
   def test_schedule_zim_file_404(self, patched_schedule_zim_file):
     redis = MagicMock()
+    s3 = MagicMock()
     patched_schedule_zim_file.return_value = '1234-a'
 
     with self.assertRaises(ObjectNotFoundError):
-      logic_builder.schedule_zim_file(redis, self.wp10db, 1234, '404builder')
+      logic_builder.schedule_zim_file(s3, redis, self.wp10db, 1234,
+                                      '404builder')
 
   @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
   def test_schedule_zim_file_not_authorized(self, patched_schedule_zim_file):
     redis = MagicMock()
+    s3 = MagicMock()
     patched_schedule_zim_file.return_value = '1234-a'
 
     builder_id = self._insert_builder()
@@ -778,7 +784,7 @@ class BuilderTest(BaseWpOneDbTest):
                            has_errors=False)
 
     with self.assertRaises(UserNotAuthorizedError):
-      logic_builder.schedule_zim_file(redis, self.wp10db, 5678, builder_id)
+      logic_builder.schedule_zim_file(s3, redis, self.wp10db, 5678, builder_id)
 
   @patch('wp1.logic.builder.zimfarm.is_zim_file_ready')
   @patch('wp1.logic.builder.wp10_connect')

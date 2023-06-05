@@ -67,10 +67,12 @@ class ZimFarmTest(BaseWpOneDbTest):
     )
 
   def test_get_params(self):
+    s3 = MagicMock()
+    s3.client.head_object.return_value = {'ContentLength': 20000000}
     self._insert_builder()
     self._insert_selection(b'abc-12345-def')
 
-    actual = zimfarm._get_params(self.wp10db, self.builder)
+    actual = zimfarm._get_params(s3, self.wp10db, self.builder)
 
     self.maxDiff = None
     self.assertEqual(
@@ -101,8 +103,8 @@ class ZimFarmTest(BaseWpOneDbTest):
                 },
                 'resources': {
                     'cpu': 3,
-                    'memory': 1073741824,
-                    'disk': 209715200,
+                    'memory': 6442450944,
+                    'disk': 42949672960,
                 },
                 'platform': 'wikimedia',
                 'monitor': False,
@@ -124,11 +126,12 @@ class ZimFarmTest(BaseWpOneDbTest):
         }, actual)
 
   def test_get_params_missing_builder(self):
+    s3 = MagicMock()
     self._insert_builder()
     self._insert_selection(b'abc-12345-def')
 
     with self.assertRaises(ObjectNotFoundError):
-      zimfarm._get_params(self.wp10db, None)
+      zimfarm._get_params(s3, self.wp10db, None)
 
   @patch('wp1.zimfarm.requests')
   def test_request_zimfarm_token(self, mock_requests):
@@ -288,13 +291,15 @@ class ZimFarmTest(BaseWpOneDbTest):
   def test_schedule_zim_file(self, get_params_mock, get_token_mock,
                              mock_requests):
     redis = MagicMock()
+    s3 = MagicMock()
     get_params_mock.return_value = {'name': 'bar'}
     get_token_mock.return_value = 'abcdef'
     mock_response = MagicMock()
     mock_response.json.return_value = {'requested': ['9876']}
     mock_requests.post.side_effect = (MagicMock(), mock_response, MagicMock())
 
-    actual = zimfarm.schedule_zim_file(redis, self.wp10db, 'builder-1234-abcd')
+    actual = zimfarm.schedule_zim_file(s3, redis, self.wp10db,
+                                       'builder-1234-abcd')
 
     self.assertEqual('9876', actual)
 
@@ -306,13 +311,14 @@ class ZimFarmTest(BaseWpOneDbTest):
     self._insert_selection(b'abc-12345-def')
 
     redis = MagicMock()
+    s3 = MagicMock()
     get_token_mock.return_value = 'abcdef'
     mock_response = MagicMock()
     mock_response.json.return_value = {'requested': ['9876']}
     mock_requests.post.side_effect = (MagicMock(), mock_response, MagicMock())
 
     with self.assertRaises(ObjectNotFoundError):
-      actual = zimfarm.schedule_zim_file(redis, self.wp10db, None)
+      actual = zimfarm.schedule_zim_file(s3, redis, self.wp10db, None)
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
@@ -320,13 +326,15 @@ class ZimFarmTest(BaseWpOneDbTest):
   def test_schedule_zim_file_post_requests(self, get_params_mock,
                                            get_token_mock, mock_requests):
     redis = MagicMock()
+    s3 = MagicMock()
     get_params_mock.return_value = {'name': 'bar'}
     get_token_mock.return_value = 'abcdef'
     mock_response = MagicMock()
     mock_response.json.return_value = {'requested': ['9876']}
     mock_requests.post.side_effect = (MagicMock(), mock_response)
 
-    actual = zimfarm.schedule_zim_file(redis, self.wp10db, 'builder-1234-abcd')
+    actual = zimfarm.schedule_zim_file(s3, redis, self.wp10db,
+                                       'builder-1234-abcd')
 
     schedule_create_call = call(
         'https://fake.farm/v1/schedules/',
@@ -360,6 +368,7 @@ class ZimFarmTest(BaseWpOneDbTest):
                                                     get_token_mock,
                                                     mock_requests):
     redis = MagicMock()
+    s3 = MagicMock()
     get_params_mock.return_value = {'name': 'bar'}
     get_token_mock.return_value = 'abcdef'
     mock_response = MagicMock()
@@ -370,7 +379,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_requests.post.side_effect = (create_schedule_response, mock_response)
 
     with self.assertRaises(ZimFarmError):
-      actual = zimfarm.schedule_zim_file(redis, self.wp10db,
+      actual = zimfarm.schedule_zim_file(s3, redis, self.wp10db,
                                          'builder-1234-abcd')
 
   @patch('wp1.zimfarm.requests')
@@ -379,6 +388,7 @@ class ZimFarmTest(BaseWpOneDbTest):
   def test_schedule_zim_file_task_create_raises(self, get_params_mock,
                                                 get_token_mock, mock_requests):
     redis = MagicMock()
+    s3 = MagicMock()
     get_params_mock.return_value = {'name': 'bar'}
     get_token_mock.return_value = 'abcdef'
     mock_response = MagicMock()
@@ -390,7 +400,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     )
 
     with self.assertRaises(ZimFarmError):
-      actual = zimfarm.schedule_zim_file(redis, self.wp10db,
+      actual = zimfarm.schedule_zim_file(s3, redis, self.wp10db,
                                          'builder-1234-abcd')
 
   @patch('wp1.zimfarm.requests')
@@ -399,6 +409,7 @@ class ZimFarmTest(BaseWpOneDbTest):
   def test_schedule_zim_file_delete_schedule_even_if_task_create_raises(
       self, get_params_mock, get_token_mock, mock_requests):
     redis = MagicMock()
+    s3 = MagicMock()
     get_params_mock.return_value = {'name': 'bar'}
     get_token_mock.return_value = 'abcdef'
     mock_response = MagicMock()
@@ -410,7 +421,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_requests.exceptions.HTTPError = requests.exceptions.HTTPError
 
     with self.assertRaises(ZimFarmError):
-      actual = zimfarm.schedule_zim_file(redis, self.wp10db,
+      actual = zimfarm.schedule_zim_file(s3, redis, self.wp10db,
                                          'builder-1234-abcd')
 
     mock_requests.delete.assert_called_once()
@@ -421,6 +432,7 @@ class ZimFarmTest(BaseWpOneDbTest):
   def test_schedule_zim_file_missing_task_id(self, get_params_mock,
                                              get_token_mock, mock_requests):
     redis = MagicMock()
+    s3 = MagicMock()
     get_params_mock.return_value = {'name': 'bar'}
     get_token_mock.return_value = 'abcdef'
     mock_response = MagicMock()
@@ -429,7 +441,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_requests.post.side_effect = (MagicMock(), mock_response, MagicMock())
 
     with self.assertRaises(ZimFarmError):
-      actual = zimfarm.schedule_zim_file(redis, self.wp10db,
+      actual = zimfarm.schedule_zim_file(s3, redis, self.wp10db,
                                          'builder-1234-abcd')
 
   @patch('wp1.zimfarm.requests.get')

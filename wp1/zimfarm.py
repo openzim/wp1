@@ -15,10 +15,6 @@ import wp1.logic.selection as logic_selection
 from wp1.timestamp import utcnow
 from wp1.time import get_current_datetime
 
-# TODO(#582): Determine resource profile from Selection list size.
-TASK_CPU = 3
-TASK_MEMORY = 1024 * 1024 * 1024
-TASK_DISK = 2048 * 1024 * 100
 MWOFFLINER_IMAGE = 'ghcr.io/openzim/mwoffliner:latest'
 REDIS_AUTH_KEY = 'zimfarm.auth'
 
@@ -125,7 +121,7 @@ def get_webhook_url():
                                                  urllib.parse.quote(token))
 
 
-def _get_params(wp10db, builder, description='', long_description=''):
+def _get_params(s3, wp10db, builder, description='', long_description=''):
   if builder is None:
     raise ObjectNotFoundError('Given builder was None: %r' % builder)
 
@@ -140,11 +136,7 @@ def _get_params(wp10db, builder, description='', long_description=''):
           'name': MWOFFLINER_IMAGE.split(':')[0],
           'tag': MWOFFLINER_IMAGE.split(':')[1],
       },
-      'resources': {
-          'cpu': TASK_CPU,
-          'memory': TASK_MEMORY,
-          'disk': TASK_DISK,
-      },
+      'resources': logic_selection.get_resource_profile(s3, selection),
       'platform': 'wikimedia',
       'monitor': False,
       'flags': {
@@ -193,7 +185,8 @@ def _get_zimfarm_headers(token):
   return {"Authorization": "Token %s" % token, 'User-Agent': WP1_USER_AGENT}
 
 
-def schedule_zim_file(redis,
+def schedule_zim_file(s3,
+                      redis,
                       wp10db,
                       builder,
                       description='',
@@ -202,7 +195,8 @@ def schedule_zim_file(redis,
   if token is None:
     raise ZimfarmError('Error retrieving auth token for request')
 
-  params = _get_params(wp10db,
+  params = _get_params(s3,
+                       wp10db,
                        builder,
                        description=description,
                        long_description=long_description)
