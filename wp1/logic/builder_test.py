@@ -451,7 +451,7 @@ class BuilderTest(BaseWpOneDbTest):
 
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
-  def test_get_builders_with_no_builders(self, mock_utcnow):
+  def test_get_builders_with_selection_no_builders(self, mock_utcnow):
     self._insert_selection(1, 'text/tab-separated-values')
     article_data = logic_builder.get_builders_with_selections(
         self.wp10db, '0000')
@@ -473,7 +473,14 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
   def test_get_builders_zimfarm_status(self, mock_utcnow):
-    self._insert_selection(1, 'text/tab-separated-values', zim_file_ready=True)
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           zim_file_ready=True,
+                           version=1)
+    self._insert_selection(2,
+                           'text/tab-separated-values',
+                           zim_file_ready=False,
+                           version=2)
     self._insert_builder()
     article_data = logic_builder.get_builders_with_selections(
         self.wp10db, '1234')

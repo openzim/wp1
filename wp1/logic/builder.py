@@ -470,23 +470,14 @@ def get_builders_with_selections(wp10db, user_id):
            LEFT JOIN selections s
              ON s.s_builder_id = b.b_id
              AND s.s_version = b.b_current_version
+           LEFT JOIN selections s1
+             ON s1.s_builder_id = b.b_id
+             AND s1.s_version = b.b_selection_zim_version
            LEFT JOIN zim_files z
-             ON z.z_selection_id = s.s_id
-             AND s.s_version = b.b_selection_zim_version
+             ON z.z_selection_id = s1.s_id
            WHERE b_user_id = %s
            ORDER BY b.b_updated_at DESC
       ''', (user_id,))
-    # cursor.execute(
-    #     '''SELECT * FROM selections
-    #        LEFT JOIN zim_files
-    #          ON selections.s_id = zim_files.z_selection_id
-    #          AND selections.s_zim_version = zim_files.z_version
-    #        RIGHT JOIN builders
-    #          ON selections.s_builder_id = builders.b_id
-    #          AND selections.s_version = builders.b_current_version
-    #        WHERE b_user_id = %(b_user_id)s
-    #        ORDER BY builders.b_updated_at DESC
-    #     ''', {'b_user_id': user_id})
     data = cursor.fetchall()
 
   builders = {}
