@@ -155,7 +155,7 @@ def materialize_builder(builder_cls, builder_id, content_type):
       # be automatically created. We don't need to do this if the ZIM
       # version was updated, because that indicates that the ZIM file
       # was never requested or errored and should remain in that state.
-      schedule_zim_file(redis, wp10db, builder_id)
+      schedule_zim_file(s3, redis, wp10db, builder_id)
   finally:
     wp10db.close()
 

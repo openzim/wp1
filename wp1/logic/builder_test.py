@@ -360,13 +360,19 @@ class BuilderTest(BaseWpOneDbTest):
     self.assertEqual(expected, builder)
 
   @patch('wp1.logic.builder.wp10_connect')
+  @patch('wp1.logic.builder.redis_connect')
   @patch('wp1.logic.builder.connect_storage')
   @patch('wp1.logic.builder.schedule_zim_file')
   def test_materialize_builder_no_update_zim_version(self,
                                                      patched_schedule_zim_file,
                                                      patched_connect_storage,
+                                                     patched_redis_connect,
                                                      patched_connect_wp10):
+    s3 = MagicMock()
+    redis = MagicMock()
     patched_connect_wp10.return_value = self.wp10db
+    patched_connect_storage.return_value = s3
+    patched_redis_connect.return_value = redis
     TestBuilderClass = MagicMock()
     materialize_mock = MagicMock()
     TestBuilderClass.return_value = materialize_mock
@@ -381,7 +387,8 @@ class BuilderTest(BaseWpOneDbTest):
 
       logic_builder.materialize_builder(TestBuilderClass, id_,
                                         'text/tab-separated-values')
-      patched_schedule_zim_file.assert_called_once()
+      patched_schedule_zim_file.assert_called_once_with(s3, redis, self.wp10db,
+                                                        id_)
     finally:
       self.wp10db.close = orig_close
 
