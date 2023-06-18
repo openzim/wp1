@@ -1016,3 +1016,29 @@ class BuilderTest(BaseWpOneDbTest):
     self.assertIsNotNone(data)
     self.assertEqual(b'FAILED', data['z_status'])
     self.assertIsNone(data['z_updated_at'])
+
+  def test_update_version_for_finished_zim(self):
+    builder_id = self._insert_builder(zim_version=1)
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           version=1,
+                           builder_id=builder_id,
+                           has_errors=False,
+                           zim_file_ready=True)
+    self._insert_selection(2,
+                           'text/tab-separated-values',
+                           version=2,
+                           builder_id=builder_id,
+                           has_errors=False,
+                           zim_task_id='9abc',
+                           zim_file_ready=True)
+
+    logic_builder.update_version_for_finished_zim(self.wp10db, '9abc')
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+          'SELECT b.b_selection_zim_version '
+          'FROM builders b WHERE b.b_id = %s', builder_id)
+      data = cursor.fetchone()
+
+    self.assertEqual(2, data['b_selection_zim_version'])

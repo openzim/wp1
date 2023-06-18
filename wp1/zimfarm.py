@@ -226,7 +226,7 @@ def schedule_zim_file(s3,
     data = r.json()
     requested = data.get('requested')
     task_id = requested[0] if requested else None
-    logger.info('Found task id=%s for builder id=%s', (task_id, builder_id))
+    logger.info('Found task id=%s for builder id=%s', task_id, builder_id)
 
     if task_id is None:
       raise ZimFarmError('Did not get scheduled task id')

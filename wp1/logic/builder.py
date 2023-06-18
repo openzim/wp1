@@ -6,6 +6,7 @@ import attr
 
 from wp1.constants import CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE, MAX_ZIM_FILE_POLL_TIME, TS_FORMAT_WP10
 from wp1.credentials import CREDENTIALS, ENV
+from wp1.environment import Environment
 from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError
 import wp1.logic.selection as logic_selection
 import wp1.logic.util as logic_util
@@ -154,8 +155,18 @@ def materialize_builder(builder_cls, builder_id, content_type):
       # that's ready that needs to be replaced. Schedule the ZIM file to
       # be automatically created. We don't need to do this if the ZIM
       # version was updated, because that indicates that the ZIM file
-      # was never requested or errored and should remain in that state.
-      schedule_zim_file(s3, redis, wp10db, builder_id)
+      # was never requested or errored and should remain in that state.\
+      zim_file = latest_zim_file_for(wp10db, builder.b_id)
+      description = zim_file.z_description.decode(
+          'utf-8') if zim_file.z_description is not None else None
+      long_description = zim_file.z_long_description.decode(
+          'utf-8') if zim_file.z_long_description is not None else None
+      schedule_zim_file(s3,
+                        redis,
+                        wp10db,
+                        builder_id,
+                        description=description,
+                        long_description=long_description)
   finally:
     wp10db.close()
 
@@ -367,6 +378,8 @@ def schedule_zim_file(s3,
   # because the localhost server is not routable. To make ZIM file
   # creation work end to end, start polling immediately in Development.
   if ENV == Environment.DEVELOPMENT:
+    logger.info('DEVELOPMENT: Polling for zim file status for task_id=%s',
+                task_id)
     queues.poll_for_zim_file_status(redis, task_id)
 
   return task_id
