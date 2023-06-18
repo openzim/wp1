@@ -65,12 +65,25 @@
                   ></span>
                 </div>
               </td>
-              <td v-if="item.z_url && !isPending(item)">
+              <td
+                v-if="item.z_url"
+                :class="{ 'outdated-zim': hasOutdatedZim(item) }"
+              >
                 {{ localDate(item.z_updated_at) }}
               </td>
               <td v-else>-</td>
-              <td v-if="item.z_url && !isPending(item)">
+              <td
+                v-if="item.z_url"
+                :class="{ 'outdated-zim': hasOutdatedZim(item) }"
+              >
                 <a :href="item.z_url">Download ZIM</a>
+                <span
+                  v-if="hasOutdatedZim(item)"
+                  data-toggle="tooltip"
+                  data-placement="top"
+                  title="The ZIM file is out of date. A new one has automatically been requested."
+                  ><i class="bi bi-info-circle"></i
+                ></span>
               </td>
               <td v-else-if="hasPendingZim(item)">
                 <pulse-loader
@@ -92,6 +105,13 @@
                     Create ZIM
                   </button></router-link
                 >
+                <span
+                  v-if="hasDeletedZim(item)"
+                  data-toggle="tooltip"
+                  data-placement="top"
+                  title="Your previous ZIM file has expired (2 weeks)."
+                  ><i class="bi bi-info-circle"></i
+                ></span>
               </td>
               <td v-else>-</td>
               <td>
@@ -155,6 +175,13 @@ export default {
     },
     hasSelectionError: function (item) {
       return item.s_status !== null && item.s_status !== 'OK';
+    },
+    hasOutdatedZim: function (item) {
+      return item.z_updated_at < item.s_updated_at;
+    },
+    hasDeletedZim: function (item) {
+      // ZIMs older than 2 weeks get deleted.
+      return Date.now() - item.z_updated_at > 14 * 24 * 60 * 60 * 1000;
     },
     localDate: function (secs) {
       const fmt = new Intl.DateTimeFormat('en-US', {
@@ -243,6 +270,11 @@ export default {
 
 .zim-failed a {
   color: #dc3545 !important;
+}
+
+.outdated-zim,
+.outdated-zim a {
+  color: #cc7204;
 }
 
 .failed {
