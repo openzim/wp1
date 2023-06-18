@@ -225,6 +225,10 @@ export default {
         if (this.hasPendingZim(item)) {
           hasPendingZim = true;
         }
+        if (this.hasOutdatedZim(item)) {
+          // Outdated ZIMs are treated like pending, poll every 5 minutes.
+          hasPendingZim = true;
+        }
       });
       const pollTimeoutMs = hasPendingSelections
         ? 20000
