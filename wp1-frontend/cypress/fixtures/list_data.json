@@ -169,6 +169,23 @@
       "z_updated_at": null,
       "z_url": null,
       "z_status": "FAILED"
+    },
+    {
+      "created_at": 1685974621,
+      "id": "dcea7035-cc69-471e-b0e6-08dfbafd5e7c",
+      "model": "wp1.selection.models.simple",
+      "name": "outdated zim",
+      "project": "en.wikipedia.org",
+      "s_content_type": "text/tab-separated-values",
+      "s_extension": "tsv",
+      "s_id": "1b767bca-8fa6-48e3-9893-eb7b6d0ada91",
+      "s_status": "OK",
+      "s_updated_at": 1687109228,
+      "s_url": "http://localhost:5000/v1/builders/dcea7035-cc69-471e-b0e6-08dfbafd5e7c/selection/latest.tsv",
+      "updated_at": 1687109226,
+      "z_status": "FILE_READY",
+      "z_updated_at": 1687108510,
+      "z_url": "http://localhost:5000/v1/builders/dcea7035-cc69-471e-b0e6-08dfbafd5e7c/zim/latest"
     }
   ]
 }
