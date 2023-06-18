@@ -197,6 +197,9 @@ def schedule_zim_file(s3,
   if token is None:
     raise ZimfarmError('Error retrieving auth token for request')
 
+  if builder is None:
+    raise ObjectNotFoundError('Cannot schedule for None builder')
+
   params = _get_params(s3,
                        wp10db,
                        builder,

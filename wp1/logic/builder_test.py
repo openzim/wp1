@@ -388,8 +388,12 @@ class BuilderTest(BaseWpOneDbTest):
 
       logic_builder.materialize_builder(TestBuilderClass, id_,
                                         'text/tab-separated-values')
-      patched_schedule_zim_file.assert_called_once_with(s3, redis, self.wp10db,
-                                                        id_)
+      patched_schedule_zim_file.assert_called_once_with(s3,
+                                                        redis,
+                                                        self.wp10db,
+                                                        id_,
+                                                        description=None,
+                                                        long_description=None)
     finally:
       self.wp10db.close = orig_close
 
@@ -908,7 +912,7 @@ class BuilderTest(BaseWpOneDbTest):
 
     with self.wp10db.cursor() as cursor:
       cursor.execute('SELECT z_status, z_updated_at '
-                     'FROM zim_files WHERE z_selection_id = 1')
+                     'FROM zim_files WHERE z_selection_id = 2')
       data = cursor.fetchone()
 
     self.assertIsNotNone(data)

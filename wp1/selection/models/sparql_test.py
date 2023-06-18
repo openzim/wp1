@@ -102,14 +102,11 @@ class SparqlBuilderTest(BaseWpOneDbTest):
     mock_requests.post.return_value = response
 
     self.builder.materialize(self.s3, self.wp10db, self.builder_model,
-                             'text/tab-separated-values')
+                             'text/tab-separated-values', 1)
 
     actual = get_first_selection(self.wp10db)
     self.assertEqual(b'text/tab-separated-values', actual.s_content_type)
-    self.assertEqual(
-        b'1a-2b-3c-4d',
-        actual.s_builder_id,
-    )
+    self.assertEqual(b'1a-2b-3c-4d', actual.s_builder_id)
 
   @patch('wp1.selection.models.sparql.requests')
   def test_build(self, mock_requests):
