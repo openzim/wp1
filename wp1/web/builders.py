@@ -167,14 +167,6 @@ def create_zim_file_for_builder(builder_id):
       error_messages.append(str(e.__cause__))
     return flask.jsonify({'error_messages': error_messages}), 500
 
-  # In production, there is a web hook from the Zimfarm that notifies us
-  # that the task is finished and we can start polling for the ZIM file
-  # to be uploaded. The web hook obviously doesn't work in development
-  # because the localhost server is not routable. To make ZIM file
-  # creation work end to end, start polling immediately in Development.
-  if ENV == Environment.DEVELOPMENT:
-    queues.poll_for_zim_file_status(redis, task_id)
-
   return '', 204
 
 

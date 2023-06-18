@@ -222,6 +222,7 @@ class BuilderTest(BaseWpOneDbTest):
                         builder_id=b'1a-2b-3c-4d',
                         has_errors=False,
                         zim_file_ready=False,
+                        zim_task_id='5678',
                         skip_zim=False):
     if has_errors:
       status = 'CAN_RETRY'
@@ -251,8 +252,8 @@ class BuilderTest(BaseWpOneDbTest):
                  (z_selection_id, z_task_id, z_status, z_updated_at,
                   z_requested_at)
                VALUES
-                 (%s, "5678", %s, %s, "20230101020202")
-            ''', (id_, zimfarm_status, zim_file_updated_at))
+                 (%s, %s, %s, %s, "20230101020202")
+            ''', (id_, zim_task_id, zimfarm_status, zim_file_updated_at))
     self.wp10db.commit()
 
   def _get_builder_by_user_id(self):
@@ -882,17 +883,26 @@ class BuilderTest(BaseWpOneDbTest):
                                               patched_redis, patched_connect,
                                               patched_is_ready):
     patched_is_ready.return_value = 'FILE_READY'
-    builder_id = self._insert_builder()
+    builder_id = self._insert_builder(zim_version=1)
     self._insert_selection(1,
                            'text/tab-separated-values',
+                           version=1,
                            builder_id=builder_id,
-                           has_errors=False)
+                           has_errors=False,
+                           zim_file_ready=True)
+    self._insert_selection(2,
+                           'text/tab-separated-values',
+                           version=2,
+                           builder_id=builder_id,
+                           has_errors=False,
+                           zim_task_id='9abc',
+                           zim_file_ready=False)
 
     orig_close = self.wp10db.close
     try:
       self.wp10db.close = lambda: True
       patched_connect.return_value = self.wp10db
-      logic_builder.on_zim_file_status_poll('5678')
+      logic_builder.on_zim_file_status_poll('9abc')
     finally:
       self.wp10db.close = orig_close
 
@@ -904,6 +914,14 @@ class BuilderTest(BaseWpOneDbTest):
     self.assertIsNotNone(data)
     self.assertEqual(b'FILE_READY', data['z_status'])
     self.assertEqual(b'20221225000102', data['z_updated_at'])
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+          'SELECT b.b_selection_zim_version FROM builders b '
+          'WHERE b.b_id = %s', (builder_id,))
+      zim_version = cursor.fetchone()['b_selection_zim_version']
+
+    self.assertEqual(2, zim_version)
 
   @patch('wp1.logic.builder.utcnow',
          return_value=datetime.datetime(2023, 1, 1, 2, 30, 0, 0,

@@ -176,6 +176,19 @@ def maybe_update_selection_zim_version(wp10db, builder, selection_version):
   return True
 
 
+def update_version_for_finished_zim(wp10db, task_id):
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        '''UPDATE builders b
+           LEFT JOIN selections s
+             ON s.s_builder_id = b.b_id
+           LEFT JOIN zim_files z
+             ON z.z_selection_id = s.s_id
+           SET b.b_selection_zim_version = s.s_version
+           WHERE z.z_task_id = %s''', (task_id,))
+  wp10db.commit()
+
+
 def latest_url_for(builder_id, content_type):
   """Returns the redirect URL for the latest selection for a builder.
 
@@ -348,6 +361,14 @@ def schedule_zim_file(s3,
               None, description or None, selection.s_id))
   wp10db.commit()
 
+  # In production, there is a web hook from the Zimfarm that notifies us
+  # that the task is finished and we can start polling for the ZIM file
+  # to be uploaded. The web hook obviously doesn't work in development
+  # because the localhost server is not routable. To make ZIM file
+  # creation work end to end, start polling immediately in Development.
+  if ENV == Environment.DEVELOPMENT:
+    queues.poll_for_zim_file_status(redis, task_id)
+
   return task_id
 
 
@@ -370,13 +391,18 @@ def latest_zimfarm_task_url(wp10db, builder_id):
 def on_zim_file_status_poll(task_id):
   wp10db = wp10_connect()
   redis = redis_connect()
+  logging.basicConfig(level=logging.INFO)
 
   result = zimfarm.is_zim_file_ready(task_id)
+  logging.info('Polled for ZIM file for task_id=%s, result: %s', task_id,
+               result)
   if result == 'FILE_READY':
     logic_selection.update_zimfarm_task(wp10db,
                                         task_id,
                                         'FILE_READY',
                                         set_updated_now=True)
+
+    update_version_for_finished_zim(wp10db, task_id)
   elif result == 'REQUESTED':
     requested = logic_selection.zim_file_requested_at_for(wp10db, task_id)
     if requested is not None:

@@ -205,6 +205,8 @@ def schedule_zim_file(s3,
   base_url = get_zimfarm_url()
   headers = _get_zimfarm_headers(token)
 
+  builder_id = builder.b_id.decode('utf-8')
+  logger.info('Creating schedule for ZIM for builder id=%s', builder_id)
   r = requests.post('%s/schedules/' % base_url, headers=headers, json=params)
 
   try:
@@ -213,6 +215,7 @@ def schedule_zim_file(s3,
     logger.exception(r.text)
     raise ZimFarmError('Error creating schedule for ZIM file creation') from e
 
+  logger.info('Creating ZIM task for builder id=%s', builder_id)
   r = requests.post('%s/requested-tasks/' % base_url,
                     headers=headers,
                     json={'schedule_names': [params['name'],]})
@@ -223,6 +226,7 @@ def schedule_zim_file(s3,
     data = r.json()
     requested = data.get('requested')
     task_id = requested[0] if requested else None
+    logger.info('Found task id=%s for builder id=%s', (task_id, builder_id))
 
     if task_id is None:
       raise ZimFarmError('Did not get scheduled task id')
@@ -230,6 +234,7 @@ def schedule_zim_file(s3,
     logger.exception(r.text)
     raise ZimFarmError('Error requesting task for ZIM file creation') from e
   finally:
+    logger.info('Deleting schedule for builder id=%s', builder_id)
     requests.delete('%s/schedules/%s' % (base_url, params['name']),
                     headers=headers)
 
