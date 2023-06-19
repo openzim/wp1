@@ -319,7 +319,6 @@ def cancel_zim_by_task_id(redis, task_id):
 
   try:
     r.raise_for_status()
-    # Didn't raise, operation was successful.
     return
   except requests.exceptions.HTTPError as e:
     if r.status_code != 404:
