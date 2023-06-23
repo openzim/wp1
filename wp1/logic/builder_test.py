@@ -1,5 +1,5 @@
 import datetime
-from unittest.mock import patch, MagicMock, ANY
+from unittest.mock import call, patch, MagicMock, ANY
 
 import attr
 
@@ -1046,3 +1046,115 @@ class BuilderTest(BaseWpOneDbTest):
       data = cursor.fetchone()
 
     self.assertEqual(2, data['b_selection_zim_version'])
+
+  @patch('wp1.logic.builder.schedule_zim_file')
+  def test_auto_schedule_zim_file(self, patched_schedule_zim_file):
+    s3 = MagicMock()
+    redis = MagicMock()
+    builder_id = self._insert_builder(zim_version=1)
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           version=1,
+                           builder_id=builder_id,
+                           has_errors=False,
+                           zim_file_ready=True)
+
+    logic_builder.auto_schedule_zim_file(s3, redis, self.wp10db, builder_id)
+
+    patched_schedule_zim_file.assert_called_once_with(s3,
+                                                      redis,
+                                                      self.wp10db,
+                                                      builder_id,
+                                                      description=None,
+                                                      long_description=None)
+
+  @patch('wp1.logic.builder.schedule_zim_file')
+  @patch('wp1.logic.builder.zimfarm.cancel_zim_by_task_id')
+  def test_auto_schedule_zim_file_cancel_tasks(self, patched_cancel_zim,
+                                               patched_schedule_zim_file):
+    s3 = MagicMock()
+    redis = MagicMock()
+    builder_id = self._insert_builder(zim_version=1)
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           version=1,
+                           builder_id=builder_id,
+                           has_errors=False,
+                           zim_task_id='5678',
+                           zim_file_ready=True)
+    self._insert_selection(2,
+                           'text/tab-separated-values',
+                           version=2,
+                           builder_id=builder_id,
+                           has_errors=False,
+                           zim_task_id='1abc',
+                           zim_file_ready=False)
+    self._insert_selection(3,
+                           'text/tab-separated-values',
+                           version=3,
+                           builder_id=builder_id,
+                           has_errors=False,
+                           zim_task_id='9def',
+                           zim_file_ready=False)
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('''UPDATE zim_files z
+                        JOIN selections s
+                          ON s.s_id = z.z_selection_id
+                        SET z.z_status = "REQUESTED"
+                        WHERE s.s_id IN (2,3)''')
+      cursor.execute('''UPDATE zim_files z
+                        JOIN selections s
+                          ON s.s_id = z.z_selection_id
+                        SET z.z_description = "A desc", z.z_long_description = "Long desc"
+                        WHERE s.s_id = 1''')
+
+    logic_builder.auto_schedule_zim_file(s3, redis, self.wp10db, builder_id)
+
+    patched_cancel_zim.assert_has_calls(
+        (call(redis, b'1abc'), call(redis, b'9def')), any_order=True)
+
+    patched_schedule_zim_file.assert_called_once_with(
+        s3,
+        redis,
+        self.wp10db,
+        builder_id,
+        description='A desc',
+        long_description='Long desc')
+
+  def test_pending_zim_tasks_for(self):
+    builder_id = self._insert_builder(zim_version=1)
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           version=1,
+                           builder_id=builder_id,
+                           has_errors=False,
+                           zim_task_id='5678',
+                           zim_file_ready=True)
+    self._insert_selection(2,
+                           'text/tab-separated-values',
+                           version=2,
+                           builder_id=builder_id,
+                           has_errors=False,
+                           zim_task_id='1abc',
+                           zim_file_ready=False)
+    self._insert_selection(3,
+                           'text/tab-separated-values',
+                           version=3,
+                           builder_id=builder_id,
+                           has_errors=False,
+                           zim_task_id='9def',
+                           zim_file_ready=False)
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('''UPDATE zim_files z
+                        JOIN selections s
+                          ON s.s_id = z.z_selection_id
+                        SET z.z_status = "REQUESTED"
+                        WHERE s.s_id IN (2,3)''')
+
+    tasks = logic_builder.pending_zim_tasks_for(self.wp10db, builder_id)
+    self.assertIsNotNone(tasks)
+    self.assertEqual(2, len(tasks))
+    self.assertIn(b'1abc', tasks)
+    self.assertIn(b'9def', tasks)
