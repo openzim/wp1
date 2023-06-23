@@ -162,9 +162,6 @@ def update_zimfarm_task(wp10db, task_id, status, set_updated_now=False):
   with wp10db.cursor() as cursor:
     if set_updated_now:
       updated_at = utcnow().strftime(TS_FORMAT_WP10).encode('utf-8')
-      print(updated_at)
-      print(utcnow())
-      print(utcnow())
       with wp10db.cursor() as cursor:
         cursor.execute(
             '''UPDATE zim_files SET z_status = %s, z_updated_at = %s

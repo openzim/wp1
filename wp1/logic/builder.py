@@ -7,7 +7,7 @@ import attr
 from wp1.constants import CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE, MAX_ZIM_FILE_POLL_TIME, TS_FORMAT_WP10
 from wp1.credentials import CREDENTIALS, ENV
 from wp1.environment import Environment
-from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError
+from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError
 import wp1.logic.selection as logic_selection
 import wp1.logic.util as logic_util
 from wp1.models.wp10.builder import Builder
@@ -182,6 +182,7 @@ def auto_schedule_zim_file(s3, redis, wp10db, builder_id):
   for task_id in pending_zim_tasks_for(wp10db, builder_id):
     try:
       zimfarm.cancel_zim_by_task_id(redis, task_id)
+      logic_selection.update_zimfarm_task(wp10db, task_id, 'CANCELLED')
     except ZimFarmError:
       logging.exception('Could not cancel task_id=%s', task_id)
 
@@ -212,7 +213,7 @@ def pending_zim_tasks_for(wp10db, builder_id):
     if data is None:
       return []
     else:
-      return [d['z_task_id'] for d in data]
+      return [d['z_task_id'].decode('utf-8') for d in data]
 
 
 def update_version_for_finished_zim(wp10db, task_id):
