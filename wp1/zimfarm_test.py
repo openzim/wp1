@@ -125,6 +125,8 @@ class ZimFarmTest(BaseWpOneDbTest):
                     'articleList':
                         'http://credentials.not.found.fake/selections/foo/1234/name.tsv',
                     'customZimTitle':
+                        'My Builder',
+                    'filenamePrefix':
                         'MyBuilder-def'
                 }
             }

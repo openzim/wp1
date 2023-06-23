@@ -4,7 +4,7 @@ from unittest.mock import call, patch, MagicMock, ANY
 import attr
 
 from wp1.base_db_test import BaseWpOneDbTest
-from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError
+from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError
 from wp1.logic import builder as logic_builder
 from wp1.models.wp10.builder import Builder
 
@@ -1070,6 +1070,30 @@ class BuilderTest(BaseWpOneDbTest):
 
   @patch('wp1.logic.builder.schedule_zim_file')
   @patch('wp1.logic.builder.zimfarm.cancel_zim_by_task_id')
+  def test_auto_schedule_zim_file_zimfarm_error(self, patched_cancel_zim,
+                                                patched_schedule_zim_file):
+    s3 = MagicMock()
+    redis = MagicMock()
+    patched_cancel_zim.side_effect = ZimFarmError
+    builder_id = self._insert_builder(zim_version=1)
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           version=1,
+                           builder_id=builder_id,
+                           has_errors=False,
+                           zim_file_ready=True)
+
+    logic_builder.auto_schedule_zim_file(s3, redis, self.wp10db, builder_id)
+
+    patched_schedule_zim_file.assert_called_once_with(s3,
+                                                      redis,
+                                                      self.wp10db,
+                                                      builder_id,
+                                                      description=None,
+                                                      long_description=None)
+
+  @patch('wp1.logic.builder.schedule_zim_file')
+  @patch('wp1.logic.builder.zimfarm.cancel_zim_by_task_id')
   def test_auto_schedule_zim_file_cancel_tasks(self, patched_cancel_zim,
                                                patched_schedule_zim_file):
     s3 = MagicMock()
@@ -1112,7 +1136,7 @@ class BuilderTest(BaseWpOneDbTest):
     logic_builder.auto_schedule_zim_file(s3, redis, self.wp10db, builder_id)
 
     patched_cancel_zim.assert_has_calls(
-        (call(redis, b'1abc'), call(redis, b'9def')), any_order=True)
+        (call(redis, '1abc'), call(redis, '9def')), any_order=True)
 
     patched_schedule_zim_file.assert_called_once_with(
         s3,
@@ -1121,6 +1145,14 @@ class BuilderTest(BaseWpOneDbTest):
         builder_id,
         description='A desc',
         long_description='Long desc')
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+          'SELECT COUNT(*) as cnt FROM zim_files z WHERE z.z_status = "REQUESTED"'
+      )
+      count = cursor.fetchone()['cnt']
+
+    self.assertEqual(0, count)
 
   def test_pending_zim_tasks_for(self):
     builder_id = self._insert_builder(zim_version=1)
@@ -1156,5 +1188,5 @@ class BuilderTest(BaseWpOneDbTest):
     tasks = logic_builder.pending_zim_tasks_for(self.wp10db, builder_id)
     self.assertIsNotNone(tasks)
     self.assertEqual(2, len(tasks))
-    self.assertIn(b'1abc', tasks)
-    self.assertIn(b'9def', tasks)
+    self.assertIn('1abc', tasks)
+    self.assertIn('9def', tasks)
