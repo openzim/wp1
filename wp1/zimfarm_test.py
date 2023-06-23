@@ -555,3 +555,80 @@ class ZimFarmTest(BaseWpOneDbTest):
     patched_get.return_value = resp
     with self.assertRaises(ZimFarmError):
       actual = zimfarm.zim_file_url_for_task_id('foo-bar')
+
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm.requests.delete')
+  def test_cancel_zim_by_task_id(self, patched_delete,
+                                 patched_get_zimfarm_token):
+    patched_get_zimfarm_token.return_value = 'foo-token'
+    redis = MagicMock()
+
+    zimfarm.cancel_zim_by_task_id(redis, 'task-abc-123')
+    patched_delete.assert_called_once_with(
+        'https://fake.farm/v1/requested-tasks/task-abc-123',
+        headers={
+            'Authorization': 'Token foo-token',
+            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
+        })
+
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm.requests.delete')
+  @patch('wp1.zimfarm.requests.post')
+  def test_cancel_zim_by_task_id_first_delete_404(self, patched_post,
+                                                  patched_delete,
+                                                  patched_get_zimfarm_token):
+    patched_get_zimfarm_token.return_value = 'foo-token'
+    redis = MagicMock()
+    response_404 = MagicMock()
+    response_404.status_code = 404
+    response_404.raise_for_status.side_effect = requests.exceptions.HTTPError
+    patched_delete.return_value = response_404
+
+    zimfarm.cancel_zim_by_task_id(redis, 'task-abc-123')
+    patched_delete.assert_any_call(
+        'https://fake.farm/v1/requested-tasks/task-abc-123',
+        headers={
+            'Authorization': 'Token foo-token',
+            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
+        })
+    patched_post.assert_any_call(
+        'https://fake.farm/v1/tasks/task-abc-123/cancel',
+        headers={
+            'Authorization': 'Token foo-token',
+            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
+        })
+
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm.requests.delete')
+  @patch('wp1.zimfarm.requests.post')
+  def test_cancel_zim_by_task_id_first_delete_other_error(
+      self, patched_post, patched_delete, patched_get_zimfarm_token):
+    patched_get_zimfarm_token.return_value = 'foo-token'
+    redis = MagicMock()
+    response_500 = MagicMock()
+    response_500.status_code = 500
+    response_500.raise_for_status.side_effect = requests.exceptions.HTTPError
+    patched_delete.return_value = response_500
+
+    with self.assertRaises(ZimFarmError):
+      zimfarm.cancel_zim_by_task_id(redis, 'task-abc-123')
+
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm.requests.delete')
+  @patch('wp1.zimfarm.requests.post')
+  def test_cancel_zim_by_task_id_second_delete_error(self, patched_post,
+                                                     patched_delete,
+                                                     patched_get_zimfarm_token):
+    patched_get_zimfarm_token.return_value = 'foo-token'
+    redis = MagicMock()
+    response_404 = MagicMock()
+    response_404.status_code = 404
+    response_404.raise_for_status.side_effect = requests.exceptions.HTTPError
+    patched_delete.return_value = response_404
+    second_response = MagicMock()
+    second_response.status_code = 404
+    second_response.raise_for_status.side_effect = requests.exceptions.HTTPError
+    patched_post.return_value = second_response
+
+    with self.assertRaises(ZimFarmError):
+      zimfarm.cancel_zim_by_task_id(redis, 'task-abc-123')

@@ -156,17 +156,7 @@ def materialize_builder(builder_cls, builder_id, content_type):
       # be automatically created. We don't need to do this if the ZIM
       # version was updated, because that indicates that the ZIM file
       # was never requested or errored and should remain in that state.
-      zim_file = latest_zim_file_for(wp10db, builder.b_id)
-      description = zim_file.z_description.decode(
-          'utf-8') if zim_file.z_description is not None else None
-      long_description = zim_file.z_long_description.decode(
-          'utf-8') if zim_file.z_long_description is not None else None
-      schedule_zim_file(s3,
-                        redis,
-                        wp10db,
-                        builder_id,
-                        description=description,
-                        long_description=long_description)
+      auto_schedule_zim_file(s3, redis, wp10db, builder_id)
   finally:
     wp10db.close()
 
@@ -185,6 +175,44 @@ def maybe_update_selection_zim_version(wp10db, builder, selection_version):
         'WHERE b.b_id = %s', (selection_version, builder.b_id))
   wp10db.commit()
   return True
+
+
+def auto_schedule_zim_file(s3, redis, wp10db, builder_id):
+  # First, cancel any pending auto-scheduled tasks.
+  for task_id in pending_zim_tasks_for(wp10db, builder_id):
+    try:
+      zimfarm.cancel_zim_by_task_id(redis, task_id)
+    except ZimFarmError:
+      logging.exception('Could not cancel task_id=%s', task_id)
+
+  zim_file = latest_zim_file_for(wp10db, builder_id)
+  description = zim_file.z_description.decode(
+      'utf-8') if zim_file.z_description is not None else None
+  long_description = zim_file.z_long_description.decode(
+      'utf-8') if zim_file.z_long_description is not None else None
+  schedule_zim_file(s3,
+                    redis,
+                    wp10db,
+                    builder_id,
+                    description=description,
+                    long_description=long_description)
+
+
+def pending_zim_tasks_for(wp10db, builder_id):
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        '''SELECT z.z_task_id FROM zim_files z
+           JOIN selections s
+             ON s.s_id = z.z_selection_id
+           JOIN builders b
+             ON b.b_id = s.s_builder_id
+           WHERE b.b_id = %s AND z.z_status = "REQUESTED"
+    ''', (builder_id,))
+    data = cursor.fetchall()
+    if data is None:
+      return []
+    else:
+      return [d['z_task_id'] for d in data]
 
 
 def update_version_for_finished_zim(wp10db, task_id):

@@ -304,3 +304,32 @@ def zim_file_url_for_task_id(task_id):
         'Configuration error, could not find ZIMFARM["s3_url"] in credentials')
 
   return f'{base_url}{warehouse_path}/{name}'
+
+
+def cancel_zim_by_task_id(redis, task_id):
+  token = get_zimfarm_token(redis)
+  if token is None:
+    raise ZimfarmError('Error retrieving auth token for request')
+  base_url = get_zimfarm_url()
+  headers = _get_zimfarm_headers(token)
+
+  logger.info('Deleting task_id=%s', task_id)
+  r = requests.delete('%s/requested-tasks/%s' % (base_url, task_id),
+                      headers=headers)
+
+  try:
+    r.raise_for_status()
+    return
+  except requests.exceptions.HTTPError as e:
+    if r.status_code != 404:
+      raise ZimFarmError('Error attempting to delete requested task id=%s' %
+                         task_id) from e
+
+  logger.info('Task was no longer requested, cancelling (task_id=%s)', task_id)
+  r = requests.post('%s/tasks/%s/cancel' % (base_url, task_id), headers=headers)
+
+  try:
+    r.raise_for_status()
+  except requests.exceptions.HTTPError as e:
+    raise ZimFarmError('Task could not be deleted/canceled (task_id=%s)' %
+                       task_id)
