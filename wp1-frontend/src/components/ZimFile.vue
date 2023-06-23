@@ -83,7 +83,7 @@
             <div v-if="!success" class="error-list errors">
               <p>The following errors occurred:</p>
               <ul>
-                <li v-for="msg in errorMessages" v-bind:key="msg">
+                <li v-for="msg in errors" v-bind:key="msg">
                   {{ msg }}
                 </li>
               </ul>

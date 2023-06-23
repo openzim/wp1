@@ -40,7 +40,7 @@ of text than an actual article name.', 'Not_an_<article_name>',
   def test_materialize(self):
     simple_test_builder = SimpleBuilder()
     simple_test_builder.materialize(self.s3, self.wp10db, self.builder,
-                                    'text/tab-separated-values')
+                                    'text/tab-separated-values', 1)
     actual = get_first_selection(self.wp10db)
     self.assertEqual(actual.s_content_type, b'text/tab-separated-values')
     self.assertEqual(actual.s_builder_id, b'1a-2b-3c-4d')

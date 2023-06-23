@@ -44,28 +44,28 @@ class BuildersTest(BaseWebTestcase):
   valid_article_name = ['Eiffel_Tower', 'Statue of Liberty']
   successful_response = {'success': True, 'items': {}}
 
-  builder = Builder(
-      b_id=b'1a-2b-3c-4d',
-      b_name=b'My Builder',
-      b_user_id=1234,
-      b_project=b'en.wikipedia.fake',
-      b_model=b'wp1.selection.models.simple',
-      b_params=b'{"list": ["a", "b", "c"]}',
-      b_created_at=b'20191225044444',
-      b_updated_at=b'20191225044444',
-      b_current_version=2,
-  )
+  builder = Builder(b_id=b'1a-2b-3c-4d',
+                    b_name=b'My Builder',
+                    b_user_id=1234,
+                    b_project=b'en.wikipedia.fake',
+                    b_model=b'wp1.selection.models.simple',
+                    b_params=b'{"list": ["a", "b", "c"]}',
+                    b_created_at=b'20191225044444',
+                    b_updated_at=b'20191225044444',
+                    b_current_version=2,
+                    b_selection_zim_version=2)
 
   def _insert_builder(self):
     with self.wp10db.cursor() as cursor:
       cursor.execute(
           '''INSERT INTO builders
                (b_id, b_name, b_user_id, b_project, b_params, b_model,
-                b_created_at, b_updated_at, b_current_version)
+                b_created_at, b_updated_at, b_current_version,
+                b_selection_zim_version)
              VALUES
                (%(b_id)s, %(b_name)s, %(b_user_id)s, %(b_project)s,
                 %(b_params)s, %(b_model)s, %(b_created_at)s,
-                %(b_updated_at)s, %(b_current_version)s)
+                %(b_updated_at)s, %(b_current_version)s, %(b_selection_zim_version)s)
         ''', attr.asdict(self.builder))
     self.wp10db.commit()
     return self.builder.b_id.decode('utf-8')
@@ -83,14 +83,14 @@ class BuildersTest(BaseWebTestcase):
       cursor.executemany(
           '''INSERT INTO selections
                (s_id, s_builder_id, s_content_type, s_updated_at,
-                s_version, s_object_key, s_zim_version)
-             VALUES (%s, %s, %s, %s, %s, %s, 1)
+                s_version, s_object_key)
+             VALUES (%s, %s, %s, %s, %s, %s)
       ''', [s[:6] for s in selections])
       cursor.execute(
           '''INSERT INTO zim_files
-               (z_id, z_selection_id, z_task_id, z_status, z_version)
+               (z_id, z_selection_id, z_task_id, z_status)
              VALUES
-               (1, %s, %s, %s, 1)''', (
+               (1, %s, %s, %s)''', (
               selections[2][0],
               selections[2][6],
               selections[2][7],

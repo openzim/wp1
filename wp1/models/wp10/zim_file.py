@@ -14,7 +14,6 @@ class ZimFile:
   z_selection_id = attr.ib()
   z_status = attr.ib(default=b'NOT_REQUESTED')
   z_task_id = attr.ib(default=None)
-  z_version = attr.ib(default=None)
   z_requested_at = attr.ib(default=None)
   z_updated_at = attr.ib(default=None)
   z_long_description = attr.ib(default=None)

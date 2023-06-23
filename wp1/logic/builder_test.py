@@ -21,6 +21,7 @@ class BuilderTest(BaseWpOneDbTest):
       'b_created_at': b'20191225044444',
       'b_updated_at': b'20191225044444',
       'b_current_version': 0,
+      'b_selection_zim_version': 0,
   }
 
   expected_lists = [{
@@ -192,20 +193,23 @@ class BuilderTest(BaseWpOneDbTest):
           'FILE_READY',
   }]
 
-  def _insert_builder(self, current_version=None):
+  def _insert_builder(self, current_version=None, zim_version=None):
     if current_version is None:
       current_version = 1
     value_dict = attr.asdict(self.builder)
     value_dict['b_current_version'] = current_version
     value_dict['b_id'] = b'1a-2b-3c-4d'
+    if zim_version is not None:
+      value_dict['b_selection_zim_version'] = zim_version
     with self.wp10db.cursor() as cursor:
       cursor.execute(
           '''INSERT INTO builders
                (b_id, b_name, b_user_id, b_project, b_params, b_model, b_created_at,
-                b_updated_at, b_current_version)
+                b_updated_at, b_current_version, b_selection_zim_version)
              VALUES
                (%(b_id)s, %(b_name)s, %(b_user_id)s, %(b_project)s, %(b_params)s,
-                %(b_model)s, %(b_created_at)s, %(b_updated_at)s, %(b_current_version)s)
+                %(b_model)s, %(b_created_at)s, %(b_updated_at)s, %(b_current_version)s,
+                %(b_selection_zim_version)s)
           ''', value_dict)
     self.wp10db.commit()
     return value_dict['b_id']
@@ -218,6 +222,7 @@ class BuilderTest(BaseWpOneDbTest):
                         builder_id=b'1a-2b-3c-4d',
                         has_errors=False,
                         zim_file_ready=False,
+                        zim_task_id='5678',
                         skip_zim=False):
     if has_errors:
       status = 'CAN_RETRY'
@@ -236,19 +241,19 @@ class BuilderTest(BaseWpOneDbTest):
       cursor.execute(
           '''INSERT INTO selections
                (s_id, s_builder_id, s_content_type, s_updated_at, s_version,
-                s_object_key, s_status, s_error_messages, s_zim_version)
+                s_object_key, s_status, s_error_messages)
              VALUES
-               (%s, %s, %s, "20191225044444", %s, %s, %s, %s, 1)
+               (%s, %s, %s, "20191225044444", %s, %s, %s, %s)
           ''', (id_, builder_id, content_type, version, object_key, status,
                 error_messages))
       if not skip_zim:
         cursor.execute(
             '''INSERT INTO zim_files
                  (z_selection_id, z_task_id, z_status, z_updated_at,
-                  z_requested_at, z_version)
+                  z_requested_at)
                VALUES
-                 (%s, "5678", %s, %s, "20230101020202", 1)
-            ''', (id_, zimfarm_status, zim_file_updated_at))
+                 (%s, %s, %s, %s, "20230101020202")
+            ''', (id_, zim_task_id, zimfarm_status, zim_file_updated_at))
     self.wp10db.commit()
 
   def _get_builder_by_user_id(self):
@@ -270,6 +275,7 @@ class BuilderTest(BaseWpOneDbTest):
         b_created_at=b'20191225044444',
         b_updated_at=b'20191225044444',
         b_current_version=1,
+        b_selection_zim_version=1,
     )
 
   @patch('wp1.models.wp10.builder.utcnow',
@@ -301,6 +307,7 @@ class BuilderTest(BaseWpOneDbTest):
     expected['b_params'] = b'{"list": ["a", "b", "c", "d"]}'
     expected['b_updated_at'] = b'20200101055555'
     expected['b_current_version'] = 1
+    expected['b_selection_zim_version'] = 1
     actual = self._get_builder_by_user_id()
     self.assertEqual(expected, actual)
 
@@ -327,7 +334,8 @@ class BuilderTest(BaseWpOneDbTest):
 
   @patch('wp1.logic.builder.wp10_connect')
   @patch('wp1.logic.builder.connect_storage')
-  def test_materialize(self, patched_connect_storage, patched_connect_wp10):
+  def test_materialize_builder(self, patched_connect_storage,
+                               patched_connect_wp10):
     patched_connect_wp10.return_value = self.wp10db
     TestBuilderClass = MagicMock()
     materialize_mock = MagicMock()
@@ -337,16 +345,62 @@ class BuilderTest(BaseWpOneDbTest):
     try:
       self.wp10db.close = lambda: True
       id_ = self._insert_builder()
+      self._insert_selection(1, 'text/tab-separated-values')
 
       logic_builder.materialize_builder(TestBuilderClass, id_,
                                         'text/tab-separated-values')
       materialize_mock.materialize.assert_called_once_with(
-          ANY, ANY, self.builder, 'text/tab-separated-values')
+          ANY, ANY, self.builder, 'text/tab-separated-values', 2)
     finally:
       self.wp10db.close = orig_close
+
     builder = self._get_builder_by_user_id()
     expected = dict(**self.expected_builder)
-    expected['b_current_version'] = 1
+    expected['b_current_version'] = 2
+    expected['b_selection_zim_version'] = 2
+    self.assertEqual(expected, builder)
+
+  @patch('wp1.logic.builder.wp10_connect')
+  @patch('wp1.logic.builder.redis_connect')
+  @patch('wp1.logic.builder.connect_storage')
+  @patch('wp1.logic.builder.schedule_zim_file')
+  def test_materialize_builder_no_update_zim_version(self,
+                                                     patched_schedule_zim_file,
+                                                     patched_connect_storage,
+                                                     patched_redis_connect,
+                                                     patched_connect_wp10):
+    s3 = MagicMock()
+    redis = MagicMock()
+    patched_connect_wp10.return_value = self.wp10db
+    patched_connect_storage.return_value = s3
+    patched_redis_connect.return_value = redis
+    TestBuilderClass = MagicMock()
+    materialize_mock = MagicMock()
+    TestBuilderClass.return_value = materialize_mock
+
+    orig_close = self.wp10db.close
+    try:
+      self.wp10db.close = lambda: True
+      id_ = self._insert_builder()
+      self._insert_selection(1,
+                             'text/tab-separated-values',
+                             zim_file_ready=True)
+
+      logic_builder.materialize_builder(TestBuilderClass, id_,
+                                        'text/tab-separated-values')
+      patched_schedule_zim_file.assert_called_once_with(s3,
+                                                        redis,
+                                                        self.wp10db,
+                                                        id_,
+                                                        description=None,
+                                                        long_description=None)
+    finally:
+      self.wp10db.close = orig_close
+
+    builder = self._get_builder_by_user_id()
+    expected = dict(**self.expected_builder)
+    expected['b_current_version'] = 2
+    expected['b_selection_zim_version'] = 1
     self.assertEqual(expected, builder)
 
   @patch('wp1.models.wp10.builder.utcnow',
@@ -409,7 +463,7 @@ class BuilderTest(BaseWpOneDbTest):
 
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
-  def test_get_builders_with_no_builders(self, mock_utcnow):
+  def test_get_builders_with_selection_no_builders(self, mock_utcnow):
     self._insert_selection(1, 'text/tab-separated-values')
     article_data = logic_builder.get_builders_with_selections(
         self.wp10db, '0000')
@@ -431,7 +485,14 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.models.wp10.builder.utcnow',
          return_value=datetime.datetime(2019, 12, 25, 4, 44, 44))
   def test_get_builders_zimfarm_status(self, mock_utcnow):
-    self._insert_selection(1, 'text/tab-separated-values', zim_file_ready=True)
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           zim_file_ready=True,
+                           version=1)
+    self._insert_selection(2,
+                           'text/tab-separated-values',
+                           zim_file_ready=False,
+                           version=2)
     self._insert_builder()
     article_data = logic_builder.get_builders_with_selections(
         self.wp10db, '1234')
@@ -491,7 +552,8 @@ class BuilderTest(BaseWpOneDbTest):
                       b_params=b'{"list": ["1", "b", "c"]}',
                       b_created_at=b'20191225044444',
                       b_updated_at=b'20211111044444',
-                      b_current_version=1)
+                      b_current_version=1,
+                      b_selection_zim_version=1)
     actual = logic_builder.update_builder(self.wp10db, builder)
     self.assertTrue(actual)
 
@@ -571,7 +633,7 @@ class BuilderTest(BaseWpOneDbTest):
     self.assertIsNone(actual)
 
   def _insert_builder_with_multiple_version_selections(self):
-    builder_id = self._insert_builder(current_version=3)
+    builder_id = self._insert_builder(current_version=3, zim_version=2)
     self._insert_selection(1,
                            'text/tab-separated-values',
                            version=1,
@@ -610,6 +672,29 @@ class BuilderTest(BaseWpOneDbTest):
     actual = logic_builder.latest_zimfarm_task_url(self.wp10db, builder_id)
 
     self.assertEqual('https://fake.farm/v1/tasks/5678', actual)
+
+  @patch('wp1.logic.builder.zimfarm.zim_file_url_for_task_id',
+         return_value='https://zim.fake/1234')
+  def test_latest_zim_file_url_for(self, mock_zimfarm_url_for):
+    builder_id = self._insert_builder_with_multiple_version_selections()
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('''UPDATE zim_files z
+                          INNER JOIN selections s ON s.s_id = z.z_selection_id
+                          INNER JOIN builders b ON b.b_selection_zim_version = s.s_version
+                        SET z_status = "FILE_READY"''')
+
+    actual = logic_builder.latest_zim_file_url_for(self.wp10db, builder_id)
+
+    self.assertEqual('https://zim.fake/1234', actual)
+
+  @patch('wp1.logic.builder.zimfarm.zim_file_url_for_task_id',
+         return_value='https://zim.fake/1234')
+  def test_latest_zim_file_url_for_not_ready(self, mock_zimfarm_url_for):
+    builder_id = self._insert_builder_with_multiple_version_selections()
+
+    actual = logic_builder.latest_zim_file_url_for(self.wp10db, builder_id)
+
+    self.assertIsNone(actual)
 
   @patch('wp1.logic.builder.logic_selection')
   def test_delete_builder(self, patched_selection):
@@ -737,8 +822,8 @@ class BuilderTest(BaseWpOneDbTest):
     logic_builder.schedule_zim_file(s3,
                                     redis,
                                     self.wp10db,
-                                    1234,
                                     builder_id,
+                                    user_id=1234,
                                     description='a',
                                     long_description='z')
 
@@ -768,8 +853,11 @@ class BuilderTest(BaseWpOneDbTest):
     patched_schedule_zim_file.return_value = '1234-a'
 
     with self.assertRaises(ObjectNotFoundError):
-      logic_builder.schedule_zim_file(s3, redis, self.wp10db, 1234,
-                                      '404builder')
+      logic_builder.schedule_zim_file(s3,
+                                      redis,
+                                      self.wp10db,
+                                      '404builder',
+                                      user_id=1234)
 
   @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
   def test_schedule_zim_file_not_authorized(self, patched_schedule_zim_file):
@@ -784,7 +872,11 @@ class BuilderTest(BaseWpOneDbTest):
                            has_errors=False)
 
     with self.assertRaises(UserNotAuthorizedError):
-      logic_builder.schedule_zim_file(s3, redis, self.wp10db, 5678, builder_id)
+      logic_builder.schedule_zim_file(s3,
+                                      redis,
+                                      self.wp10db,
+                                      builder_id,
+                                      user_id=5678)
 
   @patch('wp1.logic.builder.zimfarm.is_zim_file_ready')
   @patch('wp1.logic.builder.wp10_connect')
@@ -795,28 +887,45 @@ class BuilderTest(BaseWpOneDbTest):
                                               patched_redis, patched_connect,
                                               patched_is_ready):
     patched_is_ready.return_value = 'FILE_READY'
-    builder_id = self._insert_builder()
+    builder_id = self._insert_builder(zim_version=1)
     self._insert_selection(1,
                            'text/tab-separated-values',
+                           version=1,
                            builder_id=builder_id,
-                           has_errors=False)
+                           has_errors=False,
+                           zim_file_ready=True)
+    self._insert_selection(2,
+                           'text/tab-separated-values',
+                           version=2,
+                           builder_id=builder_id,
+                           has_errors=False,
+                           zim_task_id='9abc',
+                           zim_file_ready=False)
 
     orig_close = self.wp10db.close
     try:
       self.wp10db.close = lambda: True
       patched_connect.return_value = self.wp10db
-      logic_builder.on_zim_file_status_poll('5678')
+      logic_builder.on_zim_file_status_poll('9abc')
     finally:
       self.wp10db.close = orig_close
 
     with self.wp10db.cursor() as cursor:
       cursor.execute('SELECT z_status, z_updated_at '
-                     'FROM zim_files WHERE z_selection_id = 1')
+                     'FROM zim_files WHERE z_selection_id = 2')
       data = cursor.fetchone()
 
     self.assertIsNotNone(data)
     self.assertEqual(b'FILE_READY', data['z_status'])
     self.assertEqual(b'20221225000102', data['z_updated_at'])
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+          'SELECT b.b_selection_zim_version FROM builders b '
+          'WHERE b.b_id = %s', (builder_id,))
+      zim_version = cursor.fetchone()['b_selection_zim_version']
+
+    self.assertEqual(2, zim_version)
 
   @patch('wp1.logic.builder.utcnow',
          return_value=datetime.datetime(2023, 1, 1, 2, 30, 0, 0,
@@ -911,3 +1020,29 @@ class BuilderTest(BaseWpOneDbTest):
     self.assertIsNotNone(data)
     self.assertEqual(b'FAILED', data['z_status'])
     self.assertIsNone(data['z_updated_at'])
+
+  def test_update_version_for_finished_zim(self):
+    builder_id = self._insert_builder(zim_version=1)
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           version=1,
+                           builder_id=builder_id,
+                           has_errors=False,
+                           zim_file_ready=True)
+    self._insert_selection(2,
+                           'text/tab-separated-values',
+                           version=2,
+                           builder_id=builder_id,
+                           has_errors=False,
+                           zim_task_id='9abc',
+                           zim_file_ready=True)
+
+    logic_builder.update_version_for_finished_zim(self.wp10db, '9abc')
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+          'SELECT b.b_selection_zim_version '
+          'FROM builders b WHERE b.b_id = %s', builder_id)
+      data = cursor.fetchone()
+
+    self.assertEqual(2, data['b_selection_zim_version'])

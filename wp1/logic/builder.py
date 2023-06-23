@@ -6,11 +6,13 @@ import attr
 
 from wp1.constants import CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE, MAX_ZIM_FILE_POLL_TIME, TS_FORMAT_WP10
 from wp1.credentials import CREDENTIALS, ENV
+from wp1.environment import Environment
 from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError
 import wp1.logic.selection as logic_selection
 import wp1.logic.util as logic_util
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
+from wp1.models.wp10.zim_file import ZimFile
 from wp1 import queues
 from wp1.redis_db import connect as redis_connect
 from wp1.storage import connect_storage
@@ -56,10 +58,12 @@ def insert_builder(wp10db, builder):
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''INSERT INTO builders
-             (b_id, b_name, b_user_id, b_project, b_params, b_model, b_created_at, b_updated_at)
+             (b_id, b_name, b_user_id, b_project, b_params, b_model,
+              b_created_at, b_updated_at)
            VALUES
-             (%(b_id)s, %(b_name)s, %(b_user_id)s, %(b_project)s, %(b_params)s, %(b_model)s,
-              %(b_created_at)s, %(b_updated_at)s)
+             (%(b_id)s, %(b_name)s, %(b_user_id)s, %(b_project)s,
+              %(b_params)s, %(b_model)s, %(b_created_at)s,
+              %(b_updated_at)s)
         ''', attr.asdict(builder))
   wp10db.commit()
   return builder.b_id
@@ -132,6 +136,7 @@ def get_builder(wp10db, id_):
 
 def materialize_builder(builder_cls, builder_id, content_type):
   wp10db = wp10_connect()
+  redis = redis_connect()
   s3 = connect_storage()
   logging.basicConfig(level=logging.INFO)
 
@@ -140,9 +145,59 @@ def materialize_builder(builder_cls, builder_id, content_type):
     materializer = builder_cls()
     logger.info('Materializing builder id=%s, content_type=%s with class=%s' %
                 (builder_id, content_type, builder_cls))
-    materializer.materialize(s3, wp10db, builder, content_type)
+    next_version = logic_selection.get_next_version(wp10db, builder.b_id,
+                                                    content_type)
+    materializer.materialize(s3, wp10db, builder, content_type, next_version)
+    update_current_version(wp10db, builder, next_version)
+    updated = maybe_update_selection_zim_version(wp10db, builder, next_version)
+    if not updated:
+      # The ZIM file was not updated, which means there's an existing ZIM
+      # that's ready that needs to be replaced. Schedule the ZIM file to
+      # be automatically created. We don't need to do this if the ZIM
+      # version was updated, because that indicates that the ZIM file
+      # was never requested or errored and should remain in that state.
+      zim_file = latest_zim_file_for(wp10db, builder.b_id)
+      description = zim_file.z_description.decode(
+          'utf-8') if zim_file.z_description is not None else None
+      long_description = zim_file.z_long_description.decode(
+          'utf-8') if zim_file.z_long_description is not None else None
+      schedule_zim_file(s3,
+                        redis,
+                        wp10db,
+                        builder_id,
+                        description=description,
+                        long_description=long_description)
   finally:
     wp10db.close()
+
+
+def maybe_update_selection_zim_version(wp10db, builder, selection_version):
+  current_zim = latest_zim_file_for(wp10db, builder.b_id)
+
+  if current_zim is not None and current_zim.z_status == b'FILE_READY':
+    # There is an existing ZIM that's ready. Leave it for now and
+    # the version will get updated when the new ZIM is uploaded.
+    return False
+
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        'UPDATE builders b SET b.b_selection_zim_version = %s '
+        'WHERE b.b_id = %s', (selection_version, builder.b_id))
+  wp10db.commit()
+  return True
+
+
+def update_version_for_finished_zim(wp10db, task_id):
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        '''UPDATE builders b
+           LEFT JOIN selections s
+             ON s.s_builder_id = b.b_id
+           LEFT JOIN zim_files z
+             ON z.z_selection_id = s.s_id
+           SET b.b_selection_zim_version = s.s_version
+           WHERE z.z_task_id = %s''', (task_id,))
+  wp10db.commit()
 
 
 def latest_url_for(builder_id, content_type):
@@ -163,7 +218,7 @@ def latest_url_for(builder_id, content_type):
   return '%s/v1/builders/%s/selection/latest.%s' % (server_url, builder_id, ext)
 
 
-def latest_zim_for(builder_id):
+def local_url_for_latest_zim(builder_id):
   """Returns the redirect URL for the latest ZIM file for a builder."""
   server_url = CREDENTIALS.get(ENV, {}).get('CLIENT_URL', {}).get('api')
   if server_url is None:
@@ -220,21 +275,31 @@ def latest_selection_url(wp10db, builder_id, ext):
   return logic_selection.url_for(selection.s_object_key.decode('utf-8'))
 
 
-def latest_zim_file_url_for(wp10db, builder_id):
-  selection = latest_selection_for(wp10db, builder_id,
-                                   'text/tab-separated-values')
-  if selection is None:
-    return None
+def latest_zim_file_for(wp10db, builder_id):
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        '''SELECT z.* FROM zim_files z
+           INNER JOIN selections s
+             ON s.s_id = z.z_selection_id
+           INNER JOIN builders b
+             ON b.b_selection_zim_version = s.s_version
+           WHERE b.b_id = %s
+        ''', (builder_id,))
+    db_zim = cursor.fetchone()
+    if db_zim is None:
+      return None
+    return ZimFile(**db_zim)
 
-  zim_file = logic_selection.latest_zim_file_for_selection(wp10db, selection)
-  if zim_file is None:
-    return None
-  if zim_file.z_status != b'FILE_READY':
+
+def latest_zim_file_url_for(wp10db, builder_id):
+  zim = latest_zim_file_for(wp10db, builder_id)
+
+  if zim is None or zim.z_status != b'FILE_READY':
     logger.warning('Attempt to get ZIM URL before file ready, builder id=%s',
                    builder_id)
     return None
 
-  return logic_selection.url_from_zim_file(zim_file)
+  return zimfarm.zim_file_url_for_task_id(zim.z_task_id)
 
 
 def latest_selections_with_errors(wp10db, builder_id):
@@ -272,8 +337,8 @@ def latest_selections_with_errors(wp10db, builder_id):
 def schedule_zim_file(s3,
                       redis,
                       wp10db,
-                      user_id,
                       builder_id,
+                      user_id=None,
                       description='',
                       long_description=''):
   if isinstance(builder_id, str):
@@ -283,7 +348,7 @@ def schedule_zim_file(s3,
     raise ObjectNotFoundError('Could not find builder with id = %s' %
                               builder_id)
 
-  if builder.b_user_id != user_id:
+  if user_id is not None and builder.b_user_id != user_id:
     raise UserNotAuthorizedError(
         'Could not use builder id = %s for user id = %s' %
         (builder_id, user_id))
@@ -307,28 +372,28 @@ def schedule_zim_file(s3,
               None, description or None, selection.s_id))
   wp10db.commit()
 
+  # In production, there is a web hook from the Zimfarm that notifies us
+  # that the task is finished and we can start polling for the ZIM file
+  # to be uploaded. The web hook obviously doesn't work in development
+  # because the localhost server is not routable. To make ZIM file
+  # creation work end to end, start polling immediately in Development.
+  if ENV == Environment.DEVELOPMENT:
+    logger.info('DEVELOPMENT: Polling for zim file status for task_id=%s',
+                task_id)
+    queues.poll_for_zim_file_status(redis, task_id)
+
   return task_id
 
 
 def latest_zimfarm_status(wp10db, builder_id):
-  selection = latest_selection_for(wp10db, builder_id,
-                                   'text/tab-separated-values')
-  if selection is None:
-    return None
-
-  zim_file = logic_selection.latest_zim_file_for_selection(wp10db, selection)
+  zim_file = latest_zim_file_for(wp10db, builder_id)
   if zim_file is None:
     return None
   return zim_file.z_status.decode('utf-8')
 
 
 def latest_zimfarm_task_url(wp10db, builder_id):
-  selection = latest_selection_for(wp10db, builder_id,
-                                   'text/tab-separated-values')
-  if selection is None:
-    return None
-
-  zim_file = logic_selection.latest_zim_file_for_selection(wp10db, selection)
+  zim_file = latest_zim_file_for(wp10db, builder_id)
   if zim_file is None or zim_file.z_task_id is None:
     return None
 
@@ -339,13 +404,18 @@ def latest_zimfarm_task_url(wp10db, builder_id):
 def on_zim_file_status_poll(task_id):
   wp10db = wp10_connect()
   redis = redis_connect()
+  logging.basicConfig(level=logging.INFO)
 
   result = zimfarm.is_zim_file_ready(task_id)
+  logging.info('Polled for ZIM file for task_id=%s, result: %s', task_id,
+               result)
   if result == 'FILE_READY':
     logic_selection.update_zimfarm_task(wp10db,
                                         task_id,
                                         'FILE_READY',
                                         set_updated_now=True)
+
+    update_version_for_finished_zim(wp10db, task_id)
   elif result == 'REQUESTED':
     requested = logic_selection.zim_file_requested_at_for(wp10db, task_id)
     if requested is not None:
@@ -424,7 +494,8 @@ def _get_zimfile_data(builder):
             builder['z_updated_at'])
 
       if content_type == 'text/tab-separated-values' and is_zim_ready:
-        data['z_url'] = latest_zim_for(builder['b_id'].decode('utf-8'))
+        data['z_url'] = local_url_for_latest_zim(
+            builder['b_id'].decode('utf-8'))
     else:
       data['z_status'] = 'NOT_REQUESTED'
 
@@ -434,16 +505,18 @@ def _get_zimfile_data(builder):
 def get_builders_with_selections(wp10db, user_id):
   with wp10db.cursor() as cursor:
     cursor.execute(
-        '''SELECT * FROM selections
-           LEFT JOIN zim_files
-             ON selections.s_id = zim_files.z_selection_id
-             AND selections.s_zim_version = zim_files.z_version
-           RIGHT JOIN builders
-             ON selections.s_builder_id = builders.b_id
-             AND selections.s_version = builders.b_current_version
-           WHERE b_user_id = %(b_user_id)s
-           ORDER BY builders.b_updated_at DESC
-        ''', {'b_user_id': user_id})
+        '''SELECT * FROM builders b
+           LEFT JOIN selections s
+             ON s.s_builder_id = b.b_id
+             AND s.s_version = b.b_current_version
+           LEFT JOIN selections s1
+             ON s1.s_builder_id = b.b_id
+             AND s1.s_version = b.b_selection_zim_version
+           LEFT JOIN zim_files z
+             ON z.z_selection_id = s1.s_id
+           WHERE b_user_id = %s
+           ORDER BY b.b_updated_at DESC
+      ''', (user_id,))
     data = cursor.fetchall()
 
   builders = {}

@@ -30,15 +30,14 @@ def insert_selection(wp10db, selection):
     cursor.execute(
         '''INSERT INTO selections
              (s_id, s_builder_id, s_version, s_content_type, s_updated_at,
-              s_object_key, s_status, s_error_messages, s_zim_version)
+              s_object_key, s_status, s_error_messages)
              VALUES
              (%(s_id)s, %(s_builder_id)s, %(s_version)s, %(s_content_type)s,
-              %(s_updated_at)s, %(s_object_key)s, %(s_status)s, %(s_error_messages)s,
-              1)
+              %(s_updated_at)s, %(s_object_key)s, %(s_status)s, %(s_error_messages)s)
     ''', attr.asdict(selection))
     cursor.execute(
-        'INSERT INTO zim_files (z_selection_id, z_status, z_version)'
-        ' VALUES (%s, "NOT_REQUESTED", 1)', (selection.s_id,))
+        'INSERT INTO zim_files (z_selection_id, z_status)'
+        ' VALUES (%s, "NOT_REQUESTED")', (selection.s_id,))
   wp10db.commit()
 
 
@@ -68,31 +67,6 @@ def url_for(object_key):
   path = urllib.parse.quote(
       object_key if isinstance(object_key, str) else object_key.decode('utf-8'))
   return '%s/%s' % (S3_PUBLIC_URL, path)
-
-
-def latest_zim_file_for_selection(wp10db, selection):
-  if not selection:
-    raise ValueError('Cannot get zim file for empty selection')
-
-  with wp10db.cursor() as cursor:
-    cursor.execute(
-        'SELECT * FROM zim_files WHERE'
-        ' z_selection_id = %s AND z_version = %s',
-        (selection.s_id, selection.s_zim_version))
-    db_zim = cursor.fetchone()
-    if db_zim is None:
-      return None
-    return ZimFile(**db_zim)
-
-
-def url_from_zim_file(zim_file):
-  if not zim_file:
-    raise ValueError('Cannot get url from empty zim file')
-  return zim_file_url_for(zim_file.z_task_id)
-
-
-def zim_file_url_for(task_id):
-  return zimfarm.zim_file_url_for_task_id(task_id)
 
 
 def zim_file_requested_at_for(wp10db, task_id):
@@ -188,6 +162,9 @@ def update_zimfarm_task(wp10db, task_id, status, set_updated_now=False):
   with wp10db.cursor() as cursor:
     if set_updated_now:
       updated_at = utcnow().strftime(TS_FORMAT_WP10).encode('utf-8')
+      print(updated_at)
+      print(utcnow())
+      print(utcnow())
       with wp10db.cursor() as cursor:
         cursor.execute(
             '''UPDATE zim_files SET z_status = %s, z_updated_at = %s
