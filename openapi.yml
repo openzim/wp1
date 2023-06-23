@@ -443,6 +443,76 @@ paths:
           description: 'The requested extension of the Selection list to be redirected to.'
           schema:
             type: string
+  /builders/{builderId}/zim:
+    post:
+      summary: 'Request a ZIM file for the latest Selection of a Builder from the Zimfarm.'
+      operationId: builderCreateZim
+      responses:
+        204:
+          description: 'ZIM file successfully requested from Zimfarm.'
+        404:
+          description: 'Builder not found with that id.'
+        403:
+          description: 'Logged in user is not authorized to request ZIM for given Builder.'
+      parameters:
+        - name: builderId
+          in: path
+          required: true
+          description: 'The id of the Builder to request as ZIM file for.'
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                long_description:
+                  type: string
+  /builders/{builderId}/zim/status:
+    get:
+      summary: 'Get the status of the currently requested ZIM file for a Builder.'
+      operationId: builderZimStatus
+      responses:
+        200:
+          description: 'Successful operation.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: 'One of: NOT_REQUESTED, REQUESTED, FILE_READY, CANCELLED, or FAILED.'
+                  error_url:
+                    type: string
+                    description: 'The URL of a resource on the Zimfarm that may provide more context for a failed ZIM.'
+      parameters:
+        - name: builderId
+          in: path
+          required: true
+          description: 'The id of the Builder to request as ZIM file for.'
+          schema:
+            type: string
+  /builders/{builderId}/zim/latest:
+    get:
+      summary: 'Get the actual ZIM file for a Builder.'
+      operationId: builderLatestZim
+      responses:
+        302:
+          description: 'Successful operation, redirect to the URL of the ZIM file.'
+        404:
+          description: 'Builder or ZIM file not found.'
+      parameters:
+        - name: builderId
+          in: path
+          required: true
+          description: 'The id of the Builder to request as ZIM file for.'
+          schema:
+            type: string
   /selection/simple/lists:
     get:
       summary: 'Return list details from database'
