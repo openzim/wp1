@@ -129,7 +129,7 @@ def _get_params(s3, wp10db, builder, description='', long_description=''):
   selection = logic_builder.latest_selection_for(wp10db, builder.b_id,
                                                  'text/tab-separated-values')
   selection_id_frag = selection.s_id.decode('utf-8').split('-')[-1]
-  custom_title = '%s-%s' % (util.safe_name(
+  filename_prefix = '%s-%s' % (util.safe_name(
       builder.b_name.decode('utf-8')), selection_id_frag)
 
   config = {
@@ -150,13 +150,15 @@ def _get_params(s3, wp10db, builder, description='', long_description=''):
           'articleList':
               logic_selection.url_for_selection(selection),
           'customZimTitle':
-              custom_title,
+              builder.b_name.decode('utf-8'),
           'customZimDescription':
               description
               if description else 'ZIM file created from a WP1 Selection',
           'customZimLongDescription':
               long_description
               if long_description else 'ZIM file created from a WP1 Selection',
+          'filenamePrefix':
+              filename_prefix
       }
   }
 
@@ -307,13 +309,16 @@ def zim_file_url_for_task_id(task_id):
 
 
 def cancel_zim_by_task_id(redis, task_id):
+  if isinstance(task_id, bytes):
+    task_id = task_id.decode('utf-8')
+
   token = get_zimfarm_token(redis)
   if token is None:
     raise ZimfarmError('Error retrieving auth token for request')
   base_url = get_zimfarm_url()
   headers = _get_zimfarm_headers(token)
 
-  logger.info('Deleting task_id=%s', task_id)
+  logger.info('Deleting requested task_id=%s', task_id)
   r = requests.delete('%s/requested-tasks/%s' % (base_url, task_id),
                       headers=headers)
 
