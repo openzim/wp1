@@ -155,7 +155,7 @@ def materialize_builder(builder_cls, builder_id, content_type):
       # that's ready that needs to be replaced. Schedule the ZIM file to
       # be automatically created. We don't need to do this if the ZIM
       # version was updated, because that indicates that the ZIM file
-      # was never requested or errored and should remain in that state.\
+      # was never requested or errored and should remain in that state.
       zim_file = latest_zim_file_for(wp10db, builder.b_id)
       description = zim_file.z_description.decode(
           'utf-8') if zim_file.z_description is not None else None
