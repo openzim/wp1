@@ -26,14 +26,12 @@ class AbstractBuilder:
     s3.upload_fileobj(upload_data, key=object_key)
     selection.s_object_key = object_key
 
-  def materialize(self, s3, wp10db, builder, content_type):
+  def materialize(self, s3, wp10db, builder, content_type, version):
     params = json.loads(builder.b_params)
-    next_version = logic_selection.get_next_version(wp10db, builder.b_id,
-                                                    content_type)
 
     selection = Selection(s_content_type=content_type.encode('utf-8'),
                           s_builder_id=builder.b_id,
-                          s_version=next_version,
+                          s_version=version,
                           s_status=b'OK')
     selection.set_id()
     try:
@@ -55,7 +53,6 @@ class AbstractBuilder:
     logger.info('Saving selection %s to database' %
                 selection.s_id.decode('utf-8'))
     logic_selection.insert_selection(wp10db, selection)
-    logic_builder.update_current_version(wp10db, builder, next_version)
 
   def build(self, content_type, **params):
     raise NotImplementedError()

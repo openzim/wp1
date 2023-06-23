@@ -6,12 +6,13 @@ describe('the user selection list page', () => {
       cy.intercept('v1/selection/simple/lists', { fixture: 'list_data.json' });
       cy.intercept('v1/oauth/identify', { fixture: 'identity.json' });
       cy.visit('/#/selections/user');
+      cy.get('select').select('25');
     });
 
     it('successfully loads', () => {});
 
     it('displays the datatables view', () => {
-      cy.get('.dataTables_info').contains('Showing 1 to 10 of 10 entries');
+      cy.get('.dataTables_info').contains('Showing 1 to 11 of 11 entries');
     });
 
     it('displays list and its contents', () => {
@@ -166,6 +167,32 @@ describe('the user selection list page', () => {
             cy.get('td').eq(6).should('contain', '12/17/22');
           });
       });
+    });
+  });
+
+  describe('when there is an outdated ZIM', () => {
+    it('displays the download ZIM link', () => {
+      cy.contains('td', 'outdated zim')
+        .parent('tr')
+        .within(() => {
+          cy.get('td').eq(7).get('a').should('contain', 'Download ZIM');
+        });
+    });
+
+    it('displays the ZIM updated date', () => {
+      cy.contains('td', 'outdated zim')
+        .parent('tr')
+        .within(() => {
+          cy.get('td').eq(6).should('contain', '6/18/23');
+        });
+    });
+
+    it('shows the info hover', () => {
+      cy.contains('td', 'outdated zim')
+        .parent('tr')
+        .within(() => {
+          cy.get('td').eq(7).get('span').should('exist');
+        });
     });
   });
 

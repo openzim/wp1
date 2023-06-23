@@ -32,7 +32,6 @@ class SelectionTest(BaseWpOneDbTest):
         s_builder_id=b'100',
         s_content_type=b'text/tab-separated-values',
         s_version=1,
-        s_zim_version=1,
         s_updated_at=b'20190830112844',
         s_object_key=b'selections/foo.bar.model/deadbeef/name.tsv',
     )
@@ -71,9 +70,7 @@ class SelectionTest(BaseWpOneDbTest):
   def test_insert_selection(self):
     logic_selection.insert_selection(self.wp10db, self.selection)
     actual = _get_selection(self.wp10db)
-    expected_zim = ZimFile(z_id=1,
-                           z_selection_id=self.selection.s_id,
-                           z_version=1)
+    expected_zim = ZimFile(z_id=1, z_selection_id=self.selection.s_id)
     actual_zim = _get_zim_file_for_selection(self.wp10db, self.selection.s_id)
     self.assertEqual(self.selection, actual)
     self.assertEqual(expected_zim, actual_zim)

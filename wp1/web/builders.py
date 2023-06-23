@@ -148,14 +148,13 @@ def create_zim_file_for_builder(builder_id):
     task_id = logic_builder.schedule_zim_file(s3,
                                               redis,
                                               wp10db,
-                                              user_id,
                                               builder_id,
+                                              user_id=user_id,
                                               description=desc,
                                               long_description=long_desc)
   except ObjectNotFoundError:
-    return flask.jsonify({
-        'error_messages': ['No builder found with id = %s\n' % builder_id]
-    }), 404
+    return flask.jsonify(
+        {'error_messages': ['No builder found with id = %s' % builder_id]}), 404
   except UserNotAuthorizedError:
     return flask.jsonify({
         'error_messages': [
@@ -167,14 +166,6 @@ def create_zim_file_for_builder(builder_id):
     if e.__cause__:
       error_messages.append(str(e.__cause__))
     return flask.jsonify({'error_messages': error_messages}), 500
-
-  # In production, there is a web hook from the Zimfarm that notifies us
-  # that the task is finished and we can start polling for the ZIM file
-  # to be uploaded. The web hook obviously doesn't work in development
-  # because the localhost server is not routable. To make ZIM file
-  # creation work end to end, start polling immediately in Development.
-  if ENV == Environment.DEVELOPMENT:
-    queues.poll_for_zim_file_status(redis, task_id)
 
   return '', 204
 

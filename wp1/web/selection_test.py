@@ -134,19 +134,19 @@ class SelectionTest(BaseWebTestcase):
 
   def _insert_selection(self, values, zim_values=None):
     if zim_values is None:
-      zim_values = ('NOT_REQUESTED', 1)
+      zim_values = ('NOT_REQUESTED',)
     zim_values = zim_values + (values[0],)
 
     with self.wp10db.cursor() as cursor:
       cursor.execute(
           '''INSERT INTO selections
               (s_id, s_builder_id, s_content_type, s_updated_at, s_version,
-               s_object_key, s_status, s_error_messages, s_zim_version)
+               s_object_key, s_status, s_error_messages)
             VALUES
-              (%s, %s, %s, %s, %s, %s, %s, %s, 1)
+              (%s, %s, %s, %s, %s, %s, %s, %s)
         ''', values)
       cursor.execute(
-          'INSERT INTO zim_files (z_status, z_version, z_selection_id) VALUES (%s, %s, %s)',
+          'INSERT INTO zim_files (z_status, z_selection_id) VALUES (%s, %s)',
           zim_values)
     self.wp10db.commit()
 
@@ -172,7 +172,7 @@ class SelectionTest(BaseWebTestcase):
            'object_key_1', 'CAN_RETRY', '{"errors"["error1"]}'))
       self._insert_selection((2, '1a-2b-3c-4d', 'application/vnd.ms-excel',
                               '20201225105544', 1, 'object_key_2', None, None),
-                             ('NOT_REQUESTED', 1))
+                             ('NOT_REQUESTED',))
       self.wp10db.commit()
       with client.session_transaction() as sess:
         sess['user'] = self.USER

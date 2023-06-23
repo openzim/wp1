@@ -29,6 +29,7 @@ class Builder:
   b_created_at = attr.ib(default=None)
   b_updated_at = attr.ib(default=None)
   b_current_version = attr.ib(default=0)
+  b_selection_zim_version = attr.ib(default=0)
 
   @property
   def created_at_dt(self):

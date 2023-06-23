@@ -128,6 +128,9 @@ def _get_params(s3, wp10db, builder, description='', long_description=''):
   project = builder.b_project.decode('utf-8')
   selection = logic_builder.latest_selection_for(wp10db, builder.b_id,
                                                  'text/tab-separated-values')
+  selection_id_frag = selection.s_id.decode('utf-8').split('-')[-1]
+  custom_title = '%s-%s' % (util.safe_name(
+      builder.b_name.decode('utf-8')), selection_id_frag)
 
   config = {
       'task_name': 'mwoffliner',
@@ -147,8 +150,7 @@ def _get_params(s3, wp10db, builder, description='', long_description=''):
           'articleList':
               logic_selection.url_for_selection(selection),
           'customZimTitle':
-              util.safe_name(builder.b_name.decode('utf-8')),
-          # TODO(#584): Replace these placeholders with input from the user.
+              custom_title,
           'customZimDescription':
               description
               if description else 'ZIM file created from a WP1 Selection',
@@ -158,7 +160,7 @@ def _get_params(s3, wp10db, builder, description='', long_description=''):
       }
   }
 
-  name = 'wp1_selection_%s' % selection.s_id.decode('utf-8').split('-')[-1]
+  name = 'wp1_selection_%s' % selection_id_frag
   webhook_url = get_webhook_url()
 
   return {
@@ -195,6 +197,9 @@ def schedule_zim_file(s3,
   if token is None:
     raise ZimfarmError('Error retrieving auth token for request')
 
+  if builder is None:
+    raise ObjectNotFoundError('Cannot schedule for None builder')
+
   params = _get_params(s3,
                        wp10db,
                        builder,
@@ -203,6 +208,8 @@ def schedule_zim_file(s3,
   base_url = get_zimfarm_url()
   headers = _get_zimfarm_headers(token)
 
+  builder_id = builder.b_id.decode('utf-8')
+  logger.info('Creating schedule for ZIM for builder id=%s', builder_id)
   r = requests.post('%s/schedules/' % base_url, headers=headers, json=params)
 
   try:
@@ -211,6 +218,7 @@ def schedule_zim_file(s3,
     logger.exception(r.text)
     raise ZimFarmError('Error creating schedule for ZIM file creation') from e
 
+  logger.info('Creating ZIM task for builder id=%s', builder_id)
   r = requests.post('%s/requested-tasks/' % base_url,
                     headers=headers,
                     json={'schedule_names': [params['name'],]})
@@ -221,6 +229,7 @@ def schedule_zim_file(s3,
     data = r.json()
     requested = data.get('requested')
     task_id = requested[0] if requested else None
+    logger.info('Found task id=%s for builder id=%s', task_id, builder_id)
 
     if task_id is None:
       raise ZimFarmError('Did not get scheduled task id')
@@ -228,6 +237,7 @@ def schedule_zim_file(s3,
     logger.exception(r.text)
     raise ZimFarmError('Error requesting task for ZIM file creation') from e
   finally:
+    logger.info('Deleting schedule for builder id=%s', builder_id)
     requests.delete('%s/schedules/%s' % (base_url, params['name']),
                     headers=headers)
 
