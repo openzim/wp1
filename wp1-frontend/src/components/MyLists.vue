@@ -177,11 +177,14 @@ export default {
       return item.s_status !== null && item.s_status !== 'OK';
     },
     hasOutdatedZim: function (item) {
-      return item.z_updated_at < item.s_updated_at;
+      return !!item.z_updated_at && item.z_updated_at < item.s_updated_at;
     },
     hasDeletedZim: function (item) {
       // ZIMs older than 2 weeks get deleted.
-      return Date.now() - item.z_updated_at > 14 * 24 * 60 * 60 * 1000;
+      return (
+        !!item.z_updated_at &&
+        Date.now() - item.z_updated_at > 14 * 24 * 60 * 60 * 1000
+      );
     },
     localDate: function (secs) {
       const fmt = new Intl.DateTimeFormat('en-US', {
