@@ -259,6 +259,27 @@ to something like:
     ...
 ```
 
+# Building/editing the docs
+
+Documentation lives at [Read the Docs](https://wp1.readthedocs.io/en/latest/). It is
+built using [mkdocs](https://www.mkdocs.org/). The Read the Docs site automatically
+monitors the WP1 github HEAD and re-builds the documentation on every push.
+
+## Local docs
+
+If you are editing the docs and would like to view them locally before pushing:
+
+```bash
+$ cd docs
+$ python -m venv venv
+$ source venv/bin/activate
+$ pip install -r requirements.txt
+$ cd ..
+$ mkdocs serve
+```
+
+The `serve` command should print out the port to view the docs at, likely localhost:8000.
+
 # Updating production
 
 - Push to the release branch of the github repository:
