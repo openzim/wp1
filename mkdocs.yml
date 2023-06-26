@@ -6,5 +6,6 @@ nav:
   - 'For End Users':
       - Overview: 'user/index.md'
       - Selections: 'user/selections.md'
+      - ZIM files: 'user/zim_files.md'
   - 'For Developers':
       - Overview: 'developer/index.md'
