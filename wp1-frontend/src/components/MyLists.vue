@@ -67,13 +67,16 @@
               </td>
               <td
                 v-if="item.z_url"
-                :class="{ 'outdated-zim': hasOutdatedZim(item) }"
+                :class="{
+                  'outdated-zim': hasOutdatedZim(item),
+                  'deleted-zim': hasDeletedZim(item),
+                }"
               >
                 {{ localDate(item.z_updated_at) }}
               </td>
               <td v-else>-</td>
               <td
-                v-if="item.z_url"
+                v-if="item.z_url && !hasDeletedZim(item)"
                 :class="{ 'outdated-zim': hasOutdatedZim(item) }"
               >
                 <a :href="item.z_url">Download ZIM</a>
@@ -107,6 +110,7 @@
                 >
                 <span
                   v-if="hasDeletedZim(item)"
+                  class="deleted-zim"
                   data-toggle="tooltip"
                   data-placement="top"
                   title="Your previous ZIM file has expired (2 weeks)."
@@ -181,9 +185,16 @@ export default {
     },
     hasDeletedZim: function (item) {
       // ZIMs older than 2 weeks get deleted.
+      console.log(
+        item.name,
+        item.z_updated_at * 1000,
+        Date.now(),
+        Date.now() - item.z_updated_at,
+        Date.now() - item.z_updated_at * 1000 > 14 * 24 * 60 * 60 * 1000
+      );
       return (
         !!item.z_updated_at &&
-        Date.now() - item.z_updated_at > 14 * 24 * 60 * 60 * 1000
+        Date.now() - item.z_updated_at * 1000 > 14 * 24 * 60 * 60 * 1000
       );
     },
     localDate: function (secs) {
@@ -277,6 +288,10 @@ export default {
 
 .zim-failed a {
   color: #dc3545 !important;
+}
+
+.deleted-zim {
+  color: #dc3545;
 }
 
 .outdated-zim,
