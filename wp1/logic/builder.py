@@ -305,6 +305,7 @@ def latest_selection_url(wp10db, builder_id, ext):
 
 
 def latest_zim_file_for(wp10db, builder_id):
+  """Returns the ZIM file that matches the ZIM version of the Builder."""
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''SELECT z.* FROM zim_files z
@@ -312,6 +313,25 @@ def latest_zim_file_for(wp10db, builder_id):
              ON s.s_id = z.z_selection_id
            INNER JOIN builders b
              ON b.b_selection_zim_version = s.s_version
+             AND b.b_id = s.s_builder_id
+           WHERE b.b_id = %s
+        ''', (builder_id,))
+    db_zim = cursor.fetchone()
+    if db_zim is None:
+      return None
+    return ZimFile(**db_zim)
+
+
+def zim_file_for_latest_selection(wp10db, builder_id):
+  """Returns the ZIM file of the latest Selection for a Builder."""
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        '''SELECT z.* FROM zim_files z
+           INNER JOIN selections s
+             ON s.s_id = z.z_selection_id
+           INNER JOIN builders b
+             ON b.b_current_version = s.s_version
+             AND b.b_id = s.s_builder_id
            WHERE b.b_id = %s
         ''', (builder_id,))
     db_zim = cursor.fetchone()
@@ -415,14 +435,14 @@ def schedule_zim_file(s3,
 
 
 def latest_zimfarm_status(wp10db, builder_id):
-  zim_file = latest_zim_file_for(wp10db, builder_id)
+  zim_file = zim_file_for_latest_selection(wp10db, builder_id)
   if zim_file is None:
     return None
   return zim_file.z_status.decode('utf-8')
 
 
 def latest_zimfarm_task_url(wp10db, builder_id):
-  zim_file = latest_zim_file_for(wp10db, builder_id)
+  zim_file = zim_file_for_latest_selection(wp10db, builder_id)
   if zim_file is None or zim_file.z_task_id is None:
     return None
 
