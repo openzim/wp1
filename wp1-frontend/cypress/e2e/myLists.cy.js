@@ -3,7 +3,9 @@
 describe('the user selection list page', () => {
   describe('when the user is logged in', () => {
     beforeEach(() => {
-      cy.intercept('v1/selection/simple/lists', { fixture: 'list_data.json' });
+      cy.intercept('v1/selection/simple/lists', {
+        fixture: 'list_data.json',
+      }).as('list');
       cy.intercept('v1/oauth/identify', { fixture: 'identity.json' });
       cy.visit('/#/selections/user');
       cy.get('select').select('25');
@@ -12,7 +14,7 @@ describe('the user selection list page', () => {
     it('successfully loads', () => {});
 
     it('displays the datatables view', () => {
-      cy.get('.dataTables_info').contains('Showing 1 to 11 of 11 entries');
+      cy.get('.dataTables_info').contains('Showing 1 to 12 of 12 entries');
     });
 
     it('displays list and its contents', () => {
@@ -152,6 +154,16 @@ describe('the user selection list page', () => {
     });
 
     describe('when the ZIM file is ready', () => {
+      beforeEach(() => {
+        cy.clock(1685991600000);
+        cy.visit('/#/selections/user');
+        cy.wait('@list')
+          .then(cy.clock)
+          .then((clock) => {
+            console.log('restoring');
+            clock.restore();
+          });
+      });
       it('displays the download ZIM link', () => {
         cy.contains('td', 'zim ready')
           .parent('tr')
@@ -164,35 +176,61 @@ describe('the user selection list page', () => {
         cy.contains('td', 'zim ready')
           .parent('tr')
           .within(() => {
-            cy.get('td').eq(6).should('contain', '12/17/22');
+            cy.get('td').eq(6).should('contain', '6/1/23');
           });
       });
     });
-  });
 
-  describe('when there is an outdated ZIM', () => {
-    it('displays the download ZIM link', () => {
-      cy.contains('td', 'outdated zim')
-        .parent('tr')
-        .within(() => {
-          cy.get('td').eq(7).get('a').should('contain', 'Download ZIM');
-        });
+    describe('when there is an outdated ZIM', () => {
+      it('displays the download ZIM link', () => {
+        cy.contains('td', 'outdated zim')
+          .parent('tr')
+          .within(() => {
+            cy.get('td').eq(7).get('a').should('contain', 'Download ZIM');
+          });
+      });
+
+      it('displays the ZIM updated date', () => {
+        cy.contains('td', 'outdated zim')
+          .parent('tr')
+          .within(() => {
+            cy.get('td').eq(6).should('contain', '6/1/23');
+          });
+      });
+
+      it('shows the info hover', () => {
+        cy.contains('td', 'outdated zim')
+          .parent('tr')
+          .within(() => {
+            cy.get('td').eq(7).get('span').should('exist');
+          });
+      });
     });
 
-    it('displays the ZIM updated date', () => {
-      cy.contains('td', 'outdated zim')
-        .parent('tr')
-        .within(() => {
-          cy.get('td').eq(6).should('contain', '6/18/23');
-        });
-    });
+    describe('when there is an deleted ZIM', () => {
+      it('displays the download ZIM link', () => {
+        cy.contains('td', 'deleted zim')
+          .parent('tr')
+          .within(() => {
+            cy.get('td').eq(7).get('a').should('contain', 'Download ZIM');
+          });
+      });
 
-    it('shows the info hover', () => {
-      cy.contains('td', 'outdated zim')
-        .parent('tr')
-        .within(() => {
-          cy.get('td').eq(7).get('span').should('exist');
-        });
+      it('displays the ZIM updated date', () => {
+        cy.contains('td', 'deleted zim')
+          .parent('tr')
+          .within(() => {
+            cy.get('td').eq(6).should('contain', '6/18/23');
+          });
+      });
+
+      it('shows the info hover', () => {
+        cy.contains('td', 'deleted zim')
+          .parent('tr')
+          .within(() => {
+            cy.get('td').eq(7).get('span').should('exist');
+          });
+      });
     });
   });
 

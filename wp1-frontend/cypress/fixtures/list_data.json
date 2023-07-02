@@ -15,7 +15,8 @@
       "s_url": "https://www.example.fake/abcd-efgh",
       "z_updated_at": null,
       "z_url": null,
-      "z_status": "NOT_REQUESTED"
+      "z_status": "NOT_REQUESTED",
+      "z_is_deleted": null
     },
     {
       "id": 2,
@@ -32,7 +33,8 @@
       "s_url": null,
       "z_updated_at": null,
       "z_url": null,
-      "z_status": "NOT_REQUESTED"
+      "z_status": "NOT_REQUESTED",
+      "z_is_deleted": null
     },
     {
       "created_at": 1670251154,
@@ -49,7 +51,8 @@
       "updated_at": 1670261154,
       "z_updated_at": null,
       "z_url": null,
-      "z_status": "NOT_REQUESTED"
+      "z_status": "NOT_REQUESTED",
+      "z_is_deleted": null
     },
     {
       "created_at": 1669778531,
@@ -66,7 +69,8 @@
       "updated_at": 1670247215,
       "z_updated_at": null,
       "z_url": null,
-      "z_status": "NOT_REQUESTED"
+      "z_status": "NOT_REQUESTED",
+      "z_is_deleted": null
     },
     {
       "created_at": 1669778531,
@@ -83,7 +87,8 @@
       "updated_at": 1670247215,
       "z_updated_at": null,
       "z_url": null,
-      "z_status": "NOT_REQUESTED"
+      "z_status": "NOT_REQUESTED",
+      "z_is_deleted": null
     },
     {
       "created_at": 1669778531,
@@ -100,7 +105,8 @@
       "updated_at": 1670267215,
       "z_updated_at": null,
       "z_url": null,
-      "z_status": "NOT_REQUESTED"
+      "z_status": "NOT_REQUESTED",
+      "z_is_deleted": null
     },
     {
       "created_at": 1669678531,
@@ -117,7 +123,8 @@
       "updated_at": 1670267215,
       "z_updated_at": null,
       "z_url": null,
-      "z_status": "NOT_REQUESTED"
+      "z_status": "NOT_REQUESTED",
+      "z_is_deleted": null
     },
     {
       "created_at": 1669679000,
@@ -134,10 +141,11 @@
       "updated_at": 1670287215,
       "z_updated_at": null,
       "z_url": null,
-      "z_status": "REQUESTED"
+      "z_status": "REQUESTED",
+      "z_is_deleted": null
     },
     {
-      "created_at": 1669679000,
+      "created_at": 1685646000,
       "id": "7368f534-27f5-4350-bfe3-23b90363df7b",
       "model": "wp1.selection.models.sparql",
       "name": "zim ready",
@@ -146,12 +154,13 @@
       "s_extension": "tsv",
       "s_id": "1234-hijk",
       "s_status": "OK",
-      "s_updated_at": 1671263950,
+      "s_updated_at": 1685646500,
       "s_url": "https://www.example.fake/1234-hijk",
-      "updated_at": 1670287215,
-      "z_updated_at": 1671287215,
+      "updated_at": 1685646150,
+      "z_updated_at": 1685646750,
       "z_url": "https://localhost/zim/latest",
-      "z_status": "FILE_READY"
+      "z_status": "FILE_READY",
+      "z_is_deleted": false
     },
     {
       "created_at": 1682181321,
@@ -168,13 +177,32 @@
       "updated_at": 1682181321,
       "z_updated_at": null,
       "z_url": null,
-      "z_status": "FAILED"
+      "z_status": "FAILED",
+      "z_is_deleted": null
+    },
+    {
+      "created_at": 1685646000,
+      "id": "dcea7035-cc69-471e-b0e6-08dfbafd5e7c",
+      "model": "wp1.selection.models.simple",
+      "name": "outdated zim",
+      "project": "en.wikipedia.org",
+      "s_content_type": "text/tab-separated-values",
+      "s_extension": "tsv",
+      "s_id": "1b767bca-8fa6-48e3-9893-eb7b6d0ada91",
+      "s_status": "OK",
+      "s_updated_at": 1685646500,
+      "s_url": "http://localhost:5000/v1/builders/dcea7035-cc69-471e-b0e6-08dfbafd5e7c/selection/latest.tsv",
+      "updated_at": 1685646150,
+      "z_status": "FILE_READY",
+      "z_updated_at": 1685646300,
+      "z_url": "http://localhost:5000/v1/builders/dcea7035-cc69-471e-b0e6-08dfbafd5e7c/zim/latest",
+      "z_is_deleted": false
     },
     {
       "created_at": 1685974621,
       "id": "dcea7035-cc69-471e-b0e6-08dfbafd5e7c",
       "model": "wp1.selection.models.simple",
-      "name": "outdated zim",
+      "name": "deleted zim",
       "project": "en.wikipedia.org",
       "s_content_type": "text/tab-separated-values",
       "s_extension": "tsv",
@@ -185,7 +213,8 @@
       "updated_at": 1687109226,
       "z_status": "FILE_READY",
       "z_updated_at": 1687108510,
-      "z_url": "http://localhost:5000/v1/builders/dcea7035-cc69-471e-b0e6-08dfbafd5e7c/zim/latest"
+      "z_url": "http://localhost:5000/v1/builders/dcea7035-cc69-471e-b0e6-08dfbafd5e7c/zim/latest",
+      "z_is_deleted": true
     }
   ]
 }

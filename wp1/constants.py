@@ -26,6 +26,7 @@ LIST_V2_URL = 'https://wp1.openzim.org/#/project'
 # Timeout for the rq worker jobs, in seconds
 JOB_TIMEOUT = 60 * 60 * 2  # 2 hours
 JOB_FAILURE_TTL = 60 * 60 * 24 * 7  # 7 days
+ZIM_FILE_TTL = 2 * 7 * 24 * 60 * 60  # 2 weeks
 
 LOG_NS = 4
 MAX_LOGS_PER_DAY = 100000

@@ -55,6 +55,8 @@ class BuilderTest(BaseWpOneDbTest):
           None,
       'z_status':
           'NOT_REQUESTED',
+      'z_is_deleted':
+          None,
   }]
 
   expected_lists_with_multiple_selections = [
@@ -89,6 +91,8 @@ class BuilderTest(BaseWpOneDbTest):
               None,
           'z_status':
               'NOT_REQUESTED',
+          'z_is_deleted':
+              None,
       },
       {
           'id':
@@ -121,6 +125,8 @@ class BuilderTest(BaseWpOneDbTest):
               None,
           'z_status':
               'NOT_REQUESTED',
+          'z_is_deleted':
+              None,
       },
   ]
 
@@ -140,6 +146,7 @@ class BuilderTest(BaseWpOneDbTest):
       'z_updated_at': None,
       'z_url': None,
       'z_status': None,
+      'z_is_deleted': None,
   }]
 
   expected_lists_with_unmapped_selections = [{
@@ -158,6 +165,7 @@ class BuilderTest(BaseWpOneDbTest):
       'z_updated_at': None,
       'z_url': None,
       'z_status': 'NOT_REQUESTED',
+      'z_is_deleted': None,
   }]
 
   expected_list_with_zimfarm_status = [{
@@ -191,6 +199,8 @@ class BuilderTest(BaseWpOneDbTest):
           'http://test.server.fake/v1/builders/1a-2b-3c-4d/zim/latest',
       'z_status':
           'FILE_READY',
+      'z_is_deleted':
+          True,
   }]
 
   def _insert_builder(self, current_version=None, zim_version=None):
@@ -480,6 +490,23 @@ class BuilderTest(BaseWpOneDbTest):
     article_data = logic_builder.get_builders_with_selections(
         self.wp10db, '1234')
     self.assertObjectListsEqual(self.expected_lists_with_unmapped_selections,
+                                article_data)
+
+  @patch('wp1.models.wp10.builder.utcnow',
+         return_value=datetime.datetime(2020, 12, 25, 4, 44, 44))
+  def test_get_builders_deleted_zim(self, mock_utcnow):
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           zim_file_ready=True,
+                           version=1)
+    self._insert_selection(2,
+                           'text/tab-separated-values',
+                           zim_file_ready=False,
+                           version=2)
+    self._insert_builder()
+    article_data = logic_builder.get_builders_with_selections(
+        self.wp10db, '1234')
+    self.assertObjectListsEqual(self.expected_list_with_zimfarm_status,
                                 article_data)
 
   @patch('wp1.models.wp10.builder.utcnow',
