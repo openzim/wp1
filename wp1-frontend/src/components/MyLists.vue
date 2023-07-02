@@ -110,6 +110,7 @@
                 >
                 <span
                   v-if="hasDeletedZim(item)"
+                  class="deleted-zim"
                   data-toggle="tooltip"
                   data-placement="top"
                   title="Your previous ZIM file has expired (2 weeks)."
