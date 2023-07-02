@@ -208,19 +208,19 @@ describe('the user selection list page', () => {
     });
 
     describe('when there is an deleted ZIM', () => {
-      it('displays the download ZIM link', () => {
-        cy.contains('td', 'deleted zim')
-          .parent('tr')
-          .within(() => {
-            cy.get('td').eq(7).get('a').should('contain', 'Download ZIM');
-          });
-      });
-
       it('displays the ZIM updated date', () => {
         cy.contains('td', 'deleted zim')
           .parent('tr')
           .within(() => {
             cy.get('td').eq(6).should('contain', '6/18/23');
+          });
+      });
+
+      it('displays the Create Zim button', () => {
+        cy.contains('td', 'deleted zim')
+          .parent('tr')
+          .within(() => {
+            cy.get('td').eq(7).should('contain', 'Create ZIM');
           });
       });
 
