@@ -181,10 +181,7 @@ export default {
     },
     hasDeletedZim: function (item) {
       // ZIMs older than 2 weeks get deleted.
-      return (
-        !!item.z_updated_at &&
-        Date.now() - item.z_updated_at > 14 * 24 * 60 * 60 * 1000
-      );
+      return !!item.z_is_deleted;
     },
     localDate: function (secs) {
       const fmt = new Intl.DateTimeFormat('en-US', {
