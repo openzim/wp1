@@ -4,7 +4,7 @@ import time
 
 import attr
 
-from wp1.constants import CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE, MAX_ZIM_FILE_POLL_TIME, TS_FORMAT_WP10
+from wp1.constants import CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE, MAX_ZIM_FILE_POLL_TIME, TS_FORMAT_WP10, ZIM_FILE_TTL
 from wp1.credentials import CREDENTIALS, ENV
 from wp1.environment import Environment
 from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError
@@ -528,6 +528,7 @@ def _get_zimfile_data(builder):
       'z_status': None,
       'z_updated_at': None,
       'z_url': None,
+      'z_is_deleted': None,
   }
 
   has_selection = builder['s_id'] is not None
@@ -541,7 +542,9 @@ def _get_zimfile_data(builder):
       if builder['z_updated_at'] is not None:
         data['z_updated_at'] = logic_util.wp10_timestamp_to_unix(
             builder['z_updated_at'])
-
+        # Older than 2 weeks are deleted.
+        is_deleted = utcnow().timestamp() - data['z_updated_at'] > ZIM_FILE_TTL
+        data['z_is_deleted'] = is_deleted
       if content_type == 'text/tab-separated-values' and is_zim_ready:
         data['z_url'] = local_url_for_latest_zim(
             builder['b_id'].decode('utf-8'))
