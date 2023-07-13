@@ -169,6 +169,32 @@ describe('the zim file creation page', () => {
           });
         });
       });
+
+      describe('when the zim file is expired', () => {
+        beforeEach(() => {
+          cy.intercept('v1/builders/1/zim/status', {
+            fixture: 'zim_status_deleted.json',
+          }).as('status');
+          cy.visit('/#/selections/1/zim');
+          cy.wait('@identity');
+          cy.wait('@builder');
+          cy.wait('@status');
+        });
+
+        it('displays the form for entering descriptions', () => {
+          cy.get('#desc').should('be.visible');
+          cy.get('#longdesc').should('be.visible');
+        });
+
+        it('does not show the spinner', () => {
+          cy.get('#loader').should('not.be.visible');
+        });
+
+        it('displays the Request ZIM file button', () => {
+          cy.get('#request').should('be.visible');
+          cy.get('#request').should('not.have.attr', 'disabled');
+        });
+      });
     });
 
     describe('and the builder is not found', () => {
