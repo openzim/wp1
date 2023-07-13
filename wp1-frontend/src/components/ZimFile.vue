@@ -29,7 +29,12 @@
             page and the My Selections page will automatically update with a URL
             to download your ZIM file once it is ready.
           </p>
-          <p v-if="status === 'REQUESTED'">
+          <p v-if="isDeleted && status == 'FILE_READY'" class="errors">
+            Your ZIM file has expired and needs to be re-created. ZIM file
+            download links are only valid for 2 weeks. You can re-create your
+            ZIM file with the button below.
+          </p>
+          <p v-else-if="status === 'REQUESTED'">
             Your ZIM file has been requested and is being processed. This page
             will update with the URL to download it once it is ready. It will
             also keep you updated on any errors that may occur.
@@ -40,13 +45,20 @@
           </p>
           <p v-else-if="status === 'FAILED'" class="errors">
             There was an error creating your ZIM file. More information may be
-            available <a :href="error_url">via the Zimfarm API</a>. If you feel
+            available <a :href="errorUrl">via the Zimfarm API</a>. If you feel
             this was a transient or external error, you can try requesting your
             ZIM file again below.
           </p>
         </div>
       </div>
-      <div v-if="status === 'NOT_REQUESTED' || status === 'FAILED'" class="row">
+      <div
+        v-if="
+          status === 'NOT_REQUESTED' ||
+          status === 'FAILED' ||
+          (status != 'REQUESTED' && isDeleted)
+        "
+        class="row"
+      >
         <div class="col-lg-6 col-md-9 mx-4">
           <form
             ref="form"
@@ -149,6 +161,10 @@ export default {
   data: function () {
     return {
       description: '',
+      errors: [],
+      errorMessages: [],
+      errorUrl: '',
+      isDeleted: false,
       loaderColor: '#007bff',
       loaderSize: '1rem',
       longDescription: '',
@@ -157,9 +173,7 @@ export default {
       processing: false,
       ready: false,
       serverError: false,
-      errorMessages: [],
       status: null,
-      error_url: '',
       success: true,
     };
   },
@@ -200,10 +214,13 @@ export default {
 
       const data = await response.json();
       this.status = data.status;
+      this.description = data.description;
+      this.longDescription = data.long_description;
+      this.isDeleted = data.is_deleted;
       if (this.status === 'FILE_READY') {
         this.stopProgressPolling();
       } else if (this.status === 'FAILED') {
-        this.error_url = data.error_url;
+        this.errorUrl = data.error_url;
       } else if (this.status !== 'NOT_REQUESTED') {
         this.startProgressPolling();
       }
