@@ -141,7 +141,8 @@ def create_zim_file_for_builder(builder_id):
   data = flask.request.get_json()
   desc = data.get('description')
   if not desc:
-    return 'Description is required for ZIM file', 400
+    return flask.jsonify(
+        {'error_messages': 'Description is required for ZIM file'}), 400
   long_desc = data.get('long_description')
 
   try:
@@ -173,9 +174,7 @@ def create_zim_file_for_builder(builder_id):
 @builders.route('/<builder_id>/zim/status')
 def zimfarm_status(builder_id):
   wp10db = get_db('wp10db')
-  status = logic_builder.latest_zimfarm_status(wp10db, builder_id)
-  error_url = logic_builder.latest_zimfarm_task_url(wp10db, builder_id)
-  return flask.jsonify({'status': status, 'error_url': error_url})
+  return flask.jsonify(logic_builder.zim_file_status_for(wp10db, builder_id))
 
 
 @builders.route('/zim/status', methods=['POST'])

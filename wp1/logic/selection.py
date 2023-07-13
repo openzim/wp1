@@ -5,7 +5,7 @@ import urllib.parse
 
 import attr
 
-from wp1.constants import CONTENT_TYPE_TO_EXT, TS_FORMAT_WP10
+from wp1.constants import CONTENT_TYPE_TO_EXT, TS_FORMAT_WP10, ZIM_FILE_TTL
 from wp1.models.wp10.selection import Selection
 from wp1.models.wp10.zim_file import ZimFile
 from wp1.storage import connect_storage
@@ -173,6 +173,10 @@ def update_zimfarm_task(wp10db, task_id, status, set_updated_now=False):
       found = bool(cursor.rowcount)
   wp10db.commit()
   return found
+
+
+def is_zim_file_deleted(update_at_timestamp):
+  return utcnow().timestamp() - update_at_timestamp > ZIM_FILE_TTL
 
 
 TASK_CPU = 3
