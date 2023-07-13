@@ -4,7 +4,7 @@ import time
 
 import attr
 
-from wp1.constants import CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE, MAX_ZIM_FILE_POLL_TIME, TS_FORMAT_WP10, ZIM_FILE_TTL
+from wp1.constants import CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE, MAX_ZIM_FILE_POLL_TIME, TS_FORMAT_WP10
 from wp1.credentials import CREDENTIALS, ENV
 from wp1.environment import Environment
 from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError
@@ -434,20 +434,32 @@ def schedule_zim_file(s3,
   return task_id
 
 
-def latest_zimfarm_status(wp10db, builder_id):
+def zim_file_status_for(wp10db, builder_id):
+  data = {
+      'status': None,
+      'error_url': None,
+      'is_deleted': None,
+      'description': None,
+      'long_description': None,
+  }
   zim_file = zim_file_for_latest_selection(wp10db, builder_id)
-  if zim_file is None:
-    return None
-  return zim_file.z_status.decode('utf-8')
-
-
-def latest_zimfarm_task_url(wp10db, builder_id):
-  zim_file = zim_file_for_latest_selection(wp10db, builder_id)
-  if zim_file is None or zim_file.z_task_id is None:
-    return None
+  if not zim_file:
+    return data
 
   base_url = zimfarm.get_zimfarm_url()
-  return '%s/tasks/%s' % (base_url, zim_file.z_task_id.decode('utf-8'))
+  data['status'] = zim_file.z_status.decode('utf-8')
+  if zim_file.z_task_id:
+    data['error_url'] = '%s/tasks/%s' % (base_url,
+                                         zim_file.z_task_id.decode('utf-8'))
+  if zim_file.z_updated_at:
+    data['is_deleted'] = logic_selection.is_zim_file_deleted(
+        logic_util.wp10_timestamp_to_unix(zim_file.z_updated_at))
+  data['description'] = zim_file.z_description.decode(
+      'utf-8') if zim_file.z_description else None
+  data['long_description'] = zim_file.z_long_description.decode(
+      'utf-8') if zim_file.z_long_description else None
+
+  return data
 
 
 def on_zim_file_status_poll(task_id):
@@ -543,8 +555,8 @@ def _get_zimfile_data(builder):
         data['z_updated_at'] = logic_util.wp10_timestamp_to_unix(
             builder['z_updated_at'])
         # Older than 2 weeks are deleted.
-        is_deleted = utcnow().timestamp() - data['z_updated_at'] > ZIM_FILE_TTL
-        data['z_is_deleted'] = is_deleted
+        data['z_is_deleted'] = logic_selection.is_zim_file_deleted(
+            data['z_updated_at'])
       if content_type == 'text/tab-separated-values' and is_zim_ready:
         data['z_url'] = local_url_for_latest_zim(
             builder['b_id'].decode('utf-8'))
