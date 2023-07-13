@@ -693,13 +693,6 @@ class BuilderTest(BaseWpOneDbTest):
         actual,
         'http://credentials.not.found.fake/proper/selection/4321/name.tsv')
 
-  def test_latest_zimfarm_task_url(self):
-    builder_id = self._insert_builder_with_multiple_version_selections()
-
-    actual = logic_builder.latest_zimfarm_task_url(self.wp10db, builder_id)
-
-    self.assertEqual('https://fake.farm/v1/tasks/5678', actual)
-
   @patch('wp1.logic.builder.zimfarm.zim_file_url_for_task_id',
          return_value='https://zim.fake/1234')
   def test_latest_zim_file_url_for(self, mock_zimfarm_url_for):
