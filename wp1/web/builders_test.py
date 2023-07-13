@@ -596,7 +596,10 @@ class BuildersTest(BaseWebTestcase):
     self.assertEqual(
         {
             'error_url': 'https://fake.farm/v1/tasks/task-id-1234',
-            'status': 'FILE_READY'
+            'status': 'FILE_READY',
+            'description': None,
+            'long_description': None,
+            'is_deleted': None,
         }, rv.get_json())
 
   @patch('wp1.logic.builder.zimfarm.zim_file_url_for_task_id',
