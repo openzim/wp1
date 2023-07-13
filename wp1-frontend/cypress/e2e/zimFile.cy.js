@@ -67,7 +67,8 @@ describe('the zim file creation page', () => {
               statusCode: 204,
             }).as('request');
 
-            cy.get('#desc').click().type('Description from user');
+            cy.get('#desc').click();
+            cy.get('#desc').type('Description from user');
             cy.get('#request').click();
           });
 
@@ -160,7 +161,8 @@ describe('the zim file creation page', () => {
               statusCode: 204,
             }).as('request');
 
-            cy.get('#desc').click().type('Description from user');
+            cy.get('#desc').click();
+            cy.get('#desc').type('Description from user');
             cy.get('#request').click();
           });
 
