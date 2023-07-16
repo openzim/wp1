@@ -11,6 +11,7 @@ import VueRouter from 'vue-router';
 
 import App from './App.vue';
 import ArticlePage from './components/ArticlePage.vue';
+import PetscanBuilder from './components/PetscanBuilder.vue';
 import SimpleBuilder from './components/SimpleBuilder.vue';
 import SparqlBuilder from './components/SparqlBuilder.vue';
 import ComparePage from './components/ComparePage.vue';
@@ -111,6 +112,13 @@ const routes = [
     },
   },
   {
+    path: '/selections/petscan',
+    component: PetscanBuilder,
+    meta: {
+      title: () => BASE_TITLE + ' - Create Petscan Selection',
+    },
+  },
+  {
     path: '/selections/simple/:builder_id',
     component: SimpleBuilder,
     meta: {
@@ -122,6 +130,13 @@ const routes = [
     component: SparqlBuilder,
     meta: {
       title: () => BASE_TITLE + ' - Edit SPARQL Selection',
+    },
+  },
+  {
+    path: '/selections/petscan/:builder_id',
+    component: PetscanBuilder,
+    meta: {
+      title: () => BASE_TITLE + ' - Edit Petscan Selection',
     },
   },
   {
