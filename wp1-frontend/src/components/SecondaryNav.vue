@@ -49,6 +49,18 @@
               >SPARQL Selection</router-link
             >
           </li>
+          <li
+            :class="
+              'nav-item ' +
+              (this.$route.path.startsWith('/selections/petscan')
+                ? 'active'
+                : '')
+            "
+          >
+            <router-link class="nav-link" to="/selections/petscan"
+              >Petscan Selection</router-link
+            >
+          </li>
         </ul>
       </div>
     </nav>
