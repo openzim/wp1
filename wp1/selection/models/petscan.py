@@ -4,6 +4,7 @@ import urllib
 import requests
 import validators
 
+from wp1.constants import WP1_USER_AGENT
 from wp1.exceptions import Wp1FatalSelectionError
 from wp1.selection.abstract_builder import AbstractBuilder
 
@@ -27,7 +28,7 @@ class Builder(AbstractBuilder):
     final_url = parsed_url._replace(
         query=urllib.parse.urlencode(parsed_query, doseq=True)).geturl()
 
-    resp = requests.get(final_url)
+    resp = requests.get(final_url, headers={'User-Agent': WP1_USER_AGENT})
     try:
       resp.raise_for_status()
     except requests.exceptions.HTTPError as e:
