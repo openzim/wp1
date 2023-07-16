@@ -75,7 +75,10 @@ class PetscanBuilderTest(BaseWpOneDbTest):
     actual = self.builder.build('text/tab-separated-values',
                                 url='https://petscan.wmflabs.org.fake/?psid=42')
     mock_requests.get.assert_called_with(
-        'https://petscan.wmflabs.org.fake/?psid=42&format=json')
+        'https://petscan.wmflabs.org.fake/?psid=42&format=json',
+        headers={
+            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
+        })
 
   @patch('wp1.selection.models.petscan.requests')
   def test_build_other_format(self, mock_requests):
@@ -87,7 +90,10 @@ class PetscanBuilderTest(BaseWpOneDbTest):
         'text/tab-separated-values',
         url='https://petscan.wmflabs.org.fake/?psid=42&format=wiki')
     mock_requests.get.assert_called_with(
-        'https://petscan.wmflabs.org.fake/?psid=42&format=json')
+        'https://petscan.wmflabs.org.fake/?psid=42&format=json',
+        headers={
+            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
+        })
 
   @patch('wp1.selection.models.petscan.requests.get')
   def test_build_non_200(self, mock_requests_get):
