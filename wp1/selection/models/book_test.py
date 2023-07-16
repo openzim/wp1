@@ -72,6 +72,10 @@ class BookBuilderTest(BaseWpOneDbTest):
 
   @patch('wp1.selection.models.book.requests')
   def test_materialize(self, mock_requests):
+    mock_response = MagicMock()
+    mock_response.json.return_value = self.mock_book_response
+    mock_requests.get.return_value = mock_response
+
     self.builder.materialize(self.s3, self.wp10db, self.builder_model,
                              'text/tab-separated-values', 1)
     actual = get_first_selection(self.wp10db)
@@ -122,7 +126,7 @@ class BookBuilderTest(BaseWpOneDbTest):
         url='https://en.wikipedia.fake/wiki/User:Audiodude/Books/test',
         project='en.wikipedia.fake')
     mock_requests.get.assert_called_with(
-        'https://en.wikipedia.org/w/api.php?'
+        'https://en.wikipedia.fake/w/api.php?'
         'action=query&prop=revisions&rvprop=content&format=json&rvslots=main'
         '&titles=User:Audiodude/Books/test',
         headers={
@@ -140,3 +144,25 @@ class BookBuilderTest(BaseWpOneDbTest):
           'text/tab-separated-values',
           url='https://en.wikipedia.fake/wiki/User:Audiodude/Books/test',
           project='en.wikipedia.fake')
+
+  def test_validate_missing_url(self):
+    actual = self.builder.validate('text/tab-separated-values',
+                                   project='en.wikipedia.fake')
+    self.assertEquals(('', '', ['Missing URL parameter']), actual)
+
+  def test_validate_missing_url(self):
+    actual = self.builder.validate(
+        url='https://en.wikipedia.fake/wiki/User:Audiodude/Books/test',)
+    self.assertEqual(
+        ('', 'https://en.wikipedia.fake/wiki/User:Audiodude/Books/test',
+         ['Missing project parameter']), actual)
+
+  def test_validate_project_mismatch(self):
+    actual = self.builder.validate(
+        url='https://fr.wikipedia.fake/wiki/User:Audiodude/Books/test',
+        project='en.wikipedia.fake')
+    self.assertEqual(
+        ('', 'https://fr.wikipedia.fake/wiki/User:Audiodude/Books/test', [
+            'The domain of your URL does not match your '
+            'selected project (project is: en.wikipedia.fake, URL has: fr.wikipedia.fake)'
+        ]), actual)

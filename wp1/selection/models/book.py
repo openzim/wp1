@@ -59,7 +59,7 @@ class Builder(AbstractBuilder):
 
   def validate(self, **params):
     if 'url' not in params:
-      return ('', params['url'], ['Missing URL parameter'])
+      return ('', '', ['Missing URL parameter'])
 
     if 'project' not in params:
       return ('', params['url'], ['Missing project parameter'])

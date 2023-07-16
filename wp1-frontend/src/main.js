@@ -149,7 +149,7 @@ const routes = [
   },
   {
     path: '/selections/book/:builder_id',
-    component: PetscanBuilder,
+    component: BookBuilder,
     meta: {
       title: () => BASE_TITLE + ' - Edit Book Selection',
     },
