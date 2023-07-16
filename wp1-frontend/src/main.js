@@ -11,6 +11,7 @@ import VueRouter from 'vue-router';
 
 import App from './App.vue';
 import ArticlePage from './components/ArticlePage.vue';
+import BookBuilder from './components/BookBuilder.vue';
 import PetscanBuilder from './components/PetscanBuilder.vue';
 import SimpleBuilder from './components/SimpleBuilder.vue';
 import SparqlBuilder from './components/SparqlBuilder.vue';
@@ -119,6 +120,13 @@ const routes = [
     },
   },
   {
+    path: '/selections/book',
+    component: BookBuilder,
+    meta: {
+      title: () => BASE_TITLE + ' - Create Book Selection',
+    },
+  },
+  {
     path: '/selections/simple/:builder_id',
     component: SimpleBuilder,
     meta: {
@@ -137,6 +145,13 @@ const routes = [
     component: PetscanBuilder,
     meta: {
       title: () => BASE_TITLE + ' - Edit Petscan Selection',
+    },
+  },
+  {
+    path: '/selections/book/:builder_id',
+    component: PetscanBuilder,
+    meta: {
+      title: () => BASE_TITLE + ' - Edit Book Selection',
     },
   },
   {
