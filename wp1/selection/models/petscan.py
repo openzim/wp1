@@ -43,11 +43,11 @@ class Builder(AbstractBuilder):
       return ('', '', ['Missing URL parameter'])
 
     if not validators.url(params['url']):
-      return ('', params['url'], 'That doesn\'t look like a valid URL.')
+      return ('', params['url'], ['That doesn\'t look like a valid URL.'])
 
     parsed_url = urllib.parse.urlparse(params['url'])
     if 'petscan.wmflabs.org' not in parsed_url.netloc:
       return ('', params['url'],
-              'Only URLs that lead to petscan.wmflabs.org are allowed.')
+              ['Only URLs that lead to petscan.wmflabs.org are allowed.'])
 
     return ('', '', [])
