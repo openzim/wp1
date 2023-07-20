@@ -67,7 +67,7 @@ export default {
     onBeforeSubmit: function () {
       this.$refs.bookUrl.setCustomValidity('');
     },
-    onValidationError: function (data) {
+    onValidationError: function () {
       this.$refs.bookUrl.setCustomValidity('URL not valid');
     },
   },
