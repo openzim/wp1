@@ -26,7 +26,7 @@ def _create_or_update_builder(data, builder_id=None):
   params = data['params']
 
   if not list_name or not project or not model or not params:
-    return 'Missing list_name or project or model or params', 400
+    flask.abort(400)
 
   builder_module = importlib.import_module(model)
   Builder = getattr(builder_module, 'Builder')
