@@ -19,8 +19,7 @@ class Builder(AbstractBuilder):
     if 'url' not in params:
       raise Wp1FatalSelectionError('Missing required param: url')
     if not isinstance(params['url'], str):
-      raise Wp1FatalSelectionError('Param `url` is not str')
-
+      raise Wp1FatalSelectionError('Param `url` was not str')
 
     # Set the result data format to json
     parsed_url = urllib.parse.urlparse(params['url'])
