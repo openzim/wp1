@@ -64,15 +64,20 @@ class Builder(AbstractBuilder):
     if 'project' not in params:
       return ('', params['url'], ['Missing project parameter'])
 
-    if params['project'] not in params['url']:
-      parsed_url = urllib.parse.urlparse(params['url'])
-      return ('', params['url'], [
+    url = params['url']
+
+    if params['project'] not in url:
+      parsed_url = urllib.parse.urlparse(url)
+      return ('', url, [
           'The domain of your URL does not match your '
           'selected project (project is: %s, URL has: %s)' %
           (params['project'], parsed_url.netloc)
       ])
 
-    if not validators.url(params['url']):
-      return ('', params['url'], ['That doesn\'t look like a valid URL.'])
+    if not validators.url(url):
+      return ('', url, ['That doesn\'t look like a valid URL.'])
+
+    if 'wiki/' not in url:
+      return ('', url, ['Valid book urls include /wiki/.'])
 
     return ('', '', [])
