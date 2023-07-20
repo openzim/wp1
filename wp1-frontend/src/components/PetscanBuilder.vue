@@ -48,7 +48,7 @@ import BaseBuilder from './BaseBuilder.vue';
 
 export default {
   components: { BaseBuilder },
-  name: 'SimpleBuilder',
+  name: 'PetscanBuilder',
   data: function () {
     return {
       url: '',
