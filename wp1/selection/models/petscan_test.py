@@ -116,13 +116,13 @@ class PetscanBuilderTest(BaseWpOneDbTest):
     self.assertEqual(('', '', ['Missing URL parameter']), actual)
 
   def test_validate_not_a_url(self):
-    actual = self.builder.validate(url='http:// foo bar [baz]')
+    afctual = self.builder.validate(url='http:// foo bar [baz]')
     self.assertEqual(
         ('', 'http:// foo bar [baz]', ['That doesn\'t look like a valid URL.']),
         actual)
 
   def test_validate_not_a_petscan_url(self):
-    actual = self.builder.validate(url='http://en.wikipedia.org/')
+    afctual = self.builder.validate(url='http://en.wikipedia.org/')
     self.assertEqual(
         ('', 'http://en.wikipedia.org/',
          ['Only URLs that lead to petscan.wmflabs.org are allowed.']), actual)
