@@ -70,7 +70,7 @@ export default {
     onBeforeSubmit: function () {
       this.$refs.petscanUrl.setCustomValidity('');
     },
-    onValidationError: function (data) {
+    onValidationError: function () {
       this.$refs.petscanUrl.setCustomValidity('URL not valid');
     },
   },
