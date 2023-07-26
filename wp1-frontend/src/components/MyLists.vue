@@ -88,19 +88,19 @@
                   ><i class="bi bi-info-circle"></i
                 ></span>
               </td>
-              <td v-else-if="hasPendingZim(item)">
-                <pulse-loader
-                  class="loader"
-                  :color="loaderColor"
-                  :size="loaderSize"
-                ></pulse-loader>
-              </td>
               <td v-else-if="zimFailed(item)">
                 <span class="zim-failed"
                   ><router-link :to="zimPathFor(item)"
                     >Failed</router-link
                   ></span
                 >
+              </td>
+              <td v-else-if="hasPendingZim(item)">
+                <pulse-loader
+                  class="loader"
+                  :color="loaderColor"
+                  :size="loaderSize"
+                ></pulse-loader>
               </td>
               <td v-else-if="!isPending(item) && !hasSelectionError(item)">
                 <router-link :to="zimPathFor(item)"
@@ -168,11 +168,7 @@ export default {
       );
     },
     hasPendingZim: function (item) {
-      return (
-        item.s_status === 'OK' &&
-        item.z_status !== 'NOT_REQUESTED' &&
-        item.z_status !== 'FILE_READY'
-      );
+      return item.s_status === 'OK' && item.z_status === 'REQUESTED';
     },
     zimFailed: function (item) {
       return item.z_status === 'FAILED';
