@@ -164,6 +164,7 @@ describe('the user selection list page', () => {
             clock.restore();
           });
       });
+
       it('displays the download ZIM link', () => {
         cy.contains('td', 'zim ready')
           .parent('tr')
@@ -229,6 +230,24 @@ describe('the user selection list page', () => {
           .parent('tr')
           .within(() => {
             cy.get('td').eq(7).get('span').should('exist');
+          });
+      });
+    });
+
+    describe('when there is a failed ZIM', () => {
+      it('does not display the ZIM updated date', () => {
+        cy.contains('td', 'zim failed')
+          .parent('tr')
+          .within(() => {
+            cy.get('td').eq(6).should('contain', '-');
+          });
+      });
+
+      it('displays a link to the zim creation page', () => {
+        cy.contains('td', 'zim failed')
+          .parent('tr')
+          .within(() => {
+            cy.get('td').eq(7).should('contain', 'Failed');
           });
       });
     });
