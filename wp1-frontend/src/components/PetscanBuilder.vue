@@ -13,12 +13,14 @@
     <template #create-desc>
       <p>
         Use this tool to create an article selection list for the Wikipedia
-        project of your choice, based off a Petscan URL. Your selection will be
-        saved in public cloud storage and can be accessed through URLs that will
-        be provided once it has been saved.
+        project of your choice, based off a
+        <a href="https://petscan.wmflabs.org/">Petscan</a> URL. Your selection
+        will be saved in public cloud storage and can be accessed through URLs
+        that will be provided once it has been saved.
       </p>
       <p class="mb-0">
-        For more information on creating a Petscan selection, see the
+        For more information on creating a
+        <a href="https://petscan.wmflabs.org/">Petscan</a> selection, see the
         <a href="https://wp1.readthedocs.io/en/latest/user/selections/"
           >end user documentation</a
         >
