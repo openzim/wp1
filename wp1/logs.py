@@ -207,7 +207,7 @@ def update_log_page_for_project(project_name):
 
     p = api.get_page(log_page_name(project_name))
 
-    header = ('{{Log}}\n')
+    header = ('<noinclude>{{Log}}</noinclude>\n')
 
     if len(edits) == 0:
       today = get_current_datetime()
