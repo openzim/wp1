@@ -14,7 +14,7 @@ jobs:
     services:
       # Unit test rely on a local MySQL instance with an empty root password.
       mysql:
-        image: mysql:5.7
+        image: mysql:8.0.30
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
         ports:
@@ -51,9 +51,9 @@ jobs:
           cp wp1/credentials.py.e2e wp1/credentials.py
           cp wp1/credentials.py.dev.e2e wp1/credentials.py.dev
 
-      - name: Test with nose
+      - name: Test with pytest, with coverage
         run: |
-          nosetests --with-coverage
+          pytest --cov
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v3
