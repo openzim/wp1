@@ -1022,7 +1022,8 @@ class GlobalArticlesTest(ArticlesTest):
 
     self._insert_global_scores()
 
-  def test_update_global_articles_table(self):
+  @patch('wp1.logic.project.api_project.get_extra_assessments', return_value={'extra': {}})
+  def test_update_global_articles_table(self, mock_api_project):
     expected = [{
         'a_article': b'Art of testing',
         'a_importance': b'400',
