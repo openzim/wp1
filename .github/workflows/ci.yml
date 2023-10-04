@@ -8,7 +8,7 @@ on:
       - main
 
 jobs:
-  python-nose:
+  python-tests:
     runs-on: ubuntu-22.04
 
     services:
