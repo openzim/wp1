@@ -74,7 +74,7 @@ sqlparse==0.4.4
 supervisor==4.2.2
 tabulate==0.8.9
 toml==0.10.0
-urllib3==1.26.17
+urllib3==1.26.18
 validators==0.20.0
 virtualenv==20.17.1
 watchdog==3.0.0
