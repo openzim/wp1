@@ -1,4 +1,4 @@
-FROM python:3.12
+FROM python:3.9
 
 # Meta
 LABEL maintainer="kiwix"
@@ -10,7 +10,10 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends cron && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-RUN pip3 install --no-cache-dir -r app/requirements.txt
+
+RUN pip3 install --upgrade pip && pip3 install --no-cache-dir pipenv
+WORKDIR /usr/src/app
+RUN pipenv install --system --deploy --ignore-pipfile
 
 RUN chmod -R a+x /usr/src/app/cron/
 
