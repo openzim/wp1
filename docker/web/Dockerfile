@@ -7,7 +7,7 @@ LABEL maintainer="kiwix"
 WORKDIR /usr/src
 COPY . app
 
-RUN pip3 install --upgrade pip && pip3 install --no-cache-dir pipenv
+RUN pip3 install --no-cache-dir --upgrade pip && pip3 install --no-cache-dir pipenv
 WORKDIR /usr/src/app
 RUN pipenv install --system --deploy --ignore-pipfile
 

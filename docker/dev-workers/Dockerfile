@@ -6,7 +6,7 @@ LABEL maintainer="kiwix"
 # Python app
 WORKDIR /usr/src
 RUN mkdir app
-RUN pip3 install --upgrade pip && pip3 install --no-cache-dir pipenv
+RUN pip3 install --no-cache-dir --upgrade pip && pip3 install --no-cache-dir pipenv
 COPY ./Pipfile app/Pipfile
 COPY ./Pipfile.lock app/Pipfile.lock
 WORKDIR /usr/src/app
