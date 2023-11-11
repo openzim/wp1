@@ -35,7 +35,7 @@ jobs:
       - name: Set up Python 3.9.4
         uses: actions/setup-python@v4
         with:
-          python-version: 3.9.4
+          python-version: '3.9.4'
 
       - name: Install dependencies
         run: |
@@ -76,7 +76,7 @@ jobs:
       - name: Set up Python 3.9.4
         uses: actions/setup-python@v4
         with:
-          python-version: 3.9.4
+          python-version: '3.9.4'
 
       - uses: actions/cache@v1
         name: Cache pip dependencies
