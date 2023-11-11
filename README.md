@@ -76,33 +76,30 @@ interfaces with. They are used for unit testing.
 
 This code is targeted to and tested on Python 3.9.4.
 
-### Creating your virtualenv
+### Installing dependencies
 
-As of Python 3.3, creating a virtualenv is a single easy command. It is
-recommmended that you run this command in the top level directory:
-
-```bash
-python3 -m venv venv
-```
-
-### Activating your virtualenv
-
-To activate your virtualenv, run:
+WP1 uses [Pipenv](https://pipenv.pypa.io/en/latest/) to managed dependencies.
+A `Pipfile` and `Pipfile.lock` are provided. You should have the pipenv tool
+installed in your global Python install (not in a virtualenv):
 
 ```bash
-source venv/bin/activate
+pip3 install pipenv
 ```
 
-You should see your prompt change, with a `(venv)` appended to the front.
-
-### Installing requirements
-
-To install the requirements, make sure you are in your virtualenv as
-explained above, then use the following command:
+Then you can use:
 
 ```bash
-pip3 install -r requirements.txt
+pipenv install --dev
 ```
+
+Which will install the dependencies at the precise versions specified in the
+`Pipfile.lock` file. Behind the scenes, Pipenv creates a virtualenv for you
+automatically, which it keeps up to date when you run Pipenv commands. You
+can use the `pipenv shell` command to start a shell using the environment,
+which is similar to "activating" a virtualenv. You can also use `pipenv run`
+to run arbitrary individual shell commands within that environment. In many
+cases, it will be more convenient to use commands like `pipenv run pytest`
+then actually spawning a subshell.
 
 ### Installing frontend requirements
 
@@ -146,7 +143,7 @@ in `docker-compose-test.yml` you can copy these directly from the example
 file. However, you are free to provide your own test database that will
 be destroyed after every test run. See the section "Running the tests".
 
-### Running the backend (Python/nose) tests
+### Running the backend (Python/pytest) tests
 
 The backend/python tests require a MariaDB or MySQL instance to connect to in
 order to verify various statements and logic. This database does not need to be
@@ -161,7 +158,7 @@ you should be able to simply run the following command from this
 directory to run the tests:
 
 ```bash
-nosetests
+pipenv run pytest
 ```
 
 ### Running the frontend (Cypress) integration tests
@@ -177,6 +174,8 @@ To run the tests:
 cd wp1-frontend
 $(yarn bin)/cypress run
 ```
+
+Then follow the GUI prompts to run "Electron E2E tests".
 
 # Development
 
