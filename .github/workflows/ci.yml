@@ -32,10 +32,10 @@ jobs:
       - uses: actions/checkout@v3
         # Don't need lfs because we're not referencing the dev-db in this workflow.
 
-      - name: Set up Python 3.9
+      - name: Set up Python 3.9.4
         uses: actions/setup-python@v4
         with:
-          python-version: 3.9
+          python-version: 3.9.4
 
       - name: Install dependencies
         run: |
@@ -73,10 +73,10 @@ jobs:
         with:
           lfs: true
 
-      - name: Set up Python 3.9
+      - name: Set up Python 3.9.4
         uses: actions/setup-python@v4
         with:
-          python-version: 3.9
+          python-version: 3.9.4
 
       - uses: actions/cache@v1
         name: Cache pip dependencies
