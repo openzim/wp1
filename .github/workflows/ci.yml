@@ -14,12 +14,11 @@ jobs:
     services:
       # Unit test rely on a local MySQL instance with an empty root password.
       mysql:
-        image: mysql:8.0.30
+        image: mariadb:10.4
         env:
-          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MARIADB_ALLOW_EMPTY_PASSWORD: yes
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
 
       redis:
         # Some unit tests also try to write to Redis
