@@ -91,7 +91,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install pipenv
-          pipenv install --system --deploy --ignore-pipfile --dev
+          pipenv install --system --deploy --dev
 
       - name: Get yarn cache directory path
         id: yarn-dep-cache-dir-path
@@ -128,7 +128,7 @@ jobs:
         env:
           FLASK_APP: wp1.web.app
           FLASK_DEBUG: 1
-        run: pipenv run gunicorn 'wp1.web.app:create_app()' -D
+        run: pipenv run gunicorn 'wp1.web.app:create_app()' --log-file=output.log -D
 
       - name: Build frontend server
         run: |
@@ -159,4 +159,6 @@ jobs:
         if: always()
         with:
           name: screenshots
-          path: wp1-frontend/cypress/screenshots/*
+          path: |
+            wp1-frontend/cypress/screenshots/*
+            output.log
