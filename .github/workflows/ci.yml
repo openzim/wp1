@@ -115,7 +115,7 @@ jobs:
           cp wp1/credentials.py.dev.e2e wp1/credentials.py.dev
 
       # This is the dev database, the dev redis, and the dev workers.
-      # We don't technically need that last one.
+      # We don't technically need the last one.
       - name: Start Docker dev services
         run: docker compose -f docker-compose-dev.yml up -d --build
 
