@@ -10,10 +10,10 @@ services:
     restart: always
 
   test-database:
-    image: mysql:8.0.30
+    image: mariadb:10.4
     container_name: wp1bot-test-db
     environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 1
     volumes:
       - ./db/test/conf.d:/etc/mysql/conf.d
       - ./db/test/init:/docker-entrypoint-initdb.d
