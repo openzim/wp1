@@ -11,7 +11,7 @@ COPY ./Pipfile app/Pipfile
 COPY ./Pipfile.lock app/Pipfile.lock
 WORKDIR /usr/src/app
 RUN pipenv install --system --deploy --ignore-pipfile
-COPY . app
+COPY . ../app
 
 # Start
 CMD supervisord -c /usr/src/app/supervisord-dev.conf -n
