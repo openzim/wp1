@@ -28,6 +28,7 @@ rq-scheduler = "==0.13.0"
 validators = "*"
 attrs = "==18.2.0"
 pytest-cov = "*"
+supervisor = "~=4.2"
 
 [dev-packages]
 pre-commit = "==2.21.0"
