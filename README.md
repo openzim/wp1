@@ -203,20 +203,19 @@ See the instructions in the associated [README file](https://github.com/openzim/
 
 ## Starting the API server
 
-Assuming you are in your Python virtualenv (described above) you can start
-the API server with:
+Using pipenv, you can start the API server with:
 
 ```bash
-FLASK_DEBUG=1 FLASK_APP=wp1.web.app flask run
+pipenv run flask --app wp1.web.app --debug run
 ```
 
 ## Starting the web frontend
 
-The web frontend can be started with the following command in the `wp1-frontend`
-directory:
+Assuming you've installed the frontend deps (`yarn install`), the web frontend
+can be started with the following command in the `wp1-frontend` directory:
 
 ```bash
-yarn serve
+yarn dev
 ```
 
 ## Development credentials.py
