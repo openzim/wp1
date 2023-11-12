@@ -533,7 +533,7 @@ class BuilderTest(BaseWpOneDbTest):
   def test_update_builder_user_id_doesnt_match(self):
     self._insert_builder()
     builder = Builder(
-        b_id=1,
+        b_id=b'1a-2b-3c-4d',
         b_name=b'My Builder',
         b_user_id=5555,  # Different user_id
         b_project=b'en.wikipedia.fake',
