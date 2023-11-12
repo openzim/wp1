@@ -12,6 +12,7 @@ cookies.txt
 # Don't commit test artifacts
 **/cypress/videos
 **/cypress/screenshots
+.coverage
 
 # Don't commit logs
 log/**

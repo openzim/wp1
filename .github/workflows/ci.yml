@@ -58,7 +58,7 @@ jobs:
 
       - name: Test with pytest, with coverage
         run: |
-          pipenv run pytest --cov
+          pipenv run pytest --cov=wp1
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v3
