@@ -27,6 +27,7 @@ rq = "==1.13.0"
 rq-scheduler = "==0.13.0"
 validators = "*"
 attrs = "==18.2.0"
+pytest-cov = "*"
 
 [dev-packages]
 pre-commit = "==2.21.0"
