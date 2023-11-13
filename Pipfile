@@ -37,4 +37,4 @@ yapf = "==0.28.0"
 yoyo-migrations = "==7.3.2"
 
 [requires]
-python_version = "3.9.4"
+python_version = "3.12.0"

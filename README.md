@@ -74,7 +74,7 @@ interfaces with. They are used for unit testing.
 
 ## Installation
 
-This code is targeted to and tested on Python 3.9.4.
+This code is targeted to and tested on Python 3.12.0.
 
 ### Installing dependencies
 
