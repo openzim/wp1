@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import { createVuePlugin as vue } from 'vite-plugin-vue2';
+import vue from '@vitejs/plugin-vue2';
 import inject from '@rollup/plugin-inject';
 
 const path = require('path');
