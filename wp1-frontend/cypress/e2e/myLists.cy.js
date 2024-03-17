@@ -6,8 +6,11 @@ describe('the user selection list page', () => {
       cy.intercept('v1/selection/simple/lists', {
         fixture: 'list_data.json',
       }).as('list');
-      cy.intercept('v1/oauth/identify', { fixture: 'identity.json' });
+      cy.intercept('v1/oauth/identify', { fixture: 'identity.json' }).as(
+        'login',
+      );
       cy.visit('/#/selections/user');
+      cy.wait('@login');
       cy.wait('@list');
       cy.get('select').select('25');
     });
