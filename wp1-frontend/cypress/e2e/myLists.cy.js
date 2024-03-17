@@ -12,7 +12,6 @@ describe('the user selection list page', () => {
       cy.visit('/#/selections/user');
       cy.wait('@login');
       cy.wait('@list');
-      cy.get('select').select('25');
     });
 
     it('successfully loads', () => {});

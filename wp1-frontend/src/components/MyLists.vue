@@ -201,7 +201,7 @@ export default {
         {
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-        }
+        },
       );
       var data = await response.json();
       this.list = data.builders;
@@ -210,6 +210,7 @@ export default {
           $('#list-table').DataTable({
             columnDefs: [{ orderable: false, targets: [5, 7, 8] }],
             order: [[2, 'desc']],
+            iDisplayLength: 25,
           });
         });
       } else {
