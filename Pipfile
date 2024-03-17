@@ -29,12 +29,12 @@ validators = "*"
 attrs = "==18.2.0"
 pytest-cov = "*"
 supervisor = "~=4.2"
+yoyo-migrations = "==7.3.2"
 
 [dev-packages]
 pre-commit = "==2.21.0"
 pytest = "~=6.0"
 yapf = "==0.28.0"
-yoyo-migrations = "==7.3.2"
 
 [requires]
 python_version = "3.12.0"
