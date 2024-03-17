@@ -33,7 +33,7 @@ yoyo-migrations = "==7.3.2"
 
 [dev-packages]
 pre-commit = "==2.21.0"
-pytest = "~=6.0"
+pytest = "~=7.2"
 yapf = "==0.28.0"
 
 [requires]
