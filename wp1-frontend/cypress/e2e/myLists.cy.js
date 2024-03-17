@@ -8,6 +8,7 @@ describe('the user selection list page', () => {
       }).as('list');
       cy.intercept('v1/oauth/identify', { fixture: 'identity.json' });
       cy.visit('/#/selections/user');
+      cy.wait('@list');
       cy.get('select').select('25');
     });
 
@@ -156,13 +157,6 @@ describe('the user selection list page', () => {
     describe('when the ZIM file is ready', () => {
       beforeEach(() => {
         cy.clock(1685991600000);
-        cy.visit('/#/selections/user');
-        cy.wait('@list')
-          .then(cy.clock)
-          .then((clock) => {
-            console.log('restoring');
-            clock.restore();
-          });
       });
 
       it('displays the download ZIM link', () => {
