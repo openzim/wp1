@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "7e4711afce5aec0e61a4fdc4782bc95a4c857c56f84651ea862738db0d869d65"
+            "sha256": "93e2099f66a66a84957432e33d51e49cba24301e4da853a9c52607ebc4254f89"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -182,6 +182,14 @@
             ],
             "markers": "python_version >= '3.7'",
             "version": "==8.1.7"
+        },
+        "colorama": {
+            "hashes": [
+                "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44",
+                "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"
+            ],
+            "markers": "platform_system == 'Windows'",
+            "version": "==0.4.6"
         },
         "coverage": {
             "extras": [
@@ -643,12 +651,12 @@
         },
         "rq": {
             "hashes": [
-                "sha256:5bb0380a17597200520731686766bb72faf16ebffb602663560d91ea2c9e7103",
-                "sha256:621966d7cbf96d5609557a4bd3fd77f749d6d10997d2e353a3e89a14e08eea16"
+                "sha256:16ebbfa8891ece999485cb7d1e0559550ac576da43585138e6951db23654bbf6",
+                "sha256:b268947a94a1da7de3c5f3925a59db60bffdede782ca1f23da654bf985a83c7a"
             ],
             "index": "pypi",
-            "markers": "python_version >= '3.6'",
-            "version": "==1.13.0"
+            "markers": "python_version >= '3.5'",
+            "version": "==1.12.0"
         },
         "rq-scheduler": {
             "hashes": [
@@ -755,6 +763,14 @@
             ],
             "markers": "python_version >= '3.8'",
             "version": "==3.4.0"
+        },
+        "colorama": {
+            "hashes": [
+                "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44",
+                "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"
+            ],
+            "markers": "platform_system == 'Windows'",
+            "version": "==0.4.6"
         },
         "distlib": {
             "hashes": [
