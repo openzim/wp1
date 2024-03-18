@@ -74,7 +74,8 @@ interfaces with. They are used for unit testing.
 
 ## Installation
 
-This code is targeted to and tested on Python 3.12.0.
+This code is targeted to and tested on Python 3.12.0. For now, all development
+has been on Linux, use other platforms at your own risk.
 
 ### Installing dependencies
 
@@ -141,14 +142,14 @@ The `credentials.py` file proper also contains a section for TEST database
 credentials. These are used in unit tests. If you use the database provided
 in `docker-compose-test.yml` you can copy these directly from the example
 file. However, you are free to provide your own test database that will
-be destroyed after every test run. See the section "Running the tests".
+be destroyed after every test run. See the next section on running the tests.
 
 ### Running the backend (Python/pytest) tests
 
 The backend/python tests require a MariaDB or MySQL instance to connect to in
 order to verify various statements and logic. This database does not need to be
-persistent and in fact part of the test setup and teardown is to recreate a
-fresh schema for the test databases each time. You also will need two databases
+persistent and in fact part of the test setup and teardown is to recreate (destroy)
+a fresh schema for the test databases each time. You also will need two databases
 in your server: `enwp10_test` and `enwikip_test`. They can use default settings
 and be empty. **If you've followed the steps under 'Development' below to
 create a running dev database with docker-compose, you're all set.**
