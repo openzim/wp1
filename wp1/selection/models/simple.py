@@ -1,6 +1,6 @@
 import urllib.parse
 
-from wp1.exceptions import Wp1FatalSelectionError
+from wp1.exceptions import Wp1FatalSelectionError, Wp1RetryableSelectionError
 from wp1.selection.abstract_builder import AbstractBuilder
 
 
@@ -31,12 +31,12 @@ class Builder(AbstractBuilder):
     if 'list' not in params:
       raise Wp1FatalSelectionError('Missing required param: list')
 
-    list_minus_comments = [
-        line.strip()
-        for line in params['list']
-        if line.strip() != '' and not line.startswith('#')
-    ]
-    return '\n'.join(list_minus_comments).encode('utf-8')
+    valid, invalid, errors = self.validate(**params)
+
+    if errors:
+      raise Wp1RetryableSelectionError('The selection contained invalid parameters')
+    
+    return '\n'.join(valid).encode('utf-8')
 
   def validate(self, **params):
     if not params['list']:
