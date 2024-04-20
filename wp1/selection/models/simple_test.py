@@ -8,22 +8,31 @@ from wp1.selection.models.simple import Builder as SimpleBuilder
 
 
 class SimpleBuilderTest(BaseWpOneDbTest):
+  valid_items = [
+      'Eiffel_Tower     ',
+      'Statue of Liberty',
+      'https://en.wikipedia.org/wiki/Liberty_(personification)',
+      'https://en.wikipedia.org/w/index.php?title=Libertas',
+      'https://en.wikipedia.org/w/index.php?title=%E2%88%9E',
+      'George-%C3%89tienne_Cartier_Monument',
+  ]
 
-  params = {
-      'list': [
-          'Eiffel_Tower     ', 'Statue of Liberty',
-          'This is supposedly an article \
+  invalid_items = [
+      'This is supposedly an article \
 name but its way too long to actually be \
 one because it contains more than 256 characters \
 which is not allowed in article titles and \
 it just runs on forever, it doesnt even have \
 underscores and looks more like a long paragraph \
-of text than an actual article name.', 'Not_an_<article_name>',
-          'https://en.wikipedia.org/wiki/Liberty#Philosophy',
-          'https://en.wikipedia.org/wiki/Liberty_(personification)',
-          'https://en.wikipedia.org/w/index.php?title=Libertas',
-          'https://en.wikipedia.org/w/index.php?title=%E2%88%9E',
-          'George-%C3%89tienne_Cartier_Monument'
+of text than an actual article name.',
+      'Not_an_<article_name>',
+      'https://en.wikipedia.org/wiki/Liberty#Philosophy',
+  ]
+
+  params = {
+      'list': [
+          *valid_items,
+          *invalid_items,
       ]
   }
 
@@ -47,9 +56,9 @@ of text than an actual article name.', 'Not_an_<article_name>',
 
   def test_build(self):
     simple_test_builder = SimpleBuilder()
-    params = {'list': ['Eiffel_Tower', 'Statue#of_Liberty', 'Libertas']}
+    params = {'list': ['Eiffel_Tower', 'Statue of Liberty', 'Libertas']}
     actual = simple_test_builder.build('text/tab-separated-values', **params)
-    self.assertEqual(b'Eiffel_Tower\nStatue#of_Liberty\nLibertas', actual)
+    self.assertEqual(b'Eiffel_Tower\nStatue_of_Liberty\nLibertas', actual)
 
   def test_build_unrecognized_content_type(self):
     simple_test_builder = SimpleBuilder()
@@ -58,18 +67,18 @@ of text than an actual article name.', 'Not_an_<article_name>',
 
   def test_build_incorrect_params(self):
     simple_test_builder = SimpleBuilder()
-    params = {'items': ['Eiffel_Tower', 'Statue#of_Liberty', 'Libertas']}
+    params = {'items': ['Eiffel_Tower', 'Statue of Liberty', 'Libertas']}
     with self.assertRaises(Wp1FatalSelectionError):
       simple_test_builder.build('text/tab-separated-values', **params)
 
   def test_build_ignores_unwanted_params(self):
     simple_test_builder = SimpleBuilder()
     params = {
-        'list': ['Eiffel_Tower', 'Statue#of_Liberty', 'Libertas'],
+        'list': ['Eiffel_Tower', 'Statue of Liberty', 'Libertas'],
         'project': 'project_name'
     }
     actual = simple_test_builder.build('text/tab-separated-values', **params)
-    self.assertEqual(b'Eiffel_Tower\nStatue#of_Liberty\nLibertas', actual)
+    self.assertEqual(b'Eiffel_Tower\nStatue_of_Liberty\nLibertas', actual)
 
   def test_build_ignores_comments(self):
     simple_test_builder = SimpleBuilder()
@@ -95,6 +104,16 @@ of text than an actual article name.', 'Not_an_<article_name>',
         ],
     }
     actual = simple_test_builder.build('text/tab-separated-values', **params)
+    self.assertEqual(expected, actual)
+
+  def test_build_decodes_utf8_and_url_encoding(self):
+    simple_test_builder = SimpleBuilder()
+    expected = '\n'.join([
+        'Eiffel_Tower', 'Statue_of_Liberty', 'Liberty_(personification)',
+        'Libertas', '∞', 'George-Étienne_Cartier_Monument'
+    ]).encode('utf-8')
+    actual = simple_test_builder.build('text/tab-separated-values',
+                                       list=self.valid_items)
     self.assertEqual(expected, actual)
 
   def test_validate_items(self):
