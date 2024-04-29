@@ -31,6 +31,9 @@ pytest-cov = "*"
 supervisor = "~=4.2"
 yoyo-migrations = "==7.3.2"
 
+# Versions required for dependabot
+sqlparse = "~=0.5.0"
+
 [dev-packages]
 pre-commit = "==2.21.0"
 pytest = "~=7.2"
