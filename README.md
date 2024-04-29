@@ -104,11 +104,18 @@ then actually spawning a subshell.
 
 ### Installing frontend requirements
 
-To install the requirements for the frontend server, cd into `wp1-frontend`
-and use:
+The frontend requires [Node.js](https://nodejs.org/) version 18 to build and
+run. Once node is installed, to install the requirements for the frontend
+server, cd into `wp1-frontend` and use:
 
 ```bash
 yarn install
+```
+
+If you do not have yarn, it can be installed with:
+
+```bash
+npm i -g yarn
 ```
 
 ### Docker
