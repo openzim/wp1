@@ -33,6 +33,7 @@ yoyo-migrations = "==7.3.2"
 
 # Versions required for dependabot
 sqlparse = "~=0.5.0"
+idna = "~=3.7"
 
 [dev-packages]
 pre-commit = "==2.21.0"
