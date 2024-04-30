@@ -24,3 +24,6 @@ class ObjectNotFoundError(Wp1Error):
 
 class UserNotAuthorizedError(Wp1Error):
   pass
+
+class Wp1ScoreProcessingError(Wp1Error):
+  pass
