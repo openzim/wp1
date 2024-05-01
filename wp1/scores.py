@@ -4,6 +4,7 @@ import csv
 import requests
 
 from wp1.exceptions import Wp1ScoreProcessingError
+from wp1.wp10_db import connect as wp10_connect
 
 
 def wiki_languages():
@@ -22,7 +23,7 @@ def wiki_languages():
     yield row[2]
 
 
-def raw_pageviews(decode=True):
+def raw_pageviews(decode=False):
 
   def as_bytes():
     with requests.get(
@@ -31,8 +32,8 @@ def raw_pageviews(decode=True):
 
       decompressor = BZ2Decompressor()
       trailing = b''
-      # Read data in 1 MB chunks
-      for http_chunk in r.iter_content(chunk_size=1024 * 1024):
+      # Read data in 32 MB chunks
+      for http_chunk in r.iter_content(chunk_size=32 * 1024 * 1024):
         data = decompressor.decompress(http_chunk)
         lines = [line for line in data.split(b'\n') if line]
         if not lines:
@@ -49,8 +50,33 @@ def raw_pageviews(decode=True):
     yield from as_bytes()
 
 
-def pageviews_for_lang(lang):
-  needle = f'{lang}.wikipedia'
+def pageview_components():
   for line in raw_pageviews():
-    if needle in line:
-      yield line
+    parts = line.split(b' ')
+    if len(parts) != 6 or parts[2] == b'null':
+      # Skip pages that don't have a pageid
+      continue
+
+    # Language code, article name, article page id, views
+    yield parts[0].split(b'.')[0], parts[1], parts[2], parts[4]
+
+
+def update_pageviews(wp10db, lang, article, page_id, views):
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        '''INSERT INTO page_scores (ps_lang, ps_page_id, ps_article, ps_views)
+           VALUES (%(lang)s, %(page_id)s, %(article)s, %(views)s)
+           ON DUPLICATE KEY UPDATE ps_views = %(views)s
+    ''', {
+            'lang': lang,
+            'page_id': page_id,
+            'article': article,
+            'views': views
+        })
+  wp10db.commit()
+
+
+def update_all_pageviews():
+  wp10db = wp10_connect()
+  for lang, article, page_id, views in pageview_components():
+    update_pageviews(wp10db, lang, article, page_id, views)
