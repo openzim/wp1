@@ -6,6 +6,7 @@
     :params="params"
     :builderId="$route.params.builder_id"
     :invalidItems="invalidItems"
+    :projectFilter="projectFilter"
     @onBuilderLoaded="onBuilderLoaded"
     @onBeforeSubmit="onBeforeSubmit"
     @onValidationError="onValidationError"
@@ -77,6 +78,9 @@ export default {
       this.$refs.list.setCustomValidity(
         'These WikiProjects could not be found',
       );
+    },
+    projectFilter: function (projectName) {
+      return projectName == 'en.wikipedia.org';
     },
   },
   watch: {
