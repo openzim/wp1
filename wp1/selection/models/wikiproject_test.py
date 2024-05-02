@@ -29,6 +29,9 @@ class WikiProjectTest(BaseWpOneDbTest):
       cursor.executemany(
           'INSERT INTO ratings (r_project, r_namespace, r_article) VALUES (%s, 0, %s)',
           all_rows)
+      cursor.executemany(
+          'INSERT INTO projects (p_project, p_timestamp) VALUES (%s, 0)',
+          projects)
 
   def test_validate(self):
     params = {

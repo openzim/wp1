@@ -11,7 +11,7 @@ def _get_articles_for_project(wp10db, project):
 
 def _project_exists(wp10db, project):
   with wp10db.cursor() as cursor:
-    cursor.execute('SELECT 1 FROM ratings WHERE r_project = %s',
+    cursor.execute('SELECT 1 FROM projects WHERE p_project = %s',
                    (project.encode('utf-8'),))
     return cursor.fetchone() is not None
 
