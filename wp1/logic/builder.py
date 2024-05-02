@@ -131,7 +131,9 @@ def get_builder(wp10db, id_):
   with wp10db.cursor() as cursor:
     cursor.execute('SELECT * FROM builders WHERE b_id = %s', id_)
     db_builder = cursor.fetchone()
-    return Builder(**db_builder) if db_builder else None
+    if db_builder is None:
+      raise ObjectNotFoundError(f'No builder with id={id_}')
+    return Builder(**db_builder)
 
 
 def materialize_builder(builder_cls, builder_id, content_type):
