@@ -1,0 +1,8 @@
+{
+  "success": false,
+  "items": {
+    "valid": [],
+    "invalid": ["Fake Project 1", "Another Fake"],
+    "errors": ["Not all given projects exist"]
+  }
+}
