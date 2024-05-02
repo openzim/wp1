@@ -19,7 +19,7 @@ builders = flask.Blueprint('builders', __name__)
 logger = logging.getLogger(__name__)
 
 
-def _create_or_update_builder(data, builder_id=None):
+def _create_or_update_builder(wp10db, data, builder_id=None):
   list_name = data['name']
   project = data['project']
   model = data['model']
@@ -36,6 +36,7 @@ def _create_or_update_builder(data, builder_id=None):
 
   builder = Builder()
   valid_values, invalid_values, errors = builder.validate(project=project,
+                                                          wp10db=wp10db,
                                                           **params)
   if invalid_values or errors:
     return flask.jsonify({
@@ -73,15 +74,17 @@ def _create_or_update_builder(data, builder_id=None):
 @builders.route('/', methods=['POST'])
 @authenticate
 def create_builder():
+  wp10db = get_db('wp10db')
   data = flask.request.get_json()
-  return _create_or_update_builder(data)
+  return _create_or_update_builder(wp10db, data)
 
 
 @builders.route('/<builder_id>', methods=['POST'])
 @authenticate
 def update_builder(builder_id):
+  wp10db = get_db('wp10db')
   data = flask.request.get_json()
-  return _create_or_update_builder(data, builder_id)
+  return _create_or_update_builder(wp10db, data, builder_id)
 
 
 @builders.route('/<builder_id>')
