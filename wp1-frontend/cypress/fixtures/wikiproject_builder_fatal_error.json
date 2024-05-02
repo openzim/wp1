@@ -1,0 +1,18 @@
+{
+  "params": {
+    "add": ["British Columbia road transport", "New Brunswick road transport"],
+    "subtract": ["Countries"]
+  },
+  "name": "Builder 1",
+  "model": "wp1.selection.models.wikiproject",
+  "project": "en.wikipedia.org",
+  "selection_errors": [
+    {
+      "error_messages": [
+        "Wikidata response was not valid JSON. This is usually caused by a timeout because the result set is too large."
+      ],
+      "ext": "tsv",
+      "status": "FAILED"
+    }
+  ]
+}

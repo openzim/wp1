@@ -68,8 +68,6 @@ describe('the create WikiProject builder page', () => {
       cy.get('#listName > .form-control').click().type('List Name');
       cy.get('#add-items').click().type('Fake Project 1\nAnother Fake');
       cy.get('#saveListButton').click();
-
-      cy.get('#add-items').click().clear().type('Water');
       cy.get('#saveListButton').click();
       cy.url().should('eq', 'http://localhost:5173/#/selections/user');
     });
@@ -100,7 +98,7 @@ describe('the create WikiProject builder page', () => {
       });
     });
 
-    it('redirects on saving valid article names', () => {
+    it('redirects on saving valid project names', () => {
       cy.get('#listName > .form-control').click().type('List Name');
       cy.get('#add-items').click().type('Fake Project\nAnother Fake');
       cy.intercept('v1/builders/', { fixture: 'save_list_success.json' });
