@@ -85,10 +85,17 @@
             <div ref="form_group" class="form-group">
               <div id="project" class="mb-4 mx-4">
                 <label>Project</label>
-                <select v-model="builder.project" class="custom-select my-list">
-                  <option v-if="wikiProjects.length == 0" selected>
-                    en.wikipedia.org
-                  </option>
+                <select
+                  v-if="wikiProjects.length == 0"
+                  class="custom-select my-list"
+                >
+                  <option selected>en.wikipedia.org</option>
+                </select>
+                <select
+                  v-else
+                  v-model="builder.project"
+                  class="custom-select my-list"
+                >
                   <option v-for="item in wikiProjects" v-bind:key="item">
                     {{ item }}
                   </option>
@@ -201,6 +208,7 @@ export default {
     model: String,
     params: Object,
     serializeParams: Function,
+    projectFilter: Function,
   },
   data: function () {
     return {
@@ -259,7 +267,7 @@ export default {
     getWikiProjects: async function () {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/sites/`);
       var data = await response.json();
-      this.wikiProjects = data.sites;
+      this.wikiProjects = data.sites.filter(this.projectFilter || (() => true));
     },
     getBuilder: async function () {
       const response = await fetch(
@@ -269,7 +277,7 @@ export default {
         {
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-        }
+        },
       );
       if (response.status == 404) {
         this.notFound = true;
@@ -340,7 +348,7 @@ export default {
     onDelete: async function () {
       if (
         !window.confirm(
-          'Really delete this list? The definition and all downloadable selections will be permanently deleted.'
+          'Really delete this list? The definition and all downloadable selections will be permanently deleted.',
         )
       ) {
         return;
