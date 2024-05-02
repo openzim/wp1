@@ -71,6 +71,18 @@
               >Book Selection</router-link
             >
           </li>
+          <li
+            :class="
+              'nav-item ' +
+              (this.$route.path.startsWith('/selections/wikiproject')
+                ? 'active'
+                : '')
+            "
+          >
+            <router-link class="nav-link" to="/selections/wikiproject"
+              >WikiProject Selection</router-link
+            >
+          </li>
         </ul>
       </div>
     </nav>

@@ -21,6 +21,7 @@ import MyLists from './components/MyLists.vue';
 import ProjectPage from './components/ProjectPage.vue';
 import UpdatePage from './components/UpdatePage.vue';
 import ZimFile from './components/ZimFile.vue';
+import WikiProjectBuilder from './components/WikiProjectBuilder.vue';
 
 Vue.config.productionTip = false;
 
@@ -127,6 +128,13 @@ const routes = [
     },
   },
   {
+    path: '/selections/wikiproject',
+    component: WikiProjectBuilder,
+    meta: {
+      title: () => BASE_TITLE + ' - Edit WikiProject Selection',
+    },
+  },
+  {
     path: '/selections/simple/:builder_id',
     component: SimpleBuilder,
     meta: {
@@ -152,6 +160,13 @@ const routes = [
     component: BookBuilder,
     meta: {
       title: () => BASE_TITLE + ' - Edit Book Selection',
+    },
+  },
+  {
+    path: '/selections/wikiproject/:builder_id',
+    component: WikiProjectBuilder,
+    meta: {
+      title: () => BASE_TITLE + ' - Edit WikiProject Selection',
     },
   },
   {
