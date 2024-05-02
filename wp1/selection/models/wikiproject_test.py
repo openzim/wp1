@@ -12,7 +12,7 @@ class WikiProjectTest(BaseWpOneDbTest):
     self.builder = WikiProjectBuilder()
 
     # Four "projects" with a list of somewhat overlapping "articles" for each
-    projects = ('Water', 'Fire', 'Wind', 'Èarth')
+    projects = ('Water_Elements', 'Fire', 'Wind', 'Èarth')
     water_articles = ('Ocëan', 'Lake')
     fire_articles = ('Campfire', 'Åsh')
     wind_articles = ('Breeze', 'Ocëan', 'Campfire', 'Åsh')
@@ -35,18 +35,19 @@ class WikiProjectTest(BaseWpOneDbTest):
 
   def test_validate(self):
     params = {
-        'add': ['Water', 'Fire', 'Lava'],
+        'add': ['Water Elements', 'Fire', 'Lava'],
         'subtract': ['Wind', 'Èarth', 'Stone']
     }
     actual = self.builder.validate(wp10db=self.wp10db, **params)
-    self.assertEqual((['Water', 'Fire', 'Wind', 'Èarth'
+    self.assertEqual((['Water Elements', 'Fire', 'Wind', 'Èarth'
                       ], ['Lava', 'Stone'], ['Not all given projects exist']),
                      actual)
 
   def test_validate_all_valid(self):
-    params = {'add': ['Water', 'Fire'], 'subtract': ['Wind', 'Èarth']}
+    params = {'add': ['Water Elements', 'Fire'], 'subtract': ['Wind', 'Èarth']}
     actual = self.builder.validate(wp10db=self.wp10db, **params)
-    self.assertEqual((['Water', 'Fire', 'Wind', 'Èarth'], [], []), actual)
+    self.assertEqual((['Water Elements', 'Fire', 'Wind', 'Èarth'], [], []),
+                     actual)
 
   def test_validate_all_invalid(self):
     params = {'add': ['Lava'], 'subtract': ['Stone']}
@@ -55,17 +56,17 @@ class WikiProjectTest(BaseWpOneDbTest):
                      actual)
 
   def test_validate_missing_add(self):
-    params = {'subtract': ['Water', 'Fire']}
+    params = {'subtract': ['Water Elements', 'Fire']}
     actual = self.builder.validate(wp10db=self.wp10db, **params)
     self.assertEqual(([], [], ['Missing articles to add']), actual)
 
   def test_validate_missing_subtract(self):
-    params = {'add': ['Water', 'Fire']}
+    params = {'add': ['Water Elements', 'Fire']}
     actual = self.builder.validate(wp10db=self.wp10db, **params)
-    self.assertEqual((['Water', 'Fire'], [], []), actual)
+    self.assertEqual((['Water Elements', 'Fire'], [], []), actual)
 
   def test_build(self):
-    params = {'add': ['Water', 'Èarth'], 'subtract': ['Fire']}
+    params = {'add': ['Water Elements', 'Èarth'], 'subtract': ['Fire']}
     actual = self.builder.build('text/tab-separated-values',
                                 wp10db=self.wp10db,
                                 **params)
@@ -77,7 +78,7 @@ class WikiProjectTest(BaseWpOneDbTest):
     self.assertEqual(expected_set, actual_set)
 
   def test_build_single_project(self):
-    params = {'add': ['Water']}
+    params = {'add': ['Water Elements']}
     actual = self.builder.build('text/tab-separated-values',
                                 wp10db=self.wp10db,
                                 **params)
@@ -90,7 +91,10 @@ class WikiProjectTest(BaseWpOneDbTest):
 
   def test_build_empty_set(self):
 
-    params = {'add': ['Water', 'Èarth'], 'subtract': ['Water', 'Èarth']}
+    params = {
+        'add': ['Water Elements', 'Èarth'],
+        'subtract': ['Water Elements', 'Èarth']
+    }
     actual = self.builder.build('text/tab-separated-values',
                                 wp10db=self.wp10db,
                                 **params)
@@ -98,7 +102,10 @@ class WikiProjectTest(BaseWpOneDbTest):
     self.assertEqual(b'', actual)
 
   def test_build_multiples(self):
-    params = {'add': ['Water', 'Earth', 'Water'], 'subtract': ['Fire', 'Fire']}
+    params = {
+        'add': ['Water Elements', 'Earth', 'Water Elements'],
+        'subtract': ['Fire', 'Fire']
+    }
     actual = self.builder.build('text/tab-separated-values',
                                 wp10db=self.wp10db,
                                 **params)
@@ -112,12 +119,12 @@ class WikiProjectTest(BaseWpOneDbTest):
     self.assertEqual(expected_set, actual_set)
 
   def test_build_invalid_content_type(self):
-    params = {'add': ['Water', 'Èarth'], 'subtract': ['Fire']}
+    params = {'add': ['Water Elements', 'Èarth'], 'subtract': ['Fire']}
     with self.assertRaises(Wp1FatalSelectionError):
       self.builder.build('foo/bar', wp10db=self.wp10db, **params)
 
   def test_build_missing_wp10db(self):
-    params = {'add': ['Water', 'Èarth'], 'subtract': ['Fire']}
+    params = {'add': ['Water Elements', 'Èarth'], 'subtract': ['Fire']}
     with self.assertRaises(Wp1FatalSelectionError):
       self.builder.build('text/tab-separated-values', **params)
 

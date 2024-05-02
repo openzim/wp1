@@ -5,14 +5,14 @@ from wp1.selection.abstract_builder import AbstractBuilder
 def _get_articles_for_project(wp10db, project):
   with wp10db.cursor() as cursor:
     cursor.execute('SELECT r_article FROM ratings WHERE r_project = %s',
-                   (project,))
+                   (project.strip().replace(' ', '_'),))
     return [row['r_article'].decode('utf-8') for row in cursor.fetchall()]
 
 
 def _project_exists(wp10db, project):
   with wp10db.cursor() as cursor:
     cursor.execute('SELECT 1 FROM projects WHERE p_project = %s',
-                   (project.encode('utf-8'),))
+                   (project.replace(' ', '_').encode('utf-8'),))
     return cursor.fetchone() is not None
 
 
