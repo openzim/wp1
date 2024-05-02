@@ -70,13 +70,10 @@ export default {
       this.subtractText = builder.params.subtract.join('\n');
     },
     onBeforeSubmit: function () {
-      this.$refs.list.setCustomValidity('');
+      this.$refs.addItems.setCustomValidity('');
     },
     onValidationError: function (data) {
       this.invalidItems = data.items.invalid.join('\n');
-      this.$refs.list.setCustomValidity(
-        'These WikiProjects could not be found',
-      );
     },
     projectFilter: function (projectName) {
       return projectName == 'en.wikipedia.org';
