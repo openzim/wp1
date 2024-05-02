@@ -37,16 +37,20 @@ class AbstractBuilder:
     try:
       selection.data = self.build(content_type,
                                   project=builder.b_project.decode('utf-8'),
+                                  wp10db=wp10db,
                                   **params)
     except Wp1RetryableSelectionError as e:
+      logger.exception('Error materializing builder id=%s', builder.b_id)
       selection.s_status = 'CAN_RETRY'
       logic_selection.set_error_messages(selection, e)
     except (Wp1FatalSelectionError, Wp1SelectionError) as e:
+      logger.exception('Error materializing builder id=%s', builder.b_id)
       selection.s_status = 'FAILED'
       logic_selection.set_error_messages(selection, e)
 
     selection.set_updated_at_now()
     # Data might be None if build operation didn't succeed.
+    print(selection.data)
     if selection.data:
       self._upload_to_storage(s3, selection, builder)
 
