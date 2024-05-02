@@ -22,28 +22,27 @@
       </p>
     </template>
     <template #extra-params>
-      <div id="add-items" class="form-group m-4">
+      <div id="lists" class="form-group m-4">
         <label for="add-items">WikiProjects to include</label>
         <textarea
-          id="addItems"
+          id="add-items"
           ref="addItems"
           class="form-control my-2"
           v-model="addText"
-          :placeholder="'Finance & Investment\nEconomics'"
           rows="5"
+          required
         ></textarea>
 
         <div class="invalid-feedback">
           Please provide WikiProjects to include
         </div>
 
-        <label for="add-items">WikiProjects to exclude</label>
+        <label for="subtract-items">WikiProjects to exclude</label>
         <textarea
-          id="subtractItems"
+          id="subtract-items"
           ref="subtractItems"
           class="form-control my-2"
           v-model="subtractText"
-          placeholder="Countries"
           rows="5"
         ></textarea>
       </div>
