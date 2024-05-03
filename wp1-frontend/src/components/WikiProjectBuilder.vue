@@ -17,8 +17,8 @@
         only (other languages not supported), based off the articles included in
         the specified
         <a href="https://en.wikipedia.org/wiki/WikiProject">WikiProjects</a>.
-        Your selection will be saved in public cloud storage and can be accessed
-        through URLs that will be provided once it has been saved.
+        Your selection will be saved online and will be accessible through a URL
+        that will be provided once it has been saved.
       </p>
     </template>
     <template #extra-params>
