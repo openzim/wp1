@@ -23,12 +23,12 @@
     </template>
     <template #extra-params>
       <div id="lists" class="form-group m-4">
-        <label for="add-items">WikiProjects to include</label>
+        <label for="include-items">WikiProjects to include</label>
         <textarea
-          id="add-items"
-          ref="addItems"
+          id="include-items"
+          ref="includeItems"
           class="form-control my-2"
-          v-model="addText"
+          v-model="includeText"
           rows="5"
           required
         ></textarea>
@@ -37,12 +37,12 @@
           Please provide WikiProjects to include
         </div>
 
-        <label for="subtract-items">WikiProjects to exclude</label>
+        <label for="exclude-items">WikiProjects to exclude</label>
         <textarea
-          id="subtract-items"
-          ref="subtractItems"
+          id="exclude-items"
+          ref="excludeItems"
           class="form-control my-2"
-          v-model="subtractText"
+          v-model="excludeText"
           rows="5"
         ></textarea>
       </div>
@@ -58,19 +58,19 @@ export default {
   name: 'WikiProjectBuilder',
   data: function () {
     return {
-      addText: '',
-      subtractText: '',
+      includeText: '',
+      excludeText: '',
       invalidItems: '',
       params: {},
     };
   },
   methods: {
     onBuilderLoaded: function (builder) {
-      this.addText = builder.params.add.join('\n');
-      this.subtractText = builder.params.subtract.join('\n');
+      this.includeText = builder.params.include.join('\n');
+      this.excludeText = builder.params.exclude.join('\n');
     },
     onBeforeSubmit: function () {
-      this.$refs.addItems.setCustomValidity('');
+      this.$refs.includeItems.setCustomValidity('');
     },
     onValidationError: function (data) {
       this.invalidItems = data.items.invalid.join('\n');
@@ -80,21 +80,21 @@ export default {
     },
   },
   watch: {
-    addText: function () {
-      const add = this.subtractText.split('\n');
-      if (add.length === 1 && add[0] === '') {
-        this.params.add = [];
+    includeText: function () {
+      const include = this.excludeText.split('\n');
+      if (include.length === 1 && include[0] === '') {
+        this.params.include = [];
         return;
       }
-      this.params.add = this.addText.split('\n') || [];
+      this.params.include = this.includeText.split('\n') || [];
     },
-    subtractText: function () {
-      const subtract = this.subtractText.split('\n');
-      if (subtract.length === 1 && subtract[0] === '') {
-        this.params.subtract = [];
+    excludeText: function () {
+      const exclude = this.excludeText.split('\n');
+      if (exclude.length === 1 && exclude[0] === '') {
+        this.params.exclude = [];
         return;
       }
-      this.params.subtract = this.subtractText.split('\n');
+      this.params.exclude = this.excludeText.split('\n');
     },
   },
 };
