@@ -23,24 +23,27 @@ describe('the create WikiProject builder page', () => {
     it('validates textbox on clicking save', () => {
       cy.get('#saveListButton').click();
       cy.get('#listName > .invalid-feedback').should('be.visible');
-      cy.get('#add-items ~ .invalid-feedback').should('be.visible');
+      cy.get('#include-items ~ .invalid-feedback').should('be.visible');
     });
 
     it('validates list name on losing focus', () => {
       cy.get('#listName > .form-control').click();
-      cy.get('#add-items').click();
+      cy.get('#include-items').click();
       cy.get('#listName > .invalid-feedback').should('be.visible');
     });
 
     it('displays a textbox with invalid wikiProjects', () => {
       cy.get('#listName > .form-control').click().type('List name');
-      cy.get('#add-items').click().type('Fake Project 1\nAnother Fake');
+      cy.get('#include-items').click().type('Fake Project 1\nAnother Fake');
       cy.intercept('v1/builders/', {
         fixture: 'save_wikiproject_failure.json',
       });
       cy.get('#saveListButton').click();
 
-      cy.get('#add-items').should('have.value', 'Fake Project 1\nAnother Fake');
+      cy.get('#include-items').should(
+        'have.value',
+        'Fake Project 1\nAnother Fake',
+      );
       cy.get('#invalid_articles > .form-control').should(
         'have.value',
         'Fake Project 1\nAnother Fake',
@@ -66,7 +69,7 @@ describe('the create WikiProject builder page', () => {
       });
 
       cy.get('#listName > .form-control').click().type('List Name');
-      cy.get('#add-items').click().type('Fake Project 1\nAnother Fake');
+      cy.get('#include-items').click().type('Fake Project 1\nAnother Fake');
       cy.get('#saveListButton').click();
       cy.get('#saveListButton').click();
       cy.url().should('eq', 'http://localhost:5173/#/selections/user');
@@ -85,14 +88,14 @@ describe('the create WikiProject builder page', () => {
 
       it('shows spinner', () => {
         cy.get('#listName > .form-control').click().type('List Name');
-        cy.get('#add-items').click().type('Fake Project');
+        cy.get('#include-items').click().type('Fake Project');
         cy.get('#saveListButton').click();
         cy.get('#saveLoader').should('be.visible');
       });
 
       it('disables save button', () => {
         cy.get('#listName > .form-control').click().type('List Name');
-        cy.get('#add-items').click().type('Fake Project');
+        cy.get('#include-items').click().type('Fake Project');
         cy.get('#saveListButton').click();
         cy.get('#saveListButton').should('have.attr', 'disabled');
       });
@@ -100,7 +103,7 @@ describe('the create WikiProject builder page', () => {
 
     it('redirects on saving valid project names', () => {
       cy.get('#listName > .form-control').click().type('List Name');
-      cy.get('#add-items').click().type('Fake Project\nAnother Fake');
+      cy.get('#include-items').click().type('Fake Project\nAnother Fake');
       cy.intercept('v1/builders/', { fixture: 'save_list_success.json' });
       cy.get('#saveListButton').click();
       cy.url().should('eq', 'http://localhost:5173/#/selections/user');

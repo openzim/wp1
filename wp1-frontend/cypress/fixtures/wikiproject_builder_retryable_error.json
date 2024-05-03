@@ -1,7 +1,10 @@
 {
   "params": {
-    "add": ["British Columbia road transport", "New Brunswick road transport"],
-    "subtract": ["Countries"]
+    "include": [
+      "British Columbia road transport",
+      "New Brunswick road transport"
+    ],
+    "exclude": ["Countries"]
   },
   "name": "Builder 1",
   "model": "wp1.selection.models.wikiproject",
