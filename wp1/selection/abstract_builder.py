@@ -50,7 +50,6 @@ class AbstractBuilder:
 
     selection.set_updated_at_now()
     # Data might be None if build operation didn't succeed.
-    print(selection.data)
     if selection.data:
       self._upload_to_storage(s3, selection, builder)
 

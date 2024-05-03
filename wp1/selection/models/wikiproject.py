@@ -23,28 +23,31 @@ class Builder(AbstractBuilder):
       raise Wp1FatalSelectionError('Unrecognized content type')
     if 'wp10db' not in params:
       raise Wp1FatalSelectionError('Missing param `wp10db`')
-    if 'add' not in params:
-      raise Wp1FatalSelectionError('Missing param `add`')
+    if 'include' not in params:
+      raise Wp1FatalSelectionError('Missing param `include`')
 
-    add = set()
-    for project in params['add']:
-      add.update(_get_articles_for_project(params['wp10db'], project))
+    included_articles = set()
+    for project in params['include']:
+      included_articles.update(
+          _get_articles_for_project(params['wp10db'], project))
 
-    subtract = set()
-    for project in params.get('subtract', []):
-      subtract.update(_get_articles_for_project(params['wp10db'], project))
+    excluded_articles = set()
+    for project in params.get('exclude', []):
+      excluded_articles.update(
+          _get_articles_for_project(params['wp10db'], project))
 
-    return '\n'.join(add.difference(subtract)).encode('utf-8')
+    return '\n'.join(
+        included_articles.difference(excluded_articles)).encode('utf-8')
 
   def validate(self, **params):
     if 'wp10db' not in params:
       raise Wp1FatalSelectionError('Cannot validate without param `wp10db`')
-    if 'add' not in params:
-      return ([], [], ['Missing articles to add'])
+    if 'include' not in params:
+      return ([], [], ['Missing articles to include'])
 
     valid = []
     invalid = []
-    for project in params['add'] + params.get('subtract', []):
+    for project in params['include'] + params.get('exclude', []):
       if _project_exists(params['wp10db'], project):
         valid.append(project)
       else:
