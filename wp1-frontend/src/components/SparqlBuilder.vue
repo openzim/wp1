@@ -14,8 +14,8 @@
         Use this tool to create an article selection list for the Wikipedia
         project of your choice, using a SPARQL query. The query can either be
         entered directly or provided via a Wikidata query service URL. Your
-        selection will be saved in public cloud storage and can be accessed
-        through URLs that will be provided once it has been saved.
+        selection will be saved online and will be accessible through a URL that
+        will be provided once it has been saved.
       </p>
       <p class="mb-0">
         For more information on creating a SPARQL selection, see the

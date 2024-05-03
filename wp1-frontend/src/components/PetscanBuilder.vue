@@ -15,8 +15,8 @@
         Use this tool to create an article selection list for the Wikipedia
         project of your choice, based off a
         <a href="https://petscan.wmflabs.org/">Petscan</a> URL. Your selection
-        will be saved in public cloud storage and can be accessed through URLs
-        that will be provided once it has been saved.
+        will be saved online and will be accessible through a URL that will be
+        provided once it has been saved.
       </p>
       <p class="mb-0">
         For more information on creating a
