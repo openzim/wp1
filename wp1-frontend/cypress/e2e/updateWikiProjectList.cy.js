@@ -29,7 +29,7 @@ describe('the update wikiproject list page', () => {
 
       it('displays builder information', () => {
         cy.get('#listName > .form-control').should('have.value', 'Builder 1');
-        cy.get('#add-items').should(
+        cy.get('#include-items').should(
           'have.value',
           'British Columbia road transport\nNew Brunswick road transport',
         );
@@ -37,7 +37,7 @@ describe('the update wikiproject list page', () => {
       });
 
       it('does not show invalid list items', () => {
-        cy.get('#add-items ~ .invalid-feedback').should('not.be.visible');
+        cy.get('#include-items ~ .invalid-feedback').should('not.be.visible');
       });
 
       it('does not show invalid list name', () => {
