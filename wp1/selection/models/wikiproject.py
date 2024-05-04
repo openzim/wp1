@@ -25,6 +25,9 @@ class Builder(AbstractBuilder):
       raise Wp1FatalSelectionError('Missing param `wp10db`')
     if 'include' not in params:
       raise Wp1FatalSelectionError('Missing param `include`')
+    if not params['include']:
+      raise Wp1FatalSelectionError(
+          'Cannot create selection with empty `include` list')
 
     included_articles = set()
     for project in params['include']:
@@ -42,7 +45,7 @@ class Builder(AbstractBuilder):
   def validate(self, **params):
     if 'wp10db' not in params:
       raise Wp1FatalSelectionError('Cannot validate without param `wp10db`')
-    if 'include' not in params:
+    if 'include' not in params or not params['include']:
       return ([], [], ['Missing articles to include'])
 
     valid = []
