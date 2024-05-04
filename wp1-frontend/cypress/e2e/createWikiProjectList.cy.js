@@ -114,9 +114,36 @@ describe('the create WikiProject builder page', () => {
       cy.get('#listName > .form-control').type('List Name');
       cy.get('#include-items').click();
       cy.get('#include-items').type('Fake Project\nAnother Fake');
-      cy.intercept('v1/builders/', { fixture: 'save_list_success.json' });
+      cy.intercept('v1/builders/', { fixture: 'save_list_success.json' }).as(
+        'createBuilderSuccess',
+      );
       cy.get('#saveListButton').click();
+      cy.wait('@createBuilderSuccess');
       cy.url().should('eq', 'http://localhost:5173/#/selections/user');
+    });
+
+    it('sends correct data to API', () => {
+      cy.get('#listName > .form-control').click();
+      cy.get('#listName > .form-control').type('List Name');
+      cy.get('#include-items').click();
+      cy.get('#include-items').type('Fake Project\nAnother Fake Project');
+      cy.get('#exclude-items').click();
+      cy.get('#exclude-items').type('Even Faker Project\nMost Fake Project');
+
+      cy.intercept('v1/builders/', { fixture: 'save_list_success.json' }).as(
+        'createBuilderSuccess',
+      );
+      cy.get('#saveListButton').click();
+      cy.wait('@createBuilderSuccess').then((interception) => {
+        expect(interception.request.body.params.include).to.deep.equal([
+          'Fake Project',
+          'Another Fake Project',
+        ]);
+        expect(interception.request.body.params.exclude).to.deep.equal([
+          'Even Faker Project',
+          'Most Fake Project',
+        ]);
+      });
     });
   });
 
