@@ -63,6 +63,11 @@ class WikiProjectTest(BaseWpOneDbTest):
     actual = self.builder.validate(wp10db=self.wp10db, **params)
     self.assertEqual(([], [], ['Missing articles to include']), actual)
 
+  def test_validate_empty_include(self):
+    params = {'include': [], 'exclude': ['Water Elements', 'Fire']}
+    actual = self.builder.validate(wp10db=self.wp10db, **params)
+    self.assertEqual(([], [], ['Missing articles to include']), actual)
+
   def test_validate_missing_exclude(self):
     params = {'include': ['Water Elements', 'Fire']}
     actual = self.builder.validate(wp10db=self.wp10db, **params)
@@ -138,6 +143,13 @@ class WikiProjectTest(BaseWpOneDbTest):
 
   def test_build_missing_include(self):
     params = {'exclude': ['Fire']}
+    with self.assertRaises(Wp1FatalSelectionError):
+      self.builder.build('text/tab-separated-values',
+                         wp10db=self.wp10db,
+                         **params)
+
+  def test_build_empty_include(self):
+    params = {'include': [], 'exclude': ['Fire']}
     with self.assertRaises(Wp1FatalSelectionError):
       self.builder.build('text/tab-separated-values',
                          wp10db=self.wp10db,
