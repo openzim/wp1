@@ -6,7 +6,7 @@
     ],
     "exclude": ["Countries"]
   },
-  "name": "Builder 1",
+  "name": "Builder 3",
   "model": "wp1.selection.models.wikiproject",
   "project": "en.wikipedia.org",
   "selection_errors": []
