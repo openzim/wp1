@@ -11,10 +11,10 @@ describe('the update wikiproject list page', () => {
 
     describe('and the builder is found', () => {
       beforeEach(() => {
-        cy.intercept('GET', 'v1/builders/1', {
+        cy.intercept('GET', 'v1/builders/3', {
           fixture: 'wikiproject_builder.json',
         }).as('builder');
-        cy.visit('/#/selections/wikiproject/1');
+        cy.visit('/#/selections/wikiproject/3');
         cy.wait('@sites');
         cy.wait('@identity');
         cy.wait('@builder');
@@ -28,7 +28,7 @@ describe('the update wikiproject list page', () => {
       });
 
       it('displays builder information', () => {
-        cy.get('#listName > .form-control').should('have.value', 'Builder 1');
+        cy.get('#listName > .form-control').should('have.value', 'Builder 3');
         cy.get('#include-items').should(
           'have.value',
           'British Columbia road transport\nNew Brunswick road transport',
@@ -45,7 +45,7 @@ describe('the update wikiproject list page', () => {
       });
 
       it('displays a textbox with invalid project names', () => {
-        cy.intercept('v1/builders/1', {
+        cy.intercept('v1/builders/3', {
           fixture: 'save_wikiproject_failure.json',
         });
         cy.get('#updateListButton').click();
@@ -56,8 +56,24 @@ describe('the update wikiproject list page', () => {
         );
       });
 
+      it('sends correct data to API', () => {
+        cy.intercept('v1/builders/3', { fixture: 'save_list_success.json' }).as(
+          'updateBuilderSuccess',
+        );
+        cy.get('#updateListButton').click();
+        cy.wait('@updateBuilderSuccess').then((interception) => {
+          expect(interception.request.body.params.include).to.deep.equal([
+            'British Columbia road transport',
+            'New Brunswick road transport',
+          ]);
+          expect(interception.request.body.params.exclude).to.deep.equal([
+            'Countries',
+          ]);
+        });
+      });
+
       it('redirects on saving valid project names', () => {
-        cy.intercept('POST', 'v1/builders/1', {
+        cy.intercept('POST', 'v1/builders/3', {
           fixture: 'save_list_success.json',
         });
         cy.get('#updateListButton').click();
@@ -66,7 +82,7 @@ describe('the update wikiproject list page', () => {
 
       describe('when update button clicked', () => {
         beforeEach(() => {
-          cy.intercept('POST', 'v1/builders/1', (req) => {
+          cy.intercept('POST', 'v1/builders/3', (req) => {
             req.continue(() => {
               return new Promise((resolve) => {
                 setTimeout(resolve, 4000);
@@ -89,10 +105,10 @@ describe('the update wikiproject list page', () => {
 
     describe('and the builder has fatal errors', () => {
       beforeEach(() => {
-        cy.intercept('GET', 'v1/builders/1', {
+        cy.intercept('GET', 'v1/builders/3', {
           fixture: 'wikiproject_builder_fatal_error.json',
         });
-        cy.visit('/#/selections/wikiproject/1');
+        cy.visit('/#/selections/wikiproject/3');
       });
 
       it('displays the error div', () => {
@@ -106,10 +122,10 @@ describe('the update wikiproject list page', () => {
 
     describe('and the builder has retryable errors', () => {
       beforeEach(() => {
-        cy.intercept('GET', 'v1/builders/1', {
+        cy.intercept('GET', 'v1/builders/3', {
           fixture: 'wikiproject_builder_retryable_error.json',
         });
-        cy.visit('/#/selections/wikiproject/1');
+        cy.visit('/#/selections/wikiproject/3');
       });
 
       it('displays the error div', () => {
@@ -123,11 +139,11 @@ describe('the update wikiproject list page', () => {
 
     describe('and the builder is not found', () => {
       beforeEach(() => {
-        cy.intercept('GET', 'v1/builders/1', {
+        cy.intercept('GET', 'v1/builders/3', {
           statusCode: 404,
           body: '404 NOT FOUND',
         });
-        cy.visit('/#/selections/wikiproject/1');
+        cy.visit('/#/selections/wikiproject/3');
       });
 
       it('displays the 404 text', () => {
@@ -142,7 +158,7 @@ describe('the update wikiproject list page', () => {
     });
 
     it('opens login page', () => {
-      cy.visit('/#/selections/wikiproject/1');
+      cy.visit('/#/selections/wikiproject/3');
       cy.contains('Please Log In To Continue');
       cy.get('.pt-2 > .btn');
     });

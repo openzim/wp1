@@ -81,7 +81,7 @@ export default {
   },
   watch: {
     includeText: function () {
-      const include = this.excludeText.split('\n');
+      const include = this.includeText.split('\n');
       if (include.length === 1 && include[0] === '') {
         this.params.include = [];
         return;
