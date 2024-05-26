@@ -138,6 +138,18 @@ CREATE TABLE zim_files (
   z_description tinyblob
 );
 
+CREATE TABLE `page_scores` (
+  `ps_lang` varbinary(255) NOT NULL,
+  `ps_page_id` int(11) NOT NULL,
+  `ps_article` varbinary(1024) DEFAULT NULL,
+  `ps_views` int(11) DEFAULT 0,
+  `ps_links` int(11) DEFAULT 0,
+  `ps_lang_links` int(11) DEFAULT 0,
+  `ps_score` int(11) DEFAULT 0,
+  PRIMARY KEY (`ps_lang`,`ps_page_id`),
+  KEY `lang_article` (`ps_lang`,`ps_article`)
+);
+
 INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'Unknown-Class', 0);
 INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'NA-Class', 50);
 INSERT INTO `global_rankings` (gr_type, gr_rating, gr_ranking) VALUES ('importance', 'Low-Class', 100);
