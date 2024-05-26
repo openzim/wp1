@@ -5,6 +5,7 @@ import time
 import pymysql
 import pymysql.cursors
 import pymysql.err
+import socks
 
 logger = logging.getLogger(__name__)
 
@@ -19,22 +20,35 @@ except ImportError:
 RETRY_TIME_SECONDS = 5
 
 
-def connect(db_name):
+def connect(db_name, **overrides):
   creds = CREDENTIALS[ENV].get(db_name)
   if creds is None:
-    raise ValueError('db credentials for %r in ENV=%s are None')
+    raise ValueError('db credentials for %r in ENV=%s are None' %
+                     (db_name, ENV))
 
   kwargs = {
       'charset': None,
       'use_unicode': False,
       'cursorclass': pymysql.cursors.SSDictCursor,
-      **creds
+      **creds,
+      **overrides
   }
 
   tries = 4
   while True:
     try:
-      return pymysql.connect(**kwargs)
+      if ENV == ENV.DEVELOPMENT:
+        # In development, connect through a SOCKS5 proxy so that hosts on
+        # *.eqiad.wmflabs can be reached.
+        s = socks.socksocket()
+        s.set_proxy(socks.SOCKS5, "localhost")
+        s.connect((kwargs['host'], kwargs.get('port', 3306)))
+        conn = pymysql.connect(**kwargs, defer_connect=True)
+        conn.connect(sock=s)
+      else:
+        conn = pymysql.connect(**kwargs)
+
+      return conn
     except pymysql.err.InternalError:
       if tries > 0:
         logging.warning('Could not connect to database, retrying in %s seconds',
