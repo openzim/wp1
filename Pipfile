@@ -30,6 +30,7 @@ attrs = "==18.2.0"
 pytest-cov = "*"
 supervisor = "~=4.2"
 yoyo-migrations = "==7.3.2"
+pysocks = "*"
 
 # Versions required for dependabot
 sqlparse = "~=0.5.0"
