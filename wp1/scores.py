@@ -1,4 +1,6 @@
 from bz2 import BZ2Decompressor
+from collections import namedtuple
+from contextlib import contextmanager
 
 import csv
 from datetime import datetime, timedelta
@@ -6,7 +8,11 @@ import requests
 
 from wp1.constants import WP1_USER_AGENT
 from wp1.exceptions import Wp1ScoreProcessingError
+from wp1.time import get_current_datetime
 from wp1.wp10_db import connect as wp10_connect
+
+PageviewRecord = namedtuple('PageviewRecord',
+                            ['lang', 'name', 'page_id', 'views'])
 
 
 def wiki_languages():
@@ -25,24 +31,31 @@ def wiki_languages():
     yield row[2]
 
 
+def get_pageview_url():
+  now = get_current_datetime()
+  dt = datetime(now.year, now.month, 1) - timedelta(weeks=4)
+  return dt.strftime(
+      'https://dumps.wikimedia.org/other/pageview_complete/monthly/'
+      '%Y/%Y-%m/pageviews-%Y%m-user.bz2')
+
+
+@contextmanager
+def get_pageview_response():
+  url = get_pageview_url()
+  with requests.get(url, stream=True,
+                    headers={'User-Agent': WP1_USER_AGENT}) as r:
+    try:
+      r.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+      raise Wp1ScoreProcessingError('Could not retrieve pageview data') from e
+
+    yield r
+
+
 def raw_pageviews(decode=False):
 
-  def get_pageview_url():
-    now = datetime.now()
-    dt = datetime(now.year, now.month, 1) - timedelta(weeks=4)
-    return dt.strftime(
-        'https://dumps.wikimedia.org/other/pageview_complete/monthly/'
-        '%Y/%Y-%m/pageviews-%Y%m-automated.bz2')
-
   def as_bytes():
-    url = get_pageview_url()
-    with requests.get(url, stream=True,
-                      headers={'User-Agent': WP1_USER_AGENT}) as r:
-      try:
-        r.raise_for_status()
-      except requests.exceptions.HTTPError as e:
-        raise Wp1ScoreProcessingError('Could not retrieve pageview data') from e
-
+    with get_pageview_response() as r:
       decompressor = BZ2Decompressor()
       trailing = b''
       # Read data in 32 MB chunks
@@ -56,6 +69,8 @@ def raw_pageviews(decode=False):
         yield from lines[1:-1]
         trailing = lines[-1]
 
+      yield trailing
+
   if decode:
     for line in as_bytes():
       yield line.decode('utf-8')
@@ -64,6 +79,7 @@ def raw_pageviews(decode=False):
 
 
 def pageview_components():
+  tally = None
   for line in raw_pageviews():
     parts = line.split(b' ')
     if len(parts) != 6 or parts[2] == b'null':
@@ -74,17 +90,38 @@ def pageview_components():
       # Skip pages that don't have a title
       continue
 
-    # Language code, article name, article page id, views
-    yield parts[0].split(b'.')[0], parts[1], parts[2], parts[4]
+    lang = parts[0].split(b'.')[0]
+    name = parts[1]
+    page_id = parts[2]
+    try:
+      views = int(parts[4])
+    except ValueError:
+      # Views field wasn't int
+      log.warning('Views field wasn\'t int in pageview dump: %r', line)
+      continue
+
+    if (tally is not None and tally.lang == lang and tally.name == name and
+        tally.page_id == page_id):
+      # This is a view on the same page from a different interface (mobile v
+      # desktop etc)
+      new_dict = {**tally._asdict(), 'views': tally.views + views}
+      tally = PageviewRecord(**new_dict)
+    else:
+      # Language code, article name, article page id, views
+      if tally is not None:
+        yield tally.lang, tally.name, tally.page_id, tally.views
+      tally = PageviewRecord(lang, name, page_id, views)
+
+  yield tally.lang, tally.name, tally.page_id, tally.views
 
 
-def update_pageviews(wp10db, lang, article, page_id, views):
+def update_db_pageviews(wp10db, lang, article, page_id, views):
   with wp10db.cursor() as cursor:
     cursor.execute(
         '''INSERT INTO page_scores (ps_lang, ps_page_id, ps_article, ps_views)
            VALUES (%(lang)s, %(page_id)s, %(article)s, %(views)s)
            ON DUPLICATE KEY UPDATE ps_views = %(views)s
-    ''', {
+        ''', {
             'lang': lang,
             'page_id': page_id,
             'article': article,
@@ -92,7 +129,7 @@ def update_pageviews(wp10db, lang, article, page_id, views):
         })
 
 
-def update_all_pageviews(filter_lang=None):
+def update_pageviews(filter_lang=None):
   # Convert filter lang to bytes if necessary
   if filter_lang is not None and isinstance(filter_lang, str):
     filter_lang = filter_lang.encode('utf-8')
@@ -101,7 +138,7 @@ def update_all_pageviews(filter_lang=None):
   n = 0
   for lang, article, page_id, views in pageview_components():
     if filter_lang is None or lang == filter_lang:
-      update_pageviews(wp10db, lang, article, page_id, views)
+      update_db_pageviews(wp10db, lang, article, page_id, views)
 
     n += 1
     if n >= 10000:
