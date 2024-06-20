@@ -28,7 +28,7 @@ def login():
     return True
 
   api_creds = get_credentials()
-  if api_creds is None:
+  if api_creds is None or len(api_creds) == 0:
     logger.warning('Not creating API site object, no credentials')
     return False
 
