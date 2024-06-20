@@ -6,10 +6,15 @@ import mwclient
 
 import wp1.api
 
+TEST_CREDS = {
+    'user': 'user',
+    'pass': 'password',
+}
+
 
 class ApiWithCredsTest(unittest.TestCase):
 
-  @patch('wp1.api.get_credentials')
+  @patch('wp1.api.get_credentials', return_value=TEST_CREDS)
   @patch('wp1.api.mwclient.Site')
   @patch('wp1.api.site')
   @patch('http.cookiejar.MozillaCookieJar')
@@ -21,7 +26,7 @@ class ApiWithCredsTest(unittest.TestCase):
     wp1.api.login()
     self.assertEqual(1, site.login.call_count)
 
-  @patch('wp1.api.get_credentials')
+  @patch('wp1.api.get_credentials', return_value=TEST_CREDS)
   @patch('wp1.api.mwclient.Site')
   @patch('http.cookiejar.MozillaCookieJar')
   def test_login_already_logged_in(self, patched_cookies, patched_mwsite,
@@ -31,7 +36,7 @@ class ApiWithCredsTest(unittest.TestCase):
     self.assertTrue(actual)
     self.assertEqual(0, site.login.call_count)
 
-  @patch('wp1.api.get_credentials')
+  @patch('wp1.api.get_credentials', return_value=TEST_CREDS)
   @patch('wp1.api.mwclient.Site')
   @patch('wp1.api.site')
   @patch('wp1.api.logger')
