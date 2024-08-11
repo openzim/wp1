@@ -9,6 +9,7 @@
         >English Wikipedia</a
       >.
     </div>
+    <div id="replag-embed" data-wiki="en.wikipedia.org"></div>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
       <a class="navbar-brand" href="/">Wikipedia 1.0 Server</a>
       <button
@@ -113,7 +114,7 @@ export default {
         `${import.meta.env.VITE_API_URL}/oauth/identify`,
         {
           credentials: 'include',
-        }
+        },
       )
         .then((response) => {
           if (response.ok) {
