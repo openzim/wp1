@@ -1,7 +1,7 @@
 import bz2
 from datetime import datetime
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, mock_open
 
 import requests
 
@@ -10,9 +10,7 @@ from wp1.constants import WP1_USER_AGENT
 from wp1.exceptions import Wp1ScoreProcessingError
 from wp1 import scores
 
-
-class ScoresTest(BaseWpOneDbTest):
-  pageview_text = b'''af.wikipedia 1701 1402 desktop 4 F1
+pageview_text = b'''af.wikipedia 1701 1402 desktop 4 F1
 af.wikipedia 1701 1402 mobile-web 3 O2T1
 af.wikipedia 1702 1404 mobile-web 3 L1O2
 af.wikipedia 1702 1404 desktop 1 P1
@@ -37,9 +35,10 @@ af.wikipedia 1711 752 desktop 1 K1
 af.wikipedia 1712 753 mobile-web 2 O2
 af.wikipedia 1712 753 desktop 20 E12J7U1'''
 
-  @property
-  def pageview_bz2(self):
-    return bz2.compress(self.pageview_text)
+pageview_bz2 = bz2.compress(pageview_text)
+
+
+class ScoresTest(BaseWpOneDbTest):
 
   @patch('wp1.scores.requests')
   def test_wiki_languages(self, mock_requests):
@@ -85,73 +84,43 @@ af.wikipedia 1712 753 desktop 20 E12J7U1'''
         'https://dumps.wikimedia.org/other/pageview_complete/monthly/'
         '2024/2024-04/pageviews-202404-user.bz2', actual)
 
-  @patch('wp1.scores.requests.get')
-  def test_get_pageview_response(self, mock_get):
-    context = MagicMock()
-    expected = MagicMock()
-    context.__enter__.return_value = expected
-    mock_get.return_value = context
-    with scores.get_pageview_response() as actual:
-      self.assertEqual(expected, actual)
-
-  @patch('wp1.scores.requests.get')
-  def test_get_pageview_response_non_success(self, mock_get):
-    context = MagicMock()
-    resp = MagicMock()
-    resp.raise_for_status.side_effect = requests.exceptions.HTTPError
-    context.__enter__.return_value = resp
-    mock_get.return_value = context
-    with self.assertRaises(
-        Wp1ScoreProcessingError), scores.get_pageview_response() as actual:
-      pass
+  @patch('wp1.scores.get_current_datetime', return_value=datetime(2024, 5, 25))
+  def test_get_pageview_url_prev(self, mock_datetime):
+    actual = scores.get_pageview_url(prev=True)
+    self.assertEqual(
+        'https://dumps.wikimedia.org/other/pageview_complete/monthly/'
+        '2024/2024-03/pageviews-202403-user.bz2', actual)
 
   @patch('wp1.scores.get_current_datetime', return_value=datetime(2024, 5, 25))
-  @patch('wp1.scores.get_pageview_response')
-  def test_raw_pageviews(self, mock_get_response, mock_datetime):
-    context = MagicMock()
-    resp = MagicMock()
-    resp.iter_content.return_value = (self.pageview_bz2,)
-    context.__enter__.return_value = resp
-    mock_get_response.return_value = context
+  def test_get_prev_file_path(self, mock_datetime):
+    actual = scores.get_prev_file_path()
+    self.assertEqual('/tmp/pageviews/pageviews-202403-user.bz2', actual)
 
+  @patch('wp1.scores.get_current_datetime', return_value=datetime(2024, 5, 25))
+  def test_get_cur_file_path(self, mock_datetime):
+    actual = scores.get_cur_file_path()
+    self.assertEqual('/tmp/pageviews/pageviews-202404-user.bz2', actual)
+
+  def test_get_pageview_file_path(self):
+    actual = scores.get_pageview_file_path('pageviews-202404-user.bz2')
+    self.assertEqual('/tmp/pageviews/pageviews-202404-user.bz2', actual)
+
+  @patch('wp1.scores.get_current_datetime', return_value=datetime(2024, 5, 25))
+  @patch("builtins.open", new_callable=mock_open, read_data=pageview_bz2)
+  def test_raw_pageviews(self, mock_file_open, mock_datetime):
     actual = b'\n'.join(scores.raw_pageviews())
 
-    self.assertEqual(self.pageview_text, actual)
+    self.assertEqual(pageview_text, actual)
 
   @patch('wp1.scores.get_current_datetime', return_value=datetime(2024, 5, 25))
-  @patch('wp1.scores.get_pageview_response')
-  def test_raw_pageviews(self, mock_get_response, mock_datetime):
-    context = MagicMock()
-    resp = MagicMock()
-    resp.iter_content.return_value = (self.pageview_bz2,)
-    context.__enter__.return_value = resp
-    mock_get_response.return_value = context
-
-    actual = b'\n'.join(scores.raw_pageviews())
-
-    self.assertEqual(self.pageview_text, actual)
-
-  @patch('wp1.scores.get_current_datetime', return_value=datetime(2024, 5, 25))
-  @patch('wp1.scores.get_pageview_response')
-  def test_raw_pageviews_decode(self, mock_get_response, mock_datetime):
-    context = MagicMock()
-    resp = MagicMock()
-    resp.iter_content.return_value = (self.pageview_bz2,)
-    context.__enter__.return_value = resp
-    mock_get_response.return_value = context
-
+  @patch("builtins.open", new_callable=mock_open, read_data=pageview_bz2)
+  def test_raw_pageviews_decode(self, mock_file_open, mock_datetime):
     actual = '\n'.join(scores.raw_pageviews(decode=True))
 
-    self.assertEqual(self.pageview_text.decode('utf-8'), actual)
+    self.assertEqual(pageview_text.decode('utf-8'), actual)
 
-  @patch('wp1.scores.get_pageview_response')
-  def test_pageview_components(self, mock_get_response):
-    context = MagicMock()
-    resp = MagicMock()
-    resp.iter_content.return_value = (self.pageview_bz2,)
-    context.__enter__.return_value = resp
-    mock_get_response.return_value = context
-
+  @patch("builtins.open", new_callable=mock_open, read_data=pageview_bz2)
+  def test_pageview_components(self, mock_file_open):
     expected = [
         (b'af', b'1701', b'1402', 7),
         (b'af', b'1702', b'1404', 4),
@@ -187,8 +156,8 @@ af.wikipedia 1712 753 desktop 20 E12J7U1'''
   def test_update_db_pageviews_existing(self):
     with self.wp10db.cursor() as cursor:
       cursor.execute(
-          'INSERT INTO page_scores VALUES ("en", "Statue_of_Liberty", 1234, 100'
-      )
+          'INSERT INTO page_scores (ps_lang, ps_article, ps_page_id, ps_views) '
+          'VALUES ("en", "Statue_of_Liberty", 1234, 100)')
 
     scores.update_db_pageviews(self.wp10db, 'en', 'Statue_of_Liberty', 1234,
                                200)

@@ -1,6 +1,8 @@
 from bz2 import BZ2Decompressor
 from collections import namedtuple
 from contextlib import contextmanager
+import logging
+import os.path
 
 import csv
 from datetime import datetime, timedelta
@@ -14,11 +16,22 @@ from wp1.wp10_db import connect as wp10_connect
 PageviewRecord = namedtuple('PageviewRecord',
                             ['lang', 'name', 'page_id', 'views'])
 
+logger = logging.getLogger(__name__)
+
+try:
+  from wp1.credentials import ENV, CREDENTIALS
+except ImportError:
+  logger.exception('The file credentials.py must be populated manually in '
+                   'order to download pageviews')
+  CREDENTIALS = None
+  ENV = None
+
 
 def wiki_languages():
   r = requests.get(
       'https://wikistats.wmcloud.org/api.php?action=dump&table=wikipedias&format=csv',
-      headers={'User-Agent': WP1_USER_AGENT})
+      headers={'User-Agent': WP1_USER_AGENT},
+  )
   try:
     r.raise_for_status()
   except requests.exceptions.HTTPError as e:
@@ -31,44 +44,75 @@ def wiki_languages():
     yield row[2]
 
 
-def get_pageview_url():
+def get_pageview_url(prev=False):
+  weeks = 4
+  if prev:
+    weeks = 8
+
   now = get_current_datetime()
-  dt = datetime(now.year, now.month, 1) - timedelta(weeks=4)
+  dt = datetime(now.year, now.month, 1) - timedelta(weeks=weeks)
   return dt.strftime(
       'https://dumps.wikimedia.org/other/pageview_complete/monthly/'
       '%Y/%Y-%m/pageviews-%Y%m-user.bz2')
 
 
-@contextmanager
-def get_pageview_response():
-  url = get_pageview_url()
-  with requests.get(url, stream=True,
-                    headers={'User-Agent': WP1_USER_AGENT}) as r:
-    try:
-      r.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-      raise Wp1ScoreProcessingError('Could not retrieve pageview data') from e
+def get_pageview_file_path(filename):
+  path = CREDENTIALS[ENV]['FILE_PATH']['pageviews']
+  os.makedirs(path, exist_ok=True)
+  return os.path.join(path, filename)
 
-    yield r
+
+def get_prev_file_path():
+  prev_filename = get_pageview_url(prev=True).split('/')[-1]
+  return get_pageview_file_path(prev_filename)
+
+
+def get_cur_file_path():
+  cur_filename = get_pageview_url().split('/')[-1]
+  return get_pageview_file_path(cur_filename)
+
+
+def download_pageviews():
+  # Clean up file from last month
+  prev_filepath = get_prev_file_path()
+  if os.path.exists(prev_filepath):
+    os.remove(prev_filepath)
+
+  cur_filepath = get_cur_file_path()
+  if os.path.exists(cur_filepath):
+    # File already downloaded
+    return
+
+  with requests.get(get_pageview_url(), stream=True) as r:
+    r.raise_for_status()
+    with open(PAGEVIEW_FILE_NAME, 'wb') as f:
+      # Read data in 8 KB chunks
+      for chunk in r.iter_content(chunk_size=8 * 1024):
+        f.write(chunk)
 
 
 def raw_pageviews(decode=False):
 
   def as_bytes():
-    with get_pageview_response() as r:
-      decompressor = BZ2Decompressor()
-      trailing = b''
-      # Read data in 32 MB chunks
-      for http_chunk in r.iter_content(chunk_size=32 * 1024 * 1024):
-        data = decompressor.decompress(http_chunk)
+    decompressor = BZ2Decompressor()
+    trailing = b''
+    with open(get_cur_file_path(), 'rb') as f:
+      while True:
+        # Read data in 1 MB chunks
+        chunk = f.read(1024 * 1024)
+        if not chunk:
+          break
+        data = decompressor.decompress(chunk)
         lines = [line for line in data.split(b'\n') if line]
         if not lines:
           continue
 
+        # Reunite incomplete lines
         yield trailing + lines[0]
         yield from lines[1:-1]
         trailing = lines[-1]
 
+      # Nothing left, yield the last line
       yield trailing
 
   if decode:
@@ -96,7 +140,6 @@ def pageview_components():
     try:
       views = int(parts[4])
     except ValueError:
-      # Views field wasn't int
       log.warning('Views field wasn\'t int in pageview dump: %r', line)
       continue
 
@@ -130,9 +173,16 @@ def update_db_pageviews(wp10db, lang, article, page_id, views):
 
 
 def update_pageviews(filter_lang=None):
+  download_pageviews()
+
   # Convert filter lang to bytes if necessary
   if filter_lang is not None and isinstance(filter_lang, str):
     filter_lang = filter_lang.encode('utf-8')
+
+  if filter_lang is None:
+    logger.info('Updating all pageviews')
+  else:
+    logger.info('Updating pageviews for %s', filter_lang.decode('utf-8'))
 
   wp10db = wp10_connect()
   n = 0
@@ -141,7 +191,15 @@ def update_pageviews(filter_lang=None):
       update_db_pageviews(wp10db, lang, article, page_id, views)
 
     n += 1
-    if n >= 10000:
+    if n >= 50000:
+      logger.debug('Committing')
       wp10db.commit()
       n = 0
   wp10db.commit()
+  logger.info('Done')
+
+
+if __name__ == '__main__':
+  logging.basicConfig(level=logging.INFO,
+                      format='%(levelname)s %(asctime)s: %(message)s')
+  update_pageviews()
