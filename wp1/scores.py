@@ -85,7 +85,7 @@ def download_pageviews():
 
   with requests.get(get_pageview_url(), stream=True) as r:
     r.raise_for_status()
-    with open(PAGEVIEW_FILE_NAME, 'wb') as f:
+    with open(cur_filepath, 'wb') as f:
       # Read data in 8 KB chunks
       for chunk in r.iter_content(chunk_size=8 * 1024):
         f.write(chunk)
@@ -140,7 +140,7 @@ def pageview_components():
     try:
       views = int(parts[4])
     except ValueError:
-      log.warning('Views field wasn\'t int in pageview dump: %r', line)
+      logger.warning('Views field wasn\'t int in pageview dump: %r', line)
       continue
 
     if (tally is not None and tally.lang == lang and tally.name == name and
@@ -172,7 +172,7 @@ def update_db_pageviews(wp10db, lang, article, page_id, views):
         })
 
 
-def update_pageviews(filter_lang=None):
+def update_pageviews(filter_lang=None, commit_after=50000):
   download_pageviews()
 
   # Convert filter lang to bytes if necessary
@@ -191,7 +191,7 @@ def update_pageviews(filter_lang=None):
       update_db_pageviews(wp10db, lang, article, page_id, views)
 
     n += 1
-    if n >= 50000:
+    if n >= commit_after:
       logger.debug('Committing')
       wp10db.commit()
       n = 0
