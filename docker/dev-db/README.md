@@ -14,7 +14,7 @@ The dev database will need to be migrated in the following circumstances:
 To migrate, cd to the `db/dev` directory and run the following command:
 
 ```bash
-PYTHONPATH=$PYTHONPATH:../.. yoyo apply
+PYTHONPATH=$PYTHONPATH:../.. pipenv run yoyo apply
 ```
 
 The `PYTHONPATH` environment variable is necessary because some of the migrations
