@@ -37,7 +37,7 @@ def connect(db_name, **overrides):
   tries = 4
   while True:
     try:
-      if ENV == ENV.DEVELOPMENT:
+      if db_name == 'WIKIDB' and ENV == ENV.DEVELOPMENT:
         # In development, connect through a SOCKS5 proxy so that hosts on
         # *.eqiad.wmflabs can be reached.
         s = socks.socksocket()
