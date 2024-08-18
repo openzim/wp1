@@ -1,7 +1,8 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pymysql.err
+import socks
 
 from wp1.environment import Environment
 
@@ -30,3 +31,22 @@ class DbTest(unittest.TestCase):
     with self.assertRaises(pymysql.err.InternalError):
       connect('WP10DB')
     self.assertEqual(5, patched_pymysql.call_count)
+
+  @patch('wp1.db.pymysql.connect')
+  @patch('wp1.db.socks.socksocket')
+  @patch('wp1.db.ENV', Environment.DEVELOPMENT)
+  def test_socks_proxy(self, mock_socket, mock_connect):
+    from wp1.db import connect
+
+    socket = MagicMock()
+    mock_socket.return_value = socket
+    conn = MagicMock()
+    mock_connect.return_value = conn
+
+    connect('WP10DB', host='foo.wikimedia.cloud', port=6000)
+
+    socket.set_proxy.assert_called_once_with(socks.SOCKS5, 'localhost')
+    socket.connect.assert_called_once_with(('foo.wikimedia.cloud', 6000))
+    defer = mock_connect.call_args.kwargs.get('defer_connect')
+    self.assertTrue(defer)
+    conn.connect.assert_called_once_with(sock=socket)
