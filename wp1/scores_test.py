@@ -187,6 +187,22 @@ class ScoresTest(BaseWpOneDbTest):
     mock_get_response.assert_not_called()
     self.assertTrue(os.path.exists(file_path))
 
+  @patch('wp1.scores.requests.get')
+  def test_download_pageviews_handle_error(self, mock_get_response):
+    context = MagicMock()
+    resp = MagicMock()
+    # Return partial data and then raise an exception
+    resp.iter_content.side_effect = (pageview_bz2[:100],
+                                     requests.exceptions.HTTPError)
+    context.__enter__.return_value = resp
+    mock_get_response.return_value = context
+
+    with self.assertRaises(Wp1ScoreProcessingError):
+      scores.download_pageviews()
+
+    file_path = scores.get_cur_file_path()
+    self.assertFalse(os.path.exists(file_path))
+
   @patch('wp1.scores.get_current_datetime', return_value=datetime(2024, 5, 25))
   @patch("builtins.open", new_callable=mock_open, read_data=pageview_bz2)
   def test_raw_pageviews(self, mock_file_open, mock_datetime):
