@@ -31,6 +31,7 @@ def wiki_languages():
   r = requests.get(
       'https://wikistats.wmcloud.org/api.php?action=dump&table=wikipedias&format=csv',
       headers={'User-Agent': WP1_USER_AGENT},
+      timeout=60,
   )
   try:
     r.raise_for_status()
@@ -83,12 +84,17 @@ def download_pageviews():
     # File already downloaded
     return
 
-  with requests.get(get_pageview_url(), stream=True) as r:
+  with requests.get(get_pageview_url(), stream=True, timeout=60) as r:
     r.raise_for_status()
-    with open(cur_filepath, 'wb') as f:
-      # Read data in 8 KB chunks
-      for chunk in r.iter_content(chunk_size=8 * 1024):
-        f.write(chunk)
+    try:
+      with open(cur_filepath, 'wb') as f:
+        # Read data in 8 KB chunks
+        for chunk in r.iter_content(chunk_size=8 * 1024):
+          f.write(chunk)
+    except Exception as e:
+      logger.exception('Error downloading pageviews')
+      os.remove(cur_filepath)
+      raise Wp1ScoreProcessingError('Error downloading pageviews') from e
 
 
 def raw_pageviews(decode=False):
