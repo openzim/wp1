@@ -88,8 +88,8 @@ def download_pageviews():
     r.raise_for_status()
     try:
       with open(cur_filepath, 'wb') as f:
-        # Read data in 8 KB chunks
-        for chunk in r.iter_content(chunk_size=8 * 1024):
+        # Read data in 8 MB chunks
+        for chunk in r.iter_content(chunk_size=8 * 1024 * 1024):
           f.write(chunk)
     except Exception as e:
       logger.exception('Error downloading pageviews')
