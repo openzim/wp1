@@ -38,7 +38,7 @@
     "autoprefixer": "^10.4.13",
     "axios": "^1.7.4",
     "babel-preset-vue": "^2.0.2",
-    "bootstrap": "^4.4.1",
+    "bootstrap": "^5.0.0",
     "bootstrap-icons": "^1.10.2",
     "cli-highlight": "^2.1.5",
     "cypress": "13",
