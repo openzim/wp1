@@ -49,14 +49,14 @@ graph of required docker images that represent the production environment.
 with Redis and a MariaDB server for the `enwp10` database. Use it like so
 
 ```bash
-docker-compose -f docker-compose-dev.yml up -d
+docker compose -f docker-compose-dev.yml up -d
 ```
 
 `docker-compose-test.yml` is a another docker file which sets up the test db
 for python "nosetests" (unit tests). Run it similarly:
 
 ```bash
-docker-compose -f docker-compose-test.yml up -d
+docker compose -f docker-compose-test.yml up -d
 ```
 
 The `*.dockerfile` symlinks allow for each docker image in this repository
@@ -202,7 +202,7 @@ backend selections.
 After that is done, use the following command to run the dev environment:
 
 ```bash
-docker-compose -f docker-compose-dev.yml up -d
+docker compose -f docker-compose-dev.yml up -d
 ```
 
 ## Migrating and updating the dev database.
@@ -304,7 +304,7 @@ The `serve` command should print out the port to view the docs at, likely localh
   - `sudo docker pull ghcr.io/openzim/wp1-web:release`
   - `sudo docker pull ghcr.io/openzim/wp1-frontend:release`
 - Run docker-compose to bring the production images online.
-  - `sudo docker-compose up -d`
+  - `sudo docker compose up -d`
 - Run the production database migrations in the worker container:
   - `sudo docker exec -ti -e PYTHONPATH=app wp1bot-workers yoyo -c /usr/src/app/db/production/yoyo.ini apply`
 
