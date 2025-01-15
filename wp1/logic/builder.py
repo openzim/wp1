@@ -1,24 +1,27 @@
 import json
 import logging
-import time
 
 import attr
 
-from wp1.constants import CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE, MAX_ZIM_FILE_POLL_TIME, TS_FORMAT_WP10
+import wp1.logic.selection as logic_selection
+import wp1.logic.util as logic_util
+from wp1 import queues, zimfarm
+from wp1.constants import (
+    CONTENT_TYPE_TO_EXT,
+    EXT_TO_CONTENT_TYPE,
+    MAX_ZIM_FILE_POLL_TIME,
+    TS_FORMAT_WP10,
+)
 from wp1.credentials import CREDENTIALS, ENV
 from wp1.environment import Environment
 from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError
-import wp1.logic.selection as logic_selection
-import wp1.logic.util as logic_util
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
 from wp1.models.wp10.zim_file import ZimFile
-from wp1 import queues
 from wp1.redis_db import connect as redis_connect
 from wp1.storage import connect_storage
 from wp1.timestamp import utcnow
 from wp1.wp10_db import connect as wp10_connect
-from wp1 import zimfarm
 
 logger = logging.getLogger(__name__)
 
@@ -585,7 +588,6 @@ def get_builders_with_selections(wp10db, user_id):
       ''', (user_id,))
     data = cursor.fetchall()
 
-  builders = {}
   result = []
   for db_builder in data:
     builder = {}
