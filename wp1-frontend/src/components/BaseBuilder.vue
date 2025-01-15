@@ -279,7 +279,7 @@ export default {
           credentials: 'include',
         },
       );
-      if (response.status == 404) {
+      if (response.status == 404 || response.status == 401) {
         this.notFound = true;
       } else if (!response.ok) {
         this.serverError = true;
