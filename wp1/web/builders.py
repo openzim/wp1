@@ -97,10 +97,12 @@ def get_builder(builder_id):
 
   # Don't return the builder unless it belongs to this user.
   user = flask.session.get('user')
-  if builder.b_user_id != user['identity']['sub']:
+  builder_user_id = str(builder.b_user_id)
+  logged_in_user_id = str(user['identity']['sub'])
+  if builder_user_id != logged_in_user_id:
     logger.warn(
-        'User id mismatch, user %s tried to access builder %s which is owned by user %s',
-        user['identity']['sub'], builder_id, builder.b_user_id)
+        'User id mismatch, user %r tried to access builder %r which is owned by user %r',
+        logged_in_user_id, builder_id, builder_user_id)
     flask.abort(401, 'Unauthorized')
 
   selection_errors = logic_builder.latest_selections_with_errors(
