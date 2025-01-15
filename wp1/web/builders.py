@@ -1,14 +1,13 @@
-import flask
 import importlib
 import logging
 
-from wp1.credentials import CREDENTIALS, ENV
-from wp1.environment import Environment
-from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError
+import flask
+
 import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
 from wp1 import queues
-from wp1 import zimfarm
+from wp1.credentials import CREDENTIALS, ENV
+from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError
 from wp1.web import authenticate
 from wp1.web.db import get_db
 from wp1.web.redis import get_redis
@@ -91,14 +90,18 @@ def update_builder(builder_id):
 @authenticate
 def get_builder(builder_id):
   wp10db = get_db('wp10db')
-  builder = logic_builder.get_builder(wp10db, builder_id)
-  if not builder:
+  try:
+    builder = logic_builder.get_builder(wp10db, builder_id)
+  except ObjectNotFoundError:
     flask.abort(404)
 
   # Don't return the builder unless it belongs to this user.
   user = flask.session.get('user')
   if builder.b_user_id != user['identity']['sub']:
-    flask.abort(404)
+    logger.warn(
+        'User id mismatch, user %s tried to access builder %s which is owned by user %s',
+        user['identity']['sub'], builder_id, builder.b_user_id)
+    flask.abort(401, 'Unauthorized')
 
   selection_errors = logic_builder.latest_selections_with_errors(
       wp10db, builder_id)
