@@ -88,14 +88,14 @@ CREATE TABLE `global_rankings` (
 );
 
 CREATE TABLE `users` (
-  `u_id` int(8) unsigned NOT NULL,
+  `u_id` VARCHAR(255) NOT NULL,
   `u_username` varchar(255) DEFAULT NULL
 );
 
 CREATE TABLE `builders` (
   b_id VARBINARY(255) NOT NULL PRIMARY KEY,
   b_name VARBINARY(255) NOT NULL,
-  b_user_id INTEGER NOT NULL,
+  b_user_id VARCHAR(255) NOT NULL,
   b_project VARBINARY(255) NOT NULL,
   b_model VARBINARY(255) NOT NULL,
   b_current_version int(11) NOT NULL DEFAULT 0,
