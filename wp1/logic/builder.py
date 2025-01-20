@@ -402,10 +402,13 @@ def schedule_zim_file(s3,
     raise ObjectNotFoundError('Could not find builder with id = %s' %
                               builder_id)
 
-  if user_id is not None and builder.b_user_id != user_id:
-    raise UserNotAuthorizedError(
-        'Could not use builder id = %s for user id = %s' %
-        (builder_id, user_id))
+  if user_id is not None:
+    user_id = str(user_id)
+    builder_user_id = builder.b_user_id.decode('utf-8')
+    if user_id != builder_user_id:
+      raise UserNotAuthorizedError(
+          'Could not use builder id = %s for user id = %s' %
+          (builder_id, user_id))
 
   task_id = zimfarm.schedule_zim_file(s3,
                                       redis,
