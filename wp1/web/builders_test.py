@@ -14,7 +14,7 @@ class BuildersTest(BaseWebTestcase):
       'access_token': 'access_token',
       'identity': {
           'username': 'WP1_user',
-          'sub': 1234,
+          'sub': '1234',
       },
   }
   UNAUTHORIZED_USER = {
@@ -46,7 +46,7 @@ class BuildersTest(BaseWebTestcase):
 
   builder = Builder(b_id=b'1a-2b-3c-4d',
                     b_name=b'My Builder',
-                    b_user_id=1234,
+                    b_user_id='1234',
                     b_project=b'en.wikipedia.fake',
                     b_model=b'wp1.selection.models.simple',
                     b_params=b'{"list": ["a", "b", "c"]}',
