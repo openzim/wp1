@@ -1,5 +1,5 @@
 import datetime
-from unittest.mock import call, patch, MagicMock, ANY
+from unittest.mock import ANY, MagicMock, call, patch
 
 import attr
 
@@ -14,7 +14,7 @@ class BuilderTest(BaseWpOneDbTest):
   expected_builder = {
       'b_id': b'1a-2b-3c-4d',
       'b_name': b'My Builder',
-      'b_user_id': 1234,
+      'b_user_id': b'1234',
       'b_project': b'en.wikipedia.fake',
       'b_model': b'wp1.selection.models.simple',
       'b_params': b'{"list": ["a", "b", "c"]}',
@@ -269,7 +269,7 @@ class BuilderTest(BaseWpOneDbTest):
   def _get_builder_by_user_id(self):
     with self.wp10db.cursor() as cursor:
       cursor.execute('SELECT * FROM builders WHERE b_user_id=%(b_user_id)s',
-                     {'b_user_id': '1234'})
+                     {'b_user_id': b'1234'})
       db_lists = cursor.fetchone()
       return db_lists
 
@@ -278,7 +278,7 @@ class BuilderTest(BaseWpOneDbTest):
     self.builder = Builder(
         b_id=b'1a-2b-3c-4d',
         b_name=b'My Builder',
-        b_user_id=1234,
+        b_user_id=b'1234',
         b_project=b'en.wikipedia.fake',
         b_model=b'wp1.selection.models.simple',
         b_params=b'{"list": ["a", "b", "c"]}',
@@ -535,7 +535,7 @@ class BuilderTest(BaseWpOneDbTest):
     builder = Builder(
         b_id=b'1a-2b-3c-4d',
         b_name=b'My Builder',
-        b_user_id=5555,  # Different user_id
+        b_user_id=b'5555',  # Different user_id
         b_project=b'en.wikipedia.fake',
         b_model=b'wp1.selection.models.simple',
         b_params=b'{"list": ["a", "b", "c"]}',
@@ -548,7 +548,7 @@ class BuilderTest(BaseWpOneDbTest):
     builder = Builder(
         b_id=b'100',  # Wrong ID
         b_name=b'My Builder',
-        b_user_id=1234,
+        b_user_id=b'1234',
         b_project=b'en.wikipedia.fake',
         b_model=b'wp1.selection.models.simple',
         b_params=b'{"list": ["a", "b", "c"]}',
@@ -561,7 +561,7 @@ class BuilderTest(BaseWpOneDbTest):
     builder = Builder(
         b_id=b'1a-2b-3c-4d',
         b_name=b'My Builder',
-        b_user_id=1234,
+        b_user_id=b'1234',
         b_project=b'en.wikipedia.fake',
         b_model=b'wp1.selection.models.simple',
         b_params=b'{"list": ["a", "b", "c"]}',
@@ -573,7 +573,7 @@ class BuilderTest(BaseWpOneDbTest):
     self._insert_builder()
     builder = Builder(b_id=b'1a-2b-3c-4d',
                       b_name=b'Builder 2',
-                      b_user_id=1234,
+                      b_user_id=b'1234',
                       b_project=b'zz.wikipedia.fake',
                       b_model=b'wp1.selection.models.complex',
                       b_params=b'{"list": ["1", "b", "c"]}',
