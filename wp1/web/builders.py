@@ -7,7 +7,8 @@ import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
 from wp1 import queues
 from wp1.credentials import CREDENTIALS, ENV
-from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError
+from wp1.exceptions import (ObjectNotFoundError, UserNotAuthorizedError,
+                            ZimFarmError)
 from wp1.web import authenticate
 from wp1.web.db import get_db
 from wp1.web.redis import get_redis
@@ -30,7 +31,7 @@ def _create_or_update_builder(wp10db, data, builder_id=None):
   builder_module = importlib.import_module(model)
   Builder = getattr(builder_module, 'Builder')
   if Builder is None:
-    logger.warn('Could not find model: %s', model)
+    logger.warning('Could not find model: %s', model)
     flask.abort(400)
 
   builder = Builder()
@@ -97,10 +98,10 @@ def get_builder(builder_id):
 
   # Don't return the builder unless it belongs to this user.
   user = flask.session.get('user')
-  builder_user_id = str(builder.b_user_id)
+  builder_user_id = builder.b_user_id.decode('utf-8')
   logged_in_user_id = str(user['identity']['sub'])
   if builder_user_id != logged_in_user_id:
-    logger.warn(
+    logger.warning(
         'User id mismatch, user %r tried to access builder %r which is owned by user %r',
         logged_in_user_id, builder_id, builder_user_id)
     flask.abort(401, 'Unauthorized')
