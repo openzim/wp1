@@ -3,7 +3,8 @@ from unittest.mock import patch
 
 import attr
 
-from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError
+from wp1.exceptions import (ObjectNotFoundError, UserNotAuthorizedError,
+                            ZimFarmError)
 from wp1.models.wp10.builder import Builder
 from wp1.web.app import create_app
 from wp1.web.base_web_testcase import BaseWebTestcase
@@ -21,7 +22,7 @@ class BuildersTest(BaseWebTestcase):
       'access_token': 'access_token',
       'identity': {
           'username': 'WP1_user_2',
-          'sub': 5678,
+          'sub': '5678',
       },
   }
   invalid_article_name = ['Eiffel_Tower', 'Statue of#Liberty']
@@ -96,6 +97,36 @@ class BuildersTest(BaseWebTestcase):
               selections[2][7],
           ))
     self.wp10db.commit()
+
+  def test_get_builder(self):
+    self.app = create_app()
+    with self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      builder_id = self._insert_builder()
+      rv = client.get(f'/v1/builders/{builder_id}')
+
+      self.assertEqual('200 OK', rv.status)
+
+  def test_get_builder_not_found(self):
+    self.app = create_app()
+    with self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      self._insert_builder()
+      rv = client.get('/v1/builders/1234')
+
+      self.assertEqual('404 NOT FOUND', rv.status)
+
+  def test_get_builder_unauthorized(self):
+    self.app = create_app()
+    with self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.UNAUTHORIZED_USER
+      builder_id = self._insert_builder()
+      rv = client.get(f'/v1/builders/{builder_id}')
+
+      self.assertEqual('401 UNAUTHORIZED', rv.status)
 
   def test_create_unsuccessful(self):
     self.app = create_app()
