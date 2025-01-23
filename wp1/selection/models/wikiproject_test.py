@@ -33,6 +33,12 @@ class WikiProjectTest(BaseWpOneDbTest):
           'INSERT INTO projects (p_project, p_timestamp) VALUES (%s, 0)',
           projects)
 
+      # Add a few category pages that should be excluded from the materialized article lists
+      cursor.executemany(
+          'INSERT INTO ratings (r_project, r_namespace, r_article) VALUES (%s, 14, %s)',
+          [('Water_Elements', 'Famous_bodies_of_water'),
+           ('Wind', 'Coastal_breezes')])
+
   def test_validate(self):
     params = {
         'include': ['Water Elements', 'Fire', 'Lava'],
