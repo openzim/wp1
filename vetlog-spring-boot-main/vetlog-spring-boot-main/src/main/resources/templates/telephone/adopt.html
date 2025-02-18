@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<head>
+    <title th:text="#{pet.view.list.title}"></title>
+    <head th:insert="~{fragments/include}"/>
+    <script th:src="@{/assets/servizi-dog-theme/node_modules/jquery/dist/jquery.min.js}"></script>
+</head>
+<body>
+<div th:insert="~{fragments/header}"/>
+<br/><br/>
+<br/><br/>
+<br/><br/>
+<div class="container">
+    <div class="row">
+        <div class="col-sm-6 col-md-4">
+            <div class="thumbnail">
+                <div th:data-testid="errorMessage" th:if="${errorMessage}" class="alert alert-warning" th:text="${errorMessage}"/>
+                <div th:if="${!pet.images.isEmpty()}">
+                    <img style="width:320px;height:240px;" th:attr="src=@{${gcpImageUrl} + ${pet.images.get(0).uuid}}"/>
+                </div>
+                <div class="caption">
+                    <p th:text="#{adoption.thanks}"/>
+                    <br/>
+                    <center>
+                        <strong th:text="${pet.name}"/>
+                    </center>
+                    <br/>
+                    <p th:text="#{adoption.wishes}"/>
+                    <br/>
+                    <form id="description" th:action="@{/telephone/save}" th:object="${telephoneCommand}" method="post"
+                          class="form-horizontal">
+                        <fieldset>
+                            <label for="mobile"><h4 th:text="#{adoption.mobile}"/></label>
+                            <input type="text" name="mobile" class="form-control" placeholder="Mobile" id='mobile'/>
+                            <label th:if="${#fields.hasErrors('mobile')}" th:errors="*{mobile}"></label>
+                            <input type="hidden" th:value="${telephoneCommand.uuid}" name="uuid"/>
+                            <br/><br/>
+                            <input type="submit" class="btn btn-primary btn-block"/>
+                        </fieldset>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<br/><br/><br/><br/>
+<div th:insert="~{fragments/footer}"/>
+</body>
+</html>

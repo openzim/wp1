@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<head>
+    <title th:text="#{login.title}"/>
+    <head th:insert="~{fragments/include}"/>
+</head>
+<body class="login">
+<div th:insert="~{fragments/header}"/>
+<br/><br/>
+<br/><br/>
+<br/><br/>
+<div class="container">
+    <div class="row">
+        <div class="col-md-4 col-md-offset-4">
+            <div class="portlet portlet-green">
+                <div class="portlet-body">
+
+                    <div th:data-testid="accountCreatedMessage" th:if="${userAccountCreatedMessage}" class="alert alert-success" th:text="#{user.account.created}"/>
+                    <div th:data-testid="recoveryPasswordMessage" th:if="${message}" class="alert alert-success" th:text="#{recovery.email.sent}"/>
+                    <div th:data-testid="passwordChangedMessage" th:if="${change}" class="alert alert-success" th:text="#{recovery.password.changed}"/>
+                    <div th:data-testid="loginErrorMessage" th:if="${param.error}" class="alert alert-danger" th:text="#{login.error.message}"/>
+
+                    <form th:action="@{/login}" method='POST' id='loginForm' class='cssform' autocomplete='off'>
+                        <fieldset>
+                            <label for="username"><h4 th:text="#{login.username}"/></label>
+                            <input th:data-testid="usernameInput" type="text" name='username' class="form-control" placeholder="username"
+                                   id='username'/>
+                            <label for="password"><h4 th:text="#{login.password}"/></label>
+                            <input th:data-testid="passwordInput" type="password" name='password' class="form-control" placeholder="password"
+                                   id='password'/>
+                            <br/>
+                            <button th:data-testid="submitButton" id="btn-success" type="submit" class="btn btn-lg btn-primary btn-block"><h5
+                                    th:text="#{login.action}"/></button>
+                            <hr/>
+                            <a th:data-testid="registerLink" th:href="@{/user/create}" class="btn btn-primary btn-block"><h5
+                                    th:text="#{login.register}"/></a>
+                        </fieldset>
+                        <br/>
+                        <a th:data-testid="forgotPasswordLink" th:href="@{/recovery/password}" role="button"><p th:text="#{login.forgot}"/></a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:insert="~{fragments/footer}"/>
+</body>
+</html>
+

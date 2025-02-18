@@ -1,0 +1,52 @@
+<html>
+<html xmlns:th="https://www.thymeleaf.org">
+<head>
+    <title th:text="#{privacy.title}"></title>
+    <head th:insert="~{fragments/include}"/>
+</head>
+<body class="login">
+<div th:insert="~{fragments/header}"/>
+<br/><br/>
+<br/><br/>
+<br/><br/>
+<h3 class="text-center" th:text="#{privacy.header}"></h3>
+<br/>
+<div class="container">
+    <div class="row">
+        <div class="col-lg-4 col-lg-offset-4">
+            <div class="portlet portlet-green">
+                <div class="portlet-body">
+                    <p th:text="#{privacy.description}"></p>
+                </div>
+            </div>
+            <h4 th:text="#{privacy.information.title}"></h4>
+            <div class="portlet portlet-green">
+                <div class="portlet-body">
+                    <p th:text="#{privacy.information.description}"></p>
+                </div>
+            </div>
+            <h4 th:text="#{privacy.usage.title}"></h4>
+            <div class="portlet portlet-green">
+                <div class="portlet-body">
+                    <p th:text="#{privacy.usage.description}"></p>
+                    <p th:text="#{privacy.usage.list}"></p>
+                </div>
+            </div>
+            <h4 th:text="#{privacy.disclosure.title}"></h4>
+            <div class="portlet portlet-green">
+                <div class="portlet-body">
+                    <p th:text="#{privacy.disclosure.description}"></p>
+                </div>
+            </div>
+            <h4 th:text="#{privacy.security.title}"></h4>
+            <div class="portlet portlet-green">
+                <div class="portlet-body">
+                    <p th:text="#{privacy.security.description}"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:insert="~{fragments/footer}"/>
+</body>
+</html>

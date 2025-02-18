@@ -1,0 +1,27 @@
+{
+  "name": "servizi-dog-theme",
+  "version": "1.0.0",
+  "description": "Vetlog template",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/josdem/servizi-dog-template.git"
+  },
+  "keywords": [
+    "vetlog"
+  ],
+  "author": "josdem",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/josdem/servizi-dog-template/issues"
+  },
+  "homepage": "https://github.com/josdem/servizi-dog-template#readme",
+  "dependencies": {
+    "jquery": "^3.7.1",
+    "bootstrap": "~3.4.1",
+    "font-awesome": "~4.7.0"
+  }
+}

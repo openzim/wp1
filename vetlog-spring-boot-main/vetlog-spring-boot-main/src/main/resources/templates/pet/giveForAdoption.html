@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org" xmlns="http://www.w3.org/1999/html">
+<head>
+    <title th:text="#{pet.view.list.title}"></title>
+    <head th:insert="~{fragments/include}"/>
+</head>
+<body>
+<div th:insert="~{fragments/header}"/>
+<br/><br/>
+<br/><br/>
+<br/><br/>
+<div class="container">
+    <div class="row">
+        <div th:if="${pets.isEmpty()}">
+            <div align="center">
+                <p th:text="#{pet.list.empty}"/>
+            </div>
+        </div>
+        <div th:each="pet : ${pets}">
+            <div class="col-sm-6 col-md-4">
+                <div class="thumbnail">
+                    <div th:if="${!pet.images.isEmpty()}">
+                        <img style="width:320px;height:240px;" th:attr="src=@{${gcpImageUrl} + ${pet.images.get(0).uuid}}"/>
+                    </div>
+                    <div class="caption">
+                        <h3 th:text="${pet.name}"></h3>
+                        <p>
+                        <ul>
+                            <li th:text="${@dateFormatter.formatToDate(pet.birthDate, #locale)}"/>
+                            <li th:text="${pet.breed.name}"/>
+                            <li th:text="${pet.dewormed}? #{pet.dewormed} : #{pet.not.dewormed}"/>
+                            <li th:text="${pet.sterilized}? #{pet.sterilized} : #{pet.not.sterilized}"/>
+                            <li th:text="${pet.vaccinated}? #{pet.vaccinated} : #{pet.not.vaccinated}"/>
+                        </ul>
+                        </p>
+                        <br/>
+                        <center>
+                            <div th:unless="${pet.status.toString() == 'IN_ADOPTION'}">
+                                <a th:href="@{/adoption/descriptionForAdoption(uuid=${pet.uuid})}"
+                                   class="btn btn-success">
+                                    <p th:text="#{pet.for.adoption}"/>
+                                </a>
+                            </div>
+                        </center>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<br/><br/><br/><br/>
+<div th:insert="~{fragments/footer}"/>
+</body>
+</html>

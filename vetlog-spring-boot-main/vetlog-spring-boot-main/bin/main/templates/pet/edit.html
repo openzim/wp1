@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" th:lang="${#locale.language}">
+<head>
+    <title th:text="#{pet.view.edit.title}"/>
+    <head th:insert="~{fragments/include}"/>
+    <script th:src="@{/assets/servizi-dog-theme/node_modules/jquery/dist/jquery.min.js}"></script>
+    <script th:src="@{/assets/servizi-dog-theme/node_modules/bootstrap/dist/js/bootstrap.min.js}"></script>
+    <script th:src="@{/javascript/selector.js}"></script>
+</head>
+<body class="login">
+<div th:insert="~{fragments/header}"/>
+<br/><br/>
+<br/><br/>
+<br/><br/>
+<div class="container">
+    <div class="row">
+        <div class="col-md-6 col-md-offset-3">
+            <div class="portlet portlet-green">
+                <div class="portlet-body">
+                    <div th:data-testid="petEditMessage" th:if="${message}" class="alert alert-success" th:text="${message}"/>
+                    <form id="register" th:action="@{/pet/update}" th:object="${petCommand}" method="post"
+                          class="form-horizontal" enctype="multipart/form-data">
+                        <fieldset>
+                            <legend th:text="#{pet.edit}"/>
+                            <label for="name"><h4 th:text="#{pet.name}"/></label>
+                            <input type="text" name='name' th:data-testid="petName" th:field="*{name}" class="form-control" placeholder="name"
+                                   id='name'/>
+                            <label th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></label>
+                            <br/>
+                            <div th:if="${!petCommand.images.isEmpty()}">
+                                <div id="carousel-example-generic" class="carousel slide" data-ride="carousel">
+                                    <ol class="carousel-indicators">
+                                        <li data-target="#carousel-example-generic" data-slide-to="0"
+                                            class="active"></li>
+                                        <li data-target="#carousel-example-generic" data-slide-to="1"></li>
+                                        <li data-target="#carousel-example-generic" data-slide-to="2"></li>
+                                    </ol>
+
+                                    <!-- Wrapper for slides -->
+                                    <div class="carousel-inner" role="listbox">
+                                        <div th:each="image : ${petCommand.images}" class="item"
+                                             th:classappend="|${petCommand.images.indexOf(image) == 0 ? 'active' : ''}|"
+                                             align="center">
+                                            <img th:alt="image" style="width:350px;height:300px;"
+                                                 th:attr="src=@{${gcpImageUrl} + ${image.uuid}}"/>
+                                        </div>
+                                    </div>
+                                    <!-- Controls -->
+                                    <a class="left carousel-control" href="#carousel-example-generic" role="button"
+                                       data-slide="prev">
+                                        <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+                                        <span class="sr-only">Previous</span>
+                                    </a>
+                                    <a class="right carousel-control" href="#carousel-example-generic" role="button"
+                                       data-slide="next">
+                                        <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+                                        <span class="sr-only">Next</span>
+                                    </a>
+                                </div>
+                            </div>
+                            <br/>
+                            <label for="image"><h4 th:data-testid="petImage" th:text="#{pet.image}"/></label>
+                            <input type="file" name="image"/>
+                            <br/>
+                            <label for="birthDate"><h4 th:text="#{pet.birthDate}"/></label>
+                            <input th:data-testid="birthDate" type="date" id="birthDate" name="birthDate">
+                            <label th:if="${#fields.hasErrors('birthDate')}" th:errors="*{birthDate}"></label>
+                            <br/>
+                            <label for="dewormed"><h4 th:text="#{pet.dewormed}"/></label>
+                            <input type="checkbox" name='dewormed' th:data-testid="petDewormed" th:field="*{dewormed}" class="form-control"
+                                   placeholder="dewormed" id='dewormed'/>
+                            <label th:if="${#fields.hasErrors('dewormed')}" th:errors="*{dewormed}"></label>
+                            <br/>
+                            <label for="sterilized"><h4 th:text="#{pet.sterilized}"/></label>
+                            <input type="checkbox" name='sterilized' th:data-testid="petSterilized" th:field="*{sterilized}" class="form-control"
+                                   placeholder="sterilized" id='sterilized'/>
+                            <label th:if="${#fields.hasErrors('sterilized')}" th:errors="*{sterilized}"></label>
+                            <br/>
+                            <label for="vaccinated"><h4 th:text="#{pet.vaccinated}"/></label>
+                            <input type="checkbox" name='vaccinated' th:data-testid="petVaccinated" th:field="*{vaccinated}" class="form-control"
+                                   placeholder="vaccinated" id='vaccinated'/>
+                            <label th:if="${#fields.hasErrors('vaccinated')}" th:errors="*{vaccinated}"></label>
+                            <br/>
+                            <table th:if="${!petCommand.vaccines.isEmpty()}">
+                                <thead>
+                                <tr>
+                                    <th></th>
+                                    <th></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <label for="vaccines"><h4 th:text="#{pet.vaccines}"/></label>
+                                <tr th:each="vaccination, itemStat : *{vaccines}">
+                                    <td><input type="hidden" th:field="*{vaccines[__${itemStat.index}__].id}"/></td>
+                                    <td><input type="hidden" th:field="*{vaccines[__${itemStat.index}__].pet}"/></td>
+                                    <td><input type="text" th:field="*{vaccines[__${itemStat.index}__].name}" readonly style="height: 50px;"/></td>
+                                    <td>
+                                        <select th:field="*{vaccines[__${itemStat.index}__].status}" style="height: 50px;">
+                                            <option th:each="status : ${T(com.josdem.vetlog.enums.VaccinationStatus).values()}"
+                                                    th:value="${status}" th:text="${status.value}"
+                                                    th:selected="(${status} == *{vaccines[__${itemStat.index}__].status})"/>
+                                        </select>
+                                    </td>
+                                </tr>
+                                </input>
+                                </tbody>
+                            </table>
+                            <br/>
+                            <div sec:authorize="hasAuthority('ADMIN')">
+                                <label for="status"><h4 th:text="#{pet.status}"/></label>
+                                <select id="statusSelector" name="status" th:data-testid="petStatus" th:field="*{status}" class="form-control">
+                                    <option th:each=" status : ${T(com.josdem.vetlog.enums.PetStatus).values()}"
+                                        th:value="${status}" th:text="${status.value}" th:selected="(${status} == *{status})"/>
+                                </select>
+                            <br/>
+                            </div>
+                            <label for="type"><h4 th:text="#{pet.type}"/></label>
+                            <select id="typeSelector" name="type" th:data-testid="petType" th:field="*{type}" class="form-control"
+                                    onchange="updateBreedType()">
+                                <option th:each=" type : ${T(com.josdem.vetlog.enums.PetType).values()}"
+                                        th:value="${type}" th:text="${type.value}" th:selected="(${type} == *{type})"/>
+                            </select>
+                            <br/>
+                            <label for="breed"><h4 th:text="#{pet.breed}"/></label>
+                            <select id="breedSelector" name="breed" class="form-control" th:data-testid="petBreed">
+                                <option th:each="breed : ${breeds}" th:value="${breed.id}" th:text="${breed.name}"
+                                        th:selected="(${breed.id} == *{breed})"/>
+                            </select>
+                            <br/><br/>
+                            <input id="breedsByTypeUrl" type="hidden" th:value="${breedsByTypeUrl}"/>
+                            <input id="breed" type="hidden" th:field="*{breed}"/>
+                            <input type="hidden" th:field="*{id}"/>
+                            <input type="hidden" th:field="*{user}"/>
+                            <input type="hidden" th:field="*{adopter}"/>
+                            <input type="hidden" th:field="*{status}"/>
+                            <input type="submit" class="btn btn-primary btn-block"/>
+                        </fieldset>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<br/><br/>
+<div th:insert="~{fragments/footer}"/>
+</body>
+</html>

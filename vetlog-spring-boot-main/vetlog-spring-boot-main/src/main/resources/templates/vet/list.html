@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<head>
+    <title th:text="#{pet.view.list.title}"></title>
+    <head th:insert="~{fragments/include}"/>
+    <script th:src="@{/assets/servizi-dog-theme/node_modules/jquery/dist/jquery.min.js}"></script>
+    <script th:src="@{/assets/servizi-dog-theme/node_modules/bootstrap/dist/js/bootstrap.min.js}"></script>
+    <style>
+        .pet-info-container {
+            display: flex;
+            justify-content: space-between;
+        }
+        table {
+            width: 100%;
+        }
+        td {
+            padding: 5px;
+        }
+    </style>
+</head>
+<body>
+<div th:insert="~{fragments/header}"/>
+<br/><br/>
+<br/><br/>
+<br/><br/>
+<div class="container">
+    <div class="row">
+        <div th:if="${pets.isEmpty()}">
+            <div align="center">
+                <p th:text="#{pet.list.empty}"/>
+            </div>
+            <br/><br/>
+        </div>
+        <div th:each="pet : ${pets}">
+            <div class="col-sm-6">
+                <div class="thumbnail">
+                    <div th:if="${!pet.images.isEmpty()}">
+                        <div th:id="carousel-example-generic + ${pet.id}" class="carousel slide" data-ride="carousel">
+                            <ol class="carousel-indicators">
+                                <li th:attr="data-target='#carousel-example-generic' + ${pet.id}" data-slide-to="0" class="active"></li>
+                                <li th:attr="data-target='#carousel-example-generic' + ${pet.id}" data-slide-to="1"></li>
+                                <li th:attr="data-target='#carousel-example-generic' + ${pet.id}" data-slide-to="2"></li>
+                            </ol>
+
+                            <!-- Wrapper for slides -->
+                            <div class="carousel-inner" role="listbox">
+                                <div th:each="image : ${pet.images}" class="item"
+                                     th:classappend="|${pet.images.indexOf(image) == 0 ? 'active' : ''}|"
+                                     align="center">
+                                    <img style="width:650px;height:400px;"
+                                         th:attr="src=@{${gcpImageUrl} + ${image.uuid}}"/>
+                                </div>
+                            </div>
+                            <!-- Controls -->
+                            <a class="left carousel-control" th:href="@{'#carousel-example-generic' + ${pet.id}}" role="button"
+                               data-slide="prev">
+                                <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+                                <span class="sr-only">Previous</span>
+                            </a>
+                            <a class="right carousel-control" th:href="@{'#carousel-example-generic' + ${pet.id}}" role="button"
+                               data-slide="next">
+                                <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+                                <span class="sr-only">Next</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div th:if="${pet.images.isEmpty()}" align="center">
+                        <img style="width:320px;height:300px;" th:attr="src=@{${gcpImageUrl} + ${defaultImage}}"/>
+                    </div>
+                    <br>
+                    <div class="caption">
+                        <h3 style="text-align:center" th:data-testid="petName" th:text="${pet.name}"></h3>
+                        <div class="pet-info-container">
+                            <div class="col-lg-4 col-lg-offset-4">
+                                <ul>
+                                    <li th:data-testid="petBirthdate" th:text="${@dateFormatter.formatToDate(pet.birthDate, #locale)}"/>
+                                    <li th:data-testid="petBreed" th:text="${pet.breed.name}"/>
+                                    <li th:data-testid="petDewormed" th:text="${pet.dewormed}? #{pet.dewormed} : #{pet.not.dewormed}"/>
+                                    <li th:data-testid="petSterilized" th:text="${pet.sterilized}? #{pet.sterilized} : #{pet.not.sterilized}"/>
+                                    <li th:data-testid="petVaccinated" th:text="${pet.vaccinated}? #{pet.vaccinated} : #{pet.not.vaccinated}"/>
+                                </ul>
+                                <br>
+                                <table th:if="${!pet.vaccines.isEmpty()}">
+                                    <thead>
+                                    <tr>
+                                        <th th:text="#{pet.table.header.vaccines}"></th>
+                                        <th th:text="#{pet.table.header.status}"></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr th:each="vaccination : ${pet.vaccines}">
+                                        <td th:text="${vaccination.name}"></td>
+                                        <td th:text="${vaccination.status}"></td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <br/>
+                        <center>
+                            <a th:data-testid="petLogsButton" th:href="@{/petlog/list(uuid=${pet.uuid})}" class="btn btn-primary">
+                                <p th:text="#{petlog.list}"></p>
+                            </a>
+                            <a th:data-testid="petEditButton" th:href="@{/pet/edit(uuid=${pet.uuid})}" class="btn btn-success">
+                                <p th:text="#{pet.edit}"></p>
+                            </a>
+                            <a th:data-testid="petDeleteButton" class="btn btn-danger" data-toggle="modal" th:attr="data-target=${'#flipFlop'+pet.uuid}">
+                                <p th:text="#{pet.delete}"></p>
+                            </a>
+                        </center>
+                        <div class="modal fade" th:attr="id=${'flipFlop' + pet.uuid}" tabindex="-1" role="dialog" aria-labelledby="modalLabel" aria-hidden="true">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                        <h4 class="modal-title" id="modalLabel"><p th:text="#{pet.delete.title}"/></h4>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p th:text="#{pet.delete.warning}"/>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <a th:data-testid="petDeleteModal" th:href="@{/pet/delete(uuid=${pet.uuid})}" class="btn btn-danger"><p th:text="#{pet.delete}"/></a>
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal"><p th:text="#{pet.delete.close}"/></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                         <br/><br/>
+                     </div>
+                 </div>
+             </div>
+         </div>
+     </div>
+ </div>
+ <div th:insert="~{fragments/footer}"/>
+ </body>
+ </html>

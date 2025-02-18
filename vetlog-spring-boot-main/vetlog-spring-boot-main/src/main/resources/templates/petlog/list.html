@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<head>
+    <title th:text="#{pet.view.list.title}"></title>
+    <head th:insert="~{fragments/include}"/>
+    <script th:src="@{/assets/servizi-dog-theme/node_modules/jquery/dist/jquery.min.js}"></script>
+</head>
+<body>
+<div th:insert="~{fragments/header}"/>
+<br/><br/>
+<br/><br/>
+<br/><br/>
+<div class="container">
+    <div class="row">
+        <div th:if="${petLogs.isEmpty()}">
+            <div align="center">
+                <p th:text="#{pet.list.empty}"/>
+            </div>
+        </div>
+        <div align="center">
+            <a th:href="@{/petlog/create(uuid=${uuid})}" class="btn btn-success"><p th:text="#{petlog.register}"/></a>
+        </div>
+        <br/><br/>
+        <div th:each="log : ${petLogs}">
+            <div class="col-sm-6 col-md-4">
+                <div class="thumbnail">
+                    <div class="caption">
+                        <h3 th:text="${log.pet.name}"></h3>
+                        <p>
+                        <ul>
+                            <li th:text="${log.dateCreated}"/>
+                            <li th:text="${log.vetName}"/>
+                            <li th:text="${log.signs}"/>
+                            <li th:text="${log.diagnosis}"/>
+                            <li th:text="${log.medicine}"/>
+                            <a th:href="${gcpPrescriptionUrl + log.uuid}"><p th:text="#{petlog.file}"/></a>
+                        </ul>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div th:insert="~{fragments/footer}"/>
+</body>
+</html>

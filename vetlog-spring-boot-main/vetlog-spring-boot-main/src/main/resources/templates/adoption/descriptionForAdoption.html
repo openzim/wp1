@@ -1,0 +1,47 @@
+<html xmlns:th="https://www.thymeleaf.org">
+<head>
+    <title th:text="#{pet.view.list.title}"></title>
+    <head th:insert="~{fragments/include}"/>
+    <script th:src="@{/assets/servizi-dog-theme/node_modules/jquery/dist/jquery.min.js}"></script>
+</head>
+<body>
+<div th:insert="~{fragments/header}"/>
+<br/><br/>
+<br/><br/>
+<br/><br/>
+<div class="container">
+    <div class="row">
+        <div class="col-sm-12 col-md-12">
+            <div class="thumbnail">
+                <div th:if="${!pet.images.isEmpty()}" style="text-align: center;">
+                    <img style=" width:320px;height:240px; display: inline-block;" th:attr="src=@{${gcpImageUrl} + ${pet.images.get(0).uuid}}"/>
+                </div>
+                <div class="caption" align="center">
+                    <h3 th:text="${pet.name}"></h3>
+                    <p th:text="${@dateFormatter.formatToDate(pet.birthDate, #locale)}"/>
+                    <p th:text="${pet.breed.name}"/>
+                    <p th:text="${pet.dewormed}? #{pet.dewormed} : #{pet.not.dewormed}"/>
+                    <p th:text="${pet.sterilized}? #{pet.sterilized} : #{pet.not.sterilized}"/>
+                    <p th:text="${pet.vaccinated}? #{pet.vaccinated} : #{pet.not.vaccinated}"/>
+                    <br/>
+                    <form id="description" th:action="@{/adoption/save}" th:object="${adoptionCommand}" method="post"
+                          class="form-horizontal">
+                        <fieldset>
+                            <label for="description"><h4 th:text="#{pet.description}"/></label>
+                            <textarea name="description" th:field="*{description}" rows="8" class="form-control"
+                                      placeholder="Description" id='description'/>
+                            <label th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></label>
+                            <input type="hidden" th:value="${adoptionCommand.uuid}" name="uuid"/>
+                            <br/><br/>
+                            <input type="submit" class="btn btn-primary btn-block"/>
+                        </fieldset>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<br/><br/><br/><br/>
+<div th:insert="~{fragments/footer}"/>
+</body>
+</html>

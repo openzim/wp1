@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<head>
+    <title th:text="#{petlog.view.create.title}"/>
+    <head th:insert="~{fragments/include}"/>
+</head>
+<body class="login">
+<div th:insert="~{fragments/header}"/>
+<br/><br/>
+<br/><br/>
+<br/><br/>
+<div class="container">
+    <div class="row">
+        <div class="col-md-6 col-md-offset-3">
+            <div class="portlet portlet-green">
+                <div class="portlet-body">
+                    <div th:data-testid="petLogMessage" th:if="${message}" class="alert alert-success" th:text="${message}"/>
+                    <div th:if="${petListEmpty}">
+                        <div align="center">
+                            <p th:text="${petListEmpty}"/>
+                            <a th:href="@{/pet/create}" class="btn btn-success"><p th:text="#{pet.register}"/></a>
+                        </div>
+                    </div>
+                    <div th:if="${petListEmpty == null}">
+                        <form id="register" th:action="@{/petlog/save}" th:object="${petLogCommand}" method="post"
+                              class="form-horizontal" enctype="multipart/form-data">
+                            <fieldset>
+                                <label for="pet"><h4 th:text="#{petlog.pet}"/></label>
+                                <select id="petSelector" name="pet" class="form-control">
+                                    <option th:each="pet : ${pets}" th:value="${pet.id}" th:text="${pet.name}"></option>
+                                </select>
+                                <br/>
+                                <label for="vetName"><h4 th:text="#{petlog.vetName}"/></label>
+                                <input type="text" name='vetName' th:field="*{vetName}" class="form-control"
+                                       placeholder="Vet name" id='vetName'/>
+                                <label th:if="${#fields.hasErrors('vetName')}" th:errors="*{vetName}"></label>
+                                <br/>
+                                <label for="signs"><h4 th:text="#{petlog.signs}"/></label>
+                                <textarea name="signs" th:field="*{signs}" rows="8" class="form-control"
+                                          placeholder="Signs" id='signs'/>
+                                <label th:if="${#fields.hasErrors('signs')}" th:errors="*{signs}"></label>
+                                <br/>
+                                <label for="diagnosis"><h4 th:text="#{petlog.diagnosis}"/></label>
+                                <textarea name="diagnosis" th:field="*{diagnosis}" rows="8" class="form-control"
+                                          placeholder="Diagnosis" id='diagnosis'/>
+                                <label th:if="${#fields.hasErrors('diagnosis')}" th:errors="*{diagnosis}"></label>
+                                <br/>
+                                <label for="medicine"><h4 th:text="#{petlog.medicine}"/></label>
+                                <textarea name="medicine" th:field="*{medicine}" rows="8" class="form-control"
+                                          placeholder="Medicine" id='medicine'/>
+                                <label th:if="${#fields.hasErrors('medicine')}" th:errors="*{medicine}"></label>
+                                <br/>
+                                <label for="attachment"><h4 th:text="#{petlog.attachment}"/></label>
+                                <input type="file" name="attachment"/>
+                                <br/><br/>
+                                <button id="btn-success" type="submit" class="btn btn-lg btn-primary btn-block"><p
+                                        th:text="#{button.submit}"/></button>
+                            </fieldset>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<br/><br/>
+<div th:insert="~{fragments/footer}"/>
+</body>
+</html>

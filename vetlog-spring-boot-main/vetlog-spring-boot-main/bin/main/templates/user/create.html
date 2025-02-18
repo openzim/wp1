@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org">
+<head>
+    <title th:text="#{user.view.create.title}"></title>
+    <head th:insert="~{fragments/include}"/>
+    <style>
+        .mobile-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .country-code, .mobile-number {
+            flex: 1;
+            height: 34px;
+            box-sizing: border-box;
+        }
+
+        .country-code {
+            width: 20px;
+            margin-right: 10px;
+        }
+
+        .mobile-number {
+            flex: 9;
+        }
+    </style>
+</head>
+<body class="login">
+<div th:insert="~{fragments/header}"/>
+<br/><br/>
+<br/><br/>
+<br/><br/>
+<div class="container">
+    <div class="row">
+        <div class="col-md-6 col-md-offset-3">
+            <div class="portlet portlet-green">
+                <div class="portlet-body">
+                    <form id="register" th:action="@{/user/save}" th:object="${userCommand}" method="post"
+                          class="form-horizontal">
+                        <fieldset>
+                            <label for="username"><h4 th:text="#{login.username}"/></label>
+                            <input th:data-testid="usernameInput" type="text" name='username' th:field="*{username}" class="form-control"
+                                   placeholder="username" id='username'/>
+                            <label th:data-testid="usernameErrorLabel" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></label>
+                            <br/>
+                            <label for="password"><h4 th:text="#{login.password}"/></label>
+                            <input th:data-testid="passwordInput" type="password" name='password' class="form-control" placeholder="password"
+                                   id='password'/>
+                            <label th:data-testid="passwordErrorLabel" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></label>
+                            <br/>
+                            <label for="passwordConfirmation"><h4 th:text="#{login.passwordConfirmation}"/></label>
+                            <input th:data-testid="passwordConfirmationInput" type="password" name='passwordConfirmation' class="form-control"
+                                   placeholder="password confirmation" id='passwordConfirmation'/>
+                            <label th:data-testid="passwordErrorConfirmation" th:if="${#fields.hasErrors('passwordConfirmation')}" th:errors="*{passwordConfirmation}"></label>
+                            <br/>
+                            <label for="name"><h4 th:text="#{user.firstname}"/></label>
+                            <input th:data-testid="nameInput" type="text" name='firstname' th:field="*{firstname}" class="form-control"
+                                   placeholder="name" id='name'/>
+                            <label th:data-testid="firstnameErrorLabel" th:if="${#fields.hasErrors('firstname')}" th:errors="*{firstname}"></label>
+                            <br/>
+                            <label for="lastname"><h4 th:text="#{user.lastname}"/></label>
+                            <input th:data-testid="lastnameInput" type="text" name='lastname' th:field="*{lastname}" class="form-control" placeholder="lastname" id='lastname'/>
+                            <label th:data-testid="lastnameErrorLabel" th:if="${#fields.hasErrors('lastname')}" th:errors="*{lastname}"></label>
+                            <br/>
+                            <label for="mobile"><h4 th:text="#{user.mobile}"/></label>
+                            <div class="mobile-container">
+                                <select th:data-testid="mobileSelect" id="countryCode" name="countryCode" class="country-code">
+                                    <option value="+52" selected>+52 (Mexico)</option>
+                                    <option value="+1">+1 (USA, Canada)</option>
+                                    <option value="+44">+44 (UK)</option>
+                                    <option value="+91">+91 (India)</option>
+                                    <option value="+61">+61 (Australia)</option>
+                                    <option value="+81">+81 (Japan)</option>
+                                    <option value="+49">+49 (Germany)</option>
+                                    <option value="+86">+86 (China)</option>
+                                    <option value="+33">+33 (France)</option>
+                                    <option value="+39">+39 (Italy)</option>
+                                    <option value="+7">+7 (Russia)</option>
+                                    <option value="+55">+55 (Brazil)</option>
+                                    <option value="+34">+34 (Spain)</option>
+                                    <option value="+82">+82 (South Korea)</option>
+                                    <option value="+62">+62 (Indonesia)</option>
+                                    <option value="+27">+27 (South Africa)</option>
+                                    <option value="+971">+971 (UAE)</option>
+                                    <option value="+30">+30 (Greece)</option>
+                                    <option value="+47">+47 (Norway)</option>
+                                    <option value="+32">+32 (Belgium)</option>
+                                    <option value="+46">+46 (Sweden)</option>
+                                    <option value="+31">+31 (Netherlands)</option>
+                                    <option value="+64">+64 (New Zealand)</option>
+                                    <option value="+63">+63 (Philippines)</option>
+                                    <option value="+41">+41 (Switzerland)</option>
+                                    <option value="+51">+51 (Peru)</option>
+                                    <option value="+48">+48 (Poland)</option>
+                                    <option value="+65">+65 (Singapore)</option>
+                                    <option value="+60">+60 (Malaysia)</option>
+                                    <option value="+34">+34 (Spain)</option>
+                                    <option value="+356">+356 (Malta)</option>
+                                    <option value="+20">+20 (Egypt)</option>
+                                    <option value="+234">+234 (Nigeria)</option>
+                                    <option value="+66">+66 (Thailand)</option>
+                                    <option value="+45">+45 (Denmark)</option>
+                                    <option value="+98">+98 (Iran)</option>
+                                    <option value="+972">+972 (Israel)</option>
+                                    <option value="+90">+90 (Turkey)</option>
+                                    <option value="+62">+62 (Indonesia)</option>
+                                    <option value="+353">+353 (Ireland)</option>
+                                    <option value="+351">+351 (Portugal)</option>
+                                    <option value="+43">+43 (Austria)</option>
+                                    <option value="+36">+36 (Hungary)</option>
+                                    <option value="+358">+358 (Finland)</option>
+                                    <option value="+852">+852 (Hong Kong)</option>
+                                    <option value="+886">+886 (Taiwan)</option>
+                                    <option value="+373">+373 (Moldova)</option>
+                                    <!-- Add more country codes as needed -->
+                                </select>
+                                <input th:data-testid="mobileInput" type="text" name="mobile" th:field="*{mobile}" class="form-control mobile-number"
+                                       placeholder="phone number" id="mobile"
+                                       pattern="\d{10}" title="Phone number must be 10 digits only" required />
+                            </div>
+                            <label th:data-testid="mobileErrorLabel" th:if="${#fields.hasErrors('mobile')}" th:errors="*{mobile}"></label>
+                            <br/>
+                            <label for="email"><h4 th:text="#{user.email}"/></label>
+                            <input th:data-testid="emailInput" type="text" name='email' th:field="*{email}" class="form-control" placeholder="email" id='email'/>
+                            <label th:data-testid="emailErrorLabel" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></label>
+                            <br/>
+                            <button th:data-testid="submitButton" id="btn-success" type="submit" class="btn btn-lg btn-primary btn-block"><h5 th:text="#{login.submit}"/></button>
+                        </fieldset>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<br/><br/>
+<div th:insert="~{fragments/footer}"/>
+</body>
+</html>

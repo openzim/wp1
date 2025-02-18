@@ -1,0 +1,58 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<nav class="navbar navbar-default navbar-fixed-top" role="navigation">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse"
+                    data-target="#bs-example-navbar-collapse-1">
+                <span class="sr-only">Toggle navigation</span>
+                <i class="fa fa-paw list toggle-menu"></i>
+            </button>
+            <a class="navbar-brand" th:href="@{/}">
+                <img class="img-responsive" th:src="@{/images/logo_complete.png}" alt="Vetlog"/>
+            </a>
+        </div>
+        <div sec:authorize="isAnonymous()">
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a class="page-scroll" th:href="@{/login}"><p th:text="#{login.action}"/></a>
+                    </li>
+                    <li>
+                        <a class="page-scroll" th:href="@{/pet/list}"><p th:text="#{home.list.name}"/></a>
+                    </li>
+                    <li>
+                        <a class="page-scroll" th:href="@{/pet/giveForAdoption}"><p th:text="#{adoption.name}"/></a>
+                    </li>
+                    <li>
+                        <a class="page-scroll" th:href="@{/pet/create}"><p th:text="#{pet.view.create.title}"/></a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div sec:authorize="isAuthenticated()">
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a class="page-scroll" th:href="@{/logout}"><p th:text="#{login.logout}"/></a>
+                    </li>
+                    <li>
+                        <a class="page-scroll" th:href="@{/pet/list}"><p th:text="#{home.list.name}"/></a>
+                    </li>
+                    <li>
+                        <a class="page-scroll" th:href="@{/pet/giveForAdoption}"><p th:text="#{adoption.name}"/></a>
+                    </li>
+                    <li sec:authorize="hasAuthority('ADMIN')">
+                        <a class="page-scroll" th:href="@{/vet/form}"><p th:text="#{vet.list}"/></a>
+                    </li>
+                    <li>
+                        <a class="page-scroll" th:href="@{/pet/create}"><p th:text="#{pet.view.create.title}"/></a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+</nav>
+</html>

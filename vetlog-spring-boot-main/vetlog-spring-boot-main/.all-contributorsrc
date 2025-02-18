@@ -1,0 +1,191 @@
+{
+  "files": [
+    "README.md"
+  ],
+  "imageSize": 100,
+  "commit": false,
+  "commitType": "docs",
+  "commitConvention": "angular",
+  "contributors": [
+    {
+      "login": "marki2121",
+      "name": "Marko Maruna",
+      "avatar_url": "https://avatars.githubusercontent.com/u/44497571?v=4",
+      "profile": "https://github.com/marki2121",
+      "contributions": [
+        "review",
+        "code"
+      ]
+    },
+    {
+      "login": "kirillsinyuk",
+      "name": "Kirill",
+      "avatar_url": "https://avatars.githubusercontent.com/u/51965753?v=4",
+      "profile": "https://github.com/kirillsinyuk",
+      "contributions": [
+        "review",
+        "translation",
+        "code"
+      ]
+    },
+    {
+      "login": "tarun18tk",
+      "name": "tarun18tk",
+      "avatar_url": "https://avatars.githubusercontent.com/u/97531399?v=4",
+      "profile": "https://github.com/tarun18tk",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "uhdf823f",
+      "name": "uhdf823f",
+      "avatar_url": "https://avatars.githubusercontent.com/u/143468270?v=4",
+      "profile": "https://github.com/uhdf823f",
+      "contributions": [
+        "translation"
+      ]
+    },
+    {
+      "login": "sindhunaydu",
+      "name": "Sindhu",
+      "avatar_url": "https://avatars.githubusercontent.com/u/1637811?v=4",
+      "profile": "https://www.linkedin.com/in/sindhu-murthy",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "kaminuma",
+      "name": "T.H(kaminuma)",
+      "avatar_url": "https://avatars.githubusercontent.com/u/33448874?v=4",
+      "profile": "https://github.com/kaminuma",
+      "contributions": [
+        "code",
+        "content",
+        "review",
+        "bug",
+        "question",
+        "mentoring",
+        "infra"
+      ]
+    },
+    {
+      "login": "yashudhlani",
+      "name": "Yash Udhlani",
+      "avatar_url": "https://avatars.githubusercontent.com/u/44999427?v=4",
+      "profile": "https://github.com/yashudhlani",
+      "contributions": [
+        "code",
+        "mentoring"
+      ]
+    },
+    {
+      "login": "Prathyusha287",
+      "name": "Prathyusha287",
+      "avatar_url": "https://avatars.githubusercontent.com/u/120239903?v=4",
+      "profile": "https://github.com/Prathyusha287",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "ghadyg",
+      "name": "ghadyg",
+      "avatar_url": "https://avatars.githubusercontent.com/u/136957334?v=4",
+      "profile": "https://github.com/ghadyg",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "JoseFRH17",
+      "name": "José Fco Rodríguez Hernández",
+      "avatar_url": "https://avatars.githubusercontent.com/u/64493634?v=4",
+      "profile": "https://github.com/JoseFRH17",
+      "contributions": [
+        "bug"
+      ]
+    },
+    {
+      "login": "Irfan0025",
+      "name": "Irfan ahamed",
+      "avatar_url": "https://avatars.githubusercontent.com/u/95692861?v=4",
+      "profile": "https://github.com/Irfan0025",
+      "contributions": [
+        "code",
+        "review"
+      ]
+    },
+    {
+      "login": "tkim602",
+      "name": "TaeHo Kim",
+      "avatar_url": "https://avatars.githubusercontent.com/u/157748120?v=4",
+      "profile": "https://github.com/tkim602",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "slusy",
+      "name": "Achal",
+      "avatar_url": "https://avatars.githubusercontent.com/u/106076516?v=4",
+      "profile": "https://slusy.vercel.app",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "samuks123",
+      "name": "samuks123",
+      "avatar_url": "https://avatars.githubusercontent.com/u/103591276?v=4",
+      "profile": "https://github.com/samuks123",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "Popokok",
+      "name": "Popokok",
+      "avatar_url": "https://avatars.githubusercontent.com/u/146879591?v=4",
+      "profile": "https://github.com/Popokok",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "Er-Sadiq",
+      "name": "Sadiq Ahmed Killedar ",
+      "avatar_url": "https://avatars.githubusercontent.com/u/125464939?v=4",
+      "profile": "https://portfolio-er-killedar-dev.netlify.app/",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "krooldonutz",
+      "name": "Malcolm Paltiraja",
+      "avatar_url": "https://avatars.githubusercontent.com/u/26025886?v=4",
+      "profile": "https://github.com/krooldonutz",
+      "contributions": [
+        "code"
+      ]
+    },
+    {
+      "login": "harsh-0409",
+      "name": "Harsh",
+      "avatar_url": "https://avatars.githubusercontent.com/u/154314702?v=4",
+      "profile": "https://github.com/harsh-0409",
+      "contributions": [
+        "code",
+        "content"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "skipCi": true,
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "projectName": "vetlog-spring-boot",
+  "projectOwner": "josdem"
+}

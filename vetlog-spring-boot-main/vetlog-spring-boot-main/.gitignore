@@ -1,0 +1,9 @@
+.gradle
+.idea
+/build/
+**swp
+**swo
+**node_modules/
+*.log
+bower.json
+**package-lock.json

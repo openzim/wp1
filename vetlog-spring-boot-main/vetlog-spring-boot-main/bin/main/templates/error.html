@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Vetlog Error page</title>
+    <head th:insert="~{fragments/include}"/>
+</head>
+<style>
+    .div-center {
+      max-width: fit-content;
+      margin-left: auto;
+      margin-right: auto;
+      margin-top: 50px;
+      margin-bottom: 10%;
+    }
+</style>
+<body>
+  <div th:insert="~{fragments/header}"/>
+  <br/><br/><br/><br/>
+  <div class="space-div"></div>
+  <div th:data-testid="errorMessage" th:if="${data}" class="alert alert-warning div-center" th:text="${data.message}"></div>
+  <div th:insert="~{fragments/footer}"/>
+</body>
+</html>
