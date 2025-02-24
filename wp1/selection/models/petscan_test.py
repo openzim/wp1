@@ -1,11 +1,11 @@
 from unittest.mock import MagicMock, patch
 
+import requests
+
 from wp1.base_db_test import BaseWpOneDbTest, get_first_selection
 from wp1.exceptions import Wp1FatalSelectionError
 from wp1.models.wp10.builder import Builder
 from wp1.selection.models.petscan import Builder as PetscanBuilder
-
-import requests
 
 
 class PetscanBuilderTest(BaseWpOneDbTest):
@@ -30,7 +30,7 @@ class PetscanBuilderTest(BaseWpOneDbTest):
         b_user_id=1234,
         b_project=b'en.wikipedia.fake',
         b_model=b'wp1.selection.models.petscan',
-        b_params='{"url":"https://petscan.wmflabs.org/?psid=552"}')
+        b_params='{"url":"https://petscan.wmcloud.org/?psid=552"}')
     self.builder = PetscanBuilder()
 
   @patch('wp1.selection.models.petscan.requests')
@@ -48,13 +48,13 @@ class PetscanBuilderTest(BaseWpOneDbTest):
     mock_requests.get.return_value = mock_response
 
     actual = self.builder.build('text/tab-separated-values',
-                                url='https://petscan.wmflabs.org.fake/?psid=42')
+                                url='https://petscan.wmcloud.org.fake/?psid=42')
     self.assertEqual(b'Foo\nBar', actual)
 
   def test_build_wrong_content_type(self):
     with self.assertRaises(Wp1FatalSelectionError):
       actual = self.builder.build(
-          None, url='https://petscan.wmflabs.org.fake/?psid=42')
+          None, url='https://petscan.wmcloud.org.fake/?psid=42')
 
   def test_build_missing_url(self):
     with self.assertRaises(Wp1FatalSelectionError):
@@ -64,7 +64,7 @@ class PetscanBuilderTest(BaseWpOneDbTest):
     with self.assertRaises(Wp1FatalSelectionError):
       actual = self.builder.build(
           'text/tab-separated-values',
-          url=['https://petscan.wmflabs.org.fake/?psid=42'])
+          url=['https://petscan.wmcloud.org.fake/?psid=42'])
 
   @patch('wp1.selection.models.petscan.requests')
   def test_build_no_format(self, mock_requests):
@@ -73,9 +73,9 @@ class PetscanBuilderTest(BaseWpOneDbTest):
     mock_requests.get.return_value = mock_response
 
     actual = self.builder.build('text/tab-separated-values',
-                                url='https://petscan.wmflabs.org.fake/?psid=42')
+                                url='https://petscan.wmcloud.org.fake/?psid=42')
     mock_requests.get.assert_called_with(
-        'https://petscan.wmflabs.org.fake/?psid=42&format=json',
+        'https://petscan.wmcloud.org.fake/?psid=42&format=json',
         headers={
             'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
         })
@@ -88,9 +88,9 @@ class PetscanBuilderTest(BaseWpOneDbTest):
 
     actual = self.builder.build(
         'text/tab-separated-values',
-        url='https://petscan.wmflabs.org.fake/?psid=42&format=wiki')
+        url='https://petscan.wmcloud.org.fake/?psid=42&format=wiki')
     mock_requests.get.assert_called_with(
-        'https://petscan.wmflabs.org.fake/?psid=42&format=json',
+        'https://petscan.wmcloud.org.fake/?psid=42&format=json',
         headers={
             'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
         })
@@ -104,11 +104,11 @@ class PetscanBuilderTest(BaseWpOneDbTest):
     with self.assertRaises(Wp1FatalSelectionError):
       actual = self.builder.build(
           'text/tab-separated-values',
-          url='https://petscan.wmflabs.org.fake/?psid=42')
+          url='https://petscan.wmcloud.org.fake/?psid=42')
 
   def test_validate(self):
     actual = self.builder.validate(
-        url='https://petscan.wmflabs.org.fake/?psid=42&format=wiki')
+        url='https://petscan.wmcloud.org.fake/?psid=42&format=wiki')
     self.assertEqual(('', '', []), actual)
 
   def test_validate_missing_url(self):
@@ -125,4 +125,4 @@ class PetscanBuilderTest(BaseWpOneDbTest):
     actual = self.builder.validate(url='http://en.wikipedia.org/')
     self.assertEqual(
         ('', 'http://en.wikipedia.org/',
-         ['Only URLs that lead to petscan.wmflabs.org are allowed.']), actual)
+         ['Only URLs that lead to petscan.wmcloud.org are allowed.']), actual)
