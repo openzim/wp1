@@ -21,7 +21,6 @@ def connect_storage():
   connect_str = (
       '%(url)s/?keyId=%(key)s&secretAccessKey=%(secret)s&bucketName=%(bucket)s'
       % creds)
-  print(connect_str)
   s3 = KiwixStorage(connect_str)
   s3.check_credentials(list_buckets=True, bucket=True, write=True, read=True)
   return s3
