@@ -303,6 +303,7 @@ The `serve` command should print out the port to view the docs at, likely localh
   - `sudo docker pull ghcr.io/openzim/wp1-workers:release`
   - `sudo docker pull ghcr.io/openzim/wp1-web:release`
   - `sudo docker pull ghcr.io/openzim/wp1-frontend:release`
+- If you've made changes to the format or contents of `credentials.py`, update `/data/wp1bot/credentials.py`.
 - Run docker-compose to bring the production images online.
   - `sudo docker-compose up -d`
 - Run the production database migrations in the worker container:
