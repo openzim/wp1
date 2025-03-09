@@ -40,7 +40,7 @@ to select a project
 
 ## Selections
 
-View or create your own [content selections](selections). A content
+View or create your own [content selections](selections.md). A content
 selection is a list of articles that can be used by other tools to, for example,
 create an offline version of Wikipedia.
 
