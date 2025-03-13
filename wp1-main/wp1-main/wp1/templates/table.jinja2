@@ -1,0 +1,34 @@
+{% from 'table_helpers.jinja2' import format, name_with_spaces with context -%}
+{| class="ratingstable wikitable plainlinks"  style="text-align: right;{%if center_table %} margin-left: auto; margin-right: auto;{% endif %}"
+|-
+! colspan="{{total_cols}}" class="ratingstabletitle" | {{title}}
+|-
+! rowspan="2" style="vertical-align: bottom" | '''Quality'''
+{% if not is_single_col %}! colspan="{{total_cols - 1}}" | '''Importance'''{% endif %}
+|-
+{% for col in ordered_cols -%}
+! {{col_labels[col]}}
+{% endfor -%}
+! style="text-align: center;" | '''Total'''
+{% for row in ordered_rows -%}
+|-
+| {{row_labels[row]}}
+{% for col in ordered_cols -%}
+{%- if data[row][col] and data[row][col] > 0 -%}
+|| {{ format(data[row][col], project, row, col) }}
+{% else -%}
+|| {# Keep trailing whitespace here to reduce diff. #}
+{% endif -%}
+{%- endfor -%}
+|| {{ format(row_totals[row], project, row, None) }}
+{% endfor -%}
+|-
+| style="text-align: center;" | '''Total'''
+{% for col in ordered_cols -%}
+|| {{ format(col_totals[col], project, None, col) }}
+{% endfor -%}
+|| {{ format(total, project, None, None) }}
+|-
+{{'{{'}}User:WP 1.0 bot/WikiWork|project={{name_with_spaces(project)}}|export=table{{'}}'}}
+|-
+|}

@@ -1,0 +1,49 @@
+{% macro format(value, project=None, quality=None, importance=None) -%}
+  {%- if create_link -%}
+    {%- if link_to_v2 -%}
+      {%- call bold(quality, importance) -%}
+        {%- if project -%}
+          [{{LIST_V2_URL}}/{{project.decode('utf-8')|urlencode}}/articles
+          {%- if quality %}?quality={{quality.decode('utf-8')|urlencode}}
+            {%- if importance %}&{% endif -%}
+          {%- elif importance -%}
+            ?
+          {%- endif -%}
+          {%- if importance -%}
+            importance={{importance.decode('utf-8')|urlencode}} {{ value|commas }}]
+          {%- else %} {{ value|commas }}]
+          {%- endif -%}
+        {%- endif -%}
+      {%- endcall -%}
+    {%- else -%}
+      {%- call bold(quality, importance) -%}
+        [{{LIST_URL}}?run=yes
+        {%- if project %}&projecta={{project.decode('utf-8')|urlencode}}{% endif -%}
+        {%- if importance %}&importance={{importance.decode('utf-8')|urlencode}}{% endif -%}
+        {%- if quality %}&quality={{quality.decode('utf-8')|urlencode}}{% endif %} {{ value|commas }}]
+      {%- endcall -%}
+    {%- endif -%}
+  {%- else -%}
+    {%- call bold(quality, importance) %}{{ value|commas }}{% endcall -%}
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro bold(quality, importance) -%}
+  {% if not quality or not importance -%}
+    '''{{ caller() }}'''
+  {%- else -%}
+    {{ caller() }}
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro name_with_spaces(name) -%}
+  {#- There is a bug that the original function didn't use name but just used the global 'project' variable. -#}
+  {#- This was fine because it was always called with 'project' for 'name'. However now that we want to use it -#}
+  {#- for actual names, we need to patch this, while preserving the original behavior (because we're not sure -#}
+  {#- what will break). -#}
+  {%- if not project -%}{{name.decode('utf-8').replace('_', ' ') if name else ''}}{%- else -%}{{project.decode('utf-8').replace('_', ' ') if project else ''}}{%- endif -%}
+{%- endmacro %}
+
+{% macro include_wiki_template() -%}
+  {{'{{'}}{{ caller() }}{{'}}'}}
+{%- endmacro %}

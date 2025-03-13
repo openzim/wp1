@@ -1,0 +1,7 @@
+{
+  "status": "FILE_READY",
+  "error_url": "https://error.fake/404",
+  "is_deleted": true,
+  "description": "Description for test",
+  "long_description": "Long Description for test"
+}

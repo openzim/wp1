@@ -1,0 +1,22 @@
+version: '3.5'
+
+name: wp1-test
+services:
+  redis:
+    image: redis
+    container_name: wp1bot-test-redis
+    ports:
+      - '9777:6379'
+    restart: always
+
+  test-database:
+    image: mariadb:10.4
+    container_name: wp1bot-test-db
+    environment:
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 1
+    volumes:
+      - ./db/test/conf.d:/etc/mysql/conf.d
+      - ./db/test/init:/docker-entrypoint-initdb.d
+    ports:
+      - '6600:3306'
+    restart: always

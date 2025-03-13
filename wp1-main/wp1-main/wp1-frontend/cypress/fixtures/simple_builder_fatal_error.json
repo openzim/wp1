@@ -1,0 +1,17 @@
+{
+  "params": {
+    "list": ["Eiffel_Tower", "Statue_of_Liberty"]
+  },
+  "name": "Builder 10",
+  "model": "wp1.selection.models.simple",
+  "project": "en.wiktionary.org",
+  "selection_errors": [
+    {
+      "error_messages": [
+        "Wikidata response was not valid JSON. This is usually caused by a timeout because the result set is too large."
+      ],
+      "ext": "tsv",
+      "status": "FAILED"
+    }
+  ]
+}

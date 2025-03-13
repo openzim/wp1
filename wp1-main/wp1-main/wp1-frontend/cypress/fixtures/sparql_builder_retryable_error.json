@@ -1,0 +1,16 @@
+{
+  "params": {
+    "query": "SELECT ?foo WHERE {}",
+    "queryVariable": ""
+  },
+  "model": "wp1.selection.models.sparql",
+  "name": "Builder 2",
+  "project": "en.wiktionary.org",
+  "selection_errors": [
+    {
+      "error_messages": ["There was a timeout."],
+      "ext": "tsv",
+      "status": "CAN_RETRY"
+    }
+  ]
+}

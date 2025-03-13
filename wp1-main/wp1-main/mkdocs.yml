@@ -1,0 +1,11 @@
+site_name: WP 1.0 Engine
+site_url: https://wp1.readthedocs.io
+theme: readthedocs
+nav:
+  - Home: 'index.md'
+  - 'For End Users':
+      - Overview: 'user/index.md'
+      - Selections: 'user/selections.md'
+      - ZIM files: 'user/zim_files.md'
+  - 'For Developers':
+      - Overview: 'developer/index.md'

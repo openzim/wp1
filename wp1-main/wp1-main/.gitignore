@@ -1,0 +1,18 @@
+**/__pycache__
+venv
+docs-venv/
+
+# Don't commit credentials, credential backup files, or login cookies!
+wp1/credentials.py
+wp1/credentials.py.bak
+wp1/credentials.py.dev
+wp1/credentials.py.dev.bak
+cookies.txt
+
+# Don't commit test artifacts
+**/cypress/videos
+**/cypress/screenshots
+.coverage
+
+# Don't commit logs
+log/**

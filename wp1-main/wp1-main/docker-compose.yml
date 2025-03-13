@@ -1,0 +1,116 @@
+version: '3.5'
+services:
+  redis:
+    image: redis
+    container_name: wp1bot-redis
+    expose:
+      - 6379
+    restart: always
+
+  workers:
+    image: ghcr.io/openzim/wp1-workers:release
+    container_name: wp1bot-workers
+    volumes:
+      - /data/wp1bot/credentials.py:/usr/src/app/wp1/credentials.py
+      - /data/wp1bot/db/yoyo.ini:/usr/src/app/db/production/yoyo.ini
+      - /srv/log/wp1bot/:/var/log/wp1bot/
+      - /srv/data/wp1bot/:/var/data/wp1bot/
+    links:
+      - redis
+    logging:
+      driver: 'json-file'
+      options:
+        max-file: '2'
+        max-size: '10m'
+    restart: always
+    depends_on:
+      - redis
+
+  web:
+    image: ghcr.io/openzim/wp1-web:release
+    container_name: wp1bot-web
+    environment:
+      - VIRTUAL_HOST=api.wp1.openzim.org
+      - LETSENCRYPT_HOST=api.wp1.openzim.org
+      - LETSENCRYPT_EMAIL=contact@openzim.org
+      - HTTPS_METHOD=redirect
+    expose:
+      - 6555
+    volumes:
+      - /data/wp1bot/credentials.py:/usr/src/app/wp1/credentials.py
+    links:
+      - redis
+    logging:
+      driver: 'json-file'
+      options:
+        max-file: '2'
+        max-size: '10m'
+    restart: always
+    depends_on:
+      - redis
+
+  frontend:
+    image: ghcr.io/openzim/wp1-frontend:release
+    container_name: wp1bot-frontend
+    environment:
+      - VIRTUAL_HOST=wp1.openzim.org
+      - LETSENCRYPT_HOST=wp1.openzim.org
+      - LETSENCRYPT_EMAIL=contact@openzim.org
+      - HTTPS_METHOD=redirect
+    expose:
+      - 80
+    logging:
+      driver: 'json-file'
+      options:
+        max-file: '2'
+        max-size: '10m'
+    restart: always
+    depends_on:
+      - web
+
+  reverse-proxy:
+    image: jwilder/nginx-proxy
+    container_name: reverse-proxy
+    depends_on:
+      - web
+    volumes:
+      - '/var/run/docker.sock:/tmp/docker.sock:ro'
+      - '/data/certs:/etc/nginx/certs:ro'
+      - '/var/local/vhost.d:/etc/nginx/vhost.d'
+      - '/data/html:/usr/share/nginx/html'
+    labels:
+      - com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy
+    ports:
+      - 80:80
+      - 443:443
+    logging:
+      driver: 'none'
+      options:
+        max-size: '10k'
+    restart: always
+
+  letsencrypt:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    container_name: letsencrypt
+    depends_on:
+      - reverse-proxy
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock:ro'
+      - '/data/certs:/etc/nginx/certs:rw'
+      - '/var/local/vhost.d:/etc/nginx/vhost.d'
+      - '/data/html:/usr/share/nginx/html'
+    logging:
+      driver: 'none'
+      options:
+        max-size: '10k'
+    restart: always
+
+  backup:
+    image: ghcr.io/kiwix/borg-backup:latest
+    env_file:
+      - /data/wp1bot/db/.wp1db_backup.env
+    restart: always
+
+networks:
+  default:
+    name: openzim.org

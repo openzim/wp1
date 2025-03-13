@@ -1,0 +1,8 @@
+{
+  "success": false,
+  "items": {
+    "valid": ["Eiffel_Tower"],
+    "invalid": ["Statue_of#Liberty"],
+    "errors": ["The list contained the following invalid characters: #"]
+  }
+}

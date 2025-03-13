@@ -1,0 +1,20 @@
+.card-header-select {
+  background-color: transparent;
+  border: none;
+}
+
+.card-select {
+  border: none;
+}
+
+.card-body-select {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+  border-top: 1px solid rgba(0, 0, 0, 0.125);
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.card-body-input {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+  border-top: 1px solid rgba(0, 0, 0, 0.125);
+}

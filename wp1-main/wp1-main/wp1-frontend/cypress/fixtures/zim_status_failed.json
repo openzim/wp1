@@ -1,0 +1,7 @@
+{
+  "status": "FAILED",
+  "error_url": "https://example.fake/failed",
+  "is_deleted": false,
+  "description": "Description for test",
+  "long_description": "Long Description for test"
+}

@@ -1,0 +1,667 @@
+openapi: 3.0.0
+servers:
+  - url: https://api.wp1.openzim.org/v1
+    description: Production server HTTPS
+  - url: http://api.wp1.openzim.org/v1
+    description: Production server HTTP
+info:
+  description: 'Wikipedia 1.0 is an editing project on Wikipedia. It includes a bot, called the WP 1.0 bot, and a frontend web interface for that bot which lives at https://wp1.openzim.org. This document describes the server that acts as the API backend for that frontend server. Generally speaking, it contains only features which are useful to that frontend. However it is documented here and made available without restriction in the hopes that it may be useful.'
+  version: 'v1'
+  title: 'WP 1.0 Frontend'
+  contact:
+    name: 'Travis Briggs'
+    email: 'audiodude@gmail.com'
+  license:
+    name: 'GPL v2 or greater'
+    url: 'https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html'
+paths:
+  /articles/{articleName}/{timestamp}/redirect:
+    get:
+      summary: 'Redirect to the given Wikipedia article at the revision indicated by the timestamp'
+      operationId: articleRedirect
+      responses:
+        302:
+          description: 'Successful operation'
+        404:
+          description: 'The article with that name could not be found'
+      parameters:
+        - name: timestamp
+          in: path
+          required: true
+          description: 'A timestamp like 2020-06-22T10:55:10Z which represents the time of the revision to be redirected to'
+          schema:
+            type: string
+        - name: articleName
+          in: path
+          required: true
+          description: 'The name of the article, with namespace if required, as it appears on Wikipedia'
+          schema:
+            type: string
+  /projects:
+    get:
+      summary: 'List all projects that the WP 1.0 bot updates'
+      operationId: listProjects
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+        404:
+          description: 'No project with that projectId was found'
+  /projects/count:
+    get:
+      summary: 'Count of the total number of projects'
+      operationId: countProjects
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+  /projects/{projectId}:
+    get:
+      summary: 'Retrieve the entry for a specific project'
+      operationId: getProject
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        description: 'The name of the project, with spaces replaced by "_"'
+        schema:
+          type: string
+  /projects/{projectId}/table:
+    get:
+      summary: 'Data for building a summary table for a given project'
+      operationId: projectTable
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  table_data:
+                    type: object
+                    description: 'The various data needed to construct the table'
+        404:
+          description: 'No project with that projectId was found'
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        description: 'The name of the project, with spaces replaced by "_"'
+        schema:
+          type: string
+  /projects/{projectId}/articles:
+    get:
+      summary: 'List of articles for a project, optionally filtered by quality/importance'
+      operationId: projectArticles
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pagination:
+                    type: object
+                    properties:
+                      page:
+                        type: number
+                        description: 'The current page of results. Will be 1 if no page is specified'
+                      total:
+                        type: number
+                        description: 'The total number of results for the query'
+                      total_pages:
+                        type: number
+                        description: 'The total number of pages of results, by 100'
+                      display:
+                        type: object
+                        properties:
+                          start:
+                            type: number
+                            description: 'The article number at which the returned page of results starts'
+                          end:
+                            type: number
+                            description: 'The article number at which the returned page of results ends'
+                  articles:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Article'
+        400:
+          description: 'The page parameter was either not a number, or a negative number'
+        404:
+          description: 'No project with that projectId was found'
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        description: 'The name of the project, with spaces replaced by "_"'
+        schema:
+          type: string
+      - name: quality
+        in: query
+        required: false
+        description: 'The quality class of articles, used to filter the results. Eg: "FA-Class"'
+        schema:
+          type: string
+      - name: importance
+        in: query
+        required: false
+        description: 'The importance class of articles, used to filter the results. Eg: "High-Class"'
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        description: 'The page to retrieve results starting with. The first page is page 1.'
+        schema:
+          type: number
+      - name: numRows
+        in: query
+        required: false
+        description: 'The number of rows (results) to return.'
+        schema:
+          type: number
+      - name: articlePattern
+        in: query
+        required: false
+        description: 'A string to match the article name against. If the article title is LIKE "%articlePattern%", the article is returned.'
+        schema:
+          type: number
+  /projects/{projectId}/category_links:
+    get:
+      summary: 'Get a mapping of category names (such as "A-Class") to an href on Wikipedia to link to and the text of such a link. The mapping can also be to simply a string which means no link is possible and the string itself should be displayed.'
+      operationId: projectCategoryLinks
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        404:
+          description: 'No project with that projectId was found'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: 'The name of the project, with spaces replaced by "_"'
+          schema:
+            type: string
+  /projects/{projectId}/category_links/sorted:
+    get:
+      summary: 'The same as category_links, but the result is sorted into quality/importance designations.'
+      operationId: projectCategoryLinksSorted
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        404:
+          description: 'No project with that projectId was found'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: 'The name of the project, with spaces replaced by "_"'
+          schema:
+            type: string
+  /projects/{projectId}/update:
+    post:
+      summary: 'Schedule a manual update of a project. This includes fetching new assessments from Wikipedia, and updating Wikipedia with assessment and log tables. This can only be done once per hour.'
+      operationId: projectUpdate
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  next_update_time:
+                    type: string
+                    description: 'A string representing the UTC timestamp of when the next manual update can be performed.'
+        400:
+          description: 'The update could not be performed because it is too soon after another update. Check the next_update_time value in the returned response.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  next_update_time:
+                    type: string
+                    description: 'A string representing the UTC timestamp of when the next manual update can be performed.'
+        401:
+          description: 'Unauthorized. You must be logged in to perform a project update.'
+        404:
+          description: 'No project with that projectId was found'
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        description: 'The name of the project, with spaces replaced by "_"'
+        schema:
+          type: string
+  /projects/{projectId}/update/time:
+    get:
+      summary: 'Get the time at which the given project can next be scheduled for a manual update, or null if the project is currently eligible for a manual update.'
+      operationId: projectNextUpdateTime
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  next_update_time:
+                    type: string
+                    description: 'A string representing the UTC timestamp of when the next manual update can be performed.'
+        404:
+          description: 'No project with that projectId was found'
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        description: 'The name of the project, with spaces replaced by "_"'
+        schema:
+          type: string
+  /projects/{projectId}/update/progress:
+    get:
+      summary: 'Get the status/progress of a manual update job. If there is no manual update job, or if its status has expired, the "queue" and "job" keys will have null values.'
+      operationId: projectUpdateProgress
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  queue:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        description: 'One of "queued", "started" or "finished" based on the state of the manual update in the job queue'
+                      ended_at:
+                        type: string
+                        description: 'A datetime string representing when this job finished. Only available if the status key has a value of "finished"'
+                  job:
+                    type: object
+                    properties:
+                      progress:
+                        type: integer
+                        description: 'An abstract number representing the amount of progress that has been made on a manual update job'
+                      total:
+                        type: integer
+                        description: 'An abstract number representing the total amount of progress that must be made for this job to be considered complete. Note that it is considered reasonable for the progress number to reach a value higher than this total.'
+                    description: 'A string representing the UTC timestamp of when the next manual update can be performed.'
+        404:
+          description: 'No project with that projectId was found'
+    parameters:
+      - name: projectId
+        in: path
+        required: true
+        description: 'The name of the project, with spaces replaced by "_"'
+        schema:
+          type: string
+  /sites:
+    get:
+      summary: 'Get lists of mediawiki projects through mediawiki API'
+      operationId: getWikiProjects
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sites:
+                    type: array
+                    items:
+                      type: string
+  /builders:
+    post:
+      summary: 'Save a new Builder, validating it first and returning invalid items if they exist'
+      operationId: createBuilder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                model:
+                  type: string
+                params:
+                  type: object
+                name:
+                  type: string
+                project:
+                  type: string
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateOrUpdateListResponse'
+        401:
+          description: 'Unauthorized. You must be logged in to save a list.'
+        400:
+          description: 'Request with either empty list_name or project or articles'
+  /builders/{builderId}:
+    get:
+      summary: 'Return the builder with the given id'
+      operationId: getSimpleList
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BuilderSpec'
+        401:
+          description: 'Unauthorized. You must be logged in to retrieve Builders.'
+        404:
+          description: 'Not found. The logged in user does not own a Builder with the given ID.'
+      parameters:
+        - name: builderId
+          in: path
+          required: true
+          description: 'The id of the Builder to retrieve.'
+          schema:
+            type: string
+    post:
+      summary: 'Update the Builder with the given id'
+      operationId: updateSimpleList
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuilderSpec'
+      responses:
+        401:
+          description: 'Unauthorized. You must be logged in to update a Builder.'
+        404:
+          description: 'Not found. No Builder with the given ID was found for the logged in user.'
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateOrUpdateListResponse'
+      parameters:
+        - name: builderId
+          in: path
+          required: true
+          description: 'The id of the builder to update.'
+          schema:
+            type: string
+  /builders/{builderId}/selection/latest.{ext}:
+    get:
+      summary: 'Return a redirect to the Selection (latest materialization) of the given Builder in the given format.'
+      operationId: getBuilderSelectionLatest
+      responses:
+        302:
+          description: 'Successful operation, redirect to the Selection in the s3-like storage.'
+      parameters:
+        - name: builderId
+          in: path
+          required: true
+          description: 'The id of the Builder whose latest Selection should be retrieved.'
+          schema:
+            type: string
+        - name: ext
+          in: path
+          required: true
+          description: 'The requested extension of the Selection list to be redirected to.'
+          schema:
+            type: string
+  /builders/{builderId}/zim:
+    post:
+      summary: 'Request a ZIM file for the latest Selection of a Builder from the Zimfarm.'
+      operationId: builderCreateZim
+      responses:
+        204:
+          description: 'ZIM file successfully requested from Zimfarm.'
+        404:
+          description: 'Builder not found with that id.'
+        403:
+          description: 'Logged in user is not authorized to request ZIM for given Builder.'
+      parameters:
+        - name: builderId
+          in: path
+          required: true
+          description: 'The id of the Builder to request as ZIM file for.'
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                long_description:
+                  type: string
+  /builders/{builderId}/zim/status:
+    get:
+      summary: 'Get the status of the currently requested ZIM file for a Builder.'
+      operationId: builderZimStatus
+      responses:
+        200:
+          description: 'Successful operation.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: 'One of: NOT_REQUESTED, REQUESTED, FILE_READY, CANCELLED, or FAILED.'
+                  error_url:
+                    type: string
+                    description: 'The URL of a resource on the Zimfarm that may provide more context for a failed ZIM.'
+      parameters:
+        - name: builderId
+          in: path
+          required: true
+          description: 'The id of the Builder to request as ZIM file for.'
+          schema:
+            type: string
+  /builders/{builderId}/zim/latest:
+    get:
+      summary: 'Get the actual ZIM file for a Builder.'
+      operationId: builderLatestZim
+      responses:
+        302:
+          description: 'Successful operation, redirect to the URL of the ZIM file.'
+        404:
+          description: 'Builder or ZIM file not found.'
+      parameters:
+        - name: builderId
+          in: path
+          required: true
+          description: 'The id of the Builder to request as ZIM file for.'
+          schema:
+            type: string
+  /selection/simple/lists:
+    get:
+      summary: 'Return list details from database'
+      operationId: getLists
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  builders:
+                    type: array
+                    items:
+                      type: object
+                      description: 'Each item in this array represents a Selection, with the corresponding Builder data destructured and included as well.'
+                      properties:
+                        id:
+                          type: string
+                        created_at:
+                          type: number
+                          description: 'Unix timestamp when the Builder was created.'
+                        updated_at:
+                          type: number
+                          description: 'Unix timestamp when the Builder was last updated.'
+                        name:
+                          type: string
+                        project:
+                          type: string
+                        model:
+                          type: string
+                        s_id:
+                          type: string
+                          description: 'The id of the latest materialized selection of this content_type.'
+                        s_created_at:
+                          type: number
+                          description: 'Unix timestamp when the Selection was created.'
+                        s_updated_at:
+                          type: number
+                          description: 'Unix timestamp when the Selection was last updated.'
+                        s_content_type:
+                          type: string
+                          description: 'MIME type of the content of this selection. A builder can have multiple selections with different content_types.'
+                        s_extension:
+                          type: string
+                          description: 'The three letter extension that corresponds to the content type.'
+                        s_url:
+                          type: string
+                          description: 'The URL for the data of this selection. This will likely be a redirect.'
+                        s_status:
+                          type: string
+                          description: 'An enum-like value that is either null (there is no meaningful status to report), FAILED (building the selection failed permanently), or CAN_RETRY (building the selection failed but can be retried).'
+
+components:
+  schemas:
+    CreateOrUpdateListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: True when article name does not contain forbidden chars {"#", "<", ">", "[", "]", "{", "}", "|"}, false otherwise.
+        items:
+          type: object
+          description: Empty in case of success being true
+          properties:
+            valid:
+              type: array
+              description: List of valid article names
+              items:
+                type: string
+            invalid:
+              type: array
+              description: List of invalid article names
+              items:
+                type: string
+            errors:
+              type: array
+              description: List of forbidden characters present in article names
+              items:
+                type: string
+    BuilderSpec:
+      type: object
+      properties:
+        model:
+          type: string
+          description: 'The Builder model that this builder corresponds to.'
+        name:
+          type: string
+        project:
+          type: string
+        params:
+          type: object
+          description: 'The parameters of the Builder that are used to materialize the Selection. This varies depending on the model.'
+        selection_errors:
+          type: array
+          description: 'Any errors that occurred while materializing the Builder, and whether they are retryable'
+          items:
+            type: object
+            properties:
+              error_messages:
+                type: array
+                description: 'The raw error messages returned from the API server'
+                items:
+                  type: string
+              ext:
+                type: string
+                description: 'The extension for the selection for which materialization was attempted'
+              status:
+                type: string
+                description: 'Either "CAN_RETRY" if the error is retryable, or "FATAL" if not'
+
+    Project:
+      type: object
+      properties:
+        name:
+          type: string
+        last_updated:
+          type: string
+          description: 'The last time the project was updated, in the date format YYYYMMDDhhmmss. So, year month day, hour minute second'
+    Article:
+      type: object
+      properties:
+        article:
+          type: string
+          description: 'The name of the article, as it appears on Wikipedia, with its namespace prefix included'
+        article_talk:
+          type: string
+          description: 'The name of fthe article, with the appropriate talk namespace prepended'
+        article_link:
+          type: string
+          description: 'A link to the article on Wikipedia'
+        article_talk_link:
+          type: string
+          description: 'A link to the talk page o the article on Wikipedia'
+        article_history_link:
+          type: string
+          description: 'A link to the history listing of the article on Wikipedia'
+        importance:
+          type: string
+          description: 'The importance class of the article'
+        quality:
+          type: string
+          description: 'The quality class of the article'
+        importance_updated:
+          type: string
+          format: date
+          description: 'The date on which the article importance classification was updated, the format is 2020-01-30T15:55:55Z'
+        quality_updated:
+          type: string
+          format: date
+          description: 'The date on which the article quality classification was updated, the format is 2020-01-30T15:55:55Z'

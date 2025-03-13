@@ -1,0 +1,19 @@
+{
+  "params": {
+    "include": [
+      "British Columbia road transport",
+      "New Brunswick road transport"
+    ],
+    "exclude": ["Countries"]
+  },
+  "name": "Builder 1",
+  "model": "wp1.selection.models.wikiproject",
+  "project": "en.wikipedia.org",
+  "selection_errors": [
+    {
+      "error_messages": ["There was a timeout."],
+      "ext": "tsv",
+      "status": "CAN_RETRY"
+    }
+  ]
+}

@@ -1,0 +1,166 @@
+# Run Python unit tests in continuous integration mode.
+name: Continuous Integration
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  python-tests:
+    runs-on: ubuntu-20.04
+
+    services:
+      # Unit test rely on a local MySQL instance with an empty root password.
+      mysql:
+        image: mariadb:10.4
+        env:
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: yes
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
+      redis:
+        # Some unit tests also try to write to Redis
+        image: redis
+        ports:
+          - 6379:6379
+        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+        # Don't need lfs because we're not referencing the dev-db in this workflow.
+
+      - name: Set up Python 3.12.0
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.0'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pipenv
+          pipenv install --system --deploy --ignore-pipfile --dev
+
+      - name: Verify MySQL connection from host
+        run: |
+          mysql --host 127.0.0.1 --port 3306 -uroot -e "SHOW DATABASES"
+
+      - name: Create test databases
+        run: |
+          mysql --host 127.0.0.1 --port 3306 -uroot -e 'CREATE DATABASE enwp10_test; CREATE DATABASE enwikip_test;'
+
+      - name: Copy credentials
+        run: |
+          cp wp1/credentials.py.e2e wp1/credentials.py
+          cp wp1/credentials.py.dev.e2e wp1/credentials.py.dev
+
+      - name: Test with pytest, with coverage
+        run: |
+          pipenv run pytest --cov=wp1
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v4
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          fail_ci_if_error: false
+
+  frontend-cypress:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Set up Python 3.12.0
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.0'
+
+      - uses: actions/cache@v4
+        name: Cache pip dependencies
+        id: pip-cache
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/Pipfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pipenv
+          pipenv install --system --deploy --dev
+
+      - name: Get yarn cache directory path
+        id: yarn-dep-cache-dir-path
+        run: cd wp1-frontend && echo "YARN_CACHE_DIR=$(yarn cache dir)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        name: Setup Yarn dep cache
+        id: yarn-dep-cache
+        with:
+          path: ${{ steps.yarn-dep-cache-dir-path.outputs.YARN_CACHE_DIR }}
+          key: ${{ runner.os }}-yarn-dep-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-dep-
+
+      - name: Install Javascript dependencies
+        run: cd wp1-frontend && yarn install --frozen-lockfile
+
+      - name: Copy credentials
+        run: |
+          cp wp1/credentials.py.e2e wp1/credentials.py
+          cp wp1/credentials.py.dev.e2e wp1/credentials.py.dev
+
+      # This is the dev database, the dev redis, and the dev workers.
+      # We don't technically need the last one.
+      - name: Start Docker dev services
+        run: docker compose -f docker-compose-dev.yml up -d --build
+
+      - name: Wait for Docker dev services to be up (30s)
+        run: sleep 30s
+        shell: bash
+
+      - name: Start web API server
+        timeout-minutes: 2
+        env:
+          FLASK_APP: wp1.web.app
+          FLASK_DEBUG: 1
+        run: pipenv run gunicorn -b 0.0.0.0:5000 'wp1.web.app:create_app()' --log-file=output.log -D
+
+      - name: Build frontend server
+        run: |
+          cd wp1-frontend
+          yarn build --mode staging
+
+      - name: Start frontend server
+        run: |
+          cd wp1-frontend
+          pipenv run python -m http.server 5173 --directory dist/ &
+
+      - name: Wait for API and frontend server to be up (10s)
+        run: sleep 10s
+        shell: bash
+
+      - name: Run frontend tests
+        run: |
+          cd wp1-frontend
+          $(yarn bin)/cypress run
+
+      - name: Stop containers
+        continue-on-error: true
+        if: always()
+        run: docker compose -f "docker-compose-dev.yml" down
+
+      - uses: actions/upload-artifact@v4
+        continue-on-error: true
+        if: always()
+        with:
+          name: screenshots
+          path: |
+            wp1-frontend/cypress/screenshots/*
+            output.log
