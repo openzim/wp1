@@ -34,8 +34,9 @@ class Builder(AbstractBuilder):
     valid, invalid, errors = self.validate(**params)
 
     if errors:
-      raise Wp1RetryableSelectionError('The selection contained invalid parameters')
-    
+      raise Wp1RetryableSelectionError(
+          'The selection contained invalid parameters')
+
     return '\n'.join(valid).encode('utf-8')
 
   def validate(self, **params):
@@ -68,11 +69,28 @@ class Builder(AbstractBuilder):
         invalid_article_names.append(decoded_item)
         is_valid = False
       if is_valid:
-        article_name = decoded_item.replace(
-            "https://en.wikipedia.org/wiki/",
-            "").replace("https://en.wikipedia.org/w/index.php?title=", "")
-        valid_article_names.append(article_name)
+        article_name = self.extract_article_name(decoded_item)
+        if not article_name:
+          invalid_article_names.append(decoded_item)
+        else:
+          valid_article_names.append(article_name)
     if forbidden_chars:
       errors.append('The list contained the following invalid characters: ' +
                     ', '.join(forbidden_chars))
     return (valid_article_names, invalid_article_names, errors)
+
+  def extract_article_name(self, url):
+    if not url:
+      return None
+
+    parsed_url = urllib.parse.urlparse(url)
+    domain = parsed_url.netloc
+    if not domain:
+      return url
+    if not domain.endswith("wikipedia.org"):
+      return None
+
+    wiki_prefix = f"https://{domain}/wiki/"
+    index_prefix = f"https://{domain}/w/index.php?title="
+    article_name = url.replace(wiki_prefix, "").replace(index_prefix, "")
+    return article_name

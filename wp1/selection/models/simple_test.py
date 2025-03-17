@@ -193,3 +193,34 @@ of text than an actual article name.',
     }
     actual = simple_builder_test.validate(**params)
     self.assertEqual(expected, actual)
+
+  def test_non_en_url_stripping(self):
+    simple_builder_test = SimpleBuilder()
+    expected = (['Statue_of_Liberty', 'Indonésie', 'Marie_Curie'], [], [])
+    params = {
+        'list': [
+            'https://en.wikipedia.org/wiki/Statue_of_Liberty',
+            'https://fr.wikipedia.org/wiki/Indon%C3%A9sie',
+            'https://de.wikipedia.org/w/index.php?title=Marie_Curie'
+        ],
+        'project': 'project_name'
+    }
+    actual = simple_builder_test.validate(**params)
+    self.assertEqual(expected, actual)
+
+  def test_non_wikipedia_domain_invalid(self):
+    simple_builder_test = SimpleBuilder()
+    expected = (['Marie_Curie'], [
+        'https://en.wiki.org/wiki/Statue_of_Liberty',
+        'https://fr.wiktionary.org/wiki/Indonésie',
+    ], [])
+    params = {
+        'list': [
+            'https://en.wiki.org/wiki/Statue_of_Liberty',
+            'https://fr.wiktionary.org/wiki/Indon%C3%A9sie',
+            'https://de.wikipedia.org/w/index.php?title=Marie_Curie'
+        ],
+        'project': 'project_name'
+    }
+    actual = simple_builder_test.validate(**params)
+    self.assertEqual(expected, actual)
