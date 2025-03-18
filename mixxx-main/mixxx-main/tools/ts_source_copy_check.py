@@ -8,6 +8,7 @@ import re
 import sys
 import typing
 import fnmatch
+import tempfile
 
 from lxml import etree
 import githelper
@@ -192,13 +193,11 @@ def main(argv: typing.Optional[typing.List[str]] = None) -> int:
 
     return ret
 
-import os
-import tempfile
+# ... Code for writing warnings to temp file for count > 25
 
-# ... Logic for checking warnings ...
 
 def check_warnings(warnings):
-    warning_threshold = 10  # Set your threshold here
+    warning_threshold = 25  # Set your threshold here
     if len(warnings) > warning_threshold:
         with tempfile.NamedTemporaryFile(delete=False, mode='w') as temp_file:
             for warning in warnings:
@@ -207,7 +206,6 @@ def check_warnings(warnings):
     else:
         for warning in warnings:
             print(warning)
-
 
 
 if __name__ == "__main__":
