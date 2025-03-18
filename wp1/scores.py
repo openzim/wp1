@@ -178,31 +178,44 @@ def update_db_pageviews(wp10db, lang, article, page_id, views):
         })
 
 
-def update_pageviews(filter_lang=None, commit_after=50000):
-  download_pageviews()
+def update_pageviews(filter_lang=None, commit_after=10000):
+    download_pageviews()
 
-  # Convert filter lang to bytes if necessary
-  if filter_lang is not None and isinstance(filter_lang, str):
-    filter_lang = filter_lang.encode('utf-8')
+    if filter_lang is not None and isinstance(filter_lang, str):
+        filter_lang = filter_lang.encode('utf-8')
 
-  if filter_lang is None:
-    logger.info('Updating all pageviews')
-  else:
-    logger.info('Updating pageviews for %s', filter_lang.decode('utf-8'))
+    if filter_lang is None:
+        logger.info('Updating all pageviews')
+    else:
+        logger.info('Updating pageviews for %s', filter_lang.decode('utf-8'))
 
-  wp10db = wp10_connect()
-  n = 0
-  for lang, article, page_id, views in pageview_components():
-    if filter_lang is None or lang == filter_lang:
-      update_db_pageviews(wp10db, lang, article, page_id, views)
+    wp10db = wp10_connect()
+    
+    try:
+        # Start a transaction
+        wp10db.begin()
+        
+        n = 0  # Counter for the number of updates
+        for lang, article, page_id, views in pageview_components():
+            if filter_lang is None or lang == filter_lang:
+                update_db_pageviews(wp10db, lang, article, page_id, views)
+                n += 1
 
-    n += 1
-    if n >= commit_after:
-      logger.debug('Committing')
-      wp10db.commit()
-      n = 0
-  wp10db.commit()
-  logger.info('Done')
+            # Commit every commit_after rows
+            if n >= commit_after:
+                wp10db.commit()
+                logger.info('Committed %d updates', n)
+                n = 0  # Reset counter for the next batch
+
+        if n > 0:  # Commit any remaining updates
+            wp10db.commit()
+            logger.info('Committed remaining %d updates', n)
+
+        logger.info('Done')
+        
+    except Exception as e:
+        logger.exception('Error during pageview update, rolling back transaction')
+        wp10db.rollback()  # Rollback in case of error
 
 
 if __name__ == '__main__':
