@@ -178,7 +178,7 @@ def update_db_pageviews(wp10db, lang, article, page_id, views):
         })
 
 
-def update_pageviews(filter_lang=None, commit_after=10000):
+def update_pageviews(filter_lang=None):
     download_pageviews()
 
     if filter_lang is not None and isinstance(filter_lang, str):
@@ -190,32 +190,20 @@ def update_pageviews(filter_lang=None, commit_after=10000):
         logger.info('Updating pageviews for %s', filter_lang.decode('utf-8'))
 
     wp10db = wp10_connect()
-    
     try:
-        # Start a transaction
+        # Start a single transaction for the entire update
         wp10db.begin()
-        
-        n = 0  # Counter for the number of updates
         for lang, article, page_id, views in pageview_components():
             if filter_lang is None or lang == filter_lang:
                 update_db_pageviews(wp10db, lang, article, page_id, views)
-                n += 1
-
-            # Commit every commit_after rows
-            if n >= commit_after:
-                wp10db.commit()
-                logger.info('Committed %d updates', n)
-                n = 0  # Reset counter for the next batch
-
-        if n > 0:  # Commit any remaining updates
-            wp10db.commit()
-            logger.info('Committed remaining %d updates', n)
-
-        logger.info('Done')
-        
+        # Commit the transaction only once after processing all rows
+        wp10db.commit()
+        logger.info('Done updating pageviews')
     except Exception as e:
-        logger.exception('Error during pageview update, rolling back transaction')
-        wp10db.rollback()  # Rollback in case of error
+        # Roll back the entire transaction in case of any error
+        wp10db.rollback()
+        logger.exception("Error during update_pageviews; transaction rolled back")
+        raise
 
 
 if __name__ == '__main__':
