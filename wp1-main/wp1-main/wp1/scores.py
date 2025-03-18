@@ -178,39 +178,33 @@ def update_db_pageviews(wp10db, lang, article, page_id, views):
         })
 
 
-def update_pageviews(filter_lang=None, commit_after=50000):
+def update_pageviews(filter_lang=None):
   download_pageviews()
-  
+
   # Convert filter lang to bytes if necessary
   if filter_lang is not None and isinstance(filter_lang, str):
     filter_lang = filter_lang.encode('utf-8')
-  
+
   if filter_lang is None:
     logger.info('Updating all pageviews')
   else:
     logger.info('Updating pageviews for %s', filter_lang.decode('utf-8'))
-  
+
   wp10db = wp10_connect()
-  n = 0
   
   # Start a transaction
   wp10db.begin()
-  
+
   try:
     for lang, article, page_id, views in pageview_components():
       if filter_lang is None or lang == filter_lang:
         update_db_pageviews(wp10db, lang, article, page_id, views)
-      
-      n += 1
-      if n >= commit_after:
-        logger.debug('Committing')
-        wp10db.commit()
-        n = 0
-    
-    wp10db.commit()  # Final commit for any remaining updates
+
+    # Commit the transaction after processing all rows
+    wp10db.commit()
     logger.info('Done')
   except Exception as e:
-    wp10db.rollback()  # Rollback on error
+    wp10db.rollback()
     logger.error('Error during pageviews update: %s', e)
     raise
 
