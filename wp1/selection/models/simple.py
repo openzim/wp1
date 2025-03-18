@@ -69,28 +69,15 @@ class Builder(AbstractBuilder):
         invalid_article_names.append(decoded_item)
         is_valid = False
       if is_valid:
-        article_name = self.extract_article_name(decoded_item)
-        if not article_name:
-          invalid_article_names.append(decoded_item)
-        else:
-          valid_article_names.append(article_name)
+        project_domain = 'en.wikipedia.org'
+        if 'project' in params:
+          project_domain = params['project']
+        wiki_prefix = f"https://{project_domain}/wiki/"
+        index_prefix = f"https://{project_domain}/w/index.php?title="
+        article_name = decoded_item.replace(wiki_prefix,
+                                            "").replace(index_prefix, "")
+        valid_article_names.append(article_name)
     if forbidden_chars:
       errors.append('The list contained the following invalid characters: ' +
                     ', '.join(forbidden_chars))
     return (valid_article_names, invalid_article_names, errors)
-
-  def extract_article_name(self, url):
-    if not url:
-      return None
-
-    parsed_url = urllib.parse.urlparse(url)
-    domain = parsed_url.netloc
-    if not domain:
-      return url
-    if not domain.endswith("wikipedia.org"):
-      return None
-
-    wiki_prefix = f"https://{domain}/wiki/"
-    index_prefix = f"https://{domain}/w/index.php?title="
-    article_name = url.replace(wiki_prefix, "").replace(index_prefix, "")
-    return article_name
