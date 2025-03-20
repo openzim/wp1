@@ -14,7 +14,7 @@ from wp1.time import get_current_datetime
 from wp1.wp10_db import connect as wp10_connect
 
 PageviewRecord = namedtuple('PageviewRecord',
-                            ['lang', 'name', 'page_id', 'views'])
+  ['lang', 'name', 'page_id', 'views'])
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +29,9 @@ except ImportError:
 
 def wiki_languages():
   r = requests.get(
-      'https://wikistats.wmcloud.org/api.php?action=dump&table=wikipedias&format=csv',
-      headers={'User-Agent': WP1_USER_AGENT},
-      timeout=60,
+    'https://wikistats.wmcloud.org/api.php?action=dump&table=wikipedias&format=csv',
+    headers={'User-Agent': WP1_USER_AGENT},
+    timeout=60,
   )
   try:
     r.raise_for_status()
@@ -53,8 +53,8 @@ def get_pageview_url(prev=False):
   now = get_current_datetime()
   dt = datetime(now.year, now.month, 1) - timedelta(weeks=weeks)
   return dt.strftime(
-      'https://dumps.wikimedia.org/other/pageview_complete/monthly/'
-      '%Y/%Y-%m/pageviews-%Y%m-user.bz2')
+    'https://dumps.wikimedia.org/other/pageview_complete/monthly/'
+    '%Y/%Y-%m/pageviews-%Y%m-user.bz2')
 
 
 def get_pageview_file_path(filename):
@@ -167,43 +167,43 @@ def pageview_components():
 def update_db_pageviews(wp10db, lang, article, page_id, views):
   with wp10db.cursor() as cursor:
     cursor.execute(
-        '''INSERT INTO page_scores (ps_lang, ps_page_id, ps_article, ps_views)
-           VALUES (%(lang)s, %(page_id)s, %(article)s, %(views)s)
-           ON DUPLICATE KEY UPDATE ps_views = %(views)s
-        ''', {
-            'lang': lang,
-            'page_id': page_id,
-            'article': article,
-            'views': views
-        })
+      '''INSERT INTO page_scores (ps_lang, ps_page_id, ps_article, ps_views)
+         VALUES (%(lang)s, %(page_id)s, %(article)s, %(views)s)
+         ON DUPLICATE KEY UPDATE ps_views = %(views)s
+      ''', {
+        'lang': lang,
+        'page_id': page_id,
+        'article': article,
+        'views': views
+      })
 
 
 def update_pageviews(filter_lang=None):
-    download_pageviews()
+  download_pageviews()
 
-    if filter_lang is not None and isinstance(filter_lang, str):
-        filter_lang = filter_lang.encode('utf-8')
+  if filter_lang is not None and isinstance(filter_lang, str):
+    filter_lang = filter_lang.encode('utf-8')
 
-    if filter_lang is None:
-        logger.info('Updating all pageviews')
-    else:
-        logger.info('Updating pageviews for %s', filter_lang.decode('utf-8'))
+  if filter_lang is None:
+    logger.info('Updating all pageviews')
+  else:
+    logger.info('Updating pageviews for %s', filter_lang.decode('utf-8'))
 
-    wp10db = wp10_connect()
-    try:
-        # Start a single transaction for the entire update
-        wp10db.begin()
-        for lang, article, page_id, views in pageview_components():
-            if filter_lang is None or lang == filter_lang:
-                update_db_pageviews(wp10db, lang, article, page_id, views)
-        # Commit the transaction only once after processing all rows
-        wp10db.commit()
-        logger.info('Done updating pageviews')
-    except Exception as e:
-        # Roll back the entire transaction in case of any error
-        wp10db.rollback()
-        logger.exception("Error during update_pageviews; transaction rolled back")
-        raise
+  wp10db = wp10_connect()
+  try:
+    # Start a single transaction for the entire update
+    wp10db.begin()
+    for lang, article, page_id, views in pageview_components():
+      if filter_lang is None or lang == filter_lang:
+        update_db_pageviews(wp10db, lang, article, page_id, views)
+    # Commit the transaction only once after processing all rows
+    wp10db.commit()
+    logger.info('Done updating pageviews')
+  except Exception as e:
+    # Roll back the entire transaction in case of any error
+    wp10db.rollback()
+    logger.exception("Error during update_pageviews; transaction rolled back")
+    raise
 
 
 if __name__ == '__main__':
