@@ -5,16 +5,16 @@ import urllib.parse
 
 import attr
 
+from wp1 import zimfarm
 from wp1.constants import CONTENT_TYPE_TO_EXT, TS_FORMAT_WP10, ZIM_FILE_TTL
+from wp1.logic import util
 from wp1.models.wp10.selection import Selection
 from wp1.models.wp10.zim_file import ZimFile
 from wp1.storage import connect_storage
-from wp1.logic import util
 from wp1.timestamp import utcnow
-from wp1 import zimfarm
 
 try:
-  from wp1.credentials import ENV, CREDENTIALS
+  from wp1.credentials import CREDENTIALS, ENV
   S3_PUBLIC_URL = CREDENTIALS.get(ENV, {}).get('CLIENT_URL', {}).get(
       's3', 'http://credentials.not.found.fake')
 except ImportError:
@@ -177,24 +177,3 @@ def update_zimfarm_task(wp10db, task_id, status, set_updated_now=False):
 
 def is_zim_file_deleted(update_at_timestamp):
   return utcnow().timestamp() - update_at_timestamp > ZIM_FILE_TTL
-
-
-TASK_CPU = 3
-TASK_MEMORY = 1024 * 1024 * 1024 * 3  # Base memory is 3 GB
-TASK_DISK = 1024 * 1024 * 1024 * 20  # Base disk space is 20 GB
-
-
-def get_resource_profile(s3, selection):
-  data = s3.client.head_object(Bucket=s3.bucket_name,
-                               Key=selection.s_object_key.decode('utf-8'))
-  length = data.get('ContentLength', 1024)
-  article_estimate = length / 15  # Assume each article name is 15 chars long.
-  multiplier = (
-      (article_estimate // 1000000) + 1)  # 1 multiplier for every 1M articles
-  return {
-      'cpu': TASK_CPU,
-      # 3 GB of memory for each 1M articles
-      'memory': int(TASK_MEMORY * multiplier),
-      # 20 GB of disk for each 1M articles
-      'disk': int(TASK_DISK * multiplier),
-  }

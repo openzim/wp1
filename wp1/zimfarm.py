@@ -1,19 +1,19 @@
-from datetime import datetime, timedelta
-from functools import wraps
 import logging
 import time
 import urllib.parse
+from datetime import datetime, timedelta
+from functools import wraps
 
 import requests
 
-from wp1.constants import WP1_USER_AGENT
-from wp1.credentials import CREDENTIALS, ENV
-from wp1.exceptions import ZimFarmError, ObjectNotFoundError
-from wp1.logic import util
 import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
-from wp1.timestamp import utcnow
+from wp1.constants import WP1_USER_AGENT
+from wp1.credentials import CREDENTIALS, ENV
+from wp1.exceptions import ObjectNotFoundError, ZimFarmError
+from wp1.logic import util
 from wp1.time import get_current_datetime
+from wp1.timestamp import utcnow
 
 MWOFFLINER_IMAGE = 'ghcr.io/openzim/mwoffliner:latest'
 REDIS_AUTH_KEY = 'zimfarm.auth'
@@ -121,6 +121,15 @@ def get_webhook_url():
                                                  urllib.parse.quote(token))
 
 
+def _get_resource_request():
+  # Harcode the max resources provided by Zimfarm.
+  return {
+      'cpu': 6,
+      'memory': 15 * 1024 * 1024 * 1024,  # 15 GB
+      'disk': 200 * 1024 * 1024 * 1024,  # 200 GB
+  }
+
+
 def _get_params(s3, wp10db, builder, description='', long_description=''):
   if builder is None:
     raise ObjectNotFoundError('Given builder was None: %r' % builder)
@@ -139,7 +148,7 @@ def _get_params(s3, wp10db, builder, description='', long_description=''):
           'name': MWOFFLINER_IMAGE.split(':')[0],
           'tag': MWOFFLINER_IMAGE.split(':')[1],
       },
-      'resources': logic_selection.get_resource_profile(s3, selection),
+      'resources': _get_resource_request(),
       'platform': 'wikimedia',
       'monitor': False,
       'flags': {

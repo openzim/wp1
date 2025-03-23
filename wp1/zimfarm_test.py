@@ -1,13 +1,13 @@
 import datetime
-from unittest.mock import call, patch, MagicMock
+from unittest.mock import MagicMock, call, patch
 
 import attr
 import requests
 
-from wp1.environment import Environment
-from wp1.exceptions import ObjectNotFoundError, ZimFarmError
 from wp1 import zimfarm
 from wp1.base_db_test import BaseWpOneDbTest
+from wp1.environment import Environment
+from wp1.exceptions import ObjectNotFoundError, ZimFarmError
 from wp1.models.wp10.builder import Builder
 
 
@@ -107,9 +107,9 @@ class ZimFarmTest(BaseWpOneDbTest):
                     'tag': 'latest'
                 },
                 'resources': {
-                    'cpu': 3,
-                    'memory': 6442450944,
-                    'disk': 42949672960,
+                    'cpu': 6,
+                    'memory': 16106127360,
+                    'disk': 214748364800,
                 },
                 'platform': 'wikimedia',
                 'monitor': False,
