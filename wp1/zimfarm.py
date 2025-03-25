@@ -1,19 +1,19 @@
-from datetime import datetime, timedelta
-from functools import wraps
 import logging
 import time
 import urllib.parse
+from datetime import datetime, timedelta
+from functools import wraps
 
 import requests
 
-from wp1.constants import WP1_USER_AGENT
-from wp1.credentials import CREDENTIALS, ENV
-from wp1.exceptions import ZimFarmError, ObjectNotFoundError
-from wp1.logic import util
 import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
-from wp1.timestamp import utcnow
+from wp1.constants import WP1_USER_AGENT
+from wp1.credentials import CREDENTIALS, ENV
+from wp1.exceptions import ObjectNotFoundError, ZimFarmError
+from wp1.logic import util
 from wp1.time import get_current_datetime
+from wp1.timestamp import utcnow
 
 MWOFFLINER_IMAGE = 'ghcr.io/openzim/mwoffliner:latest'
 REDIS_AUTH_KEY = 'zimfarm.auth'
@@ -197,7 +197,7 @@ def schedule_zim_file(s3,
                       long_description=''):
   token = get_zimfarm_token(redis)
   if token is None:
-    raise ZimfarmError('Error retrieving auth token for request')
+    raise ZimFarmError('Error retrieving auth token for request')
 
   if builder is None:
     raise ObjectNotFoundError('Cannot schedule for None builder')

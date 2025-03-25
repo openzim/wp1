@@ -113,7 +113,8 @@ CREATE TABLE `selections` (
   s_version int(11) NOT NULL,
   s_object_key VARBINARY(255),
   s_status VARBINARY(255) DEFAULT 'OK',
-  s_error_messages BLOB
+  s_error_messages BLOB,
+  s_article_count int(11)
 );
 
 CREATE TABLE custom (

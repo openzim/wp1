@@ -26,6 +26,7 @@ class Selection:
   data = attr.ib(default=None)
   s_status = attr.ib(default=None)
   s_error_messages = attr.ib(default=None)
+  s_article_count = attr.ib(default=None)
 
   def set_id(self):
     self.s_id = str(uuid.uuid4()).encode('utf-8')
