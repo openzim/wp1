@@ -2,10 +2,14 @@ import io
 import json
 import logging
 
-from wp1.constants import CONTENT_TYPE_TO_EXT
-from wp1.exceptions import Wp1RetryableSelectionError, Wp1FatalSelectionError, Wp1SelectionError
 import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
+from wp1.constants import CONTENT_TYPE_TO_EXT
+from wp1.exceptions import (
+    Wp1FatalSelectionError,
+    Wp1RetryableSelectionError,
+    Wp1SelectionError,
+)
 from wp1.models.wp10.selection import Selection
 
 logger = logging.getLogger(__name__)
@@ -39,6 +43,7 @@ class AbstractBuilder:
                                   project=builder.b_project.decode('utf-8'),
                                   wp10db=wp10db,
                                   **params)
+      selection.s_article_count = selection.data.count(b'\n') + 1
     except Wp1RetryableSelectionError as e:
       logger.exception('Error materializing builder id=%s', builder.b_id)
       selection.s_status = 'CAN_RETRY'

@@ -5,16 +5,16 @@ import urllib.parse
 
 import attr
 
+from wp1 import zimfarm
 from wp1.constants import CONTENT_TYPE_TO_EXT, TS_FORMAT_WP10, ZIM_FILE_TTL
+from wp1.logic import util
 from wp1.models.wp10.selection import Selection
 from wp1.models.wp10.zim_file import ZimFile
 from wp1.storage import connect_storage
-from wp1.logic import util
 from wp1.timestamp import utcnow
-from wp1 import zimfarm
 
 try:
-  from wp1.credentials import ENV, CREDENTIALS
+  from wp1.credentials import CREDENTIALS, ENV
   S3_PUBLIC_URL = CREDENTIALS.get(ENV, {}).get('CLIENT_URL', {}).get(
       's3', 'http://credentials.not.found.fake')
 except ImportError:
@@ -30,10 +30,11 @@ def insert_selection(wp10db, selection):
     cursor.execute(
         '''INSERT INTO selections
              (s_id, s_builder_id, s_version, s_content_type, s_updated_at,
-              s_object_key, s_status, s_error_messages)
+              s_object_key, s_status, s_error_messages, s_article_count)
              VALUES
              (%(s_id)s, %(s_builder_id)s, %(s_version)s, %(s_content_type)s,
-              %(s_updated_at)s, %(s_object_key)s, %(s_status)s, %(s_error_messages)s)
+              %(s_updated_at)s, %(s_object_key)s, %(s_status)s, %(s_error_messages)s,
+              %(s_article_count)s)
     ''', attr.asdict(selection))
     cursor.execute(
         'INSERT INTO zim_files (z_selection_id, z_status)'

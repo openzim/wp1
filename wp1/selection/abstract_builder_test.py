@@ -1,9 +1,13 @@
-from datetime import datetime
 import json
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 from wp1.base_db_test import BaseWpOneDbTest, get_first_selection
-from wp1.exceptions import Wp1RetryableSelectionError, Wp1FatalSelectionError, Wp1SelectionError
+from wp1.exceptions import (
+    Wp1FatalSelectionError,
+    Wp1RetryableSelectionError,
+    Wp1SelectionError,
+)
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
 from wp1.selection.abstract_builder import AbstractBuilder
@@ -187,3 +191,11 @@ class AbstractBuilderTest(BaseWpOneDbTest):
 
     self.assertEqual({'error_messages': ['Just this thing, really']},
                      json.loads(actual.s_error_messages))
+
+  def test_materialize_update_article_count(self):
+    self.test_builder.materialize(self.s3, self.wp10db, self.builder,
+                                  'text/tab-separated-values', 1)
+
+    actual = get_first_selection(self.wp10db)
+
+    self.assertEqual(3, actual.s_article_count)
