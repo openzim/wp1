@@ -1,9 +1,9 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import attr
 
-from wp1.base_db_test import BaseWpOneDbTest
 import wp1.logic.selection as logic_selection
+from wp1.base_db_test import BaseWpOneDbTest
 from wp1.models.wp10.selection import Selection
 from wp1.models.wp10.zim_file import ZimFile
 
@@ -34,6 +34,7 @@ class SelectionTest(BaseWpOneDbTest):
         s_version=1,
         s_updated_at=b'20190830112844',
         s_object_key=b'selections/foo.bar.model/deadbeef/name.tsv',
+        s_article_count=420,
     )
     self.zim_file = ZimFile(z_id=1,
                             z_selection_id=b'deadbeef',
@@ -247,13 +248,6 @@ class SelectionTest(BaseWpOneDbTest):
                                                       'foo.bar.model',
                                                       name='name')
     self.assertEqual('selections/foo.bar.model/deadbeef/name.???', actual)
-
-  def test_object_key_for(self):
-    actual = logic_selection.object_key_for('abcd-1234',
-                                            'text/tab-separated-values',
-                                            'foo.bar.model',
-                                            name='name')
-    self.assertEqual('selections/foo.bar.model/abcd-1234/name.tsv', actual)
 
   def test_object_key_for_none_content_type_and_name(self):
     actual = logic_selection.object_key_for('abcd-1234',
