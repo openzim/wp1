@@ -75,10 +75,11 @@ def update_project_by_name(project_name, track_progress=False):
     if not project:
       project = Project(p_project=project_name,
                         p_timestamp=GLOBAL_TIMESTAMP_WIKI)
+
     update_project(wikidb,
                    wp10db,
+                   redis,
                    project,
-                   redis=redis,
                    track_progress=track_progress)
 
     if track_progress:
@@ -338,9 +339,9 @@ def increment_progress_count(redis, project_name):
 
 def update_project_assessments(wikidb,
                                wp10db,
+                               redis,
                                project,
                                extra_assessments,
-                               redis=None,
                                track_progress=False):
   old_ratings = {}
   for rating in logic_rating.get_project_ratings(wp10db, project.p_project):
@@ -365,9 +366,10 @@ def update_project_assessments(wikidb,
         seen,
         redis=redis,
         track_progress=track_progress)
-    store_new_ratings(wp10db, new_ratings, old_ratings, rating_to_category)
+    store_new_ratings(wp10db, redis, new_ratings, old_ratings,
+                      rating_to_category)
 
-  process_unseen_articles(wikidb, wp10db, project, old_ratings, seen)
+  process_unseen_articles(wikidb, wp10db, redis, project, old_ratings, seen)
 
 
 def update_project_assessments_by_kind(wikidb,
@@ -377,7 +379,7 @@ def update_project_assessments_by_kind(wikidb,
                                        kind,
                                        old_ratings,
                                        seen,
-                                       redis=None,
+                                       redis,
                                        track_progress=False):
   if kind not in (AssessmentKind.QUALITY, AssessmentKind.IMPORTANCE):
     raise ValueError('Parameter "kind" was not one of QUALITY or IMPORTANCE')
@@ -441,7 +443,8 @@ def update_project_assessments_by_kind(wikidb,
   return (new_ratings, rating_to_category)
 
 
-def store_new_ratings(wp10db, new_ratings, old_ratings, rating_to_category):
+def store_new_ratings(wp10db, redis, new_ratings, old_ratings,
+                      rating_to_category):
 
   def sort_rating_tuples(rating_tuple):
     rating, kind, _ = rating_tuple
@@ -462,10 +465,10 @@ def store_new_ratings(wp10db, new_ratings, old_ratings, rating_to_category):
 
     if article_ref not in old_ratings or rating_changed:
       logic_rating.insert_or_update(wp10db, rating, kind)
-      logic_rating.add_log_for_rating(wp10db, rating, kind, old_rating_value)
+      logic_rating.add_log_for_rating(redis, rating, kind, old_rating_value)
 
 
-def process_unseen_articles(wikidb, wp10db, project, old_ratings, seen):
+def process_unseen_articles(wikidb, wp10db, redis, project, old_ratings, seen):
   denom = len(old_ratings.keys())
   ratio = len(seen) / denom if denom != 0 else 'NaN'
 
@@ -499,7 +502,7 @@ def process_unseen_articles(wikidb, wp10db, project, old_ratings, seen):
     move_data = logic_page.get_move_data(wp10db, wikidb, ns, title,
                                          project.timestamp_dt)
     if move_data is not None:
-      logic_page.update_page_moved(wp10db, project, ns, title,
+      logic_page.update_page_moved(wp10db, redis, project, ns, title,
                                    move_data['dest_ns'],
                                    move_data['dest_title'],
                                    move_data['timestamp_dt'])
@@ -529,10 +532,10 @@ def process_unseen_articles(wikidb, wp10db, project, old_ratings, seen):
     logic_rating.insert_or_update(wp10db, rating, kind)
 
     if kind in (AssessmentKind.QUALITY, AssessmentKind.BOTH):
-      logic_rating.add_log_for_rating(wp10db, rating, AssessmentKind.QUALITY,
+      logic_rating.add_log_for_rating(redis, rating, AssessmentKind.QUALITY,
                                       old_rating.r_quality)
     if kind in (AssessmentKind.IMPORTANCE, AssessmentKind.BOTH):
-      logic_rating.add_log_for_rating(wp10db, rating, AssessmentKind.IMPORTANCE,
+      logic_rating.add_log_for_rating(redis, rating, AssessmentKind.IMPORTANCE,
                                       old_rating.r_importance)
 
     n += 1
@@ -609,14 +612,14 @@ def update_project_record(wp10db, project, metadata):
   insert_or_update(wp10db, project)
 
 
-def update_project(wikidb, wp10db, project, redis=None, track_progress=False):
+def update_project(wikidb, wp10db, redis, project, track_progress=False):
   extra_assessments = api_project.get_extra_assessments(project.p_project)
 
   update_project_assessments(wikidb,
                              wp10db,
+                             redis,
                              project,
                              extra_assessments,
-                             redis=redis,
                              track_progress=track_progress)
 
   cleanup_project(wp10db, project)

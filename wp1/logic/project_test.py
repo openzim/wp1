@@ -9,6 +9,7 @@ from wp1.base_db_test import BaseWpOneDbTest, BaseWikiDbTest, BaseCombinedDbTest
 from wp1.conf import get_conf
 from wp1.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP_WIKI, TS_FORMAT
 from wp1.logic import project as logic_project
+from wp1.logic import log as logic_log
 from wp1.models.wiki.page import Page
 from wp1.models.wp10.category import Category
 from wp1.models.wp10.log import Log
@@ -42,10 +43,8 @@ def _get_all_ratings(wp10db):
     return [Rating(**db_rating) for db_rating in cursor.fetchall()]
 
 
-def _get_all_logs(wp10db):
-  with wp10db.cursor() as cursor:
-    cursor.execute('SELECT * FROM logging')
-    return [Log(**db_log) for db_log in cursor.fetchall()]
+def _get_all_logs(redis):
+  return logic_log.get_logs(redis)
 
 
 def _get_all_global_article_scores(wp10db):
@@ -582,7 +581,7 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
     self._insert_ratings(self.quality_pages[6:], 0, AssessmentKind.QUALITY)
 
     logic_project.update_project_assessments(self.wikidb, self.wp10db,
-                                             self.project, {})
+                                             self.redis, self.project, {})
 
     ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
@@ -602,7 +601,7 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
                          AssessmentKind.IMPORTANCE)
 
     logic_project.update_project_assessments(self.wikidb, self.wp10db,
-                                             self.project, {})
+                                             self.redis, self.project, {})
 
     ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
@@ -624,7 +623,7 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
                          override_rating=NOT_A_CLASS.encode('utf-8'))
 
     logic_project.update_project_assessments(self.wikidb, self.wp10db,
-                                             self.project, {})
+                                             self.redis, self.project, {})
 
     ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
@@ -646,7 +645,7 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
                          override_rating=NOT_A_CLASS.encode('utf-8'))
 
     logic_project.update_project_assessments(self.wikidb, self.wp10db,
-                                             self.project, {})
+                                             self.redis, self.project, {})
 
     ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
@@ -669,7 +668,7 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
                          override_rating=NOT_A_CLASS.encode('utf-8'))
 
     logic_project.update_project_assessments(self.wikidb, self.wp10db,
-                                             self.project, {})
+                                             self.redis, self.project, {})
 
     ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
@@ -692,7 +691,7 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
     expected_global_ts = b'20190113000000'
     with patch('wp1.logic.rating.GLOBAL_TIMESTAMP', expected_global_ts):
       logic_project.update_project_assessments(self.wikidb, self.wp10db,
-                                               self.project, {})
+                                               self.redis, self.project, {})
 
     ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
@@ -706,7 +705,7 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
     for r in ratings:
       self.assertEqual(q_page_to_rating[r.r_article], r.r_quality)
 
-    logs = _get_all_logs(self.wp10db)
+    logs = _get_all_logs(self.redis)
     self.assertEqual(len(q_pages), len(logs))
 
     actual_log_titles = set(l.l_article for l in logs)
@@ -726,7 +725,7 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
     expected_global_ts = b'20190113000000'
     with patch('wp1.logic.rating.GLOBAL_TIMESTAMP', expected_global_ts):
       logic_project.update_project_assessments(self.wikidb, self.wp10db,
-                                               self.project, {})
+                                               self.redis, self.project, {})
 
     ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
@@ -740,7 +739,7 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
     for r in ratings:
       self.assertEqual(i_page_to_rating[r.r_article], r.r_importance)
 
-    logs = _get_all_logs(self.wp10db)
+    logs = _get_all_logs(self.redis)
     self.assertEqual(len(i_pages), len(logs))
 
     actual_log_titles = set(l.l_article for l in logs)
@@ -761,7 +760,7 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
     expected_global_ts = b'20190113000000'
     with patch('wp1.logic.rating.GLOBAL_TIMESTAMP', expected_global_ts):
       logic_project.update_project_assessments(self.wikidb, self.wp10db,
-                                               self.project, {})
+                                               self.redis, self.project, {})
 
     ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
@@ -782,7 +781,7 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
     for r in ratings:
       self.assertEqual(i_page_to_rating[r.r_article], r.r_importance)
 
-    logs = _get_all_logs(self.wp10db)
+    logs = _get_all_logs(self.redis)
     self.assertEqual(len(q_pages) + len(i_pages), len(logs))
 
   def test_custom_rating(self):
@@ -803,7 +802,7 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
     expected_global_ts = b'20190113000000'
     with patch('wp1.logic.rating.GLOBAL_TIMESTAMP', expected_global_ts):
       logic_project.update_project_assessments(self.wikidb, self.wp10db,
-                                               self.project, extra)
+                                               self.redis, self.project, extra)
 
     ratings = _get_all_ratings(self.wp10db)
     self.assertNotEqual(0, len(ratings))
@@ -824,7 +823,7 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
     expected_global_ts = b'20190113000000'
     with patch('wp1.logic.rating.GLOBAL_TIMESTAMP', expected_global_ts):
       logic_project.update_project_assessments(self.wikidb, self.wp10db,
-                                               self.project, {})
+                                               self.redis, self.project, {})
 
   def _assert_updated_quality_ratings(self, assert_log_len=True):
     ratings = _get_all_ratings(self.wp10db)
@@ -842,7 +841,7 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
       self.assertEqual(q_page_to_rating[r.r_article], r.r_quality)
 
     if assert_log_len:
-      logs = _get_all_logs(self.wp10db)
+      logs = _get_all_logs(self.redis)
       self.assertEqual(len(q_pages), len(logs))
 
   def _assert_updated_importance_ratings(self, assert_log_len=True):
@@ -861,7 +860,7 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
       self.assertEqual(i_page_to_rating[r.r_article], r.r_importance)
 
     if assert_log_len:
-      logs = _get_all_logs(self.wp10db)
+      logs = _get_all_logs(self.redis)
       self.assertEqual(len(i_pages), len(logs))
 
   def test_multiple_new_quality(self):
@@ -918,7 +917,7 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
     patched_site.api.side_effect = fake_api
 
     logic_project.update_project_assessments(self.wikidb, self.wp10db,
-                                             self.project, {})
+                                             self.redis, self.project, {})
 
     self.assertEqual(2, len(patched_site.api.call_args_list))
 
@@ -951,7 +950,7 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
     patched_site.api.side_effect = fake_api
 
     logic_project.update_project_assessments(self.wikidb, self.wp10db,
-                                             self.project, {})
+                                             self.redis, self.project, {})
 
     self.assertEqual(2, len(patched_site.api.call_args_list))
 
@@ -986,7 +985,7 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
     patched_site.api.side_effect = fake_api
 
     logic_project.update_project_assessments(self.wikidb, self.wp10db,
-                                             self.project, {})
+                                             self.redis, self.project, {})
 
     patched_site.assert_not_called()
 
@@ -1006,7 +1005,7 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
     patched_site.api.side_effect = fake_api
 
     logic_project.update_project_assessments(self.wikidb, self.wp10db,
-                                             self.project, {})
+                                             self.redis, self.project, {})
 
     patched_site.assert_not_called()
 
@@ -1022,7 +1021,8 @@ class GlobalArticlesTest(ArticlesTest):
 
     self._insert_global_scores()
 
-  @patch('wp1.logic.project.api_project.get_extra_assessments', return_value={'extra': {}})
+  @patch('wp1.logic.project.api_project.get_extra_assessments',
+         return_value={'extra': {}})
   def test_update_global_articles_table(self, mock_api_project):
     expected = [{
         'a_article': b'Art of testing',
@@ -1116,7 +1116,8 @@ class GlobalArticlesTest(ArticlesTest):
         'a_score': 35
     }]
 
-    logic_project.update_project(self.wikidb, self.wp10db, self.project)
+    logic_project.update_project(self.wikidb, self.wp10db, self.redis,
+                                 self.project)
     logic_project.update_global_articles_for_project_name(
         self.wp10db, self.project.p_project)
 
@@ -1431,13 +1432,12 @@ class ProjectProgressTest(ArticlesTest):
     self._insert_pages(self.importance_pages)
     self._insert_ratings(zip(self.quality_pages[6:], self.importance_pages[4:]),
                          0, 'both')
-    self.redis = fakeredis.FakeStrictRedis()
 
   def test_initial_work_count(self):
     logic_project.update_project_assessments(self.wikidb,
                                              self.wp10db,
+                                             self.redis,
                                              self.project, {},
-                                             redis=self.redis,
                                              track_progress=True)
     actual = self.redis.hget(b'progress:%s' % self.project.p_project, 'work')
     self.assertEqual(b'34', actual)
@@ -1445,8 +1445,8 @@ class ProjectProgressTest(ArticlesTest):
   def test_final_progress(self):
     logic_project.update_project_assessments(self.wikidb,
                                              self.wp10db,
+                                             self.redis,
                                              self.project, {},
-                                             redis=self.redis,
                                              track_progress=True)
     actual = self.redis.hget(b'progress:%s' % self.project.p_project,
                              'progress')
