@@ -5,8 +5,10 @@ import re
 
 from wp1 import api
 from wp1.conf import get_conf
+from wp1.redis_db import connect as redis_connect
 from wp1.constants import LOG_NS, LOG_DATE_FORMAT, TS_FORMAT, TS_FORMAT_WP10, MAX_LOGS_PER_DAY
 from wp1.logic.util import int_to_ns
+from wp1.logic import log as logic_log
 from wp1.models.wp10.log import Log
 from wp1.templates import env as jinja_env
 from wp1.time import get_current_datetime
@@ -24,15 +26,6 @@ RE_EXTRACT_TIME = re.compile(r'Log for ([^(]+)')
 def log_page_name(project_name):
   return ('Wikipedia:Version_1.0_Editorial_Team/%s_articles_by_quality_log' %
           project_name.decode('utf-8'))
-
-
-def get_logs(wp10db, project_name, start_dt):
-  wp10db.ping()
-  with wp10db.cursor() as cursor:
-    cursor.execute(
-        'SELECT * FROM logging WHERE l_project = %s AND l_timestamp > %s',
-        (project_name, start_dt.strftime(TS_FORMAT_WP10)))
-    return [Log(**db_log) for db_log in cursor.fetchall()]
 
 
 def move_target(wp10db, ns, article, db_timestamp):
@@ -73,7 +66,7 @@ def talk_page_for_article(wp10db, name, namespace):
                     name.decode('utf-8'))
 
 
-def calculate_logs_to_update(wikidb, wp10db, project_name, from_dt=None):
+def calculate_logs_to_update(redis, project_name, from_dt=None):
   """
   Return a dictionary of datetime -> list of log objects that should be
   uploaded to Wikipedia. If from_dt is given, the logs are calculated based on
@@ -84,7 +77,7 @@ def calculate_logs_to_update(wikidb, wp10db, project_name, from_dt=None):
   from_dt.replace(hour=23, minute=59, second=59)
 
   dt_to_log = defaultdict(list)
-  for log in get_logs(wp10db, project_name, from_dt):
+  for log in logic_log.get_logs(redis, project=project_name, start_dt=from_dt):
     dt_to_log[log.timestamp_dt.date()].append(log)
   return dt_to_log
 
@@ -199,10 +192,11 @@ def generate_log_edits(wikidb, wp10db, project_name, log_map):
 def update_log_page_for_project(project_name):
   wikidb = wiki_connect()
   wp10db = wp10_connect()
+  redis = redis_connect()
   logging.basicConfig(level=logging.INFO)
 
   try:
-    log_map = calculate_logs_to_update(wikidb, wp10db, project_name)
+    log_map = calculate_logs_to_update(redis, project_name)
     edits = generate_log_edits(wikidb, wp10db, project_name, log_map)
 
     p = api.get_page(log_page_name(project_name))

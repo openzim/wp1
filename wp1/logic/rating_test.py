@@ -1,6 +1,7 @@
 from wp1.base_db_test import BaseWpOneDbTest
 from wp1.constants import AssessmentKind
 from wp1.logic import rating as logic_rating
+from wp1.logic import log as logic_log
 from wp1.models.wp10.log import Log
 from wp1.models.wp10.rating import Rating
 
@@ -13,18 +14,12 @@ class LogicRatingTest(BaseWpOneDbTest):
                     r_article=b'Testing Stuff',
                     r_quality=b'GA-Class',
                     r_quality_timestamp=b'2018-04-01T12:30:00Z')
-    logic_rating.add_log_for_rating(self.wp10db, rating, AssessmentKind.QUALITY,
+    logic_rating.add_log_for_rating(self.redis, rating, AssessmentKind.QUALITY,
                                     b'NotA-Class')
 
-    with self.wp10db.cursor() as cursor:
-      cursor.execute(
-          '''
-        SELECT * FROM ''' + Log.table_name + '''
-        WHERE l_article = %s
-      ''', (b'Testing Stuff',))
-      db_log = cursor.fetchone()
-      self.assertIsNotNone(db_log)
-      log = Log(**db_log)
+    logs = logic_log.get_logs(self.redis, article=b'Testing Stuff')
+    self.assertEqual(len(logs), 1)
+    log = logs[0]
     self.assertEqual(b'Test Project', log.l_project)
     self.assertEqual(0, log.l_namespace)
     self.assertEqual(b'Testing Stuff', log.l_article)
@@ -38,18 +33,12 @@ class LogicRatingTest(BaseWpOneDbTest):
                     r_article=b'Testing Stuff',
                     r_importance=b'Mid-Class',
                     r_importance_timestamp=b'2018-04-01T12:30:00Z')
-    logic_rating.add_log_for_rating(self.wp10db, rating,
+    logic_rating.add_log_for_rating(self.redis, rating,
                                     AssessmentKind.IMPORTANCE, b'NotA-Class')
 
-    with self.wp10db.cursor() as cursor:
-      cursor.execute(
-          '''
-        SELECT * FROM ''' + Log.table_name + '''
-        WHERE l_article = %s
-      ''', (b'Testing Stuff',))
-      db_log = cursor.fetchone()
-      self.assertIsNotNone(db_log)
-      log = Log(**db_log)
+    logs = logic_log.get_logs(self.redis, article=b"Testing Stuff")
+    self.assertEqual(len(logs), 1)
+    log = logs[0]
     self.assertEqual(b'Test Project', log.l_project)
     self.assertEqual(0, log.l_namespace)
     self.assertEqual(b'Testing Stuff', log.l_article)
