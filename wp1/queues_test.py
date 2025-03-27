@@ -14,11 +14,9 @@ class QueuesTest(BaseWpOneDbTest):
 
   def setUp(self):
     super().setUp()
-    self.redis = fakeredis.FakeStrictRedis()
 
   def tearDown(self):
     super().tearDown()
-    self.redis = None
 
   @patch('wp1.queues.ENV', Environment.DEVELOPMENT)
   @patch('wp1.queues.logic_project.update_project_by_name')
