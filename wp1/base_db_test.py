@@ -8,6 +8,10 @@ import pymysql
 from wp1.environment import Environment
 from wp1.models.wp10.selection import Selection
 
+from wp1.redis_db import connect as redis_connect
+
+from wp1.models.wp10.rating import Rating
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -93,9 +97,27 @@ class BaseWpOneDbTest(WpOneAssertions):
         cursor.execute(stmt)
     self.wp10db.commit()
 
+  def connect_redis_db(self):
+    if ENV != Environment.TEST:
+      raise ValueError(
+          'Database tests destroy data! They should only be run in the TEST env'
+      )
+    return redis_connect()
+
+  def _setup_redis_db(self):
+    self.redis = self.connect_redis_db()
+    self.redis.ping()
+    self.redis.flushdb()
+
+  def _cleanup_redis_db(self):
+    self.redis.flushdb()
+
   def setUp(self):
     self.addCleanup(self._cleanup_wp_one_db)
     self._setup_wp_one_db()
+
+    self.addCleanup(self._cleanup_redis_db)
+    self._setup_redis_db()
 
 
 class BaseWikiDbTest(WpOneAssertions):
@@ -143,6 +165,9 @@ class BaseCombinedDbTest(BaseWikiDbTest, BaseWpOneDbTest):
 
     self.addCleanup(self._cleanup_wp_one_db)
     self._setup_wp_one_db()
+
+    self.addCleanup(self._cleanup_redis_db)
+    self._setup_redis_db()
 
 
 def get_first_selection(wp10db):

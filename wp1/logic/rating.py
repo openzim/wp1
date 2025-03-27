@@ -341,7 +341,7 @@ def count_unassessed_importance_for_project(wp10db, project):
     return cursor.fetchone()['cnt']
 
 
-def add_log_for_rating(wp10db, new_rating, kind, old_rating_value):
+def add_log_for_rating(redis, new_rating, kind, old_rating_value):
   if kind == AssessmentKind.QUALITY:
     action = b'quality'
     timestamp = new_rating.r_quality_timestamp
@@ -361,4 +361,4 @@ def add_log_for_rating(wp10db, new_rating, kind, old_rating_value):
             l_old=old_rating_value,
             l_new=new,
             l_revision_timestamp=timestamp)
-  logic_log.insert_or_update(wp10db, log)
+  logic_log.insert_or_update(redis, log)

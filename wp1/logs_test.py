@@ -5,6 +5,7 @@ from unittest.mock import patch
 import attr
 
 from wp1 import logs
+from wp1.logic import log as logic_log
 from wp1.base_db_test import BaseCombinedDbTest
 from wp1.models.wp10.log import Log
 
@@ -117,17 +118,8 @@ class LogsTest(BaseCombinedDbTest):
     return logs
 
   def _insert_logs(self, logs=None):
-    with self.wp10db.cursor() as cursor:
-      cursor.executemany(
-          '''
-        INSERT INTO logging
-           (l_project, l_namespace, l_article, l_old, l_new, l_action,
-           l_timestamp, l_revision_timestamp)
-        VALUES
-          (%(l_project)s, %(l_namespace)s, %(l_article)s, %(l_old)s, %(l_new)s,
-           %(l_action)s, %(l_timestamp)s, %(l_revision_timestamp)s)
-      ''', [attr.asdict(log) for log in logs])
-    self.wp10db.commit()
+    for log in logs:
+      logic_log.insert_or_update(self.redis, log)
 
   def _insert_moves(self):
     move_data = [(0, m[0], 0, m[1],
@@ -245,7 +237,9 @@ class LogsTest(BaseCombinedDbTest):
          b'20181226101010', b'NotA-Class', b'Category-Class',
          b'2018-12-26T05:10:10Z')
     ]
-    actual = logs.get_logs(self.wp10db, self.project, datetime(2018, 11, 24))
+    actual = logic_log.get_logs(self.redis,
+                                project=self.project,
+                                start_dt=datetime(2018, 11, 24))
     actual = list(attr.astuple(a) for a in actual)
     self.assertEqual(sorted(expected), sorted(actual))
 
@@ -289,8 +283,7 @@ class LogsTest(BaseCombinedDbTest):
   @patch('wp1.logs.get_current_datetime',
          return_value=datetime(2018, 12, 28, 12))
   def test_calculate_logs_to_update_keys(self, patched_datetime_now):
-    actual = logs.calculate_logs_to_update(self.wikidb, self.wp10db,
-                                           self.project)
+    actual = logs.calculate_logs_to_update(self.redis, self.project)
     self.assertEqual(3, len(actual))
     self.assertTrue(datetime(2018, 12, 25).date() in actual)
     self.assertTrue(datetime(2018, 12, 26).date() in actual)
@@ -305,8 +298,7 @@ class LogsTest(BaseCombinedDbTest):
     ]
     expected.extend(l for l in self._move_logs()
                     if l.l_revision_timestamp.startswith(b'2018-12-25'))
-    actual = logs.calculate_logs_to_update(self.wikidb, self.wp10db,
-                                           self.project)
+    actual = logs.calculate_logs_to_update(self.redis, self.project)
 
     for d in ((25, b'2018-12-25'), (26, b'2018-12-26'), (27, b'2018-12-27')):
       expected = [
@@ -564,15 +556,17 @@ class LogsTest(BaseCombinedDbTest):
     self.assertTrue(actual[1].startswith('=== December 26, 2018 ==='))
     self.assertTrue(actual[2].startswith('=== December 25, 2018 ==='))
 
+  @patch('wp1.logs.redis_connect')
   @patch('wp1.logs.wiki_connect')
   @patch('wp1.logs.wp10_connect')
   @patch('wp1.logs.api')
   def test_upload_log_page_for_project(self, patched_api, patched_wp10,
-                                       patched_wiki):
+                                       patched_wiki, patched_redis):
     logs.update_log_page_for_project(b'Catholicism')
     call = patched_api.save_page.call_args[0]
     self.assertEqual('Update logs for past 7 days', call[2])
 
+  @patch('wp1.logs.redis_connect')
   @patch('wp1.logs.wiki_connect')
   @patch('wp1.logs.wp10_connect')
   @patch('wp1.logs.api')
@@ -580,7 +574,7 @@ class LogsTest(BaseCombinedDbTest):
          return_value=datetime(2018, 12, 28, 12))
   def test_upload_log_page_for_project_no_logs(self, patched_datetime,
                                                patched_api, patched_wp10,
-                                               patched_wiki):
+                                               patched_wiki, patched_redis):
     project_name = b'Catholicism'
     header = '<noinclude>{{Log}}</noinclude>\n'
     no_logs_msg = ("'''There were no logs for this project from December 21, "
@@ -589,13 +583,14 @@ class LogsTest(BaseCombinedDbTest):
     call = patched_api.save_page.call_args[0]
     self.assertEqual(header + no_logs_msg, call[1])
 
+  @patch('wp1.logs.redis_connect')
   @patch('wp1.logs.wiki_connect')
   @patch('wp1.logs.wp10_connect')
   @patch('wp1.logs.api')
   @patch('wp1.logs.generate_log_edits')
   def test_upload_log_page_for_project_huge_text(self, patched_generate,
                                                  patched_api, patched_wp10,
-                                                 patched_wiki):
+                                                 patched_wiki, patched_redis):
     project_name = b'Catholicism'
     header = '<noinclude>{{Log}}</noinclude>\n'
     text = 'a' * 1000 * 1024
@@ -604,13 +599,15 @@ class LogsTest(BaseCombinedDbTest):
     call = patched_api.save_page.call_args[0]
     self.assertEqual('%s%s\n%s' % (header, text, text), call[1])
 
+  @patch('wp1.logs.redis_connect')
   @patch('wp1.logs.wiki_connect')
   @patch('wp1.logs.wp10_connect')
   @patch('wp1.logs.api')
   @patch('wp1.logs.generate_log_edits')
   def test_upload_log_page_for_project_huge_give_up(self, patched_generate,
                                                     patched_api, patched_wp10,
-                                                    patched_wiki):
+                                                    patched_wiki,
+                                                    patched_redis):
     project_name = b'Catholicism'
     sorry_msg = ('Sorry, all of the logs for this date were too large to '
                  'upload.')
