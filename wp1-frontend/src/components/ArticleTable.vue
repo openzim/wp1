@@ -299,7 +299,9 @@ export default {
     },
     timestampLink: function (articleName, ts) {
       return `${import.meta.env.VITE_API_URL}/articles/${encodeURIComponent(
-        articleName
+        encodeURIComponent(
+          articleName // double encode article name
+        )
       )}/${encodeURIComponent(ts)}/redirect`;
     },
   },
