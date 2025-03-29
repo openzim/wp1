@@ -8,6 +8,7 @@ from wp1.base_db_test import BaseWikiDbTest, BaseWpOneDbTest, BaseCombinedDbTest
 from wp1.constants import TS_FORMAT
 from wp1.logic import page as logic_page
 from wp1.logic import project as logic_project
+from wp1.logic import log as logic_log
 from wp1.models.wp10.log import Log
 from wp1.models.wp10.move import Move
 from wp1.models.wp10.namespace import Namespace, NsType
@@ -21,10 +22,8 @@ def get_all_moves(wp10db):
     return [Move(**db_move) for db_move in cursor.fetchall()]
 
 
-def get_all_logs(wp10db):
-  with wp10db.cursor() as cursor:
-    cursor.execute('SELECT * FROM ' + Log.table_name)
-    return [Log(**db_log) for db_log in cursor.fetchall()]
+def get_all_logs(redis):
+  return logic_log.get_logs(redis)
 
 
 class LogicPageCategoryTest(BaseWikiDbTest):
@@ -251,8 +250,8 @@ class LogicPageMoveDbTest(BaseWpOneDbTest):
     self.timestamp_db = self.dt.strftime(TS_FORMAT).encode('utf-8')
 
   def test_new_move(self):
-    logic_page.update_page_moved(self.wp10db, self.project, self.old_ns,
-                                 self.old_article, self.new_ns,
+    logic_page.update_page_moved(self.wp10db, self.redis, self.project,
+                                 self.old_ns, self.old_article, self.new_ns,
                                  self.new_article, self.dt)
 
     with self.wp10db.cursor() as cursor:
@@ -271,17 +270,13 @@ class LogicPageMoveDbTest(BaseWpOneDbTest):
     self.assertEqual(self.timestamp_db, move.m_timestamp)
 
   def test_new_move_log(self):
-    logic_page.update_page_moved(self.wp10db, self.project, self.old_ns,
-                                 self.old_article, self.new_ns,
+    logic_page.update_page_moved(self.wp10db, self.redis, self.project,
+                                 self.old_ns, self.old_article, self.new_ns,
                                  self.new_article, self.dt)
 
-    with self.wp10db.cursor() as cursor:
-      cursor.execute(
-          '''
-          SELECT * FROM logging
-          WHERE l_article = %(old_article)s
-      ''', {'old_article': self.old_article})
-      log = Log(**cursor.fetchone())
+    logs = logic_log.get_logs(self.redis, article=self.old_article)
+    self.assertEqual(len(logs), 1)
+    log = logs[0]
 
     self.assertIsNotNone(log)
     self.assertEqual(self.old_ns, log.l_namespace)
@@ -292,25 +287,25 @@ class LogicPageMoveDbTest(BaseWpOneDbTest):
     self.assertEqual(self.timestamp_db, log.l_revision_timestamp)
 
   def test_does_not_add_existing_move(self):
-    logic_page.update_page_moved(self.wp10db, self.project, self.old_ns,
-                                 self.old_article, self.new_ns,
+    logic_page.update_page_moved(self.wp10db, self.redis, self.project,
+                                 self.old_ns, self.old_article, self.new_ns,
                                  self.new_article, self.dt)
 
-    logic_page.update_page_moved(self.wp10db, self.project, self.old_ns,
-                                 self.old_article, self.new_ns,
+    logic_page.update_page_moved(self.wp10db, self.redis, self.project,
+                                 self.old_ns, self.old_article, self.new_ns,
                                  self.new_article, self.dt)
 
     all_moves = get_all_moves(self.wp10db)
     self.assertEqual(1, len(all_moves))
 
   def test_does_not_add_existing_log(self):
-    logic_page.update_page_moved(self.wp10db, self.project, self.old_ns,
-                                 self.old_article, self.new_ns,
+    logic_page.update_page_moved(self.wp10db, self.redis, self.project,
+                                 self.old_ns, self.old_article, self.new_ns,
                                  self.new_article, self.dt)
 
-    logic_page.update_page_moved(self.wp10db, self.project, self.old_ns,
-                                 self.old_article, self.new_ns,
+    logic_page.update_page_moved(self.wp10db, self.redis, self.project,
+                                 self.old_ns, self.old_article, self.new_ns,
                                  self.new_article, self.dt)
 
-    all_logs = get_all_logs(self.wp10db)
+    all_logs = get_all_logs(self.redis)
     self.assertEqual(1, len(all_logs))
