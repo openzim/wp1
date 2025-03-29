@@ -193,3 +193,17 @@ of text than an actual article name.',
     }
     actual = simple_builder_test.validate(**params)
     self.assertEqual(expected, actual)
+
+  def test_non_en_url_stripping(self):
+    simple_builder_test = SimpleBuilder()
+    expected = (['Portugal', 'Europa', 'Marie_Curie'], [], [])
+    params = {
+        'list': [
+            'https://de.wikipedia.org/wiki/Portugal',
+            'https://de.wikipedia.org/wiki/Europa',
+            'https://de.wikipedia.org/w/index.php?title=Marie_Curie'
+        ],
+        'project': 'de.wikipedia.org'
+    }
+    actual = simple_builder_test.validate(**params)
+    self.assertEqual(expected, actual)
