@@ -256,9 +256,84 @@ class ScoresTest(BaseWpOneDbTest):
 
     self.assertEqual(expected, actual)
 
-  def test_update_db_pageviews(self):
-    scores.update_db_pageviews(self.wp10db, 'en', 'Statue_of_Liberty', 1234,
-                               100)
+  def test_reset_missing_articles_pageviews(self):
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+          'INSERT INTO page_scores (ps_lang, ps_article, ps_page_id, ps_views)'
+          '''VALUES
+        ("en", "Statue_of_Liberty", 1234, 100),
+        ("fr", "Tour_Eiffel", 5678, 200),
+        ("es", "Sagrada_Familia", 9101, 150)''')
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+          'INSERT INTO temp_pageviews (tp_lang, tp_article, tp_page_id, tp_views)'
+          '''VALUES
+        ("fr", "Tour_Eiffel", 5678, 200),
+        ("es", "Sagrada_Familia", 9101, 150)''')
+
+    scores.reset_missing_articles_pageviews(self.wp10db)
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT COUNT(*) as cnt FROM page_scores')
+      n = cursor.fetchone()['cnt']
+      self.assertEqual(3, n)
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT * FROM page_scores WHERE ps_page_id = 1234')
+      result = cursor.fetchone()
+      self.assertIsNotNone(result)
+      self.assertEqual(result['ps_lang'], b'en')
+      self.assertEqual(result['ps_article'], b'Statue_of_Liberty')
+      self.assertEqual(result['ps_page_id'], 1234)
+      self.assertEqual(result['ps_views'], 0)
+
+  def test_insert_temp_pageviews(self):
+    scores.insert_temp_pageviews(self.wp10db, 'en', 'Statue_of_Liberty', 1234,
+                                 100)
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT * FROM temp_pageviews WHERE tp_page_id = 1234')
+      result = cursor.fetchone()
+      self.assertIsNotNone(result)
+      self.assertEqual(result['tp_lang'], b'en')
+      self.assertEqual(result['tp_article'], b'Statue_of_Liberty')
+      self.assertEqual(result['tp_page_id'], 1234)
+      self.assertEqual(result['tp_views'], 100)
+
+  def test_insert_temp_pageviews_existing(self):
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+          'INSERT INTO temp_pageviews (tp_lang, tp_article, tp_page_id, tp_views)'
+          'VALUES ("en", "Statue_of_Liberty", 1234, 100)')
+
+    scores.insert_temp_pageviews(self.wp10db, 'en', 'Statue_of_Liberty', 1234,
+                                 200)
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT * FROM temp_pageviews WHERE tp_page_id = 1234')
+      result = cursor.fetchone()
+      self.assertIsNotNone(result)
+      self.assertEqual(result['tp_lang'], b'en')
+      self.assertEqual(result['tp_article'], b'Statue_of_Liberty')
+      self.assertEqual(result['tp_page_id'], 1234)
+      self.assertEqual(result['tp_views'], 200)
+
+  def test_swap_temp_pageviews_to_scores(self):
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+          'INSERT INTO temp_pageviews (tp_lang, tp_article, tp_page_id, tp_views)'
+          '''VALUES
+        ("en", "Statue_of_Liberty", 1234, 100),
+        ("fr", "Tour_Eiffel", 5678, 200),
+        ("es", "Sagrada_Familia", 9101, 150)''')
+
+    scores.swap_temp_pageviews_to_scores(self.wp10db)
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT COUNT(*) as cnt FROM page_scores')
+      n = cursor.fetchone()['cnt']
+      self.assertEqual(3, n)
 
     with self.wp10db.cursor() as cursor:
       cursor.execute('SELECT * FROM page_scores WHERE ps_page_id = 1234')
@@ -269,27 +344,28 @@ class ScoresTest(BaseWpOneDbTest):
       self.assertEqual(result['ps_page_id'], 1234)
       self.assertEqual(result['ps_views'], 100)
 
-  def test_update_db_pageviews_existing(self):
+  def test_truncate_temp_pageviews(self):
     with self.wp10db.cursor() as cursor:
       cursor.execute(
-          'INSERT INTO page_scores (ps_lang, ps_article, ps_page_id, ps_views) '
-          'VALUES ("en", "Statue_of_Liberty", 1234, 100)')
+          'INSERT INTO temp_pageviews (tp_lang, tp_article, tp_page_id, tp_views)'
+          '''VALUES
+        ("en", "Statue_of_Liberty", 1234, 100),
+        ("fr", "Tour_Eiffel", 5678, 200),
+        ("es", "Sagrada_Familia", 9101, 150)''')
 
-    scores.update_db_pageviews(self.wp10db, 'en', 'Statue_of_Liberty', 1234,
-                               200)
+    scores.truncate_temp_pageviews(self.wp10db)
 
     with self.wp10db.cursor() as cursor:
-      cursor.execute('SELECT * FROM page_scores WHERE ps_page_id = 1234')
-      result = cursor.fetchone()
-      self.assertIsNotNone(result)
-      self.assertEqual(result['ps_lang'], b'en')
-      self.assertEqual(result['ps_article'], b'Statue_of_Liberty')
-      self.assertEqual(result['ps_page_id'], 1234)
-      self.assertEqual(result['ps_views'], 200)
+      cursor.execute('SELECT COUNT(*) as cnt FROM temp_pageviews')
+      n = cursor.fetchone()['cnt']
+      self.assertEqual(0, n)
 
+  @patch('wp1.scores.wp10_connect')
   @patch('wp1.scores.download_pageviews')
   @patch('wp1.scores.pageview_components')
-  def test_update_pageviews(self, mock_components, mock_download):
+  def test_update_pageviews(self, mock_components, mock_download,
+                            mock_db_connect):
+    mock_db_connect.return_value = self.wp10db
     mock_components.return_value = (
         (b'en', b'Statue_of_Liberty', 100, 100),
         (b'en', b'Eiffel_Tower', 200, 200),
@@ -299,10 +375,47 @@ class ScoresTest(BaseWpOneDbTest):
     scores.update_pageviews(commit_after=2)
 
     mock_download.assert_called_once()
+
     with self.wp10db.cursor() as cursor:
       cursor.execute('SELECT COUNT(*) as cnt FROM page_scores')
       n = cursor.fetchone()['cnt']
       self.assertEqual(3, n)
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT COUNT(*) as cnt FROM temp_pageviews')
+      n = cursor.fetchone()['cnt']
+      self.assertEqual(0, n)
+
+  @patch('wp1.scores.wp10_connect')
+  @patch('wp1.scores.insert_temp_pageviews', side_effect=Exception("DB error"))
+  @patch('wp1.scores.download_pageviews')
+  @patch('wp1.scores.pageview_components')
+  def test_update_pageviews_rollback_on_error(self, mock_components,
+                                              mock_download, mock_insert,
+                                              mock_db_connect):
+    mock_db = MagicMock(return_value=self.wp10db)
+    mock_db_connect.return_value = mock_db
+    mock_components.return_value = (
+        (b'en', b'Statue_of_Liberty', 100, 100),
+        (b'en', b'Eiffel_Tower', 200, 200),
+        (b'fr', b'George-\xc3\x89tienne_Cartier_Monument', 300, 300),
+    )
+
+    scores.update_pageviews(commit_after=2)
+
+    mock_download.assert_called_once()
+    mock_insert.assert_called_once()
+    mock_db.rollback.assert_called_once()
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT COUNT(*) as cnt FROM page_scores')
+      n = cursor.fetchone()['cnt']
+      self.assertEqual(0, n)
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT COUNT(*) as cnt FROM temp_pageviews')
+      n = cursor.fetchone()['cnt']
+      self.assertEqual(0, n)
 
   @patch('wp1.scores.download_pageviews')
   @patch('wp1.scores.pageview_components')
