@@ -164,18 +164,46 @@ def pageview_components():
   yield tally.lang, tally.name, tally.page_id, tally.views
 
 
-def update_db_pageviews(wp10db, lang, article, page_id, views):
+def reset_missing_articles_pageviews(wp10db):
+  with wp10db.cursor() as cursor:
+    cursor.execute('''
+      UPDATE page_scores
+      LEFT JOIN temp_pageviews
+      ON page_scores.ps_article = temp_pageviews.tp_article
+      SET page_scores.ps_views = 0
+      WHERE temp_pageviews.tp_article IS NULL;
+      ''')
+  wp10db.commit()
+
+
+def insert_temp_pageviews(wp10db, lang, article, page_id, views):
   with wp10db.cursor() as cursor:
     cursor.execute(
-        '''INSERT INTO page_scores (ps_lang, ps_page_id, ps_article, ps_views)
-           VALUES (%(lang)s, %(page_id)s, %(article)s, %(views)s)
-           ON DUPLICATE KEY UPDATE ps_views = %(views)s
-        ''', {
+        '''INSERT INTO temp_pageviews (tp_lang, tp_page_id, tp_article, tp_views)
+              VALUES (%(lang)s, %(page_id)s, %(article)s, %(views)s)
+              ON DUPLICATE KEY UPDATE tp_views = %(views)s
+          ''', {
             'lang': lang,
             'page_id': page_id,
             'article': article,
             'views': views
         })
+
+
+def swap_temp_pageviews_to_scores(wp10db):
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+        '''INSERT INTO page_scores (ps_lang, ps_page_id, ps_article, ps_views)
+        SELECT tp_lang, tp_page_id, tp_article, tp_views
+        FROM temp_pageviews
+        ON DUPLICATE KEY UPDATE ps_views = VALUES(ps_views);''')
+    wp10db.commit()
+
+
+def truncate_temp_pageviews(wp10db):
+  with wp10db.cursor() as cursor:
+    cursor.execute("TRUNCATE TABLE temp_pageviews;")
+  wp10db.commit()
 
 
 def update_pageviews(filter_lang=None, commit_after=50000):
@@ -191,18 +219,28 @@ def update_pageviews(filter_lang=None, commit_after=50000):
     logger.info('Updating pageviews for %s', filter_lang.decode('utf-8'))
 
   wp10db = wp10_connect()
-  n = 0
-  for lang, article, page_id, views in pageview_components():
-    if filter_lang is None or lang == filter_lang:
-      update_db_pageviews(wp10db, lang, article, page_id, views)
+  try:
+    truncate_temp_pageviews(wp10db)
+    n = 0
+    for lang, article, page_id, views in pageview_components():
+      if filter_lang is None or lang == filter_lang:
+        insert_temp_pageviews(wp10db, lang, article, page_id, views)
 
-    n += 1
-    if n >= commit_after:
-      logger.debug('Committing')
-      wp10db.commit()
-      n = 0
-  wp10db.commit()
-  logger.info('Done')
+      n += 1
+      if n >= commit_after:
+        logger.debug('Commiting in temp db')
+        wp10db.commit()
+        n = 0
+    wp10db.commit()
+    logger.debug('Swaping data from temp db to scores db')
+    swap_temp_pageviews_to_scores(wp10db)
+    reset_missing_articles_pageviews(wp10db)
+    truncate_temp_pageviews(wp10db)
+    logger.info('Transaction Done')
+  except Exception as e:
+    wp10db.rollback()
+    truncate_temp_pageviews(wp10db)
+    logger.error("Transaction failed: %s", e)
 
 
 if __name__ == '__main__':
