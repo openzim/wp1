@@ -298,9 +298,11 @@ export default {
       return ts.split('T')[0];
     },
     timestampLink: function (articleName, ts) {
-      return `${import.meta.env.VITE_API_URL}/articles/${encodeURIComponent(
+      return `${
+        import.meta.env.VITE_API_URL
+      }/articles/redirect?name=${encodeURIComponent(
         articleName
-      )}/${encodeURIComponent(ts)}/redirect`;
+      )}&timestamp=${encodeURIComponent(ts)}`;
     },
   },
 };
