@@ -2,13 +2,13 @@
   <div>
     <div class="alert alert-info my-0" role="alert">
       {{ $t("welcomeMessage") }}
-      <a href="https://wp1.readthedocs.io/en/latest/">{{ $t("readDocs") }}</a>.
+      <a href="https://wp1.readthedocs.io/en/latest/">read the Docs</a>.
       {{ $t("provideFeedback") }}
       <a href="https://en.wikipedia.org/wiki/Wikipedia_talk:Version_1.0_Editorial_Team/Index">
         {{ $t("englishWikipedia") }}
       </a>.
     </div>
-    
+
     <div class="language-selector">
       <label for="language">{{ $t("language") }}: </label>
       <select v-model="selectedLanguage" @change="changeLanguage">
@@ -21,8 +21,20 @@
 
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
       <a class="navbar-brand" href="/">Wikipedia 1.0 Server</a>
-      
-      <div class="collapse navbar-collapse">
+
+      <button
+        class="navbar-toggler"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#navbarSupportedContent"
+        aria-controls="navbarSupportedContent"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+      >
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav mr-auto">
           <li class="nav-item">
             <router-link class="nav-link" to="/">{{ $t("projects") }}</router-link>
@@ -100,7 +112,18 @@ export default {
   },
   created() {
     this.identify();
-  }
+  },
+  watch: {
+    $route: function () {
+      this.loginInitiateUrl =
+        `${import.meta.env.VITE_API_URL}/oauth/initiate?next=` +
+        this.$route.path.toString().substr(1);
+    },
+  },
+  created: function () {
+    this.identify();
+  },
+
 };
 </script>
 
