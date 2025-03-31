@@ -30,10 +30,8 @@ Vue.use(VueRouter);
 
 const BASE_TITLE = 'Wikipedia 1.0 Server';
 
-import Vue from 'vue';
 import VueI18n from 'vue-i18n';
-import App from './App.vue';
-import router from './router';
+
 
 // Import translations
 import en from './locales/en.json';
@@ -54,12 +52,6 @@ const i18n = new VueI18n({
 });
 
 
-
-new Vue({
-  router,
-  i18n,
-  render: (h) => h(App),
-}).$mount('#app');
 
 
 const routes = [
@@ -228,12 +220,11 @@ router.beforeEach((to, from, next) => {
 });
 
 new Vue({
+  el: '#app',
+  router,
+  i18n,
   data: {
     isLoggedIn: false,
   },
-  el: '#app',
-  render: (h) => h(App),
-  router,
-  template: '<App/>',
-  components: { App },
+  render: h => h(App),
 });
