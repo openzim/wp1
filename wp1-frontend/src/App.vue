@@ -2,7 +2,7 @@
   <div>
     <div class="alert alert-info my-0" role="alert">
       {{ $t("welcomeMessage") }}
-      <a href="https://wp1.readthedocs.io/en/latest/">read the Docs</a>.
+      <a href="https://wp1.readthedocs.io/en/latest/">read the docs</a>.
       {{ $t("provideFeedback") }}
       <a href="https://en.wikipedia.org/wiki/Wikipedia_talk:Version_1.0_Editorial_Team/Index">
         {{ $t("englishWikipedia") }}
