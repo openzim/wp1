@@ -20,7 +20,7 @@ class ModelsLogTest(BaseWpOneDbTest):
                    l_old=b'NotA-Class',
                    l_new=b'Mid-Class',
                    l_revision_timestamp=b'2018-01-01T12:00:00Z')
-    logic_log.insert_or_update(self.wp10db, self.log)
+    logic_log.insert_or_update(self.redis, self.log)
 
   def test_timestamp_dt(self):
     dt = self.log.timestamp_dt
