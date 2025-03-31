@@ -53,7 +53,7 @@ const i18n = new VueI18n({
   messages: { en, fr, es, ar }
 });
 
-Vue.config.productionTip = false;
+
 
 new Vue({
   router,
