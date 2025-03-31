@@ -37,8 +37,8 @@ def get_pages_by_category(wikidb, category, ns=None):
       yield Page(**result)
 
 
-def update_page_moved(wp10db, project, old_ns, old_title, new_ns, new_title,
-                      move_timestamp_dt):
+def update_page_moved(wp10db, redis, project, old_ns, old_title, new_ns,
+                      new_title, move_timestamp_dt):
   logger.debug('Updating moves table for %s -> %s', old_title.decode('utf-8'),
                new_title.decode('utf-8'))
   db_timestamp = move_timestamp_dt.strftime(TS_FORMAT).encode('utf-8')
@@ -62,7 +62,7 @@ def update_page_moved(wp10db, project, old_ns, old_title, new_ns, new_title,
                 l_old=b'',
                 l_new=b'',
                 l_revision_timestamp=db_timestamp)
-  logic_log.insert_or_update(wp10db, new_log)
+  logic_log.insert_or_update(redis, new_log)
 
 
 def _get_redirects_from_db(wikidb, namespace, title, timestamp_dt):
