@@ -13,7 +13,8 @@ class ArticlesTest(BaseWebTestcase):
 
     with self.override_db(self.app), self.app.test_client() as client:
       rv = client.get(
-          '/v1/articles/Web%20development/2020-01-13T10:00:00Z/redirect')
+          '/v1/articles/redirect?name=Web%20development&timestamp=2020-01-13T10:00:00Z'
+      )
       self.assertEqual('302 FOUND', rv.status)
 
       expected_url = ('%sindex.php?title=%s&oldid=%s' %
@@ -27,5 +28,6 @@ class ArticlesTest(BaseWebTestcase):
 
     with self.override_db(self.app), self.app.test_client() as client:
       rv = client.get(
-          '/v1/articles/Web%20development/2020-01-13T10:00:00Z/redirect')
+          '/v1/articles/redirect?name=Web%20development&timestamp=2020-01-13T10:00:00Z'
+      )
       self.assertEqual('404 NOT FOUND', rv.status)
