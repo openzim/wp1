@@ -8,6 +8,7 @@ import csv
 from datetime import datetime, timedelta
 import requests
 
+from wp1.credentials import ENV, CREDENTIALS
 from wp1.constants import WP1_USER_AGENT
 from wp1.exceptions import Wp1ScoreProcessingError
 from wp1.time import get_current_datetime
@@ -17,14 +18,6 @@ PageviewRecord = namedtuple('PageviewRecord',
                             ['lang', 'name', 'page_id', 'views'])
 
 logger = logging.getLogger(__name__)
-
-try:
-  from wp1.credentials import ENV, CREDENTIALS
-except ImportError:
-  logger.exception('The file credentials.py must be populated manually in '
-                   'order to download pageviews')
-  CREDENTIALS = None
-  ENV = None
 
 
 def wiki_languages():

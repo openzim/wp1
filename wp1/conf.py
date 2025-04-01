@@ -2,11 +2,7 @@ import os
 
 import json
 
-try:
-  from wp1.credentials import CONF_LANG
-except ImportError:
-  # Default to English for unit tests.
-  CONF_LANG = 'en'
+from wp1.credentials import CONF_LANG
 
 
 def _get_conf_path():

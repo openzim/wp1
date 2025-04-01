@@ -1,16 +1,9 @@
 import logging
 
 from kiwixstorage import KiwixStorage
+from wp1.credentials import CREDENTIALS, ENV
 
 logger = logging.getLogger(__name__)
-
-try:
-  from wp1.credentials import CREDENTIALS, ENV
-except ImportError:
-  logger.exception('The file credentials.py must be populated manually in '
-                   'order to connect to the backend storage system.')
-  CREDENTIALS = None
-  ENV = None
 
 
 def connect_storage():

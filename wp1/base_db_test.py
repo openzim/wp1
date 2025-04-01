@@ -5,6 +5,7 @@ import sys
 
 import pymysql
 
+from wp1.credentials import CREDENTIALS, ENV
 from wp1.environment import Environment
 from wp1.models.wp10.selection import Selection
 
@@ -13,13 +14,6 @@ from wp1.redis_db import connect as redis_connect
 from wp1.models.wp10.rating import Rating
 
 logger = logging.getLogger(__name__)
-
-try:
-  from wp1.credentials import CREDENTIALS, ENV
-except ImportError:
-  logger.exception('The credentials.py file must be populated to run tests.')
-  CREDENTIALS = None
-  ENV = None
 
 
 def parse_sql(filename):

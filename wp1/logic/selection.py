@@ -12,13 +12,10 @@ from wp1.storage import connect_storage
 from wp1.logic import util
 from wp1.timestamp import utcnow
 from wp1 import zimfarm
+from wp1.credentials import ENV, CREDENTIALS
 
-try:
-  from wp1.credentials import ENV, CREDENTIALS
-  S3_PUBLIC_URL = CREDENTIALS.get(ENV, {}).get('CLIENT_URL', {}).get(
-      's3', 'http://credentials.not.found.fake')
-except ImportError:
-  S3_PUBLIC_URL = 'http://credentials.not.found.fake'
+S3_PUBLIC_URL = CREDENTIALS.get(ENV, {}).get('CLIENT_URL', {}).get(
+    's3', 'http://credentials.not.found.fake')
 
 DEFAULT_SELECTION_NAME = 'selection'
 

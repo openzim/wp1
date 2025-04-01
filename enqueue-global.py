@@ -4,19 +4,12 @@ from redis import Redis
 from rq import Queue
 
 from wp1.environment import Environment
+from wp1.credentials import ENV, CREDENTIALS
 from wp1 import constants
 from wp1 import tables
 import wp1.logic.project as logic_project
 
 logger = logging.getLogger(__name__)
-
-try:
-  from wp1.credentials import ENV, CREDENTIALS
-except ImportError:
-  logger.exception('The file credentials.py must be populated manually in '
-                   'order to connect to Redis')
-  CREDENTIALS = None
-  ENV = None
 
 
 def main():

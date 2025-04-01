@@ -3,24 +3,21 @@ import flask
 from flask import jsonify, session
 from mwoauth import ConsumerToken, Handshaker
 from wp1.web.db import get_db
+from wp1.credentials import ENV, CREDENTIALS
 from wp1.models.wp10.user import User
 
 oauth = flask.Blueprint('oauth', __name__)
 
 try:
   # The credentials module isn't checked in and may be missing
-  from wp1.credentials import ENV, CREDENTIALS
   consumer_token = ConsumerToken(CREDENTIALS[ENV]['MWOAUTH']['consumer_key'],
                                  CREDENTIALS[ENV]['MWOAUTH']['consumer_secret'])
   handshaker = Handshaker("https://en.wikipedia.org/w/index.php",
                           consumer_token)
   homepage_url = CREDENTIALS[ENV]['CLIENT_URL']['homepage']
-except (ImportError, KeyError):
-  print(
-      'No credentials.py file found, or credentials malformed, Please add your '
-      'mwoauth credentials in credentials.py')
-  ENV = None
-  CREDENTIALS = None
+except KeyError:
+  print('Credentials malformed, Please add your '
+        'mwoauth credentials in credentials.py')
   handshaker = None
   homepage_url = None
 
