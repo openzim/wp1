@@ -1,7 +1,7 @@
 import attr
 import flask
 from flask import jsonify, session
-from mwoauth import ConsumerToken, Handshaker
+from mwoauth import ConsumerToken, Handshaker, RequestToken
 from wp1.web.db import get_db
 from wp1.models.wp10.user import User
 
@@ -33,7 +33,7 @@ def initiate():
       return flask.redirect(f"{homepage_url}{str(session['next_path'])}")
     return flask.redirect(homepage_url)
   redirect, request_token = handshaker.initiate()
-  session['request_token'] = request_token
+  session['request_token'] = { 'key': request_token.key, 'secret': request_token.secret }
   return flask.redirect(redirect)
 
 
@@ -43,7 +43,8 @@ def complete():
     flask.abort(404, 'User does not exist')
 
   query_string = str(flask.request.query_string.decode('utf-8'))
-  access_token = handshaker.complete(session['request_token'], query_string)
+  request_token = RequestToken(key = session['request_token']['key'], secret = session['request_token']['secret'])
+  access_token = handshaker.complete(request_token, query_string)
   session.pop('request_token')
   identity = handshaker.identify(access_token)
 
