@@ -36,19 +36,19 @@ import VueI18n from 'vue-i18n';
 // Import translations
 import en from './locales/en.json';
 import fr from './locales/fr.json';
-import es from './locales/es.json';
+import sp from './locales/sp.json';
 import ar from './locales/ar.json';
 
 Vue.use(VueI18n);
 
 const userLang = navigator.language.split('-')[0]; // Detect browser language
-const availableLanguages = ['en', 'fr', 'es', 'ar'];
+const availableLanguages = ['en', 'fr', 'sp', 'ar'];
 const defaultLanguage = availableLanguages.includes(userLang) ? userLang : 'en';
 
 const i18n = new VueI18n({
   locale: defaultLanguage,
   fallbackLocale: 'en',
-  messages: { en, fr, es, ar }
+  messages: { en, fr, sp, ar }
 });
 
 
