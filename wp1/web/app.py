@@ -14,33 +14,23 @@ from wp1.web.articles import articles
 from wp1.web.builders import builders
 from wp1.web.projects import projects
 from wp1.web.selection import selection
+from wp1.credentials import ENV, CREDENTIALS
 from wp1.web.sites import sites
 from wp1.web.dev.projects import dev_projects
-
-try:
-  # The credentials module isn't checked in and may be missing
-  from wp1.credentials import ENV, CREDENTIALS
-except ImportError:
-  print('No credentials.py file found. Development overlay will '
-        'not be enabled.')
-  ENV = None
-  CREDENTIALS = None
 
 
 def get_redis_creds():
   try:
-    from wp1.credentials import ENV, CREDENTIALS
     return CREDENTIALS[ENV]['REDIS']
-  except (ImportError, KeyError):
+  except KeyError:
     print('No REDIS_CREDS found, using defaults.')
     return None
 
 
 def get_secret_key():
   try:
-    from wp1.credentials import ENV, CREDENTIALS
     return CREDENTIALS[ENV]['SESSION']['secret_key']
-  except (ImportError, KeyError):
+  except KeyError:
     print('No secret_key found, using defaults.')
     return 'WP1'
 

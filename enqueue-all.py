@@ -8,13 +8,6 @@ from wp1.redis_db import connect as redis_connect
 
 logger = logging.getLogger(__name__)
 
-try:
-  from wp1.credentials import ENV, CREDENTIALS
-except ImportError:
-  logger.exception('The file credentials.py must be populated manually in '
-                   'order to connect to Redis')
-  raise
-
 
 def main():
   logging.basicConfig(level=logging.INFO)

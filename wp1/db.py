@@ -7,15 +7,9 @@ import pymysql.cursors
 import pymysql.err
 import socks
 
-logger = logging.getLogger(__name__)
+from wp1.credentials import CREDENTIALS, ENV
 
-try:
-  from wp1.credentials import CREDENTIALS, ENV
-except ImportError:
-  logger.exception('The file credentials.py must be populated manually in '
-                   'order to connect to the required databases')
-  CREDENTIALS = None
-  ENV = None
+logger = logging.getLogger(__name__)
 
 RETRY_TIME_SECONDS = 5
 

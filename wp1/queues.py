@@ -13,18 +13,11 @@ import wp1.logic.builder as logic_builder
 import wp1.logic.project as logic_project
 from wp1.wiki_db import connect as wiki_connect
 from wp1 import logs
-from wp1 import redis_db
 from wp1 import tables
 from wp1.timestamp import utcnow
+from wp1.credentials import ENV
 
 logger = logging.getLogger(__name__)
-
-try:
-  from wp1.credentials import ENV
-except ImportError:
-  logger.exception('The file credentials.py must be populated manually in '
-                   'order to connect to Redis')
-  ENV = None
 
 
 def _get_queues(redis, manual=False):

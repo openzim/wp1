@@ -5,15 +5,15 @@ import os
 import mwclient
 import requests
 
+from wp1.credentials import ENV, CREDENTIALS
 logger = logging.getLogger(__name__)
 MW_USER_AGENT = 'WP1.0Bot/3.0. Run by User:Audiodude. Using mwclient/0.9.1'
 
 
 def get_credentials():
   try:
-    from wp1.credentials import ENV, CREDENTIALS
     return CREDENTIALS[ENV]['API']
-  except (ImportError, KeyError):
+  except KeyError:
     # No credentials, probably in development environment.
     pass
 

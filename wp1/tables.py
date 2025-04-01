@@ -9,20 +9,11 @@ from redis import Redis
 from wp1 import api
 from wp1.conf import get_conf
 from wp1.constants import LIST_URL, LIST_V2_URL, WIKI_BASE
-from wp1.models.wp10.category import Category
-from wp1.models.wp10.rating import Rating
 from wp1.templates import env as jinja_env
 from wp1.wp10_db import connect as wp10_connect
+from wp1.credentials import ENV, CREDENTIALS
 
 logger = logging.getLogger(__name__)
-
-try:
-  from wp1.credentials import ENV, CREDENTIALS
-except ImportError:
-  logger.exception('The file credentials.py must be populated manually in '
-                   'order to connect to Redis')
-  CREDENTIALS = None
-  ENV = None
 
 
 def get_redis():
