@@ -18,6 +18,33 @@ services:
       - wp1bot-dev
     restart: always
 
+  minio:
+    image: minio/minio
+    container_name: wp1bot-minio-dev
+    ports:
+      - '9000:9000' #api
+      - '9001:9001' #web console
+    environment:
+      - MINIO_ROOT_USER=minio_key
+      - MINIO_ROOT_PASSWORD=minio_secret
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    networks:
+      - wp1bot-dev
+    restart: always
+
+  createbuckets:
+    image: minio/mc
+    container_name: wp1bot-minio-setup
+    depends_on:
+      - minio
+    networks:
+      - wp1bot-dev
+    volumes:
+      - ./docker/minio/setup-buckets.sh:/setup-buckets.sh
+    entrypoint: [ "/bin/sh", "/setup-buckets.sh" ]
+
   dev-workers:
     build:
       context: .
@@ -33,6 +60,11 @@ services:
     depends_on:
       - redis
       - dev-database
+      - minio
 
 networks:
   wp1bot-dev:
+
+
+volumes:
+  minio-data:
