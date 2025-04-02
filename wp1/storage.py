@@ -7,8 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 def connect_storage():
-  if CREDENTIALS is None or ENV is None or CREDENTIALS[ENV].get(
-      'STORAGE') is None:
+  if CREDENTIALS[ENV].get('STORAGE') is None:
     raise ValueError('storage (s3) credentials in ENV=%s are None' % ENV)
   creds = CREDENTIALS[ENV]['STORAGE']
   connect_str = (
