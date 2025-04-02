@@ -13,7 +13,7 @@
       <label for="language">{{ $t("language") }}: </label>
       <select v-model="selectedLanguage" @change="changeLanguage">
         <option value="en">English</option>
-        <option value="es">Español</option>
+        <option value="sp">Español</option>
         <option value="fr">Français</option>
         <option value="ar">العربية</option>
       </select>
@@ -25,8 +25,8 @@
       <button
         class="navbar-toggler"
         type="button"
-        data-bs-toggle="collapse"
-        data-bs-target="#navbarSupportedContent"
+        data-toggle="collapse"
+        data-target="#navbarSupportedContent"
         aria-controls="navbarSupportedContent"
         aria-expanded="false"
         aria-label="Toggle navigation"
