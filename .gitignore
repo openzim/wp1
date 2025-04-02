@@ -16,3 +16,4 @@ cookies.txt
 
 # Don't commit logs
 log/**
+node_modules/
