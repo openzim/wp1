@@ -1,22 +1,32 @@
 <template>
   <div>
     <div class="alert alert-info my-0" role="alert">
-      Welcome to the latest version of WP 1.0! Documentation is on
-      <a href="https://wp1.readthedocs.io/en/latest/">read the docs</a>. Please
-      provide all feedback on
-      <a
-        href="https://en.wikipedia.org/wiki/Wikipedia_talk:Version_1.0_Editorial_Team/Index"
-        >English Wikipedia</a
-      >.
+      {{ $t("welcomeMessage") }}
+      <a href="https://wp1.readthedocs.io/en/latest/">read the docs</a>.
+      {{ $t("provideFeedback") }}
+      <a href="https://en.wikipedia.org/wiki/Wikipedia_talk:Version_1.0_Editorial_Team/Index">
+        {{ $t("englishWikipedia") }}
+      </a>.
     </div>
-    <div id="replag-embed" data-wiki="en.wikipedia.org"></div>
+
+    <div class="language-selector">
+      <label for="language">{{ $t("language") }}: </label>
+      <select v-model="selectedLanguage" @change="changeLanguage">
+        <option value="en">English</option>
+        <option value="es">Español</option>
+        <option value="fr">Français</option>
+        <option value="ar">العربية</option>
+      </select>
+    </div>
+
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
       <a class="navbar-brand" href="/">Wikipedia 1.0 Server</a>
+
       <button
         class="navbar-toggler"
         type="button"
-        data-toggle="collapse"
-        data-target="#navbarSupportedContent"
+        data-bs-toggle="collapse"
+        data-bs-target="#navbarSupportedContent"
         aria-controls="navbarSupportedContent"
         aria-expanded="false"
         aria-label="Toggle navigation"
@@ -26,62 +36,34 @@
 
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav mr-auto">
-          <li
-            :class="
-              'nav-item ' +
-              (!this.$route.path.startsWith('/update') &&
-              !this.$route.path.startsWith('/compare') &&
-              !this.$route.path.startsWith('/selections')
-                ? 'active'
-                : '')
-            "
-          >
-            <router-link class="nav-link" to="/">Projects</router-link>
+          <li class="nav-item">
+            <router-link class="nav-link" to="/">{{ $t("projects") }}</router-link>
           </li>
-          <li
-            :class="
-              'nav-item ' +
-              (this.$route.path.startsWith('/selections') ? 'active' : '')
-            "
-          >
-            <router-link class="nav-link" to="/selections/user"
-              >Selections</router-link
-            >
+          <li class="nav-item">
+            <router-link class="nav-link" to="/selections/user">{{ $t("selections") }}</router-link>
           </li>
-          <li
-            :class="
-              'nav-item ' +
-              (this.$route.path.startsWith('/update') ? 'active' : '')
-            "
-          >
-            <router-link class="nav-link" to="/update"
-              >Manual Update</router-link
-            >
+          <li class="nav-item">
+            <router-link class="nav-link" to="/update">{{ $t("manualUpdate") }}</router-link>
           </li>
-          <li
-            :class="
-              'nav-item ' +
-              (this.$route.path.startsWith('/compare') ? 'active' : '')
-            "
-          >
-            <router-link class="nav-link" to="/compare"
-              >Compare Projects</router-link
-            >
+          <li class="nav-item">
+            <router-link class="nav-link" to="/compare">{{ $t("compareProjects") }}</router-link>
           </li>
         </ul>
+
         <div>
-          <div v-if="this.username">
-            <span class="username"> {{ this.username }} </span>
+          <div v-if="username">
+            <span class="username"> {{ username }} </span>
             <button type="button" class="btn btn-secondary" @click="logout">
-              Logout
+              {{ $t("logout") }}
             </button>
           </div>
-          <a v-else :href="this.loginInitiateUrl"
-            ><button type="button" class="btn btn-primary">Login</button>
+          <a v-else :href="loginInitiateUrl">
+            <button type="button" class="btn btn-primary">{{ $t("login") }}</button>
           </a>
         </div>
       </div>
     </nav>
+
     <div id="app">
       <router-view></router-view>
     </div>
@@ -91,10 +73,11 @@
 <script>
 export default {
   name: 'app',
-  data: function () {
+  data() {
     return {
       username: null,
       loginInitiateUrl: `${import.meta.env.VITE_API_URL}/oauth/initiate`,
+      selectedLanguage: localStorage.getItem('lang') || 'en'
     };
   },
   methods: {
@@ -103,7 +86,6 @@ export default {
         credentials: 'include',
       });
       this.username = null;
-      this.$root.$data.isLoggedIn = false;
       this.$router.push({ path: `/` });
     },
     identify: async function () {
@@ -114,23 +96,22 @@ export default {
         `${import.meta.env.VITE_API_URL}/oauth/identify`,
         {
           credentials: 'include',
-        },
+        }
       )
-        .then((response) => {
-          if (response.ok) {
-            return response.json();
-          } else {
-            throw new Error(response.status);
-          }
-        })
-        .catch((err) => {
-          console.error(err);
-        });
+        .then((response) => (response.ok ? response.json() : Promise.reject(response.status)))
+        .catch((err) => console.error(err));
+
       if (data) {
         this.username = data.username;
-        this.$root.$data.isLoggedIn = true;
       }
     },
+    changeLanguage() {
+      this.$i18n.locale = this.selectedLanguage;
+      localStorage.setItem('lang', this.selectedLanguage);
+    }
+  },
+  created() {
+    this.identify();
   },
   watch: {
     $route: function () {
@@ -142,6 +123,7 @@ export default {
   created: function () {
     this.identify();
   },
+
 };
 </script>
 
@@ -155,18 +137,17 @@ a:hover {
 a:visited {
   color: #000 !important;
 }
-
 .btn-primary {
   background-color: #0071eb;
 }
-
 .row {
   margin-top: 10px;
 }
-
 .username {
-  /* Center the username vertically */
   position: relative;
   top: 2px;
+}
+.language-selector {
+  margin: 10px;
 }
 </style>

@@ -23,11 +23,36 @@ import UpdatePage from './components/UpdatePage.vue';
 import ZimFile from './components/ZimFile.vue';
 import WikiProjectBuilder from './components/WikiProjectBuilder.vue';
 
+
 Vue.config.productionTip = false;
 
 Vue.use(VueRouter);
 
 const BASE_TITLE = 'Wikipedia 1.0 Server';
+
+import VueI18n from 'vue-i18n';
+
+
+// Import translations
+import en from './locales/en.json';
+import fr from './locales/fr.json';
+import sp from './locales/sp.json';
+import ar from './locales/ar.json';
+
+Vue.use(VueI18n);
+
+const userLang = navigator.language.split('-')[0]; // Detect browser language
+const availableLanguages = ['en', 'fr', 'sp', 'ar'];
+const defaultLanguage = availableLanguages.includes(userLang) ? userLang : 'en';
+
+const i18n = new VueI18n({
+  locale: defaultLanguage,
+  fallbackLocale: 'en',
+  messages: { en, fr, sp, ar }
+});
+
+
+
 
 const routes = [
   {
@@ -195,12 +220,11 @@ router.beforeEach((to, from, next) => {
 });
 
 new Vue({
+  el: '#app',
+  router,
+  i18n,
   data: {
     isLoggedIn: false,
   },
-  el: '#app',
-  render: (h) => h(App),
-  router,
-  template: '<App/>',
-  components: { App },
+  render: h => h(App),
 });
