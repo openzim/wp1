@@ -59,13 +59,11 @@ def _create_or_update_builder(wp10db, data, builder_id=None):
                                                       params,
                                                       model,
                                                       builder_id=builder_id)
-  # Either the builder was not found or the user ID was not correct. Nothing was
-  # updated, return 404.
+  
   if builder_id is None:
     flask.abort(404)
 
-  # The builder has been updated. Enqueue a task to materialize selections and
-  # update the current version.
+  
   queues.enqueue_materialize(redis, Builder, builder_id,
                              'text/tab-separated-values')
   return flask.jsonify({'success': True, 'items': {}})
@@ -96,7 +94,7 @@ def get_builder(builder_id):
   except ObjectNotFoundError:
     flask.abort(404)
 
-  # Don't return the builder unless it belongs to this user.
+  
   user = flask.session.get('user')
   builder_user_id = builder.b_user_id.decode('utf-8')
   logged_in_user_id = str(user['identity']['sub'])
@@ -201,14 +199,14 @@ def update_zimfarm_status():
   wp10db = get_db('wp10db')
 
   if data.get('status') == 'failed':
-    # Update the status as FAILED and return.
+    
     logic_selection.update_zimfarm_task(wp10db, task_id, 'FAILED')
     return '', 204
 
   files = data.get('files', {})
   for key, value in files.items():
     if value['status'] == 'uploaded':
-      # Update the status as FILE_READY and return.
+      
       logic_selection.update_zimfarm_task(wp10db,
                                           task_id,
                                           'FILE_READY',
@@ -217,7 +215,7 @@ def update_zimfarm_status():
 
   found = logic_selection.update_zimfarm_task(wp10db, task_id, 'ENDED')
   if found:
-    # If the task_id exists, start polling for the file to be ready.
+    
     redis = get_redis()
     queues.poll_for_zim_file_status(redis, task_id)
   return '', 204

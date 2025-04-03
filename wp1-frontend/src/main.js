@@ -22,6 +22,7 @@ import ProjectPage from './components/ProjectPage.vue';
 import UpdatePage from './components/UpdatePage.vue';
 import ZimFile from './components/ZimFile.vue';
 import WikiProjectBuilder from './components/WikiProjectBuilder.vue';
+import ExpiredZim from './components/ExpiredZim.vue';
 
 Vue.config.productionTip = false;
 
@@ -30,177 +31,61 @@ Vue.use(VueRouter);
 const BASE_TITLE = 'Wikipedia 1.0 Server';
 
 const routes = [
-  {
-    path: '/',
-    component: IndexPage,
-    meta: { title: () => BASE_TITLE },
-  },
-  {
-    path: '/update/',
-    component: UpdatePage,
-    meta: { title: () => BASE_TITLE + ' - Manual Update' },
-  },
-  {
-    path: '/update/:projectName',
-    component: UpdatePage,
-    props: (route) => ({
-      incomingSearch: route.params.projectName,
-    }),
-    meta: {
-      title: (route) =>
-        BASE_TITLE + ' - Manual Update - ' + route.params.projectName,
-    },
-  },
-  {
-    path: '/project/:projectName',
-    component: ProjectPage,
-    meta: {
-      title: (route) => BASE_TITLE + ' - ' + route.params.projectName,
-    },
-  },
-  {
-    path: '/project/:projectName/articles',
-    component: ArticlePage,
-    props: (route) => ({
-      currentProject: route.params.projectName,
-    }),
-    meta: {
-      title: (route) =>
-        BASE_TITLE + ' - ' + route.params.projectName + ' articles',
-    },
-  },
-  {
-    path: '/compare/',
-    component: ComparePage,
-    meta: {
-      title: () => BASE_TITLE + ' - Comparing projects',
-    },
-  },
-  {
-    path: '/compare/:projectNameA/:projectNameB',
-    component: ComparePage,
-    props: (route) => ({
-      incomingSearchA: route.params.projectNameA,
-      incomingSearchB: route.params.projectNameB,
-    }),
-    meta: {
-      title: (route) =>
-        BASE_TITLE +
-        ' - Comparing ' +
-        route.params.projectNameA +
-        ' and ' +
-        route.params.projectNameB,
-    },
-  },
-  {
-    path: '/selections/user',
-    component: MyLists,
-    meta: {
-      title: () => BASE_TITLE + ' - My Selections',
-    },
-  },
-  {
-    path: '/selections/simple',
-    component: SimpleBuilder,
-    meta: {
-      title: () => BASE_TITLE + ' - Create Simple Selection',
-    },
-  },
-  {
-    path: '/selections/sparql',
-    component: SparqlBuilder,
-    meta: {
-      title: () => BASE_TITLE + ' - Create SPARQL Selection',
-    },
-  },
-  {
-    path: '/selections/petscan',
-    component: PetscanBuilder,
-    meta: {
-      title: () => BASE_TITLE + ' - Create Petscan Selection',
-    },
-  },
-  {
-    path: '/selections/book',
-    component: BookBuilder,
-    meta: {
-      title: () => BASE_TITLE + ' - Create Book Selection',
-    },
-  },
-  {
-    path: '/selections/wikiproject',
-    component: WikiProjectBuilder,
-    meta: {
-      title: () => BASE_TITLE + ' - Edit WikiProject Selection',
-    },
-  },
-  {
-    path: '/selections/simple/:builder_id',
-    component: SimpleBuilder,
-    meta: {
-      title: () => BASE_TITLE + ' - Edit Simple Selection',
-    },
-  },
-  {
-    path: '/selections/sparql/:builder_id',
-    component: SparqlBuilder,
-    meta: {
-      title: () => BASE_TITLE + ' - Edit SPARQL Selection',
-    },
-  },
-  {
-    path: '/selections/petscan/:builder_id',
-    component: PetscanBuilder,
-    meta: {
-      title: () => BASE_TITLE + ' - Edit Petscan Selection',
-    },
-  },
-  {
-    path: '/selections/book/:builder_id',
-    component: BookBuilder,
-    meta: {
-      title: () => BASE_TITLE + ' - Edit Book Selection',
-    },
-  },
-  {
-    path: '/selections/wikiproject/:builder_id',
-    component: WikiProjectBuilder,
-    meta: {
-      title: () => BASE_TITLE + ' - Edit WikiProject Selection',
-    },
-  },
-  {
-    path: '/selections/:builder_id/zim',
-    component: ZimFile,
-    meta: {
-      title: () => BASE_TITLE + ' - ZIM file',
-    },
-  },
+  { path: '/', component: IndexPage, meta: { title: () => BASE_TITLE } },
+  { path: '/update/', component: UpdatePage, meta: { title: () => BASE_TITLE + ' - Manual Update' } },
+  { path: '/project/:projectName', component: ProjectPage, meta: { title: (route) => BASE_TITLE + ' - ' + route.params.projectName } },
+  { path: '/compare/', component: ComparePage, meta: { title: () => BASE_TITLE + ' - Comparing projects' } },
+  { path: '/selections/user', component: MyLists, meta: { title: () => BASE_TITLE + ' - My Selections' } },
+  { path: '/selections/simple', component: SimpleBuilder, meta: { title: () => BASE_TITLE + ' - Create Simple Selection' } },
+  { path: '/selections/sparql', component: SparqlBuilder, meta: { title: () => BASE_TITLE + ' - Create SPARQL Selection' } },
+  { path: '/selections/petscan', component: PetscanBuilder, meta: { title: () => BASE_TITLE + ' - Create Petscan Selection' } },
+  { path: '/selections/book', component: BookBuilder, meta: { title: () => BASE_TITLE + ' - Create Book Selection' } },
+  { path: '/selections/wikiproject', component: WikiProjectBuilder, meta: { title: () => BASE_TITLE + ' - Edit WikiProject Selection' } },
+  { path: '/selections/:builder_id/zim', component: ZimFile, meta: { title: () => BASE_TITLE + ' - ZIM file' } },
+  { path: '/expired-zim', component: ExpiredZim, meta: { title: () => BASE_TITLE + ' - ZIM Expired' } },
 ];
 
 const router = new VueRouter({
+  mode: 'history',
   routes,
   scrollBehavior(to, from, savedPosition) {
-    if (savedPosition) {
-      return savedPosition;
-    } else {
-      return { x: 0, y: 0 };
-    }
+    if (savedPosition) return savedPosition;
+    return { x: 0, y: 0 };
   },
 });
 
-router.beforeEach((to, from, next) => {
+
+async function checkZimFileExpiration() {
+  const zimUrl = 'https://s3.wasabisys.com/zim-storage/latest.zim'; 
+  try {
+    const response = await fetch(zimUrl, { method: 'HEAD' });
+    if (!response.ok) {
+      console.warn('ZIM file not found, redirecting to /expired-zim'); 
+      router.push('/expired-zim');
+    } else {
+      console.log('ZIM file is available'); 
+    }
+  } catch (error) {
+    console.error('Error checking ZIM file:', error);
+    router.push('/expired-zim');
+  }
+}
+
+
+router.beforeEach(async (to, from, next) => {
+  console.log(`Navigating to: ${to.path}`); 
   document.title = to.meta.title(to);
+  
+  if (to.path !== '/expired-zim') {
+    await checkZimFileExpiration(); 
+  }
+  
   next();
 });
 
 new Vue({
-  data: {
-    isLoggedIn: false,
-  },
   el: '#app',
-  render: (h) => h(App),
   router,
-  template: '<App/>',
+  render: (h) => h(App),
   components: { App },
 });
