@@ -225,10 +225,18 @@ def update_zimfarm_status():
 
 @builders.route('/<builder_id>/zim/latest')
 def latest_zim_file_for_builder(builder_id):
-  wp10db = get_db('wp10db')
+    wp10db = get_db('wp10db')
 
-  url = logic_builder.latest_zim_file_url_for(wp10db, builder_id)
-  if not url:
-    flask.abort(404)
+    url = logic_builder.latest_zim_file_url_for(wp10db, builder_id)
+    if not url:
+        flask.abort(404)
 
-  return flask.redirect(url, code=302)
+   
+    try:
+        response = requests.head(url, timeout=5)
+        if response.status_code == 404:
+            return flask.redirect('/expired-zim', code=302)  
+    except requests.RequestException:
+        return flask.abort(500, "Error checking ZIM file status.")
+
+    return flask.redirect(url, code=302)
