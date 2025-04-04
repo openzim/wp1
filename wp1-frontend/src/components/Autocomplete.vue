@@ -30,6 +30,9 @@
       <button v-on:click="onButtonClick()" class="btn btn-primary">
         Select Project
       </button>
+      <div class="invalid-feedback" >
+        Please provide projects
+      </div>
     </div>
     <ul tabindex="0" ref="list" class="results" v-show="isOpen">
       <li

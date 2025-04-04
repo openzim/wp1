@@ -29,15 +29,12 @@ describe('the update wikiproject list page', () => {
 
       it('displays builder information', () => {
         cy.get('#listName > .form-control').should('have.value', 'Builder 3');
-        cy.get('#include-items').should(
-          'have.value',
-          'British Columbia road transport\nNew Brunswick road transport',
-        );
+        cy.get('#include-projects').children().should('have.length', 2);
+        cy.get('#include-projects').children().eq(0).should('contain.text', 'British Columbia road transport');
+        cy.get('#include-projects').children().eq(1).should('contain.text', 'New Brunswick road transport');
+        cy.get('#exclude-projects').children().should('have.length', 1);
+        cy.get('#exclude-projects').children().eq(0).should('contain.text', 'Countries');
         cy.get('#project > select').should('have.value', 'en.wikipedia.org');
-      });
-
-      it('does not show invalid list items', () => {
-        cy.get('#include-items ~ .invalid-feedback').should('not.be.visible');
       });
 
       it('does not show invalid list name', () => {
