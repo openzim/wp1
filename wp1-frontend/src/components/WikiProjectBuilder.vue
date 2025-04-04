@@ -22,29 +22,50 @@
       </p>
     </template>
     <template #extra-params>
-      <div id="lists" class="form-group m-4">
-        <label for="include-items">WikiProjects to include</label>
-        <textarea
-          id="include-items"
-          ref="includeItems"
-          class="form-control my-2"
-          v-model="includeText"
-          rows="5"
-          required
-        ></textarea>
-
-        <div class="invalid-feedback">
-          Please provide WikiProjects to include
+      <div id="lists" class="form-group m-4 my-2">
+        <div class="my-2">
+          <label for="include-items">WikiProjects to include</label>
+            <Autocomplete
+              id="include-items"
+              ref="includeAutocomplete"
+              :hideInstructions="true"
+              @select-project="addIncludeProject"
+            />
+            <div id="include-projects" class="mt-2 d-flex flex-wrap" v-if="includeProjects.length > 0">
+              <div 
+                v-for="(project, index) in includeProjects" 
+                :key="'include-'+index"
+                class="d-flex bg-light align-items-center m-2 p-2 shadow-sm border rounded"
+              >
+                {{ project }}
+                <button class="btn btn-sm ms-1 p-1 text-danger rounded-circle" type="button" @click="removeIncludeProject(index)" title="Remove project">
+                  <i class="bi bi-x-circle-fill"></i>
+                </button>
+              </div>
+          </div>
         </div>
 
-        <label for="exclude-items">WikiProjects to exclude</label>
-        <textarea
-          id="exclude-items"
-          ref="excludeItems"
-          class="form-control my-2"
-          v-model="excludeText"
-          rows="5"
-        ></textarea>
+        <div class="my-2">
+          <label for="exclude-items">WikiProjects to exclude</label>
+            <Autocomplete
+              id="exclude-items"
+              ref="excludeAutocomplete"
+              :hideInstructions="true"
+              @select-project="addExcludeProject"
+            />
+          <div id="exclude-projects" class="mt-2 d-flex flex-wrap" v-if="excludeProjects.length > 0">
+            <div 
+              v-for="(project, index) in excludeProjects" 
+              :key="'exclude-'+index"
+              class="d-flex bg-dark text-white align-items-center m-2 p-2 shadow-sm border rounded"
+            >
+              {{ project }}
+              <button class="btn btn-sm ms-1 p-1 text-danger rounded-circle" type="button" @click="removeExcludeProject(index)" title="Remove project">
+                <i class="bi bi-x-circle-fill"></i>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </template>
   </BaseBuilder>
@@ -52,25 +73,37 @@
 
 <script>
 import BaseBuilder from './BaseBuilder.vue';
+import Autocomplete from './Autocomplete.vue';
 
 export default {
-  components: { BaseBuilder },
+  components: { BaseBuilder, Autocomplete },
   name: 'WikiProjectBuilder',
   data: function () {
     return {
-      includeText: '',
-      excludeText: '',
+      includeProjects: [],
+      excludeProjects: [],
       invalidItems: '',
-      params: {},
+      params: {
+        include: [],
+        exclude: []
+      },
     };
   },
   methods: {
     onBuilderLoaded: function (builder) {
-      this.includeText = builder.params.include.join('\n');
-      this.excludeText = builder.params.exclude.join('\n');
+      this.includeProjects = [...builder.params.include];
+      this.excludeProjects = [...builder.params.exclude];
+      this.updateParams();
     },
     onBeforeSubmit: function () {
-      this.$refs.includeItems.setCustomValidity('');
+      if (this.$refs.includeAutocomplete && this.$refs.includeAutocomplete.$refs.input) {
+        if (this.includeProjects.length === 0) {
+          this.$refs.includeAutocomplete.$refs.input.setCustomValidity('Please provide WikiProjects to include');
+        } else {
+          this.$refs.includeAutocomplete.$refs.input.setCustomValidity('');
+        }
+      }
+      return this.includeProjects.length > 0;
     },
     onValidationError: function (data) {
       this.invalidItems = data.items.invalid.join('\n');
@@ -78,25 +111,33 @@ export default {
     projectFilter: function (projectName) {
       return projectName == 'en.wikipedia.org';
     },
-  },
-  watch: {
-    includeText: function () {
-      const include = this.includeText.split('\n');
-      if (include.length === 1 && include[0] === '') {
-        this.params.include = [];
-        return;
+    addIncludeProject: function (project) {
+      if (!this.includeProjects.includes(project)) {
+        this.includeProjects.push(project);
+        this.updateParams();
       }
-      this.params.include = this.includeText.split('\n') || [];
+      this.$refs.includeAutocomplete.search = '';
     },
-    excludeText: function () {
-      const exclude = this.excludeText.split('\n');
-      if (exclude.length === 1 && exclude[0] === '') {
-        this.params.exclude = [];
-        return;
+    removeIncludeProject: function (index) {
+      this.includeProjects.splice(index, 1);
+      this.updateParams();
+    },
+    addExcludeProject: function (project) {
+      if (!this.excludeProjects.includes(project)) {
+        this.excludeProjects.push(project);
+        this.updateParams();
       }
-      this.params.exclude = this.excludeText.split('\n');
+      this.$refs.excludeAutocomplete.search = '';
     },
-  },
+    removeExcludeProject: function (index) {
+      this.excludeProjects.splice(index, 1);
+      this.updateParams();
+    },
+    updateParams: function () {
+      this.params.include = [...this.includeProjects];
+      this.params.exclude = [...this.excludeProjects];
+    }
+  }
 };
 </script>
 
