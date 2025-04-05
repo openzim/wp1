@@ -49,7 +49,7 @@ describe('the update wikiproject list page', () => {
 
         cy.get('#invalid_articles > .form-control').should(
           'have.value',
-          'Fake Project 1\nAnother Fake',
+          'Fake Project',
         );
       });
 
