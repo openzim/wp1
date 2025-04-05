@@ -6,6 +6,12 @@ services:
     expose:
       - 6379
     restart: always
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      start_period: 1m30s
+      interval: 1m
+      timeout: 15s
+      retries: 10
 
   workers:
     image: ghcr.io/openzim/wp1-workers:release
@@ -24,7 +30,8 @@ services:
         max-size: '10m'
     restart: always
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
 
   web:
     image: ghcr.io/openzim/wp1-web:release
@@ -47,7 +54,8 @@ services:
         max-size: '10m'
     restart: always
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
 
   frontend:
     image: ghcr.io/openzim/wp1-frontend:release
