@@ -8,6 +8,12 @@ services:
     networks:
       - wp1bot-dev
     restart: always
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      start_period: 1m30s
+      interval: 1m
+      timeout: 15s
+      retries: 10
 
   dev-database:
     build: docker/dev-db/
@@ -43,7 +49,7 @@ services:
       - wp1bot-dev
     volumes:
       - ./docker/minio/setup-buckets.sh:/setup-buckets.sh
-    entrypoint: [ "/bin/sh", "/setup-buckets.sh" ]
+    entrypoint: ['/bin/sh', '/setup-buckets.sh']
 
   dev-workers:
     build:
@@ -58,13 +64,15 @@ services:
       - wp1bot-dev
     restart: always
     depends_on:
-      - redis
-      - dev-database
-      - minio
+      redis:
+        condition: service_healthy
+      dev-database:
+        condition: service_started
+      minio:
+        condition: service_started
 
 networks:
   wp1bot-dev:
-
 
 volumes:
   minio-data:
