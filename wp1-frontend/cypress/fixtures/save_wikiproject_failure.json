@@ -2,7 +2,7 @@
   "success": false,
   "items": {
     "valid": [],
-    "invalid": ["Fake Project 1", "Another Fake"],
+    "invalid": ["Fake Project"],
     "errors": ["Not all given projects exist"]
   }
 }
