@@ -17,6 +17,9 @@ def update_article_counts(conn):
         'SELECT s_id, s_object_key FROM selections WHERE s_article_count IS NULL'
     )
     for s_id, s_object_key in cursor.fetchall():
+      if not s_object_key:
+        continue
+
       buffer = BytesIO()
       s3.download_fileobj(s_object_key.decode('utf-8'), buffer)
       data = buffer.getvalue()
