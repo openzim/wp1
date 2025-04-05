@@ -281,31 +281,39 @@ def is_zim_file_ready(task_id):
 
 def zim_file_url_for_task_id(task_id):
   data = _get_task_by_id(task_id)
-
   if data is None:
-    return None
+        return None
 
   files = data.get('files', {})
   name = None
   for _, value in files.items():
-    name = value.get('name')
-    break
+        name = value.get('name')
+        break
 
   if name is None:
-    raise ZimFarmError('Could not find filename for ZIM file, task_id = %s' %
-                       task_id)
+        raise ZimFarmError(f'Could not find filename for ZIM file, task_id = {task_id}')
 
   warehouse_path = data.get('config', {}).get('warehouse_path')
   if warehouse_path is None:
-    raise ZimFarmError(
-        'Could not get warehouse path for ZIM file, task_id = %s' % task_id)
+        raise ZimFarmError(f'Could not get warehouse path for ZIM file, task_id = {task_id}')
 
   base_url = CREDENTIALS[ENV].get('ZIMFARM', {}).get('s3_url')
   if base_url is None:
-    raise ZimFarmError(
-        'Configuration error, could not find ZIMFARM["s3_url"] in credentials')
+        raise ZimFarmError('Configuration error, could not find ZIMFARM["s3_url"] in credentials')
 
-  return f'{base_url}{warehouse_path}/{name}'
+  zim_url = f'{base_url}{warehouse_path}/{name}'
+
+    
+  response = requests.head(zim_url, headers={'User-Agent': WP1_USER_AGENT})
+
+  if response.status_code == 200:
+        return zim_url  
+  elif response.status_code == 404:
+        logger.warning(f'ZIM file not found at {zim_url} (task_id={task_id})')
+        return None  
+  else:
+        logger.error(f'Unexpected response {response.status_code} when checking {zim_url}')
+        return None
 
 
 def cancel_zim_by_task_id(redis, task_id):
