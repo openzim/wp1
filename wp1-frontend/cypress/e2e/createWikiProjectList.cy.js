@@ -37,11 +37,13 @@ describe('the create WikiProject builder page', () => {
       cy.get('#listName > .form-control').click();
       cy.get('#listName > .form-control').type('List name');
       cy.get('#include-items').click();
+      cy.intercept('v1/builders/', (req) => {
+        req.reply({
+          statusCode: 200,
+          fixture: 'save_wikiproject_failure.json',
+        });
+    });
       cy.get('#include-items').type('Fake Project\n');
-      cy.intercept('v1/builders/', {
-        fixture: 'save_wikiproject_failure.json',
-      });
-
       cy.get('#include-projects').children().eq(0).should('contain.text', 'Fake Project');
       cy.get('#invalid_articles > .form-control').should(
         'have.value',
@@ -72,7 +74,6 @@ describe('the create WikiProject builder page', () => {
       cy.get('#include-items').click();
       cy.get('#include-items').type('Water\n');
       cy.get('#saveListButton').click();
-      cy.get('#saveListButton').click();
       cy.url().should('eq', 'http://localhost:5173/#/selections/user');
     });
 
@@ -93,8 +94,8 @@ describe('the create WikiProject builder page', () => {
         
         cy.get('#include-items').find('.search').type('Alien');
         cy.get('#include-items').find('.results').should('be.visible');
-        cy.get('#include-items').find('.results').children('li').eq(1).should('contain.text', 'Alien');
-        cy.get('#include-items').find('.results').children('li').eq(1).click();
+        cy.get('#include-items').find('.results').children('li').eq(0).should('contain.text', 'Alien');
+        cy.get('#include-items').find('.results').children('li').eq(0).click();
         
         cy.get('#saveListButton').click();
         cy.get('#saveLoader').should('be.visible');
@@ -106,8 +107,8 @@ describe('the create WikiProject builder page', () => {
         
         cy.get('#include-items').find('.search').type('Alien');
         cy.get('#include-items').find('.results').should('be.visible');
-        cy.get('#include-items').find('.results').children('li').eq(1).should('contain.text', 'Alien');
-        cy.get('#include-items').find('.results').children('li').eq(1).click();
+        cy.get('#include-items').find('.results').children('li').eq(0).should('contain.text', 'Alien');
+        cy.get('#include-items').find('.results').children('li').eq(0).click();
         
         cy.get('#saveListButton').click();
         cy.get('#saveListButton').should('have.attr', 'disabled');
@@ -120,8 +121,8 @@ describe('the create WikiProject builder page', () => {
       
       cy.get('#include-items').find('.search').type('Alien');
       cy.get('#include-items').find('.results').should('be.visible');
-      cy.get('#include-items').find('.results').children('li').eq(1).should('contain.text', 'Alien');
-      cy.get('#include-items').find('.results').children('li').eq(1).click();
+      cy.get('#include-items').find('.results').children('li').eq(0).should('contain.text', 'Alien');
+      cy.get('#include-items').find('.results').children('li').eq(0).click();
 
       cy.intercept('v1/builders/', { fixture: 'save_list_success.json' }).as(
         'createBuilderSuccess',
@@ -137,13 +138,13 @@ describe('the create WikiProject builder page', () => {
       
       cy.get('#include-items').find('.search').type('Alien');
       cy.get('#include-items').find('.results').should('be.visible');
-      cy.get('#include-items').find('.results').children('li').eq(1).should('contain.text', 'Alien');
-      cy.get('#include-items').find('.results').children('li').eq(1).click();
+      cy.get('#include-items').find('.results').children('li').eq(0).should('contain.text', 'Alien');
+      cy.get('#include-items').find('.results').children('li').eq(0).click();
 
       cy.get('#exclude-items').find('.search').type('Barbados');
       cy.get('#exclude-items').find('.results').should('be.visible');
-      cy.get('#exclude-items').find('.results').children('li').eq(1).should('contain.text', 'Barbados');
-      cy.get('#exclude-items').find('.results').children('li').eq(1).click();
+      cy.get('#exclude-items').find('.results').children('li').eq(0).should('contain.text', 'Barbados');
+      cy.get('#exclude-items').find('.results').children('li').eq(0).click();
 
       cy.intercept('v1/builders/', { fixture: 'save_list_success.json' }).as(
         'createBuilderSuccess',
