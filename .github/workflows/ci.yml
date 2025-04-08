@@ -9,7 +9,7 @@ on:
 
 jobs:
   python-tests:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     services:
       # Unit test rely on a local MySQL instance with an empty root password.
@@ -68,7 +68,7 @@ jobs:
           fail_ci_if_error: false
 
   frontend-cypress:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
