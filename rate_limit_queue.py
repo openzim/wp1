@@ -1,4 +1,5 @@
 import time
+
 from rq import Queue
 
 
@@ -7,17 +8,8 @@ class RateLimitQueue(Queue):
   wait_time_secs = 1
 
   @classmethod
-  def dequeue_any(cls,
-                  queues,
-                  timeout,
-                  connection=None,
-                  job_class=None,
-                  serializer=None):
-    job, queue = super().dequeue_any(queues,
-                                     timeout,
-                                     connection=connection,
-                                     job_class=job_class,
-                                     serializer=serializer)
+  def dequeue_any(cls, *args, **kwargs):
+    job, queue = super().dequeue_any(*args, **kwargs)
     if job and queue:
       cur_time = int(time.time())
       time_diff = 0
