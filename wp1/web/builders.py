@@ -3,6 +3,7 @@ import logging
 
 import flask
 
+
 import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
 from wp1 import queues
@@ -94,7 +95,7 @@ def get_builder(builder_id):
   try:
     builder = logic_builder.get_builder(wp10db, builder_id)
   except ObjectNotFoundError:
-    flask.abort(404)
+    return flask.jsonify({'error': 'Builder not found'}), 404
 
   # Don't return the builder unless it belongs to this user.
   user = flask.session.get('user')
@@ -133,7 +134,7 @@ def latest_selection_for_builder(builder_id, ext):
 
   url = logic_builder.latest_selection_url(wp10db, builder_id, ext)
   if not url:
-    flask.abort(404)
+    return flask.jsonify({'error': 'No latest selection found'}), 404
 
   return flask.redirect(url, code=302)
 
@@ -229,6 +230,6 @@ def latest_zim_file_for_builder(builder_id):
 
   url = logic_builder.latest_zim_file_url_for(wp10db, builder_id)
   if not url:
-    flask.abort(404)
+    return flask.jsonify({'error': 'No latest ZIM file found'}), 404
 
   return flask.redirect(url, code=302)
