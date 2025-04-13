@@ -28,12 +28,16 @@ class Builder(AbstractBuilder):
     final_url = parsed_url._replace(
         query=urllib.parse.urlencode(parsed_query, doseq=True)).geturl()
 
-    resp = requests.get(final_url, headers={'User-Agent': WP1_USER_AGENT})
+    # Set timeout to 45 seconds to allow for Petscan processing time while staying under nginx's 60s timeout
+    resp = requests.get(final_url, headers={'User-Agent': WP1_USER_AGENT}, timeout=45)
     try:
       resp.raise_for_status()
     except requests.exceptions.HTTPError as e:
       logger.exception('Error status received from Petscan server')
       raise Wp1FatalSelectionError('Error status from Petscan server') from e
+    except requests.exceptions.Timeout as e:
+      logger.exception('Request to Petscan server timed out after 45 seconds')
+      raise Wp1FatalSelectionError('Request to Petscan server timed out. Please try again later.') from e
 
     data = resp.json()
     titles = [item['title'] for item in data['*'][0]['a']['*']]
