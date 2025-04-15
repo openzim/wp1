@@ -393,6 +393,7 @@ def schedule_zim_file(s3,
                       wp10db,
                       builder_id,
                       user_id=None,
+                      title='',
                       description='',
                       long_description=''):
   if isinstance(builder_id, str):
@@ -414,6 +415,7 @@ def schedule_zim_file(s3,
                                       redis,
                                       wp10db,
                                       builder,
+                                      title=title,
                                       description=description,
                                       long_description=long_description)
   selection = latest_selection_for(wp10db, builder_id,

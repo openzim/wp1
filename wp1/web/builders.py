@@ -148,10 +148,20 @@ def create_zim_file_for_builder(builder_id):
   user_id = flask.session['user']['identity']['sub']
 
   data = flask.request.get_json()
+
+  title = data.get('title')
   desc = data.get('description')
+  
+  error_messages = []
+  if not title:
+    error_messages.append('Title is required for ZIM file')
+  
   if not desc:
-    return flask.jsonify(
-        {'error_messages': 'Description is required for ZIM file'}), 400
+    error_messages.append('Description is required for ZIM file')
+  
+  if error_messages:
+    return flask.jsonify({'error_messages': error_messages}), 400
+  
   long_desc = data.get('long_description')
 
   try:
@@ -160,6 +170,7 @@ def create_zim_file_for_builder(builder_id):
                                               wp10db,
                                               builder_id,
                                               user_id=user_id,
+                                              title=title,
                                               description=desc,
                                               long_description=long_desc)
   except ObjectNotFoundError:
