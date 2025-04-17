@@ -31,6 +31,29 @@ describe('the zim file creation page', () => {
           cy.get('#longdesc').should('be.visible');
         });
 
+        it('validates the title input on losing focus', () => {
+          cy.get('#zimtitle').click();
+          cy.get('#zimtitle').clear();
+          cy.get('#longdesc').click();
+          cy.get('#zimtitle-group > .invalid-feedback').should('be.visible');
+        });
+
+        it('validates the title input to have max 30 graphemes', () => {
+          const longTitle = 'A'.repeat(31);
+          cy.get('#zimtitle').click();
+          cy.get('#zimtitle').clear();
+          cy.get('#zimtitle').type(longTitle);
+          cy.get('#zimtitle').should('have.value', longTitle.substring(0, 30));
+        });
+
+        it('handles graphems correctly', () => {
+          const longTitle = "में".repeat(30);
+          cy.get('#zimtitle').click();
+          cy.get('#zimtitle').clear();
+          cy.get('#zimtitle').type(longTitle);
+          cy.get('#zimtitle').should('have.value', "में".repeat(30));
+        });
+
         it('validates the description input on losing focus', () => {
           cy.get('#desc').click();
           cy.get('#longdesc').click();
@@ -39,10 +62,10 @@ describe('the zim file creation page', () => {
 
         it('displays the Request ZIM file button', () => {
           cy.get('#request').should('be.visible');
-          cy.get('#request').should('not.have.attr', 'disabled');
+          cy.get('#request').should('have.attr', 'disabled');
         });
 
-        describe('when the description is missing and the submit button is clicked', () => {
+        describe('when the description is missing', () => {
           beforeEach(() => {
             cy.intercept('POST', 'v1/builders/1/zim', () => {
               throw new Error(
@@ -51,14 +74,14 @@ describe('the zim file creation page', () => {
             }).as('request');
           });
 
-          it('does not submit the form', () => {
-            cy.get('#request').click();
-          });
+            it('disables the submit button', () => {
+            cy.get('#request').should('have.attr', 'disabled');
+            });
 
-          it('shows the error message', () => {
-            cy.get('#request').click();
+            it('shows the error message', () => {
+            cy.get('#request').click({ force: true });
             cy.get('#desc-group > .invalid-feedback').should('be.visible');
-          });
+            });
         });
 
         describe('when the Request ZIM file button is clicked', () => {
@@ -152,7 +175,7 @@ describe('the zim file creation page', () => {
 
         it('displays the Request ZIM file button', () => {
           cy.get('#request').should('be.visible');
-          cy.get('#request').should('not.have.attr', 'disabled');
+          cy.get('#request').should('have.attr', 'disabled');
         });
 
         describe('when the Request ZIM file button is clicked', () => {
@@ -194,7 +217,7 @@ describe('the zim file creation page', () => {
 
         it('displays the Request ZIM file button', () => {
           cy.get('#request').should('be.visible');
-          cy.get('#request').should('not.have.attr', 'disabled');
+          cy.get('#request').should('have.attr', 'disabled');
         });
       });
     });

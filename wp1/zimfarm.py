@@ -1,8 +1,7 @@
 import logging
-import time
+import regex
 import urllib.parse
-from datetime import datetime, timedelta
-from functools import wraps
+from datetime import datetime
 
 import requests
 
@@ -10,13 +9,17 @@ import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
 from wp1.constants import WP1_USER_AGENT
 from wp1.credentials import CREDENTIALS, ENV
-from wp1.exceptions import ObjectNotFoundError, ZimFarmError
+from wp1.exceptions import ObjectNotFoundError, ZimFarmError, InvalidZimTitleError, InvalidZimDescriptionError, InvalidZimLongDescriptionError
 from wp1.logic import util
 from wp1.time import get_current_datetime
-from wp1.timestamp import utcnow
 
 MWOFFLINER_IMAGE = 'ghcr.io/openzim/mwoffliner:latest'
 REDIS_AUTH_KEY = 'zimfarm.auth'
+
+# ZIM metadata limits as per https://wiki.openzim.org/wiki/Metadata
+ZIM_TITLE_MAX_LENGTH = 30
+ZIM_DESCRIPTION_MAX_LENGTH = 80
+ZIM_LONG_DESCRIPTION_MAX_LENGTH = 4000
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +124,35 @@ def get_webhook_url():
                                                  urllib.parse.quote(token))
 
 
-def _get_params(s3, wp10db, builder, description='', long_description=''):
+def nb_grapheme_for(value: str) -> int:
+    """Number of graphemes (visually perceived characters) in a given string"""
+    return len(regex.findall(r"\X", value))
+
+
+def _validate_zim_metadata(title=None, description=None, long_description=None):
+  """Validate ZIM metadata fields against length limits."""
+  if title is not None and nb_grapheme_for(title) > ZIM_TITLE_MAX_LENGTH:
+    raise InvalidZimTitleError(
+        f"Title exceeds maximum length: {ZIM_TITLE_MAX_LENGTH} graphemes.")
+  
+  if description is not None and nb_grapheme_for(description) > ZIM_DESCRIPTION_MAX_LENGTH:
+    raise InvalidZimDescriptionError(
+        f"Description exceeds maximum length: {ZIM_DESCRIPTION_MAX_LENGTH} graphemes.")
+  
+  if long_description is not None and nb_grapheme_for(long_description) > ZIM_LONG_DESCRIPTION_MAX_LENGTH:
+    raise InvalidZimLongDescriptionError(
+        f"Long description exceeds maximum length: {ZIM_LONG_DESCRIPTION_MAX_LENGTH} graphemes.")
+  
+  if long_description is not None and nb_grapheme_for(long_description) < nb_grapheme_for(description):
+    raise InvalidZimLongDescriptionError(
+        f"Long description must be longer than the description.")
+  
+  if long_description is not None and long_description == description:
+    raise InvalidZimLongDescriptionError(
+        f"Long description must be different from the description.")
+
+
+def _get_params(s3, wp10db, builder, title='', description='', long_description=''):
   if builder is None:
     raise ObjectNotFoundError('Given builder was None: %r' % builder)
 
@@ -150,13 +181,11 @@ def _get_params(s3, wp10db, builder, description='', long_description=''):
           'articleList':
               logic_selection.url_for_selection(selection),
           'customZimTitle':
-              builder.b_name.decode('utf-8'),
+              title,
           'customZimDescription':
-              description
-              if description else 'ZIM file created from a WP1 Selection',
+              description,
           'customZimLongDescription':
-              long_description
-              if long_description else 'ZIM file created from a WP1 Selection',
+              long_description if long_description else f"ZIM file created from a WP1 Selection. {description}",
           'filenamePrefix':
               filename_prefix
       }
@@ -193,18 +222,22 @@ def schedule_zim_file(s3,
                       redis,
                       wp10db,
                       builder,
+                      title='',
                       description='',
-                      long_description=''):
+                      long_description=None):
   token = get_zimfarm_token(redis)
   if token is None:
     raise ZimFarmError('Error retrieving auth token for request')
 
   if builder is None:
     raise ObjectNotFoundError('Cannot schedule for None builder')
+  
+  _validate_zim_metadata(title, description, long_description)
 
   params = _get_params(s3,
                        wp10db,
                        builder,
+                       title=title,
                        description=description,
                        long_description=long_description)
   base_url = get_zimfarm_url()
@@ -314,7 +347,7 @@ def cancel_zim_by_task_id(redis, task_id):
 
   token = get_zimfarm_token(redis)
   if token is None:
-    raise ZimfarmError('Error retrieving auth token for request')
+    raise ZimFarmError('Error retrieving auth token for request')
   base_url = get_zimfarm_url()
   headers = _get_zimfarm_headers(token)
 

@@ -20,7 +20,7 @@
           <h2>Create ZIM file</h2>
           <p v-if="status === 'NOT_REQUESTED'">
             Use this form to create a ZIM file from your selection, so that you
-            can browse the articles it contains offline. The
+            can browse the articles it contains offline. The &quot;Title&quot;,
             &quot;Description&quot; and &quot;Long Description&quot; fields are
             required, but generic defaults will be used if they're not provided.
           </p>
@@ -66,18 +66,38 @@
             class="needs-validation"
             novalidate
           >
+            <div id="zimtitle-group" ref="zimtitle_form_group" class="form-group">
+              <label for="zimtitle">Title</label>
+              <input
+                id="zimtitle"
+                ref="zimtitle"
+                v-on:blur="validationOnBlur"
+                v-on:input="validateInput('zimTitle', maxTitleLength)"
+                v-model="zimTitle"
+                class="form-control"
+                placeholder="ZIM title"
+                required
+              />
+              <small class="form-text" :class="{'text-muted': graphemeCount(zimTitle) < maxTitleLength, 'text-warning': graphemeCount(zimTitle) === maxTitleLength}">
+                {{ graphemeCount(zimTitle) }}/{{ maxTitleLength }} graphemes{{ graphemeCount(zimTitle) === maxTitleLength ? ' (max reached)' : '' }}
+              </small>
+              <div class="invalid-feedback">Please provide a title</div>
+            </div>
             <div id="desc-group" ref="form_group" class="form-group">
               <label for="desc">Description</label>
               <input
                 id="desc"
                 ref="desc"
                 v-on:blur="validationOnBlur"
+                v-on:input="validateInput('description', maxDescriptionLength)"
                 v-model="description"
                 class="form-control"
-                maxlength="80"
                 placeholder="ZIM file created from a WP1 Selection"
                 required
               />
+              <small class="form-text" :class="{'text-muted': graphemeCount(description) < maxDescriptionLength, 'text-warning': graphemeCount(description) === maxDescriptionLength}">
+                {{ graphemeCount(description) }}/{{ maxDescriptionLength }} graphemes{{ graphemeCount(description) === maxDescriptionLength ? ' (max reached)' : '' }}
+              </small>
               <div class="invalid-feedback">Please provide a description</div>
             </div>
             <div class="form-group">
@@ -86,11 +106,16 @@
                 id="longdesc"
                 ref="longdesc"
                 v-model="longDescription"
+                v-on:input="validateInput('longDescription', maxLongDescriptionLength)"
                 rows="6"
                 class="form-control"
-                maxlength="4000"
+                :class="{'is-invalid': isLongDescriptionInvalid}"
                 placeholder="ZIM file created from a WP1 Selection"
               ></textarea>
+              <small class="form-text" :class="{'text-muted': graphemeCount(longDescription) < maxLongDescriptionLength, 'text-warning': graphemeCount(longDescription) === maxLongDescriptionLength}">
+                {{ graphemeCount(longDescription) }}/{{ maxLongDescriptionLength }} graphemes{{ graphemeCount(longDescription) === maxLongDescriptionLength ? ' (max reached)' : '' }}
+              </small>
+              <div class="invalid-feedback">Long description must differ from description and not be shorter</div>
             </div>
             <div v-if="!success" class="error-list errors">
               <p>The following errors occurred:</p>
@@ -107,7 +132,7 @@
               v-on:click.prevent="onSubmit"
               class="btn btn-primary"
               type="button"
-              :disabled="processing"
+              :disabled="processing || hasLengthErrors"
             >
               Request ZIM file
             </button>
@@ -151,6 +176,7 @@
 
 <script>
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
+import { byGrapheme } from "split-by-grapheme";
 
 import SecondaryNav from './SecondaryNav.vue';
 import LoginRequired from './LoginRequired.vue';
@@ -160,6 +186,7 @@ export default {
   components: { SecondaryNav, LoginRequired, PulseLoader },
   data: function () {
     return {
+      zimTitle: '',
       description: '',
       errors: [],
       errorMessages: [],
@@ -175,6 +202,9 @@ export default {
       serverError: false,
       status: null,
       success: true,
+      maxTitleLength: 30,
+      maxDescriptionLength: 80,
+      maxLongDescriptionLength: 4000,
     };
   },
   created: async function () {
@@ -198,6 +228,10 @@ export default {
       } else {
         this.notFound = false;
         this.builder = await response.json();
+        // Set default ZIM title from builder name, truncated to maxTitleLength if necessary
+        if (this.builder && this.builder.name) {
+          this.zimTitle = this.truncateToLength(this.builder.name, this.maxTitleLength);
+        }
         this.$emit('onBuilderLoaded', this.builder);
       }
     },
@@ -214,8 +248,6 @@ export default {
 
       const data = await response.json();
       this.status = data.status;
-      this.description = data.description;
-      this.longDescription = data.long_description;
       this.isDeleted = data.is_deleted;
       if (this.status === 'FILE_READY') {
         this.stopProgressPolling();
@@ -229,6 +261,7 @@ export default {
       const form = this.$refs.form;
       if (!form.checkValidity()) {
         this.$refs.form_group.classList.add('was-validated');
+        this.$refs.zimtitle_form_group.classList.add('was-validated');
         return;
       }
 
@@ -242,6 +275,7 @@ export default {
         method: 'post',
         credentials: 'include',
         body: JSON.stringify({
+          title: this.zimTitle,
           description: this.description,
           long_description: this.longDescription,
         }),
@@ -256,6 +290,17 @@ export default {
       }
 
       await this.getStatus();
+    },
+    validateInput: function(field, maxLength) {
+      // If count exceeds maxLength, truncate the input to prevent further graphemes
+      if (this.graphemeCount(this[field]) > maxLength) {
+        this[field] = this.truncateToLength(this[field], maxLength);
+      }
+    },
+    truncateToLength: function(text, maxLength) {
+      // Split the text into graphemes and truncate to maxLength
+      const graphemes = text.split(byGrapheme);
+      return graphemes.slice(0, maxLength).join('');
     },
     zimPathFor: function () {
       return `${import.meta.env.VITE_API_URL}/builders/${
@@ -278,6 +323,9 @@ export default {
         event.target.classList.add('is-invalid');
       }
     },
+    graphemeCount: function (text) {
+      return text.split(byGrapheme).length;
+    },
   },
   computed: {
     isLoggedIn: function () {
@@ -293,6 +341,16 @@ export default {
         this.status === 'ENDED'
       );
     },
+    isLongDescriptionInvalid: function() {
+      if (!this.longDescription || !this.description) return false;
+      const longCount = this.graphemeCount(this.longDescription);
+      const descCount = this.graphemeCount(this.description);
+      return longCount < descCount || this.longDescription === this.description;
+    },
+    hasLengthErrors: function() {
+      // Prevent empty required fields and invalid long description
+      return !this.zimTitle || !this.description || this.isLongDescriptionInvalid;
+    }
   },
   watch: {
     builderId: function () {
