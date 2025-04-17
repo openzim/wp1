@@ -395,7 +395,7 @@ def schedule_zim_file(s3,
                       user_id=None,
                       title='',
                       description='',
-                      long_description=''):
+                      long_description=None):
   if isinstance(builder_id, str):
     builder_id = builder_id.encode('utf-8')
   builder = get_builder(wp10db, builder_id)
