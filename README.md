@@ -217,6 +217,12 @@ Using pipenv, you can start the API server with:
 pipenv run flask --app wp1.web.app --debug run
 ```
 
+If you're having difficulties connecting to the backend server from the
+frontend, especially in cypress e2e tests, and espcially on macOS, it might have
+something to do with IPv4 versus IPv6 networking stacks. You can try adding the
+option `--host 127.0.0.1` to the command line above (see
+https://github.com/openzim/wp1/pull/859).
+
 ## Starting the web frontend
 
 Assuming you've installed the frontend deps (`yarn install`), the web frontend
