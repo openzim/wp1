@@ -332,15 +332,28 @@ class SelectionTest(BaseWpOneDbTest):
     self.assertEqual(1672538522, actual)
 
   def test_get_resource_profile(self):
-    s3 = MagicMock()
-    s3.client.head_object.return_value = {'ContentLength': 20000000}
     selection = Selection(s_builder_id=b'abcd',
                           s_content_type=b'text/tab-separated-values',
                           s_version=1,
                           s_object_key=b'foo/bar/1234.tsv')
-    actual = logic_selection.get_resource_profile(s3, selection)
-    self.assertEqual({
-        'cpu': 3,
-        'disk': 42949672960,
-        'memory': 6442450944
-    }, actual)
+
+    test_params = [
+        (100, 2147483648),
+        (1000, 2242586827),
+        (5000, 5266798227),
+        (10000, 6569255183),
+        (20000, 7871712140),
+        (50000, 9593466583),
+        (100000, 10895923539),
+        (200000, 12198380496),
+    ]
+
+    for article_count, expected_memory in test_params:
+      selection.s_article_count = article_count
+      actual = logic_selection.get_resource_profile(selection)
+      self.assertEqual(
+          {
+              'cpu': 3,
+              'disk': 21474836480,
+              'memory': expected_memory
+          }, actual)

@@ -139,7 +139,7 @@ def _get_params(s3, wp10db, builder, description='', long_description=''):
           'name': MWOFFLINER_IMAGE.split(':')[0],
           'tag': MWOFFLINER_IMAGE.split(':')[1],
       },
-      'resources': logic_selection.get_resource_profile(s3, selection),
+      'resources': logic_selection.get_resource_profile(selection),
       'platform': 'wikimedia',
       'monitor': False,
       'flags': {
@@ -320,7 +320,7 @@ def cancel_zim_by_task_id(redis, task_id):
 
   token = get_zimfarm_token(redis)
   if token is None:
-    raise ZimfarmError('Error retrieving auth token for request')
+    raise ZimFarmError('Error retrieving auth token for request')
   base_url = get_zimfarm_url()
   headers = _get_zimfarm_headers(token)
 
