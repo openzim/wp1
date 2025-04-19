@@ -1,6 +1,7 @@
 import html
 import json
 import logging
+import math
 import urllib.parse
 
 import attr
@@ -176,21 +177,22 @@ def is_zim_file_deleted(update_at_timestamp):
 
 
 TASK_CPU = 3
-TASK_MEMORY = 1024 * 1024 * 1024 * 3  # Base memory is 3 GB
 TASK_DISK = 1024 * 1024 * 1024 * 20  # Base disk space is 20 GB
 
 
-def get_resource_profile(s3, selection):
-  data = s3.client.head_object(Bucket=s3.bucket_name,
-                               Key=selection.s_object_key.decode('utf-8'))
-  length = data.get('ContentLength', 1024)
-  article_estimate = length / 15  # Assume each article name is 15 chars long.
-  multiplier = (
-      (article_estimate // 1000000) + 1)  # 1 multiplier for every 1M articles
+def get_resource_profile(selection):
+  if not selection:
+    raise ValueError('Cannot get resource profile for empty selection')
+
+  if not selection.s_article_count:
+    memory_gb = 2
+  else:
+    memory_gb = max(2, -10 + 1.75 * math.log(selection.s_article_count))
+
   return {
       'cpu': TASK_CPU,
       # 3 GB of memory for each 1M articles
-      'memory': int(TASK_MEMORY * multiplier),
+      'memory': int(memory_gb * 1024 * 1024 * 1024),
       # 20 GB of disk for each 1M articles
-      'disk': int(TASK_DISK * multiplier),
+      'disk': TASK_DISK,
   }
