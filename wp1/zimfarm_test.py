@@ -1,13 +1,13 @@
 import datetime
-from unittest.mock import call, patch, MagicMock
+from unittest.mock import MagicMock, call, patch
 
 import attr
 import requests
 
-from wp1.environment import Environment
-from wp1.exceptions import ObjectNotFoundError, ZimFarmError
 from wp1 import zimfarm
 from wp1.base_db_test import BaseWpOneDbTest
+from wp1.environment import Environment
+from wp1.exceptions import ObjectNotFoundError, ZimFarmError
 from wp1.models.wp10.builder import Builder
 
 
@@ -71,7 +71,9 @@ class ZimFarmTest(BaseWpOneDbTest):
     s3.client.head_object.return_value = {'ContentLength': 20000000}
     self._insert_builder()
     self._insert_selection(b'abc-12345-def')
-
+    from wp1.zimfarm import CREDENTIALS
+    CREDENTIALS[
+        Environment.TEST]['ZIMFARM']['cache_url'] = 'https://wasabi.fake/bucket'
     actual = zimfarm._get_params(
         s3,
         self.wp10db,
@@ -127,7 +129,9 @@ class ZimFarmTest(BaseWpOneDbTest):
                     'customZimTitle':
                         'My Builder',
                     'filenamePrefix':
-                        'MyBuilder-def'
+                        'MyBuilder-def',
+                    'optimisationCacheUrl':
+                        'https://wasabi.fake/bucket',
                 }
             }
         }, actual)

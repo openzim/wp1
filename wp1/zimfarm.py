@@ -158,9 +158,15 @@ def _get_params(s3, wp10db, builder, description='', long_description=''):
               long_description
               if long_description else 'ZIM file created from a WP1 Selection',
           'filenamePrefix':
-              filename_prefix
+              filename_prefix,
       }
   }
+  cache_url = CREDENTIALS[ENV].get('ZIMFARM', {}).get('cache_url')
+  if cache_url is not None:
+    config['flags']['optimisationCacheUrl'] = cache_url
+  else:
+    logger.warning('No cache_url found in credentials, skipping '
+                   'optimisationCacheUrl URL for zimfarm request')
 
   name = 'wp1_selection_%s' % selection_id_frag
   webhook_url = get_webhook_url()
