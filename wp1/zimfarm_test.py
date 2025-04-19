@@ -114,8 +114,8 @@ class ZimFarmTest(BaseWpOneDbTest):
                 },
                 'resources': {
                     'cpu': 3,
-                    'memory': 6442450944,
-                    'disk': 42949672960,
+                    'memory': 2147483648,
+                    'disk': 21474836480,
                 },
                 'platform': 'wikimedia',
                 'monitor': False,

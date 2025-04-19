@@ -170,7 +170,7 @@ def _get_params(s3, wp10db, builder, title='', description='', long_description=
           'name': MWOFFLINER_IMAGE.split(':')[0],
           'tag': MWOFFLINER_IMAGE.split(':')[1],
       },
-      'resources': logic_selection.get_resource_profile(s3, selection),
+      'resources': logic_selection.get_resource_profile(selection),
       'platform': 'wikimedia',
       'monitor': False,
       'flags': {
