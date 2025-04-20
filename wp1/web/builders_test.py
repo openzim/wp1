@@ -695,6 +695,8 @@ class BuildersTest(BaseWebTestcase):
     self._insert_selections(builder_id)
     self.app = create_app()
     with self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
       rv = client.get('/v1/builders/%s/selection/latest/article_count' %
                       builder_id)
     self.assertEqual('200 OK', rv.status)
@@ -706,3 +708,12 @@ class BuildersTest(BaseWebTestcase):
                 'max_article_count': MAX_ZIMFARM_ARTICLE_COUNT
             }
         }, rv.get_json())
+
+  def test_latest_selection_article_count_for_builder_wrong_user(self):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+    self.app = create_app()
+    with self.app.test_client() as client:
+      rv = client.get('/v1/builders/%s/selection/latest/article_count' %
+                      builder_id)
+    self.assertEqual('401 UNAUTHORIZED', rv.status)

@@ -145,8 +145,14 @@ def latest_selection_for_builder(builder_id, ext):
 
 
 @builders.route('/<builder_id>/selection/latest/article_count')
+@authenticate
 def latest_selection_article_count_for_builder(builder_id):
   wp10db = get_db('wp10db')
+
+  user_id = flask.session['user']['identity']['sub']
+  builder = logic_builder.get_builder(wp10db, builder_id)
+  if builder.b_user_id.decode('utf-8') != user_id:
+    flask.abort(403)
 
   selection = logic_builder.latest_selection_for(wp10db, builder_id,
                                                  EXT_TO_CONTENT_TYPE['tsv'])
