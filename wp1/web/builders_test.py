@@ -689,3 +689,20 @@ class BuildersTest(BaseWebTestcase):
     with self.app.test_client() as client:
       rv = client.get('/v1/builders/abcd-1234/zim/latest')
     self.assertEqual('404 NOT FOUND', rv.status)
+
+  def test_latest_selection_article_count_for_builder(self):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+    self.app = create_app()
+    with self.app.test_client() as client:
+      rv = client.get('/v1/builders/%s/selection/latest/article_count' %
+                      builder_id)
+    self.assertEqual('200 OK', rv.status)
+    self.assertEqual(
+        {
+            'selection': {
+                'id': '3',
+                'article_count': 1000,
+                'max_article_count': MAX_ZIMFARM_ARTICLE_COUNT
+            }
+        }, rv.get_json())
