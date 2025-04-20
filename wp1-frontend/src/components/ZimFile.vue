@@ -26,7 +26,7 @@
               are required, but generic defaults will be used if they're not
               provided.
             </p>
-            <div v-if="tooManyArticles()" class="errors">
+            <div v-if="tooManyArticles()" class="article-limit-exceeded errors">
               <h2>Too many articles</h2>
               <p>
                 Oh no! It seems that you have hit the limit for the maximum
