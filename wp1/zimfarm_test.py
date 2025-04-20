@@ -7,11 +7,10 @@ import requests
 from wp1 import zimfarm
 from wp1.base_db_test import BaseWpOneDbTest
 from wp1.environment import Environment
-from wp1.exceptions import ObjectNotFoundError, ZimFarmError, InvalidZimTitleError, InvalidZimDescriptionError, InvalidZimLongDescriptionError
-from wp1 import zimfarm
-from wp1.base_db_test import BaseWpOneDbTest
+from wp1.exceptions import (ObjectNotFoundError, ZimFarmError,
+                            ZimFarmTooManyArticlesError)
 from wp1.models.wp10.builder import Builder
-from wp1.zimfarm import ZIM_TITLE_MAX_LENGTH, ZIM_DESCRIPTION_MAX_LENGTH, ZIM_LONG_DESCRIPTION_MAX_LENGTH
+from wp1.models.wp10.selection import Selection
 
 
 class ZimFarmTest(BaseWpOneDbTest):
@@ -33,18 +32,21 @@ class ZimFarmTest(BaseWpOneDbTest):
     return value_dict['b_id']
 
   def _insert_selection(self, id_):
-    version = 1
-    object_key = 'selections/foo/1234/name.tsv'
-    content_type = 'text/tab-separated-values'
     builder_id = self.builder.b_id
     with self.wp10db.cursor() as cursor:
       cursor.execute(
           '''INSERT INTO selections
-                (s_id, s_builder_id, s_updated_at, s_content_type, s_version, s_object_key)
+                (s_id, s_builder_id, s_updated_at, s_content_type,
+                 s_version, s_object_key, s_article_count)
               VALUES
-                (%s, %s, '20191225044444', %s, %s, %s)''',
-          (id_, builder_id, content_type, version, object_key))
+                (%s, %s, '20191225044444', 'text/tab-separated-values',
+                 1, 'selections/foo/1234/name.tsv', 1000)''', (id_, builder_id))
     self.wp10db.commit()
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT * FROM selections')
+      db_selection = cursor.fetchone()
+      self.selection = Selection(**db_selection)
 
   def setUp(self):
     super().setUp()
@@ -69,18 +71,21 @@ class ZimFarmTest(BaseWpOneDbTest):
         b_params=b'{"list": ["a", "b", "c"]}',
     )
 
+    self._insert_builder()
+    self._insert_selection(b'abc-12345-def')
+
   def test_get_params(self):
     s3 = MagicMock()
     s3.client.head_object.return_value = {'ContentLength': 20000000}
-    self._insert_builder()
-    self._insert_selection(b'abc-12345-def')
     from wp1.zimfarm import CREDENTIALS
     CREDENTIALS[
         Environment.TEST]['ZIMFARM']['cache_url'] = 'https://wasabi.fake/bucket'
+
     actual = zimfarm._get_params(
         s3,
         self.wp10db,
         self.builder,
+        self.selection,
         title='My Builder',
         description='This is the short description',
         long_description='This is the long description')
@@ -142,11 +147,9 @@ class ZimFarmTest(BaseWpOneDbTest):
 
   def test_get_params_missing_builder(self):
     s3 = MagicMock()
-    self._insert_builder()
-    self._insert_selection(b'abc-12345-def')
 
     with self.assertRaises(ObjectNotFoundError):
-      zimfarm._get_params(s3, self.wp10db, None)
+      zimfarm._get_params(s3, self.wp10db, None, self.selection)
 
   @patch('wp1.zimfarm.requests')
   def test_request_zimfarm_token(self, mock_requests):
@@ -166,7 +169,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_response.json.return_value = {'access_token': 'abcdef'}
     mock_requests.post.return_value = mock_response
 
-    actual = zimfarm.request_zimfarm_token(redis)
+    zimfarm.request_zimfarm_token(redis)
 
     mock_requests.post.assert_called_once_with(
         'https://fake.farm/v1/auth/authorize',
@@ -216,7 +219,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_requests.post.return_value = mock_response
 
     refresh_token = '12345'
-    actual = zimfarm.refresh_zimfarm_token(redis, refresh_token)
+    zimfarm.refresh_zimfarm_token(redis, refresh_token)
 
     mock_requests.post.assert_called_once_with(
         'https://fake.farm/v1/auth/token',
@@ -321,9 +324,6 @@ class ZimFarmTest(BaseWpOneDbTest):
   @patch('wp1.zimfarm.get_zimfarm_token')
   def test_schedule_zim_file_missing_builder(self, get_token_mock,
                                              mock_requests):
-    self._insert_builder()
-    self._insert_selection(b'abc-12345-def')
-
     redis = MagicMock()
     s3 = MagicMock()
 
@@ -343,7 +343,11 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_response.json.return_value = {'requested': ['9876']}
     mock_requests.post.side_effect = (MagicMock(), mock_response)
 
+<<<<<<< HEAD
     actual = zimfarm.schedule_zim_file(s3, redis, self.wp10db, self.builder, title='a', description='b')
+=======
+    zimfarm.schedule_zim_file(s3, redis, self.wp10db, self.builder)
+>>>>>>> c419127 (Implement max article count of 50k for ZIM file creation)
 
     schedule_create_call = call(
         'https://fake.farm/v1/schedules/',
@@ -385,7 +389,11 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_requests.post.side_effect = (create_schedule_response, mock_response)
 
     with self.assertRaises(ZimFarmError):
+<<<<<<< HEAD
       zimfarm.schedule_zim_file(s3, redis, self.wp10db, self.builder, title='a', description='b')
+=======
+      zimfarm.schedule_zim_file(s3, redis, self.wp10db, self.builder)
+>>>>>>> c419127 (Implement max article count of 50k for ZIM file creation)
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
@@ -525,6 +533,38 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_requests.post.side_effect = (MagicMock(), mock_response, MagicMock())
 
     with self.assertRaises(ZimFarmError):
+      zimfarm.schedule_zim_file(s3, redis, self.wp10db, self.builder)
+
+  @patch('wp1.zimfarm.requests')
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm._get_params')
+  def test_schedule_zim_file_missing_article_count(self, get_params_mock,
+                                                   get_token_mock,
+                                                   mock_requests):
+    redis = MagicMock()
+    s3 = MagicMock()
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('UPDATE selections SET s_article_count = NULL')
+    self.wp10db.commit()
+
+    with self.assertRaises(ZimFarmTooManyArticlesError):
+      zimfarm.schedule_zim_file(s3, redis, self.wp10db, self.builder)
+
+  @patch('wp1.zimfarm.requests')
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm._get_params')
+  def test_schedule_zim_file_too_many_articles(self, get_params_mock,
+                                               get_token_mock, mock_requests):
+    redis = MagicMock()
+    s3 = MagicMock()
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('UPDATE selections SET s_article_count = %s',
+                     zimfarm.MAX_ZIMFARM_ARTICLE_COUNT + 100)
+    self.wp10db.commit()
+
+    with self.assertRaises(ZimFarmTooManyArticlesError):
       zimfarm.schedule_zim_file(s3, redis, self.wp10db, self.builder)
 
   @patch('wp1.zimfarm.requests.get')
@@ -712,6 +752,10 @@ class ZimFarmTest(BaseWpOneDbTest):
     second_response = MagicMock()
     second_response.status_code = 404
     second_response.raise_for_status.side_effect = requests.exceptions.HTTPError
+    patched_post.return_value = second_response
+
+    with self.assertRaises(ZimFarmError):
+      zimfarm.cancel_zim_by_task_id(redis, 'task-abc-123')
     patched_post.return_value = second_response
 
     with self.assertRaises(ZimFarmError):

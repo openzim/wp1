@@ -3,11 +3,11 @@ from unittest.mock import patch
 
 import attr
 
-from wp1.exceptions import (ObjectNotFoundError, UserNotAuthorizedError,
-                            ZimFarmError)
+from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError
 from wp1.models.wp10.builder import Builder
 from wp1.web.app import create_app
 from wp1.web.base_web_testcase import BaseWebTestcase
+from wp1.zimfarm import MAX_ZIMFARM_ARTICLE_COUNT
 
 
 class BuildersTest(BaseWebTestcase):
@@ -84,8 +84,8 @@ class BuildersTest(BaseWebTestcase):
       cursor.executemany(
           '''INSERT INTO selections
                (s_id, s_builder_id, s_content_type, s_updated_at,
-                s_version, s_object_key)
-             VALUES (%s, %s, %s, %s, %s, %s)
+                s_version, s_object_key, s_article_count)
+             VALUES (%s, %s, %s, %s, %s, %s, 1000)
       ''', [s[:6] for s in selections])
       cursor.execute(
           '''INSERT INTO zim_files
@@ -445,7 +445,10 @@ class BuildersTest(BaseWebTestcase):
       with client.session_transaction() as sess:
         sess['user'] = self.USER
       rv = client.post('/v1/builders/%s/zim' % builder_id,
-                       json={'title': 'Test title', 'description': 'Test description'})
+                       json={
+                           'title': 'Test title',
+                           'description': 'Test description'
+                       })
       self.assertEqual('204 NO CONTENT', rv.status)
 
     patched_schedule_zim_file.assert_called_once()
@@ -468,7 +471,10 @@ class BuildersTest(BaseWebTestcase):
       with client.session_transaction() as sess:
         sess['user'] = self.USER
       rv = client.post('/v1/builders/1234-not-found/zim',
-                       json={'title': 'Test title', 'description': 'Test description'})
+                       json={
+                           'title': 'Test title',
+                           'description': 'Test description'
+                       })
       self.assertEqual('404 NOT FOUND', rv.status)
 
   @patch('wp1.zimfarm.schedule_zim_file')
@@ -482,7 +488,10 @@ class BuildersTest(BaseWebTestcase):
       with client.session_transaction() as sess:
         sess['user'] = self.UNAUTHORIZED_USER
       rv = client.post('/v1/builders/%s/zim' % builder_id,
-                       json={'title': 'Test title', 'description': 'Test description'})
+                       json={
+                           'title': 'Test title',
+                           'description': 'Test description'
+                       })
       self.assertEqual('403 FORBIDDEN', rv.status)
 
   @patch('wp1.zimfarm.schedule_zim_file')
@@ -497,7 +506,10 @@ class BuildersTest(BaseWebTestcase):
       with client.session_transaction() as sess:
         sess['user'] = self.USER
       rv = client.post('/v1/builders/%s/zim' % builder_id,
-                       json={'title': 'Test title', 'description': 'Test description'})
+                       json={
+                           'title': 'Test title',
+                           'description': 'Test description'
+                       })
       self.assertEqual('500 INTERNAL SERVER ERROR', rv.status)
 
   @patch('wp1.zimfarm.schedule_zim_file')
@@ -513,15 +525,28 @@ class BuildersTest(BaseWebTestcase):
       self.assertEqual('400 BAD REQUEST', rv.status)
 
   @patch('wp1.zimfarm.schedule_zim_file')
-  def test_create_zim_file_for_builder_no_title(self, patched_schedule_zim_file):
+  def test_create_zim_file_for_builder_no_title(self,
+                                                patched_schedule_zim_file):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
+
+  @patch('wp1.zimfarm.requests')
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  def test_create_zim_file_for_builder_too_many_articles(
+      self, token_mock, requests_mock):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('UPDATE selections SET s_article_count = %s',
+                     MAX_ZIMFARM_ARTICLE_COUNT + 100)
+    self.wp10db.commit()
 
     self.app = create_app()
     with self.override_db(self.app), self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['user'] = self.USER
-      rv = client.post('/v1/builders/%s/zim' % builder_id, json={'description': 'Test description'})
+      rv = client.post('/v1/builders/%s/zim' % builder_id,
+                       json={'description': 'Test description'})
       self.assertEqual('400 BAD REQUEST', rv.status)
 
   @patch('wp1.web.builders.queues.poll_for_zim_file_status')
