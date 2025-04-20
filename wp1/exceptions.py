@@ -30,6 +30,12 @@ class InvalidZimLongDescriptionError(ZimFarmError):
   pass
 
 
+class ZimFarmTooManyArticlesError(ZimFarmError):
+
+  def user_message(self):
+    return str(self)
+
+
 class ObjectNotFoundError(Wp1Error):
   pass
 

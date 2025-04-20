@@ -7,12 +7,17 @@ import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
 from wp1 import queues
 from wp1.credentials import CREDENTIALS, ENV
-from wp1.exceptions import (ObjectNotFoundError, UserNotAuthorizedError,
-                            ZimFarmError)
+from wp1.exceptions import (
+    ObjectNotFoundError,
+    UserNotAuthorizedError,
+    ZimFarmError,
+    ZimFarmTooManyArticlesError,
+)
 from wp1.web import authenticate
 from wp1.web.db import get_db
 from wp1.web.redis import get_redis
 from wp1.web.storage import get_storage
+from wp1.zimfarm import MAX_ZIMFARM_ARTICLE_COUNT
 
 builders = flask.Blueprint('builders', __name__)
 
@@ -151,28 +156,28 @@ def create_zim_file_for_builder(builder_id):
 
   title = data.get('title')
   desc = data.get('description')
-  
+
   error_messages = []
   if not title:
     error_messages.append('Title is required for ZIM file')
-  
+
   if not desc:
     error_messages.append('Description is required for ZIM file')
-  
+
   if error_messages:
     return flask.jsonify({'error_messages': error_messages}), 400
-  
+
   long_desc = data.get('long_description')
 
   try:
-    task_id = logic_builder.schedule_zim_file(s3,
-                                              redis,
-                                              wp10db,
-                                              builder_id,
-                                              user_id=user_id,
-                                              title=title,
-                                              description=desc,
-                                              long_description=long_desc)
+    logic_builder.schedule_zim_file(s3,
+                                    redis,
+                                    wp10db,
+                                    builder_id,
+                                    user_id=user_id,
+                                    title=title,
+                                    description=desc,
+                                    long_description=long_desc)
   except ObjectNotFoundError:
     return flask.jsonify(
         {'error_messages': ['No builder found with id = %s' % builder_id]}), 404
@@ -182,6 +187,8 @@ def create_zim_file_for_builder(builder_id):
             'Not authorized to perform this operation on that builder'
         ]
     }), 403
+  except ZimFarmTooManyArticlesError as e:
+    return flask.jsonify({'error_messages': [e.user_message()]}), 400
   except ZimFarmError as e:
     error_messages = [str(e)]
     if e.__cause__:

@@ -1,15 +1,22 @@
 import logging
-import regex
 import urllib.parse
 from datetime import datetime
 
+import regex
 import requests
 
 import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
 from wp1.constants import WP1_USER_AGENT
 from wp1.credentials import CREDENTIALS, ENV
-from wp1.exceptions import ObjectNotFoundError, ZimFarmError, InvalidZimTitleError, InvalidZimDescriptionError, InvalidZimLongDescriptionError
+from wp1.exceptions import (
+    InvalidZimDescriptionError,
+    InvalidZimLongDescriptionError,
+    InvalidZimTitleError,
+    ObjectNotFoundError,
+    ZimFarmError,
+    ZimFarmTooManyArticlesError,
+)
 from wp1.logic import util
 from wp1.time import get_current_datetime
 
@@ -22,6 +29,11 @@ ZIM_DESCRIPTION_MAX_LENGTH = 80
 ZIM_LONG_DESCRIPTION_MAX_LENGTH = 4000
 
 logger = logging.getLogger(__name__)
+
+# The maximum number of articles that a Selection can contain if the user
+# wishes to create a ZIM file for it. For Selections with more than this
+# number, we perform validation in the frontend, as well as the API layer.
+MAX_ZIMFARM_ARTICLE_COUNT = 50_000
 
 
 def store_zimfarm_token(redis, data):
@@ -125,8 +137,8 @@ def get_webhook_url():
 
 
 def nb_grapheme_for(value: str) -> int:
-    """Number of graphemes (visually perceived characters) in a given string"""
-    return len(regex.findall(r"\X", value))
+  """Number of graphemes (visually perceived characters) in a given string"""
+  return len(regex.findall(r"\X", value))
 
 
 def _validate_zim_metadata(title=None, description=None, long_description=None):
@@ -134,31 +146,40 @@ def _validate_zim_metadata(title=None, description=None, long_description=None):
   if title is not None and nb_grapheme_for(title) > ZIM_TITLE_MAX_LENGTH:
     raise InvalidZimTitleError(
         f"Title exceeds maximum length: {ZIM_TITLE_MAX_LENGTH} graphemes.")
-  
-  if description is not None and nb_grapheme_for(description) > ZIM_DESCRIPTION_MAX_LENGTH:
+
+  if description is not None and nb_grapheme_for(
+      description) > ZIM_DESCRIPTION_MAX_LENGTH:
     raise InvalidZimDescriptionError(
-        f"Description exceeds maximum length: {ZIM_DESCRIPTION_MAX_LENGTH} graphemes.")
-  
-  if long_description is not None and nb_grapheme_for(long_description) > ZIM_LONG_DESCRIPTION_MAX_LENGTH:
+        f"Description exceeds maximum length: {ZIM_DESCRIPTION_MAX_LENGTH} graphemes."
+    )
+
+  if long_description is not None and nb_grapheme_for(
+      long_description) > ZIM_LONG_DESCRIPTION_MAX_LENGTH:
     raise InvalidZimLongDescriptionError(
-        f"Long description exceeds maximum length: {ZIM_LONG_DESCRIPTION_MAX_LENGTH} graphemes.")
-  
-  if long_description is not None and nb_grapheme_for(long_description) < nb_grapheme_for(description):
+        f"Long description exceeds maximum length: {ZIM_LONG_DESCRIPTION_MAX_LENGTH} graphemes."
+    )
+
+  if long_description is not None and nb_grapheme_for(
+      long_description) < nb_grapheme_for(description):
     raise InvalidZimLongDescriptionError(
         f"Long description must be longer than the description.")
-  
+
   if long_description is not None and long_description == description:
     raise InvalidZimLongDescriptionError(
         f"Long description must be different from the description.")
 
 
-def _get_params(s3, wp10db, builder, title='', description='', long_description=''):
+def _get_params(s3,
+                wp10db,
+                builder,
+                selection,
+                title='',
+                description='',
+                long_description=''):
   if builder is None:
     raise ObjectNotFoundError('Given builder was None: %r' % builder)
 
   project = builder.b_project.decode('utf-8')
-  selection = logic_builder.latest_selection_for(wp10db, builder.b_id,
-                                                 'text/tab-separated-values')
   selection_id_frag = selection.s_id.decode('utf-8').split('-')[-1]
   filename_prefix = '%s-%s' % (util.safe_name(
       builder.b_name.decode('utf-8')), selection_id_frag)
@@ -185,7 +206,8 @@ def _get_params(s3, wp10db, builder, title='', description='', long_description=
           'customZimDescription':
               description,
           'customZimLongDescription':
-              long_description if long_description else f"ZIM file created from a WP1 Selection. {description}",
+              long_description if long_description else
+              f"ZIM file created from a WP1 Selection. {description}",
           'filenamePrefix':
               filename_prefix,
       }
@@ -237,12 +259,22 @@ def schedule_zim_file(s3,
 
   if builder is None:
     raise ObjectNotFoundError('Cannot schedule for None builder')
-  
+
   _validate_zim_metadata(title, description, long_description)
+
+  selection = logic_builder.latest_selection_for(wp10db, builder.b_id,
+                                                 'text/tab-separated-values')
+  article_count = selection.s_article_count
+  if article_count is None or article_count > MAX_ZIMFARM_ARTICLE_COUNT:
+    raise ZimFarmTooManyArticlesError(
+        'Cannot create ZIM file for selection with %s articles, max is %s' %
+        (article_count if article_count is not None else 'UNKNOWN number of',
+         MAX_ZIMFARM_ARTICLE_COUNT))
 
   params = _get_params(s3,
                        wp10db,
                        builder,
+                       selection,
                        title=title,
                        description=description,
                        long_description=long_description)
@@ -373,6 +405,10 @@ def cancel_zim_by_task_id(redis, task_id):
   r = requests.post('%s/tasks/%s/cancel' % (base_url, task_id), headers=headers)
 
   try:
+    r.raise_for_status()
+  except requests.exceptions.HTTPError as e:
+    raise ZimFarmError('Task could not be deleted/canceled (task_id=%s)' %
+                       task_id)
     r.raise_for_status()
   except requests.exceptions.HTTPError as e:
     raise ZimFarmError('Task could not be deleted/canceled (task_id=%s)' %

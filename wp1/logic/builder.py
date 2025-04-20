@@ -6,15 +6,12 @@ import attr
 import wp1.logic.selection as logic_selection
 import wp1.logic.util as logic_util
 from wp1 import queues, zimfarm
-from wp1.constants import (
-    CONTENT_TYPE_TO_EXT,
-    EXT_TO_CONTENT_TYPE,
-    MAX_ZIM_FILE_POLL_TIME,
-    TS_FORMAT_WP10,
-)
+from wp1.constants import (CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE,
+                           MAX_ZIM_FILE_POLL_TIME, TS_FORMAT_WP10)
 from wp1.credentials import CREDENTIALS, ENV
 from wp1.environment import Environment
-from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError
+from wp1.exceptions import (ObjectNotFoundError, UserNotAuthorizedError,
+                            ZimFarmError)
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
 from wp1.models.wp10.zim_file import ZimFile
