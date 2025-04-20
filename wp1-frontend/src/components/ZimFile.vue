@@ -17,14 +17,31 @@
     <div v-else-if="ready">
       <div class="row">
         <div class="col-lg-6 col-md-9 mx-4">
-          <h2>Create ZIM file</h2>
-          <p v-if="status === 'NOT_REQUESTED'">
-            Use this form to create a ZIM file from your selection, so that you
-            can browse the articles it contains offline. The &quot;Title&quot;,
-            &quot;Description&quot; and &quot;Long Description&quot; fields are
-            required, but generic defaults will be used if they're not provided.
-          </p>
-          <p>
+          <h3>Create ZIM file</h3>
+          <div v-if="status === 'NOT_REQUESTED'">
+            <p>
+              Use this form to create a ZIM file from your selection, so that
+              you can browse the articles it contains offline. The
+              &quot;Description&quot; and &quot;Long Description&quot; fields
+              are required, but generic defaults will be used if they're not
+              provided.
+            </p>
+            <div v-if="tooManyArticles()" class="errors">
+              <h2>Too many articles</h2>
+              <p>
+                Oh no! It seems that you have hit the limit for the maximum
+                number of articles ({{ this.articleCount.toLocaleString() }} /
+                {{ this.maxArticleCount.toLocaleString() }}). Could it be that
+                such a big selection could be useful to others? How about
+                <a href="https://github.com/openzim/zim-requests"
+                  >opening a zim-request</a
+                >
+                so that we can look into it, and add it straight to the Kiwix
+                library?
+              </p>
+            </div>
+          </div>
+          <p v-else>
             Once you request a ZIM file, it will be queued for creation. This
             page and the My Selections page will automatically update with a URL
             to download your ZIM file once it is ready.
@@ -66,7 +83,11 @@
             class="needs-validation"
             novalidate
           >
-            <div id="zimtitle-group" ref="zimtitle_form_group" class="form-group">
+            <div
+              id="zimtitle-group"
+              ref="zimtitle_form_group"
+              class="form-group"
+            >
               <label for="zimtitle">Title</label>
               <input
                 id="zimtitle"
@@ -78,7 +99,13 @@
                 placeholder="ZIM title"
                 required
               />
-              <small class="form-text" :class="{'text-muted': graphemeCount(zimTitle) < maxTitleLength, 'text-warning': graphemeCount(zimTitle) === maxTitleLength}">
+              <small
+                class="form-text"
+                :class="{
+                  'text-muted': graphemeCount(zimTitle) < maxTitleLength,
+                  'text-warning': graphemeCount(zimTitle) === maxTitleLength,
+                }"
+              >
                 {{ displayGraphemeLimitText(zimTitle, maxTitleLength) }}
               </small>
               <div class="invalid-feedback">Please provide a title</div>
@@ -95,8 +122,18 @@
                 placeholder="ZIM file created from a WP1 Selection"
                 required
               />
-              <small class="form-text" :class="{'text-muted': graphemeCount(description) < maxDescriptionLength, 'text-warning': graphemeCount(description) === maxDescriptionLength}">
-                {{ displayGraphemeLimitText(description, maxDescriptionLength) }}
+              <small
+                class="form-text"
+                :class="{
+                  'text-muted':
+                    graphemeCount(description) < maxDescriptionLength,
+                  'text-warning':
+                    graphemeCount(description) === maxDescriptionLength,
+                }"
+              >
+                {{
+                  displayGraphemeLimitText(description, maxDescriptionLength)
+                }}
               </small>
               <div class="invalid-feedback">Please provide a description</div>
             </div>
@@ -106,16 +143,33 @@
                 id="longdesc"
                 ref="longdesc"
                 v-model="longDescription"
-                v-on:input="validateInput('longDescription', maxLongDescriptionLength)"
+                v-on:input="
+                  validateInput('longDescription', maxLongDescriptionLength)
+                "
                 rows="6"
                 class="form-control"
-                :class="{'is-invalid': !isLongDescriptionValid}"
+                :class="{ 'is-invalid': !isLongDescriptionValid }"
                 placeholder="ZIM file created from a WP1 Selection"
               ></textarea>
-              <small class="form-text" :class="{'text-muted': graphemeCount(longDescription) < maxLongDescriptionLength, 'text-warning': graphemeCount(longDescription) === maxLongDescriptionLength}">
-                {{ displayGraphemeLimitText(longDescription, maxLongDescriptionLength) }}
+              <small
+                class="form-text"
+                :class="{
+                  'text-muted':
+                    graphemeCount(longDescription) < maxLongDescriptionLength,
+                  'text-warning':
+                    graphemeCount(longDescription) === maxLongDescriptionLength,
+                }"
+              >
+                {{
+                  displayGraphemeLimitText(
+                    longDescription,
+                    maxLongDescriptionLength,
+                  )
+                }}
               </small>
-              <div class="invalid-feedback">Long description must differ from description and not be shorter</div>
+              <div class="invalid-feedback">
+                Long description must differ from description and not be shorter
+              </div>
             </div>
             <div v-if="!success" class="error-list errors">
               <p>The following errors occurred:</p>
@@ -132,7 +186,7 @@
               v-on:click.prevent="onSubmit"
               class="btn btn-primary"
               type="button"
-              :disabled="processing || hasLengthErrors"
+              :disabled="processing || hasLengthErrors || tooManyArticles()"
             >
               Request ZIM file
             </button>
@@ -176,7 +230,7 @@
 
 <script>
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
-import { byGrapheme } from "split-by-grapheme";
+import { byGrapheme } from 'split-by-grapheme';
 
 import SecondaryNav from './SecondaryNav.vue';
 import LoginRequired from './LoginRequired.vue';
@@ -187,6 +241,8 @@ export default {
   data: function () {
     return {
       zimTitle: '',
+      articleCount: null,
+      maxArticleCount: null,
       description: '',
       errors: [],
       errorMessages: [],
@@ -219,7 +275,7 @@ export default {
         {
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-        }
+        },
       );
       if (response.status == 404) {
         this.notFound = true;
@@ -230,8 +286,12 @@ export default {
         this.builder = await response.json();
         // Set default ZIM title from builder name, truncated to maxTitleLength if necessary
         if (this.builder && this.builder.name) {
-          this.zimTitle = this.truncateToLength(this.builder.name, this.maxTitleLength);
+          this.zimTitle = this.truncateToLength(
+            this.builder.name,
+            this.maxTitleLength,
+          );
         }
+        await this.getArticleCount();
         this.$emit('onBuilderLoaded', this.builder);
       }
     },
@@ -256,6 +316,21 @@ export default {
       } else if (this.status !== 'NOT_REQUESTED') {
         this.startProgressPolling();
       }
+    },
+    getArticleCount: async function () {
+      const url = `${import.meta.env.VITE_API_URL}/builders/${
+        this.builderId
+      }/selection/latest/article_count`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        this.success = false;
+        this.errors = 'An unknown server error has occurred.';
+      }
+      const data = await response.json();
+
+      this.articleCount = data.selection.article_count;
+      this.maxArticleCount = data.selection.max_article_count;
     },
     onSubmit: async function () {
       const form = this.$refs.form;
@@ -291,16 +366,19 @@ export default {
 
       await this.getStatus();
     },
-    validateInput: function(field, maxLength) {
+    validateInput: function (field, maxLength) {
       // If count exceeds maxLength, truncate the input to prevent further graphemes
       if (this.graphemeCount(this[field]) > maxLength) {
         this[field] = this.truncateToLength(this[field], maxLength);
       }
     },
-    truncateToLength: function(text, maxLength) {
+    truncateToLength: function (text, maxLength) {
       // Split the text into graphemes and truncate to maxLength
       const graphemes = text.split(byGrapheme);
       return graphemes.slice(0, maxLength).join('');
+    },
+    tooManyArticles: function () {
+      return this.articleCount > this.maxArticleCount;
     },
     zimPathFor: function () {
       return `${import.meta.env.VITE_API_URL}/builders/${
@@ -328,7 +406,9 @@ export default {
     },
     displayGraphemeLimitText: function (text, maxLength) {
       const count = this.graphemeCount(text);
-      return `${count}/${maxLength} graphemes${count === maxLength ? ' (max reached)' : ''}`;
+      return `${count}/${maxLength} graphemes${
+        count === maxLength ? ' (max reached)' : ''
+      }`;
     },
   },
   computed: {
@@ -345,16 +425,20 @@ export default {
         this.status === 'ENDED'
       );
     },
-    isLongDescriptionValid: function() {
+    isLongDescriptionValid: function () {
       if (!this.longDescription || !this.description) return true;
       const longCount = this.graphemeCount(this.longDescription);
       const descCount = this.graphemeCount(this.description);
-      return longCount >= descCount && this.longDescription !== this.description;
+      return (
+        longCount >= descCount && this.longDescription !== this.description
+      );
     },
-    hasLengthErrors: function() {
+    hasLengthErrors: function () {
       // Prevent empty required fields and invalid long description
-      return !this.zimTitle || !this.description || !this.isLongDescriptionValid;
-    }
+      return (
+        !this.zimTitle || !this.description || !this.isLongDescriptionValid
+      );
+    },
   },
   watch: {
     builderId: function () {

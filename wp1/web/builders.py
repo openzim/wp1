@@ -6,6 +6,7 @@ import flask
 import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
 from wp1 import queues
+from wp1.constants import EXT_TO_CONTENT_TYPE
 from wp1.credentials import CREDENTIALS, ENV
 from wp1.exceptions import (
     ObjectNotFoundError,
@@ -141,6 +142,24 @@ def latest_selection_for_builder(builder_id, ext):
     flask.abort(404)
 
   return flask.redirect(url, code=302)
+
+
+@builders.route('/<builder_id>/selection/latest/article_count')
+def latest_selection_article_count_for_builder(builder_id):
+  wp10db = get_db('wp10db')
+
+  selection = logic_builder.latest_selection_for(wp10db, builder_id,
+                                                 EXT_TO_CONTENT_TYPE['tsv'])
+  if not selection:
+    flask.abort(404)
+
+  return flask.jsonify({
+      'selection': {
+          'id': selection.s_id.decode('utf-8'),
+          'article_count': selection.s_article_count,
+          'max_article_count': MAX_ZIMFARM_ARTICLE_COUNT,
+      }
+  })
 
 
 @builders.route('/<builder_id>/zim', methods=['POST'])
