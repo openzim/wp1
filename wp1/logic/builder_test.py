@@ -4,7 +4,7 @@ from unittest.mock import ANY, MagicMock, call, patch
 import attr
 
 from wp1.base_db_test import BaseWpOneDbTest
-from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError
+from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError, InvalidZimMetadataError
 from wp1.logic import builder as logic_builder
 from wp1.models.wp10.builder import Builder
 
@@ -844,6 +844,7 @@ class BuilderTest(BaseWpOneDbTest):
                                     self.wp10db,
                                     builder_id,
                                     user_id=1234,
+                                    title='test_title',
                                     description='a',
                                     long_description='z')
 
@@ -851,6 +852,7 @@ class BuilderTest(BaseWpOneDbTest):
                                                       redis,
                                                       self.wp10db,
                                                       self.builder,
+                                                      title='test_title',
                                                       description='a',
                                                       long_description='z')
     with self.wp10db.cursor() as cursor:
@@ -865,6 +867,26 @@ class BuilderTest(BaseWpOneDbTest):
     self.assertEqual(b'20221225000102', data['z_requested_at'])
     self.assertEqual(b'a', data['z_description'])
     self.assertEqual(b'z', data['z_long_description'])
+
+  @patch('wp1.logic.builder.utcnow',
+         return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
+  @patch('wp1.logic.builder.zimfarm.get_zimfarm_token',
+         return_value="test_token")
+  def test_schedule_zim_file_long_name(self, patched_utcnow, patched_get_zimfarm_token):
+    redis = MagicMock()
+    s3 = MagicMock()
+
+    builder_id = self._insert_builder()
+ 
+    with self.assertRaises(InvalidZimMetadataError):
+      logic_builder.schedule_zim_file(s3,
+                                      redis,
+                                      self.wp10db,
+                                      builder_id,
+                                      user_id=1234,
+                                      title='A'*31,
+                                      description='a',
+                                      long_description='z')
 
   @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
   def test_schedule_zim_file_404(self, patched_schedule_zim_file):

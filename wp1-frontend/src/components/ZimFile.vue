@@ -20,7 +20,7 @@
           <h2>Create ZIM file</h2>
           <p v-if="status === 'NOT_REQUESTED'">
             Use this form to create a ZIM file from your selection, so that you
-            can browse the articles it contains offline. The
+            can browse the articles it contains offline. The &quot;Title&quot;,
             &quot;Description&quot; and &quot;Long Description&quot; fields are
             required, but generic defaults will be used if they're not provided.
           </p>
@@ -66,6 +66,21 @@
             class="needs-validation"
             novalidate
           >
+            <div id="zimtitle-group" ref="zimtitle_form_group" class="form-group">
+              <label for="zimtitle">Title</label>
+              <input
+                id="zimtitle"
+                ref="zimtitle"
+                v-on:blur="validationOnBlur"
+                v-model="zimTitle"
+                class="form-control"
+                maxlength="30"
+                placeholder="ZIM title"
+                required
+              />
+              <small class="form-text text-muted">{{ zimTitle.length }}/30 characters</small>
+              <div class="invalid-feedback">Please provide a title</div>
+            </div>
             <div id="desc-group" ref="form_group" class="form-group">
               <label for="desc">Description</label>
               <input
@@ -78,6 +93,7 @@
                 placeholder="ZIM file created from a WP1 Selection"
                 required
               />
+              <small class="form-text text-muted">{{ description.length }}/80 characters</small>
               <div class="invalid-feedback">Please provide a description</div>
             </div>
             <div class="form-group">
@@ -160,6 +176,7 @@ export default {
   components: { SecondaryNav, LoginRequired, PulseLoader },
   data: function () {
     return {
+      zimTitle: '',
       description: '',
       errors: [],
       errorMessages: [],
@@ -198,6 +215,10 @@ export default {
       } else {
         this.notFound = false;
         this.builder = await response.json();
+        // Set default ZIM title from builder name, truncated to 30 chars if necessary
+        if (this.builder && this.builder.name) {
+          this.zimTitle = this.builder.name.substring(0, 30);
+        }
         this.$emit('onBuilderLoaded', this.builder);
       }
     },
@@ -214,8 +235,6 @@ export default {
 
       const data = await response.json();
       this.status = data.status;
-      this.description = data.description;
-      this.longDescription = data.long_description;
       this.isDeleted = data.is_deleted;
       if (this.status === 'FILE_READY') {
         this.stopProgressPolling();
@@ -229,6 +248,7 @@ export default {
       const form = this.$refs.form;
       if (!form.checkValidity()) {
         this.$refs.form_group.classList.add('was-validated');
+        this.$refs.zimtitle_form_group.classList.add('was-validated');
         return;
       }
 
@@ -242,6 +262,7 @@ export default {
         method: 'post',
         credentials: 'include',
         body: JSON.stringify({
+          title: this.zimTitle,
           description: this.description,
           long_description: this.longDescription,
         }),

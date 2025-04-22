@@ -31,6 +31,21 @@ describe('the zim file creation page', () => {
           cy.get('#longdesc').should('be.visible');
         });
 
+        it('validates the title input on losing focus', () => {
+          cy.get('#zimtitle').click();
+          cy.get('#zimtitle').clear();
+          cy.get('#longdesc').click();
+          cy.get('#zimtitle-group > .invalid-feedback').should('be.visible');
+        });
+
+        it('validates the title input to have max 30 characters', () => {
+            const longTitle = 'A'.repeat(31);
+          cy.get('#zimtitle').click();
+          cy.get('#zimtitle').clear();
+          cy.get('#zimtitle').type(longTitle);
+          cy.get('#zimtitle').should('have.value', longTitle.substring(0, 30));
+        });
+
         it('validates the description input on losing focus', () => {
           cy.get('#desc').click();
           cy.get('#longdesc').click();

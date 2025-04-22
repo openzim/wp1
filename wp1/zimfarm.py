@@ -10,13 +10,17 @@ import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
 from wp1.constants import WP1_USER_AGENT
 from wp1.credentials import CREDENTIALS, ENV
-from wp1.exceptions import ObjectNotFoundError, ZimFarmError
+from wp1.exceptions import ObjectNotFoundError, ZimFarmError, InvalidZimMetadataError
 from wp1.logic import util
 from wp1.time import get_current_datetime
 from wp1.timestamp import utcnow
 
 MWOFFLINER_IMAGE = 'ghcr.io/openzim/mwoffliner:latest'
 REDIS_AUTH_KEY = 'zimfarm.auth'
+
+# ZIM metadata limits as per https://wiki.openzim.org/wiki/Metadata
+ZIM_TITLE_MAX_LENGTH = 30
+ZIM_DESCRIPTION_MAX_LENGTH = 80
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +125,23 @@ def get_webhook_url():
                                                  urllib.parse.quote(token))
 
 
-def _get_params(s3, wp10db, builder, description='', long_description=''):
+def validate_zim_metadata(title=None, description=None):
+  """Validate ZIM metadata fields against length limits."""
+  errors = []
+  print(f"Validating ZIM metadata: title='{title}', description='{description}'")
+  if title and len(title) > ZIM_TITLE_MAX_LENGTH:
+    errors.append(f"Title exceeds maximum length: {ZIM_TITLE_MAX_LENGTH} characters.")
+  
+  if description and len(description) > ZIM_DESCRIPTION_MAX_LENGTH:
+    errors.append(f"Description exceeds maximum length: {ZIM_DESCRIPTION_MAX_LENGTH} characters.")
+    
+  if errors:
+    return False, " ".join(errors)
+  
+  return True, None
+
+
+def _get_params(s3, wp10db, builder, title='', description='', long_description=''):
   if builder is None:
     raise ObjectNotFoundError('Given builder was None: %r' % builder)
 
@@ -150,7 +170,7 @@ def _get_params(s3, wp10db, builder, description='', long_description=''):
           'articleList':
               logic_selection.url_for_selection(selection),
           'customZimTitle':
-              builder.b_name.decode('utf-8'),
+              title,
           'customZimDescription':
               description
               if description else 'ZIM file created from a WP1 Selection',
@@ -199,6 +219,7 @@ def schedule_zim_file(s3,
                       redis,
                       wp10db,
                       builder,
+                      title='',
                       description='',
                       long_description=''):
   token = get_zimfarm_token(redis)
@@ -207,10 +228,18 @@ def schedule_zim_file(s3,
 
   if builder is None:
     raise ObjectNotFoundError('Cannot schedule for None builder')
+  
+  valid_metadata, error_message = validate_zim_metadata(
+      title=title,
+      description=description,
+  )
+  if not valid_metadata:
+    raise InvalidZimMetadataError(error_message)
 
   params = _get_params(s3,
                        wp10db,
                        builder,
+                       title=title,
                        description=description,
                        long_description=long_description)
   base_url = get_zimfarm_url()
@@ -320,7 +349,7 @@ def cancel_zim_by_task_id(redis, task_id):
 
   token = get_zimfarm_token(redis)
   if token is None:
-    raise ZimfarmError('Error retrieving auth token for request')
+    raise ZimFarmError('Error retrieving auth token for request')
   base_url = get_zimfarm_url()
   headers = _get_zimfarm_headers(token)
 
