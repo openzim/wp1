@@ -445,7 +445,7 @@ class BuildersTest(BaseWebTestcase):
       with client.session_transaction() as sess:
         sess['user'] = self.USER
       rv = client.post('/v1/builders/%s/zim' % builder_id,
-                       json={'description': 'Test description'})
+                       json={'title': 'Test title', 'description': 'Test description'})
       self.assertEqual('204 NO CONTENT', rv.status)
 
     patched_schedule_zim_file.assert_called_once()
@@ -468,7 +468,7 @@ class BuildersTest(BaseWebTestcase):
       with client.session_transaction() as sess:
         sess['user'] = self.USER
       rv = client.post('/v1/builders/1234-not-found/zim',
-                       json={'description': 'Test description'})
+                       json={'title': 'Test title', 'description': 'Test description'})
       self.assertEqual('404 NOT FOUND', rv.status)
 
   @patch('wp1.zimfarm.schedule_zim_file')
@@ -482,7 +482,7 @@ class BuildersTest(BaseWebTestcase):
       with client.session_transaction() as sess:
         sess['user'] = self.UNAUTHORIZED_USER
       rv = client.post('/v1/builders/%s/zim' % builder_id,
-                       json={'description': 'Test description'})
+                       json={'title': 'Test title', 'description': 'Test description'})
       self.assertEqual('403 FORBIDDEN', rv.status)
 
   @patch('wp1.zimfarm.schedule_zim_file')
@@ -497,7 +497,7 @@ class BuildersTest(BaseWebTestcase):
       with client.session_transaction() as sess:
         sess['user'] = self.USER
       rv = client.post('/v1/builders/%s/zim' % builder_id,
-                       json={'description': 'Test description'})
+                       json={'title': 'Test title', 'description': 'Test description'})
       self.assertEqual('500 INTERNAL SERVER ERROR', rv.status)
 
   @patch('wp1.zimfarm.schedule_zim_file')
@@ -510,6 +510,18 @@ class BuildersTest(BaseWebTestcase):
       with client.session_transaction() as sess:
         sess['user'] = self.USER
       rv = client.post('/v1/builders/%s/zim' % builder_id, json={})
+      self.assertEqual('400 BAD REQUEST', rv.status)
+
+  @patch('wp1.zimfarm.schedule_zim_file')
+  def test_create_zim_file_for_builder_no_title(self, patched_schedule_zim_file):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/%s/zim' % builder_id, json={'description': 'Test description'})
       self.assertEqual('400 BAD REQUEST', rv.status)
 
   @patch('wp1.web.builders.queues.poll_for_zim_file_status')
