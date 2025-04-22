@@ -109,7 +109,7 @@
                 v-on:input="validateInput('longDescription', maxLongDescriptionLength)"
                 rows="6"
                 class="form-control"
-                :class="{'is-invalid': isLongDescriptionInvalid}"
+                :class="{'is-invalid': !isLongDescriptionValid}"
                 placeholder="ZIM file created from a WP1 Selection"
               ></textarea>
               <small class="form-text" :class="{'text-muted': graphemeCount(longDescription) < maxLongDescriptionLength, 'text-warning': graphemeCount(longDescription) === maxLongDescriptionLength}">
@@ -345,15 +345,15 @@ export default {
         this.status === 'ENDED'
       );
     },
-    isLongDescriptionInvalid: function() {
-      if (!this.longDescription || !this.description) return false;
+    isLongDescriptionValid: function() {
+      if (!this.longDescription || !this.description) return true;
       const longCount = this.graphemeCount(this.longDescription);
       const descCount = this.graphemeCount(this.description);
-      return longCount < descCount || this.longDescription === this.description;
+      return longCount >= descCount && this.longDescription !== this.description;
     },
     hasLengthErrors: function() {
       // Prevent empty required fields and invalid long description
-      return !this.zimTitle || !this.description || this.isLongDescriptionInvalid;
+      return !this.zimTitle || !this.description || !this.isLongDescriptionValid;
     }
   },
   watch: {
