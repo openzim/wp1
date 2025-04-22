@@ -79,7 +79,7 @@
                 required
               />
               <small class="form-text" :class="{'text-muted': graphemeCount(zimTitle) < maxTitleLength, 'text-warning': graphemeCount(zimTitle) === maxTitleLength}">
-                {{ graphemeCount(zimTitle) }}/{{ maxTitleLength }} graphemes{{ graphemeCount(zimTitle) === maxTitleLength ? ' (max reached)' : '' }}
+                {{ displayGraphemeLimitText(zimTitle, maxTitleLength) }}
               </small>
               <div class="invalid-feedback">Please provide a title</div>
             </div>
@@ -96,7 +96,7 @@
                 required
               />
               <small class="form-text" :class="{'text-muted': graphemeCount(description) < maxDescriptionLength, 'text-warning': graphemeCount(description) === maxDescriptionLength}">
-                {{ graphemeCount(description) }}/{{ maxDescriptionLength }} graphemes{{ graphemeCount(description) === maxDescriptionLength ? ' (max reached)' : '' }}
+                {{ displayGraphemeLimitText(description, maxDescriptionLength) }}
               </small>
               <div class="invalid-feedback">Please provide a description</div>
             </div>
@@ -113,7 +113,7 @@
                 placeholder="ZIM file created from a WP1 Selection"
               ></textarea>
               <small class="form-text" :class="{'text-muted': graphemeCount(longDescription) < maxLongDescriptionLength, 'text-warning': graphemeCount(longDescription) === maxLongDescriptionLength}">
-                {{ graphemeCount(longDescription) }}/{{ maxLongDescriptionLength }} graphemes{{ graphemeCount(longDescription) === maxLongDescriptionLength ? ' (max reached)' : '' }}
+                {{ displayGraphemeLimitText(longDescription, maxLongDescriptionLength) }}
               </small>
               <div class="invalid-feedback">Long description must differ from description and not be shorter</div>
             </div>
@@ -325,6 +325,10 @@ export default {
     },
     graphemeCount: function (text) {
       return text.split(byGrapheme).length;
+    },
+    displayGraphemeLimitText: function (text, maxLength) {
+      const count = this.graphemeCount(text);
+      return `${count}/${maxLength} graphemes${count === maxLength ? ' (max reached)' : ''}`;
     },
   },
   computed: {
