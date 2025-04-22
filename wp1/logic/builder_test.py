@@ -4,7 +4,7 @@ from unittest.mock import ANY, MagicMock, call, patch
 import attr
 
 from wp1.base_db_test import BaseWpOneDbTest
-from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError, InvalidZimMetadataError
+from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError, InvalidZimTitleError
 from wp1.logic import builder as logic_builder
 from wp1.models.wp10.builder import Builder
 
@@ -861,7 +861,6 @@ class BuilderTest(BaseWpOneDbTest):
                      ' FROM zim_files'
                      ' WHERE z_selection_id = 1')
       data = cursor.fetchone()
-
     self.assertEqual(b'1234-a', data['z_task_id'])
     self.assertEqual(b'REQUESTED', data['z_status'])
     self.assertEqual(b'20221225000102', data['z_requested_at'])
@@ -872,13 +871,13 @@ class BuilderTest(BaseWpOneDbTest):
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
   @patch('wp1.logic.builder.zimfarm.get_zimfarm_token',
          return_value="test_token")
-  def test_schedule_zim_file_long_name(self, patched_utcnow, patched_get_zimfarm_token):
+  def test_schedule_zim_file_long_title(self, patched_utcnow, patched_get_zimfarm_token):
     redis = MagicMock()
     s3 = MagicMock()
 
     builder_id = self._insert_builder()
  
-    with self.assertRaises(InvalidZimMetadataError):
+    with self.assertRaises(InvalidZimTitleError):
       logic_builder.schedule_zim_file(s3,
                                       redis,
                                       self.wp10db,
