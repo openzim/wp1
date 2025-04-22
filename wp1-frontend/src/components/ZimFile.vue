@@ -72,13 +72,15 @@
                 id="zimtitle"
                 ref="zimtitle"
                 v-on:blur="validationOnBlur"
+                v-on:input="validateInput('zimTitle', maxTitleLength)"
                 v-model="zimTitle"
                 class="form-control"
-                maxlength="30"
                 placeholder="ZIM title"
                 required
               />
-              <small class="form-text text-muted">{{ zimTitle.length }}/30 characters</small>
+              <small class="form-text" :class="{'text-muted': graphemeCount(zimTitle) < maxTitleLength, 'text-warning': graphemeCount(zimTitle) === maxTitleLength}">
+                {{ graphemeCount(zimTitle) }}/{{ maxTitleLength }} graphemes{{ graphemeCount(zimTitle) === maxTitleLength ? ' (max reached)' : '' }}
+              </small>
               <div class="invalid-feedback">Please provide a title</div>
             </div>
             <div id="desc-group" ref="form_group" class="form-group">
@@ -87,13 +89,15 @@
                 id="desc"
                 ref="desc"
                 v-on:blur="validationOnBlur"
+                v-on:input="validateInput('description', maxDescriptionLength)"
                 v-model="description"
                 class="form-control"
-                maxlength="80"
                 placeholder="ZIM file created from a WP1 Selection"
                 required
               />
-              <small class="form-text text-muted">{{ description.length }}/80 characters</small>
+              <small class="form-text" :class="{'text-muted': graphemeCount(description) < maxDescriptionLength, 'text-warning': graphemeCount(description) === maxDescriptionLength}">
+                {{ graphemeCount(description) }}/{{ maxDescriptionLength }} graphemes{{ graphemeCount(description) === maxDescriptionLength ? ' (max reached)' : '' }}
+              </small>
               <div class="invalid-feedback">Please provide a description</div>
             </div>
             <div class="form-group">
@@ -102,11 +106,16 @@
                 id="longdesc"
                 ref="longdesc"
                 v-model="longDescription"
+                v-on:input="validateInput('longDescription', maxLongDescriptionLength)"
                 rows="6"
                 class="form-control"
-                maxlength="4000"
+                :class="{'is-invalid': isLongDescriptionInvalid}"
                 placeholder="ZIM file created from a WP1 Selection"
               ></textarea>
+              <small class="form-text" :class="{'text-muted': graphemeCount(longDescription) < maxLongDescriptionLength, 'text-warning': graphemeCount(longDescription) === maxLongDescriptionLength}">
+                {{ graphemeCount(longDescription) }}/{{ maxLongDescriptionLength }} graphemes{{ graphemeCount(longDescription) === maxLongDescriptionLength ? ' (max reached)' : '' }}
+              </small>
+              <div class="invalid-feedback">Long description must differ from description and not be shorter</div>
             </div>
             <div v-if="!success" class="error-list errors">
               <p>The following errors occurred:</p>
@@ -123,7 +132,7 @@
               v-on:click.prevent="onSubmit"
               class="btn btn-primary"
               type="button"
-              :disabled="processing"
+              :disabled="processing || hasLengthErrors"
             >
               Request ZIM file
             </button>
@@ -167,6 +176,7 @@
 
 <script>
 import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
+import { byGrapheme } from "split-by-grapheme";
 
 import SecondaryNav from './SecondaryNav.vue';
 import LoginRequired from './LoginRequired.vue';
@@ -192,6 +202,9 @@ export default {
       serverError: false,
       status: null,
       success: true,
+      maxTitleLength: 30,
+      maxDescriptionLength: 80,
+      maxLongDescriptionLength: 4000,
     };
   },
   created: async function () {
@@ -215,9 +228,9 @@ export default {
       } else {
         this.notFound = false;
         this.builder = await response.json();
-        // Set default ZIM title from builder name, truncated to 30 chars if necessary
+        // Set default ZIM title from builder name, truncated to maxTitleLength if necessary
         if (this.builder && this.builder.name) {
-          this.zimTitle = this.builder.name.substring(0, 30);
+          this.zimTitle = this.truncateToLength(this.builder.name, this.maxTitleLength);
         }
         this.$emit('onBuilderLoaded', this.builder);
       }
@@ -278,6 +291,17 @@ export default {
 
       await this.getStatus();
     },
+    validateInput: function(field, maxLength) {
+      // If count exceeds maxLength, truncate the input to prevent further graphemes
+      if (this.graphemeCount(this[field]) > maxLength) {
+        this[field] = this.truncateToLength(this[field], maxLength);
+      }
+    },
+    truncateToLength: function(text, maxLength) {
+      // Split the text into graphemes and truncate to maxLength
+      const graphemes = text.split(byGrapheme);
+      return graphemes.slice(0, maxLength).join('');
+    },
     zimPathFor: function () {
       return `${import.meta.env.VITE_API_URL}/builders/${
         this.builderId
@@ -299,6 +323,9 @@ export default {
         event.target.classList.add('is-invalid');
       }
     },
+    graphemeCount: function (text) {
+      return text.split(byGrapheme).length;
+    },
   },
   computed: {
     isLoggedIn: function () {
@@ -314,6 +341,16 @@ export default {
         this.status === 'ENDED'
       );
     },
+    isLongDescriptionInvalid: function() {
+      if (!this.longDescription || !this.description) return false;
+      const longCount = this.graphemeCount(this.longDescription);
+      const descCount = this.graphemeCount(this.description);
+      return longCount < descCount || this.longDescription === this.description;
+    },
+    hasLengthErrors: function() {
+      // Prevent empty required fields and invalid long description
+      return !this.zimTitle || !this.description || this.isLongDescriptionInvalid;
+    }
   },
   watch: {
     builderId: function () {
