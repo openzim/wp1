@@ -80,7 +80,7 @@ docker rm wp1bot-db-dev
 Then you can load a fresh copy with the docker compose command for development.
 
 ```bash
-docker-compose -f docker-compose-dev.yml up -d
+docker-compose -f docker-compose-dev.yml up -d --build
 ```
 
 Next, apply the migrations using the steps above.
@@ -92,7 +92,7 @@ cd docker/dev-db
 ```
 
 ```bash
-mysqldump -h 127.0.0.1 -P 6300 --user=root -pwikipedia --lock-tables --single-transaction --quick enwp10_dev > enwp10_dev.dump.sql
+mysqldump -h 127.0.0.1 -P 6300 --skip-ssl --user=root -pwikipedia --lock-tables --single-transaction --quick enwp10_dev > enwp10_dev.dump.sql
 ```
 
 Finally, we must add CREATE and USE database commands to the top of the dump so that our
