@@ -1,8 +1,7 @@
 from wp1.base_db_test import BaseWpOneDbTest
 from wp1.constants import AssessmentKind
-from wp1.logic import rating as logic_rating
 from wp1.logic import log as logic_log
-from wp1.models.wp10.log import Log
+from wp1.logic import rating as logic_rating
 from wp1.models.wp10.rating import Rating
 
 
