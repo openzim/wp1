@@ -152,7 +152,11 @@ def latest_selection_article_count_for_builder(builder_id):
   user_id = flask.session['user']['identity']['sub']
   builder = logic_builder.get_builder(wp10db, builder_id)
   if builder.b_user_id.decode('utf-8') != user_id:
-    flask.abort(403)
+    return flask.jsonify({
+        'error_messages': [
+            'Cannot get article count for a selection that does not belong to you'
+        ]
+    }), 403
 
   selection = logic_builder.latest_selection_for(wp10db, builder_id,
                                                  EXT_TO_CONTENT_TYPE['tsv'])
