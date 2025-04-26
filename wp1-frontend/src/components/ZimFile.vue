@@ -9,7 +9,7 @@
         Sorry, the list with that ID either doesn't exist or isn't owned by you.
       </div>
     </div>
-    <div v-else-if="serverError">
+    <div v-else-if="serverError || noArticleCount">
       <h2>500 Server error</h2>
       Something went wrong and we couldn't retrieve the list with that ID. You
       might try again later.
@@ -229,11 +229,11 @@
 </template>
 
 <script>
-import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 import { byGrapheme } from 'split-by-grapheme';
+import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 
-import SecondaryNav from './SecondaryNav.vue';
 import LoginRequired from './LoginRequired.vue';
+import SecondaryNav from './SecondaryNav.vue';
 
 export default {
   name: 'ZimFile',
@@ -252,6 +252,7 @@ export default {
       loaderSize: '1rem',
       longDescription: '',
       notFound: false,
+      noArticleCount: false,
       pollId: null,
       processing: false,
       ready: false,
@@ -304,6 +305,7 @@ export default {
       if (!response.ok) {
         this.success = false;
         this.errors = 'An unknown server error has occurred.';
+        return;
       }
 
       const data = await response.json();
@@ -321,11 +323,14 @@ export default {
       const url = `${import.meta.env.VITE_API_URL}/builders/${
         this.builderId
       }/selection/latest/article_count`;
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
 
       if (!response.ok) {
-        this.success = false;
-        this.errors = 'An unknown server error has occurred.';
+        this.noArticleCount = true;
+        return;
       }
       const data = await response.json();
 
