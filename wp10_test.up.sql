@@ -10,18 +10,6 @@ CREATE TABLE `ratings` (
   PRIMARY KEY (`r_project`,`r_namespace`,`r_article`)
 );
 
-CREATE TABLE `logging` (
-  `l_project` varbinary(63) NOT NULL,
-  `l_namespace` int(10) unsigned NOT NULL,
-  `l_article` varbinary(255) NOT NULL,
-  `l_action` varbinary(20) NOT NULL,
-  `l_timestamp` binary(14) NOT NULL,
-  `l_old` varbinary(63) DEFAULT NULL,
-  `l_new` varbinary(63) DEFAULT NULL,
-  `l_revision_timestamp` binary(20) NOT NULL,
-  PRIMARY KEY (`l_project`,`l_namespace`,`l_article`,`l_action`,`l_timestamp`)
-);
-
 CREATE TABLE `categories` (
   `c_project` varbinary(63) NOT NULL,
   `c_type` varbinary(16) NOT NULL,

@@ -1,5 +1,4 @@
 DROP TABLE IF EXISTS `ratings`;
-DROP TABLE IF EXISTS `logging`;
 DROP TABLE IF EXISTS `categories`;
 DROP TABLE IF EXISTS `moves`;
 DROP TABLE IF EXISTS `projects`;
