@@ -1,18 +1,17 @@
-from datetime import datetime
-from unittest.mock import patch, MagicMock
 import time
+from datetime import datetime
+from unittest.mock import MagicMock, patch
 
 import attr
 import fakeredis
 
-from wp1.base_db_test import BaseWpOneDbTest, BaseWikiDbTest, BaseCombinedDbTest
+from wp1.base_db_test import BaseCombinedDbTest, BaseWikiDbTest, BaseWpOneDbTest
 from wp1.conf import get_conf
-from wp1.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP_WIKI, TS_FORMAT
-from wp1.logic import project as logic_project
+from wp1.constants import CATEGORY_NS_INT, TS_FORMAT, AssessmentKind
 from wp1.logic import log as logic_log
+from wp1.logic import project as logic_project
 from wp1.models.wiki.page import Page
 from wp1.models.wp10.category import Category
-from wp1.models.wp10.log import Log
 from wp1.models.wp10.project import Project
 from wp1.models.wp10.rating import Rating
 
@@ -1008,6 +1007,17 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
                                              self.redis, self.project, {})
 
     patched_site.assert_not_called()
+
+  @patch('wp1.logic.project.logic_rating')
+  def test_not_seen_empty_seen_list(self, mock_logic_rating):
+    self._insert_pages(self.quality_pages)
+    self._insert_ratings(self.quality_pages[:6], 0, AssessmentKind.QUALITY)
+
+    logic_project.process_unseen_articles(self.wikidb, self.wp10db, self.redis,
+                                          self.project, {}, {})
+
+    mock_logic_rating.insert_or_update.assert_not_called()
+    mock_logic_rating.add_log_for_rating.assert_not_called()
 
 
 class GlobalArticlesTest(ArticlesTest):
