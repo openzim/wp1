@@ -1,24 +1,32 @@
-from collections import defaultdict
 import logging
 import math
 import re
 import time
+from collections import defaultdict
 
 import attr
 
-from wp1 import api
+from wp1 import api, tables
 from wp1.conf import get_conf
-from wp1.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP, GLOBAL_TIMESTAMP_WIKI, MAX_ARTICLES_BEFORE_COMMIT
-from wp1.logic import page as logic_page, util as logic_util, rating as logic_rating, category as logic_category
+from wp1.constants import (
+    CATEGORY_NS_INT,
+    GLOBAL_TIMESTAMP,
+    GLOBAL_TIMESTAMP_WIKI,
+    MAX_ARTICLES_BEFORE_COMMIT,
+    AssessmentKind,
+)
+from wp1.logic import category as logic_category
+from wp1.logic import page as logic_page
+from wp1.logic import rating as logic_rating
+from wp1.logic import util as logic_util
 from wp1.logic.api import project as api_project
 from wp1.models.wiki.page import Page
 from wp1.models.wp10.category import Category
 from wp1.models.wp10.project import Project
 from wp1.models.wp10.rating import Rating
 from wp1.redis_db import connect as redis_connect
-from wp1 import tables
-from wp1.wp10_db import connect as wp10_connect
 from wp1.wiki_db import connect as wiki_connect
+from wp1.wp10_db import connect as wp10_connect
 
 logger = logging.getLogger(__name__)
 
@@ -469,6 +477,13 @@ def store_new_ratings(wp10db, redis, new_ratings, old_ratings,
 
 
 def process_unseen_articles(wikidb, wp10db, redis, project, old_ratings, seen):
+  if len(seen) == 0:
+    logger.warning(
+        'Did not find any articles for %s, skipping unseen processing',
+        project.p_project.decode('utf-8'),
+    )
+    return
+
   denom = len(old_ratings.keys())
   ratio = len(seen) / denom if denom != 0 else 'NaN'
 
