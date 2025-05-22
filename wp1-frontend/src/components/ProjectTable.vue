@@ -124,6 +124,9 @@
         </td>
       </tr>
     </table>
+    <div v-if="tableData" class="timestamp">
+      Last updated: {{ formatTimestamp(tableData.timestamp) }}
+    </div>
   </div>
 </template>
 
@@ -180,6 +183,15 @@ export default {
       }
       return cls;
     },
+    formatTimestamp: function (timestamp) {
+      if (!timestamp) return 'Unknown';
+      try {
+        const date = new Date(timestamp);
+        return date.toLocaleString();
+      } catch (e) {
+        return 'Unknown';
+      }
+    },
   },
 };
 </script>
@@ -223,5 +235,12 @@ td {
 
 .quality {
   vertical-align: bottom;
+}
+
+.timestamp {
+  text-align: center;
+  margin: 1rem 0;
+  color: #666;
+  font-size: 0.9rem;
 }
 </style>
