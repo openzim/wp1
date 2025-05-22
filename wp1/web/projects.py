@@ -1,6 +1,7 @@
 from wp1.web import authenticate
 import attr
 import flask
+import logging
 
 from wp1.constants import PAGE_SIZE
 from wp1.web.db import get_db
@@ -47,7 +48,11 @@ def table(project_name):
     return flask.abort(404)
 
   data = tables.generate_project_table_data(wp10db, project_name_bytes)
+  logger = logging.getLogger(__name__)
+  logger.info('Generated table data: %s', data)
+
   data = tables.convert_table_data_for_web(data)
+  logger.info('Converted table data: %s', data)
 
   return flask.jsonify({'table_data': data})
 

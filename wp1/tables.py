@@ -12,6 +12,7 @@ from wp1.constants import LIST_URL, LIST_V2_URL, WIKI_BASE
 from wp1.templates import env as jinja_env
 from wp1.wp10_db import connect as wp10_connect
 from wp1.credentials import ENV, CREDENTIALS
+from wp1.logic import project as logic_project
 
 logger = logging.getLogger(__name__)
 
@@ -150,27 +151,30 @@ def make_wiki_link(wiki_text):
 
 
 def convert_table_data_for_web(data):
-  data = dict(data)
+  # Create a new dictionary with all fields
+  result = dict(data)
 
-  data['project'] = data['project'].decode('utf-8')
-  data['ordered_cols'] = [x.decode('utf-8') for x in data['ordered_cols']]
-  data['ordered_rows'] = [x.decode('utf-8') for x in data['ordered_rows']]
-  data['col_labels'] = dict((key.decode('utf-8'), make_wiki_link(val))
-                            for key, val in data['col_labels'].items())
-  data['row_labels'] = dict((key.decode('utf-8'), make_wiki_link(val))
-                            for key, val in data['row_labels'].items())
-  data['row_totals'] = dict(
+  # Convert specific fields that need decoding
+  result['project'] = data['project'].decode('utf-8')
+  result['ordered_cols'] = [x.decode('utf-8') for x in data['ordered_cols']]
+  result['ordered_rows'] = [x.decode('utf-8') for x in data['ordered_rows']]
+  result['col_labels'] = dict((key.decode('utf-8'), make_wiki_link(val))
+                              for key, val in data['col_labels'].items())
+  result['row_labels'] = dict((key.decode('utf-8'), make_wiki_link(val))
+                              for key, val in data['row_labels'].items())
+  result['row_totals'] = dict(
       (key.decode('utf-8'), val) for key, val in data['row_totals'].items())
-  data['col_totals'] = dict(
+  result['col_totals'] = dict(
       (key.decode('utf-8'), val) for key, val in data['col_totals'].items())
 
+  # Convert the data dictionary
   new = {}
   for key, value in data['data'].items():
     new[key.decode('utf-8')] = dict(
         (k.decode('utf-8'), v) for k, v in value.items())
-  data['data'] = new
+  result['data'] = new
 
-  return data
+  return result
 
 
 def get_project_category_links(data, sort=False):
@@ -353,6 +357,13 @@ def generate_project_table_data(wp10db, project_name, ignore_cache=False):
     project_display = project_name.decode('utf-8').replace('_', ' ')
     title = ('%s articles by quality and importance' % project_display)
 
+    # Get the project's timestamp
+    project = logic_project.get_project_by_name(wp10db, project_name)
+    timestamp = None
+    if project:
+      # Convert to ISO format for JavaScript compatibility
+      timestamp = project.timestamp_dt.isoformat()
+
     data = generate_table_data(
         stats, categories, {
             'project': project_name,
@@ -361,6 +372,7 @@ def generate_project_table_data(wp10db, project_name, ignore_cache=False):
             'link_to_v2': True,
             'title': title,
             'center_table': False,
+            'timestamp': timestamp,
         })
     cache_table_data(project_name, data)
 
