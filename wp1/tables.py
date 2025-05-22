@@ -1,18 +1,19 @@
-from collections import defaultdict
-from datetime import timedelta
 import logging
 import pickle
 import re
+from collections import defaultdict
+from datetime import timedelta
 
 from redis import Redis
 
 from wp1 import api
 from wp1.conf import get_conf
 from wp1.constants import LIST_URL, LIST_V2_URL, WIKI_BASE
+from wp1.credentials import CREDENTIALS, ENV
+from wp1.logic import project as logic_project
+from wp1.logic import util as logic_util
 from wp1.templates import env as jinja_env
 from wp1.wp10_db import connect as wp10_connect
-from wp1.credentials import ENV, CREDENTIALS
-from wp1.logic import project as logic_project
 
 logger = logging.getLogger(__name__)
 
@@ -362,7 +363,7 @@ def generate_project_table_data(wp10db, project_name, ignore_cache=False):
     timestamp = None
     if project:
       # Convert to ISO format for JavaScript compatibility
-      timestamp = project.timestamp_dt.isoformat()
+      timestamp = logic_util.wp10_timestamp_to_unix(project.p_timestamp)
 
     data = generate_table_data(
         stats, categories, {
@@ -441,4 +442,5 @@ def create_wikicode(table_data):
       'LIST_URL': LIST_URL,
       'LIST_V2_URL': LIST_V2_URL,
   }
+  return template.render({**table_data, **display})
   return template.render({**table_data, **display})
