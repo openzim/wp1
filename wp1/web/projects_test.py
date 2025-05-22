@@ -96,7 +96,7 @@ class ProjectTest(BaseWebTestcase):
     for i in range(101):
       projects.append({
           'p_project': b'Project %s' % str(i).encode('utf-8'),
-          'p_timestamp': b'20181225'
+          'p_timestamp': b'20181225000000'
       })
 
     ratings = []
