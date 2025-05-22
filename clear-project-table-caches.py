@@ -1,6 +1,6 @@
 import logging
 
-from wp1 import queues
+from wp1.logic import project as logic_project
 from wp1.redis_db import connect as redis_connect
 from wp1.wp10_db import connect as wp10_connect
 
@@ -12,7 +12,10 @@ def main():
 
   wp10db = wp10_connect()
   redis = redis_connect()
-  queues.enqueue_all_projects(redis, wp10db)
+
+  for project in logic_project.list_all_projects(wp10db):
+    logger.info(f'Clearing cache for project {project.p_project.decode('utf-8')}')
+    redis.delete(project.p_project)
 
 
 if __name__ == '__main__':
