@@ -144,6 +144,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 
 import SecondaryNav from './SecondaryNav.vue';
 import LoginRequired from './LoginRequired.vue';
+import { localDate } from '../lib/util.js';
 
 export default {
   components: { SecondaryNav, LoginRequired, PulseLoader },
@@ -182,13 +183,6 @@ export default {
     hasDeletedZim: function (item) {
       // ZIMs older than 2 weeks get deleted.
       return !!item.z_is_deleted;
-    },
-    localDate: function (secs) {
-      const fmt = new Intl.DateTimeFormat('en-US', {
-        dateStyle: 'short',
-        timeStyle: 'short',
-      });
-      return fmt.format(new Date(secs * 1000));
     },
     getLists: async function () {
       let createDataTable = false;
@@ -259,6 +253,9 @@ export default {
     },
     stopProgressPolling: function () {
       clearInterval(this.pollId);
+    },
+    localDate: function (date) {
+      return localDate(date);
     },
   },
   created: function () {
