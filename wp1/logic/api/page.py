@@ -1,11 +1,11 @@
-from datetime import datetime
 import logging
 import re
 import time
+from datetime import datetime
 
+import wp1.logic.util as logic_util
 from wp1.api import site
 from wp1.constants import TS_FORMAT
-import wp1.logic.util as logic_util
 
 logger = logging.getLogger(__name__)
 RE_NAMESPACE = re.compile(r'^([^:]+:)')
@@ -25,6 +25,7 @@ def get_redirect(title_with_ns):
                      rvlimit=1)
       break
     except:
+      logger.exception('Error contacting API for redirects, retrying...')
       retries -= 1
 
   if res is None:
@@ -57,6 +58,7 @@ def get_moves(title_with_ns):
       res = site.logevents(title=title_with_ns, type='move')
       break
     except:
+      logger.exception('Error contacting API for moves, retrying...')
       retries -= 1
 
   if res is None:

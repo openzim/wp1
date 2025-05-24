@@ -397,7 +397,8 @@ def generate_global_table_data(wp10db):
 
 
 def upload_project_table(project_name):
-  logging.basicConfig(level=logging.INFO)
+  logging.basicConfig(level=logging.DEBUG,
+                      format='%(levelname)s:%(asctime)s:%(name)s:%(message)s')
   wp10db = wp10_connect()
 
   try:
@@ -406,6 +407,8 @@ def upload_project_table(project_name):
     table_data = generate_project_table_data(wp10db,
                                              project_name,
                                              ignore_cache=True)
+    from pprint import pformat
+    logger.debug('Table data: %s', pformat(table_data))
 
     wikicode = create_wikicode(table_data)
     page_name = ('User:WP 1.0 bot/Tables/Project/%s' %
