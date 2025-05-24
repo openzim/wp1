@@ -1,11 +1,12 @@
-from http.cookiejar import MozillaCookieJar
 import logging
 import os
+from http.cookiejar import MozillaCookieJar
 
 import mwclient
 import requests
 
-from wp1.credentials import ENV, CREDENTIALS
+from wp1.credentials import CREDENTIALS, ENV
+
 logger = logging.getLogger(__name__)
 MW_USER_AGENT = 'WP1.0Bot/3.0. Run by User:Audiodude. Using mwclient/0.9.1'
 
@@ -24,7 +25,7 @@ site = None
 def login():
   global site
   if site and site.logged_in:
-    logger.info('Already logged into API site')
+    logger.debug('Already logged into API site')
     return True
 
   api_creds = get_credentials()
@@ -90,4 +91,5 @@ def get_revision_id_by_timestamp(page, timestamp):
     rev = next(page.revisions(start=timestamp, limit=1, prop='ids'))
   except StopIteration:
     return None
+  return rev['revid']
   return rev['revid']

@@ -4,6 +4,7 @@ import time
 from datetime import datetime
 
 import wp1.logic.util as logic_util
+from wp1.api import login as site_login
 from wp1.api import site
 from wp1.constants import TS_FORMAT
 
@@ -13,6 +14,9 @@ RE_NAMESPACE = re.compile(r'^([^:]+:)')
 
 def get_redirect(title_with_ns):
   logger.debug('Querying api for redirects for %s', title_with_ns)
+  site_login()
+  if site is None or not site.logged_in:
+    return None
 
   res = None
   retries = 3
@@ -50,6 +54,9 @@ def get_redirect(title_with_ns):
 
 def get_moves(title_with_ns):
   logger.debug('Querying api for moves of page %s', title_with_ns)
+  site_login()
+  if site is None or not site.logged_in:
+    return None
 
   res = None
   retries = 3
@@ -90,4 +97,5 @@ def get_moves(title_with_ns):
   if retries == 0:
     logger.warning('Error contacting continuation API, returning None')
 
+  return ans or None
   return ans or None
