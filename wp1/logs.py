@@ -1,15 +1,16 @@
-from collections import defaultdict
-from datetime import datetime, timedelta
 import logging
 import re
+from collections import defaultdict
+from datetime import datetime, timedelta
 
-from wp1 import api
+from wp1 import api, app_logging
 from wp1.conf import get_conf
-from wp1.redis_db import connect as redis_connect
-from wp1.constants import LOG_NS, LOG_DATE_FORMAT, TS_FORMAT, TS_FORMAT_WP10, MAX_LOGS_PER_DAY
-from wp1.logic.util import int_to_ns
+from wp1.constants import (LOG_DATE_FORMAT, LOG_NS, MAX_LOGS_PER_DAY,
+                           TS_FORMAT, TS_FORMAT_WP10)
 from wp1.logic import log as logic_log
+from wp1.logic.util import int_to_ns
 from wp1.models.wp10.log import Log
+from wp1.redis_db import connect as redis_connect
 from wp1.templates import env as jinja_env
 from wp1.time import get_current_datetime
 from wp1.wiki_db import connect as wiki_connect
@@ -193,7 +194,7 @@ def update_log_page_for_project(project_name):
   wikidb = wiki_connect()
   wp10db = wp10_connect()
   redis = redis_connect()
-  logging.basicConfig(level=logging.INFO)
+  app_logging.configure_logging()
 
   try:
     log_map = calculate_logs_to_update(redis, project_name)
@@ -220,6 +221,12 @@ def update_log_page_for_project(project_name):
                     'large to upload.')
 
     logger.info('Updating logs for %s', project_name)
+    api.save_page(p, update, 'Update logs for past 7 days')
+  finally:
+    if wikidb:
+      wikidb.close()
+    if wp10db:
+      wp10db.close()
     api.save_page(p, update, 'Update logs for past 7 days')
   finally:
     if wikidb:

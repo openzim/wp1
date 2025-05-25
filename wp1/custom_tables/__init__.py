@@ -2,6 +2,7 @@ import importlib
 import json
 import logging
 
+from wp1 import app_logging
 from wp1.wp10_db import connect as wp10_connect
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,7 @@ def all_custom_table_names(wp10db):
 
 
 def upload_custom_table_by_name(custom_name):
-  logging.basicConfig(level=logging.INFO)
+  app_logging.configure_logging()
   wp10db = None
 
   try:

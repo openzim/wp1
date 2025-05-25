@@ -6,7 +6,7 @@ from datetime import timedelta
 
 from redis import Redis
 
-from wp1 import api
+from wp1 import api, app_logging
 from wp1.conf import get_conf
 from wp1.constants import LIST_URL, LIST_V2_URL, WIKI_BASE
 from wp1.credentials import CREDENTIALS, ENV
@@ -397,8 +397,7 @@ def generate_global_table_data(wp10db):
 
 
 def upload_project_table(project_name):
-  logging.basicConfig(level=logging.DEBUG,
-                      format='%(levelname)s:%(asctime)s:%(name)s:%(message)s')
+  app_logging.configure_logging()
   wp10db = wp10_connect()
 
   try:
@@ -423,7 +422,7 @@ def upload_project_table(project_name):
 
 
 def upload_global_table():
-  logging.basicConfig(level=logging.INFO)
+  app_logging.configure_logging()
   wp10db = wp10_connect()
 
   try:

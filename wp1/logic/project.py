@@ -6,7 +6,7 @@ from collections import defaultdict
 
 import attr
 
-from wp1 import api, tables
+from wp1 import api, app_logging, tables
 from wp1.conf import get_conf
 from wp1.constants import (CATEGORY_NS_INT, GLOBAL_TIMESTAMP,
                            GLOBAL_TIMESTAMP_WIKI, MAX_ARTICLES_BEFORE_COMMIT,
@@ -68,8 +68,7 @@ def update_project_by_name(project_name, track_progress=False):
   wikidb = wiki_connect()
   redis = redis_connect()
 
-  logging.basicConfig(level=logging.DEBUG,
-                      format='%(levelname)s:%(asctime)s:%(name)s:%(message)s')
+  app_logging.configure_logging()
   logging.getLogger('mwclient').setLevel(logging.CRITICAL)
   logging.getLogger('urllib3').setLevel(logging.CRITICAL)
   logging.getLogger('requests_oauthlib').setLevel(logging.CRITICAL)
