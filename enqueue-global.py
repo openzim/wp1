@@ -3,17 +3,16 @@ import logging
 from redis import Redis
 from rq import Queue
 
-from wp1.environment import Environment
-from wp1.credentials import ENV, CREDENTIALS
-from wp1 import constants
-from wp1 import tables
 import wp1.logic.project as logic_project
+from wp1 import app_logging, constants, tables
+from wp1.credentials import CREDENTIALS, ENV
+from wp1.environment import Environment
 
 logger = logging.getLogger(__name__)
 
 
 def main():
-  logging.basicConfig(level=logging.INFO)
+  app_logging.configure_logging()
 
   creds = CREDENTIALS[ENV]['REDIS']
 
