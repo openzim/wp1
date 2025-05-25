@@ -438,8 +438,21 @@ def update_project_assessments_by_kind(wikidb,
         wp10db.ping()
         wp10db.commit()
 
+      if n % 5000 == 0:
+        logger.debug('Processed %s articles for %s', n,
+                     project.p_project.decode('utf-8'))
+
       if track_progress:
         increment_progress_count(redis, project.p_project)
+  if n < 5000:
+    logger.debug('Processed %s articles for %s', n,
+                 project.p_project.decode('utf-8'))
+
+  if n == 0:
+    logger.warning('No articles found in project %s for %s',
+                   project.p_project.decode('utf-8'),
+                   kind.value.decode('utf-8'))
+
   logger.info('End, committing db')
   wp10db.ping()
   wp10db.commit()

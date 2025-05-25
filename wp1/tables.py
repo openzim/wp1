@@ -3,6 +3,7 @@ import pickle
 import re
 from collections import defaultdict
 from datetime import timedelta
+from pprint import pformat
 
 from redis import Redis
 
@@ -406,12 +407,13 @@ def upload_project_table(project_name):
     table_data = generate_project_table_data(wp10db,
                                              project_name,
                                              ignore_cache=True)
-    from pprint import pformat
     logger.debug('Table data: %s', pformat(table_data))
 
     wikicode = create_wikicode(table_data)
     page_name = ('User:WP 1.0 bot/Tables/Project/%s' %
                  project_name.decode('utf-8'))
+    logger.debug('Wikitext: %s', wikicode)
+
     page = api.get_page(page_name)
     logger.info('Uploading wikicode to Wikipedia: %s',
                 project_name.decode('utf-8'))
@@ -444,5 +446,4 @@ def create_wikicode(table_data):
       'LIST_URL': LIST_URL,
       'LIST_V2_URL': LIST_V2_URL,
   }
-  return template.render({**table_data, **display})
   return template.render({**table_data, **display})
