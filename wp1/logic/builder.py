@@ -5,7 +5,7 @@ import attr
 
 import wp1.logic.selection as logic_selection
 import wp1.logic.util as logic_util
-from wp1 import queues, zimfarm
+from wp1 import app_logging, queues, zimfarm
 from wp1.constants import (CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE,
                            MAX_ZIM_FILE_POLL_TIME, TS_FORMAT_WP10)
 from wp1.credentials import CREDENTIALS, ENV
@@ -140,7 +140,7 @@ def materialize_builder(builder_cls, builder_id, content_type):
   wp10db = wp10_connect()
   redis = redis_connect()
   s3 = connect_storage()
-  logging.basicConfig(level=logging.INFO)
+  app_logging.configure_logging()
 
   try:
     builder = get_builder(wp10db, builder_id)
@@ -472,7 +472,7 @@ def zim_file_status_for(wp10db, builder_id):
 def on_zim_file_status_poll(task_id):
   wp10db = wp10_connect()
   redis = redis_connect()
-  logging.basicConfig(level=logging.INFO)
+  app_logging.configure_logging()
 
   result = zimfarm.is_zim_file_ready(task_id)
   logging.info('Polled for ZIM file for task_id=%s, result: %s', task_id,

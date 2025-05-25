@@ -1,15 +1,16 @@
+import csv
+import logging
+import os.path
 from bz2 import BZ2Decompressor
 from collections import namedtuple
 from contextlib import contextmanager
-import logging
-import os.path
-
-import csv
 from datetime import datetime, timedelta
+
 import requests
 
-from wp1.credentials import ENV, CREDENTIALS
+from wp1 import app_logging
 from wp1.constants import WP1_USER_AGENT
+from wp1.credentials import CREDENTIALS, ENV
 from wp1.exceptions import Wp1ScoreProcessingError
 from wp1.time import get_current_datetime
 from wp1.wp10_db import connect as wp10_connect
@@ -237,6 +238,5 @@ def update_pageviews(filter_lang=None, commit_after=50000):
 
 
 if __name__ == '__main__':
-  logging.basicConfig(level=logging.INFO,
-                      format='%(levelname)s %(asctime)s: %(message)s')
+  app_logging.configure_logging()
   update_pageviews()

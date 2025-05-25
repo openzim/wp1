@@ -1,14 +1,14 @@
 import logging
 import sys
 
+from wp1 import app_logging, queues
 from wp1.redis_db import connect as redis_connect
-from wp1 import queues
 
 logger = logging.getLogger(__name__)
 
 
 def main():
-  logging.basicConfig(level=logging.INFO)
+  app_logging.configure_logging()
 
   # Job methods expect project names as bytes.
   project_names = [n.encode('utf-8') for n in sys.argv[1:]]
