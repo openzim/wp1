@@ -15,11 +15,11 @@ def configure_logging():
 
   # Convert the bare level string (ie 'DEBUG') to a logging level constant
   level_string = root_config.get('level', 'INFO')
-  root_config['level'] = logging.getLevelNamesMapping().get(
-      level_string.upper(), logging.INFO)
+  root_level = logging.getLevelNamesMapping().get(level_string.upper(),
+                                                  logging.INFO)
 
   root_logger = logging.getLogger()
-  root_logger.setLevel(root_config['level'])
+  root_logger.setLevel(root_level)
   formatter = logging.Formatter(
       root_config.get('format',
                       '%(levelname)s:%(asctime)s:%(name)s:%(message)s'))
