@@ -5,8 +5,8 @@ from datetime import datetime, timedelta
 
 from wp1 import api, app_logging
 from wp1.conf import get_conf
-from wp1.constants import (LOG_DATE_FORMAT, LOG_NS, MAX_LOGS_PER_DAY,
-                           TS_FORMAT, TS_FORMAT_WP10)
+from wp1.constants import (LOG_DATE_FORMAT, LOG_NS, MAX_LOGS_PER_DAY, TS_FORMAT,
+                           TS_FORMAT_WP10)
 from wp1.logic import log as logic_log
 from wp1.logic.util import int_to_ns
 from wp1.models.wp10.log import Log
@@ -228,8 +228,3 @@ def update_log_page_for_project(project_name):
     if wp10db:
       wp10db.close()
     api.save_page(p, update, 'Update logs for past 7 days')
-  finally:
-    if wikidb:
-      wikidb.close()
-    if wp10db:
-      wp10db.close()
