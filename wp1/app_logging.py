@@ -6,7 +6,6 @@ from wp1.credentials import CREDENTIALS, ENV
 def configure_logging():
   creds = CREDENTIALS.get(ENV, {})
   log_config = creds.get('LOGGING', {})
-  print(log_config)
 
   root_config = log_config.get('*', {
       'level': 'INFO',
