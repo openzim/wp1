@@ -23,9 +23,11 @@ def configure_logging():
   formatter = logging.Formatter(
       root_config.get('format',
                       '%(levelname)s:%(asctime)s:%(name)s:%(message)s'))
-  handler = logging.StreamHandler()
-  handler.setFormatter(formatter)
-  root_logger.addHandler(handler)
+
+  if not root_logger.hasHandlers():
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    root_logger.addHandler(handler)
 
   for logger_name, config in log_config.items():
     if logger_name == '*':
