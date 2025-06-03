@@ -242,6 +242,22 @@ If you wish to connect to a wiki replica database on toolforge, you will need
 to fill out your credentials in WIKIDB section. This is not required for
 developing the frontend.
 
+## Running a ZIM Farm
+
+If you wish to run a ZIM Farm instance for testing purposes, the easiest way is to 
+clone the zimfarm repository and then setup a development instance of it:
+
+```bash
+git clone https://github.com/openzim/zimfarm.git
+cd zimfarm/dev
+docker compose -p zimfarm up -d
+```
+
+For detailed setup instructions, refer to `dev/README.md` in the zimfarm repository.
+The `ZIMFARM` section in your `credentials.py` file contains pre-configured default
+values for the development instance. If you encounter connection issues, verify
+these credentials match your local setup.
+
 ## Development overlay
 
 The API server has a built-in development overlay, currently used for manual
