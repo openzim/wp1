@@ -126,7 +126,7 @@ class ZimFarmTest(BaseWpOneDbTest):
                 'warehouse_path': '/wikipedia',
                 'image': {
                     'name': 'ghcr.io/openzim/mwoffliner',
-                    'tag': 'latest'
+                    'tag': '1.15.0'
                 },
                 'resources': {
                     'cpu': 3,
@@ -152,6 +152,8 @@ class ZimFarmTest(BaseWpOneDbTest):
                         'MyBuilder-def',
                     'optimisationCacheUrl':
                         'https://wasabi.fake/bucket',
+                    'forceRender':
+                        'ActionParse',
                 }
             }
         }, actual)
