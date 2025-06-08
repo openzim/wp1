@@ -9,18 +9,13 @@ import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
 from wp1.constants import WP1_USER_AGENT
 from wp1.credentials import CREDENTIALS, ENV
-from wp1.exceptions import (
-    InvalidZimDescriptionError,
-    InvalidZimLongDescriptionError,
-    InvalidZimTitleError,
-    ObjectNotFoundError,
-    ZimFarmError,
-    ZimFarmTooManyArticlesError,
-)
+from wp1.exceptions import (InvalidZimDescriptionError,
+                            InvalidZimLongDescriptionError,
+                            InvalidZimTitleError, ObjectNotFoundError,
+                            ZimFarmError, ZimFarmTooManyArticlesError)
 from wp1.logic import util
 from wp1.time import get_current_datetime
 
-MWOFFLINER_IMAGE = 'ghcr.io/openzim/mwoffliner:latest'
 REDIS_AUTH_KEY = 'zimfarm.auth'
 
 # ZIM metadata limits as per https://wiki.openzim.org/wiki/Metadata
@@ -184,12 +179,19 @@ def _get_params(s3,
   filename_prefix = '%s-%s' % (util.safe_name(
       builder.b_name.decode('utf-8')), selection_id_frag)
 
+  image = CREDENTIALS[ENV].get('ZIMFARM', {}).get('iamge')
+  if image is None:
+    image = 'ghcr.io/openzim/mwoffliner:1.15.0'
+    logger.warning(
+        'No ZIMFARM["image"] found in credentials, using default (%s)', image)
+  image_name, image_tag = image.split(':')
+
   config = {
       'task_name': 'mwoffliner',
       'warehouse_path': '/wikipedia',
       'image': {
-          'name': MWOFFLINER_IMAGE.split(':')[0],
-          'tag': MWOFFLINER_IMAGE.split(':')[1],
+          'name': image_name,
+          'tag': image_tag,
       },
       'resources': logic_selection.get_resource_profile(selection),
       'platform': 'wikimedia',
@@ -199,6 +201,8 @@ def _get_params(s3,
               'https://%s/' % project,
           'adminEmail':
               'contact+wp1@kiwix.org',
+          'forceRender':
+              'ActionParse',
           'articleList':
               logic_selection.url_for_selection(selection),
           'customZimTitle':
