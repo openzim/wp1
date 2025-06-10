@@ -9,10 +9,14 @@ import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
 from wp1.constants import WP1_USER_AGENT
 from wp1.credentials import CREDENTIALS, ENV
-from wp1.exceptions import (InvalidZimDescriptionError,
-                            InvalidZimLongDescriptionError,
-                            InvalidZimTitleError, ObjectNotFoundError,
-                            ZimFarmError, ZimFarmTooManyArticlesError)
+from wp1.exceptions import (
+    InvalidZimDescriptionError,
+    InvalidZimLongDescriptionError,
+    InvalidZimTitleError,
+    ObjectNotFoundError,
+    ZimFarmError,
+    ZimFarmTooManyArticlesError,
+)
 from wp1.logic import util
 from wp1.time import get_current_datetime
 
@@ -179,11 +183,11 @@ def _get_params(s3,
   filename_prefix = '%s-%s' % (util.safe_name(
       builder.b_name.decode('utf-8')), selection_id_frag)
 
-  image = CREDENTIALS[ENV].get('ZIMFARM', {}).get('iamge')
+  image = CREDENTIALS[ENV].get('ZIMFARM', {}).get('image')
   if image is None:
-    image = 'ghcr.io/openzim/mwoffliner:1.15.0'
+    image = 'ghcr.io/openzim/mwoffliner:latest'
     logger.warning(
-        'No ZIMFARM["image"] found in credentials, using default (%s)', image)
+        'No ZIMFARM["image"] found in credentials, using latest (%s)', image)
   image_name, image_tag = image.split(':')
 
   config = {
