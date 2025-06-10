@@ -6,6 +6,7 @@ import requests
 
 from wp1 import zimfarm
 from wp1.base_db_test import BaseWpOneDbTest
+from wp1.credentials import CREDENTIALS
 from wp1.environment import Environment
 from wp1.exceptions import (
     InvalidZimDescriptionError,
@@ -25,6 +26,60 @@ from wp1.zimfarm import (
 
 
 class ZimFarmTest(BaseWpOneDbTest):
+  expected_params = {
+      'name': 'wp1_selection_def',
+      'language': {
+          'code': 'eng',
+          'name_en': 'English',
+          'name_native': 'English'
+      },
+      'category': 'wikipedia',
+      'periodicity': 'manually',
+      'tags': [],
+      'enabled': True,
+      'notification': {
+          'ended': {
+              'webhook': [
+                  'http://test.server.fake/v1/builders/zim/status?token=hook-token-abc'
+              ],
+          },
+      },
+      'config': {
+          'task_name': 'mwoffliner',
+          'warehouse_path': '/wikipedia',
+          'image': {
+              'name': 'ghcr.io/openzim/mwoffliner',
+              'tag': 'latest'
+          },
+          'resources': {
+              'cpu': 3,
+              'memory': 2242586827,
+              'disk': 21474836480,
+          },
+          'platform': 'wikimedia',
+          'monitor': False,
+          'flags': {
+              'customZimDescription':
+                  'This is the short description',
+              'customZimLongDescription':
+                  'This is the long description',
+              'mwUrl':
+                  'https://en.wikipedia.fake/',
+              'adminEmail':
+                  'contact+wp1@kiwix.org',
+              'articleList':
+                  'http://credentials.not.found.fake/selections/foo/1234/name.tsv',
+              'customZimTitle':
+                  'My Builder',
+              'filenamePrefix':
+                  'MyBuilder-def',
+              'optimisationCacheUrl':
+                  'https://wasabi.fake/bucket',
+              'forceRender':
+                  'ActionParse',
+          }
+      }
+  }
 
   def _insert_builder(self):
     value_dict = attr.asdict(self.builder)
@@ -102,61 +157,34 @@ class ZimFarmTest(BaseWpOneDbTest):
         long_description='This is the long description')
 
     self.maxDiff = None
-    self.assertEqual(
-        {
-            'name': 'wp1_selection_def',
-            'language': {
-                'code': 'eng',
-                'name_en': 'English',
-                'name_native': 'English'
-            },
-            'category': 'wikipedia',
-            'periodicity': 'manually',
-            'tags': [],
-            'enabled': True,
-            'notification': {
-                'ended': {
-                    'webhook': [
-                        'http://test.server.fake/v1/builders/zim/status?token=hook-token-abc'
-                    ],
-                },
-            },
-            'config': {
-                'task_name': 'mwoffliner',
-                'warehouse_path': '/wikipedia',
-                'image': {
-                    'name': 'ghcr.io/openzim/mwoffliner',
-                    'tag': '1.15.0'
-                },
-                'resources': {
-                    'cpu': 3,
-                    'memory': 2242586827,
-                    'disk': 21474836480,
-                },
-                'platform': 'wikimedia',
-                'monitor': False,
-                'flags': {
-                    'customZimDescription':
-                        'This is the short description',
-                    'customZimLongDescription':
-                        'This is the long description',
-                    'mwUrl':
-                        'https://en.wikipedia.fake/',
-                    'adminEmail':
-                        'contact+wp1@kiwix.org',
-                    'articleList':
-                        'http://credentials.not.found.fake/selections/foo/1234/name.tsv',
-                    'customZimTitle':
-                        'My Builder',
-                    'filenamePrefix':
-                        'MyBuilder-def',
-                    'optimisationCacheUrl':
-                        'https://wasabi.fake/bucket',
-                    'forceRender':
-                        'ActionParse',
-                }
-            }
-        }, actual)
+    self.assertEqual(self.expected_params, actual)
+
+  def test_get_params_image_in_env(self):
+    s3 = MagicMock()
+    s3.client.head_object.return_value = {'ContentLength': 20000000}
+    from wp1.zimfarm import CREDENTIALS
+    CREDENTIALS[
+        Environment.TEST]['ZIMFARM']['cache_url'] = 'https://wasabi.fake/bucket'
+    CREDENTIALS[Environment.TEST]['ZIMFARM'][
+        'image'] = 'ghcr.io/openzim/mwoffliner-advanced:1.23.45'
+
+    expected = self.expected_params.copy()
+    expected['config']['image'] = {
+        'name': 'ghcr.io/openzim/mwoffliner-advanced',
+        'tag': '1.23.45'
+    }
+
+    actual = zimfarm._get_params(
+        s3,
+        self.wp10db,
+        self.builder,
+        self.selection,
+        title='My Builder',
+        description='This is the short description',
+        long_description='This is the long description')
+
+    self.maxDiff = None
+    self.assertEqual(expected, actual)
 
   def test_get_params_missing_builder(self):
     s3 = MagicMock()
