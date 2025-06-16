@@ -385,28 +385,25 @@ def latest_selections_with_errors(wp10db, builder_id):
   return res
 
 
-def schedule_zim_file(s3,
-                      redis,
-                      wp10db,
-                      builder_id,
-                      user_id=None,
-                      title='',
-                      description='',
-                      long_description=None):
-  if isinstance(builder_id, str):
-    builder_id = builder_id.encode('utf-8')
-  builder = get_builder(wp10db, builder_id)
-  if builder is None:
-    raise ObjectNotFoundError('Could not find builder with id = %s' %
-                              builder_id)
+def request_zim_file( builder, builder_id, title, description, long_description, rebuild_selection=False):
+  """Request a ZIM file creation for the given builder.
+  """
+  # logger.error("Inputs: builder_id=%s, title=%s, description=%s, long_description=%s", builder_id, title, description, long_description)
 
-  if user_id is not None:
-    user_id = str(user_id)
-    builder_user_id = builder.b_user_id.decode('utf-8')
-    if user_id != builder_user_id:
-      raise UserNotAuthorizedError(
-          'Could not use builder id = %s for user id = %s' %
-          (builder_id, user_id))
+  wp10db = wp10_connect()
+  redis = redis_connect()
+  s3 = connect_storage()
+
+  if rebuild_selection:
+    pass
+    ## WIP 
+    # create_or_update_builder(wp10db,
+    #                         list_name,
+    #                         user_id,
+    #                         project,
+    #                         params,
+    #                         model,
+    #                         builder_id=builder_id)
 
   task_id = zimfarm.schedule_zim_file(s3,
                                       redis,
@@ -427,6 +424,47 @@ def schedule_zim_file(s3,
         ''', (task_id, utcnow().strftime(TS_FORMAT_WP10), long_description or
               None, description or None, selection.s_id))
   wp10db.commit()
+  return task_id
+
+
+def schedule_zim_file(s3,
+                      redis,
+                      wp10db,
+                      builder_id,
+                      user_id=None,
+                      title='',
+                      description='',
+                      long_description=None,
+                      scheduled_repetitions=None
+                      ):
+  if isinstance(builder_id, str):
+    builder_id = builder_id.encode('utf-8')
+  builder = get_builder(wp10db, builder_id)
+  if builder is None:
+    raise ObjectNotFoundError('Could not find builder with id = %s' %
+                              builder_id)
+
+  if user_id is not None:
+    user_id = str(user_id)
+    builder_user_id = builder.b_user_id.decode('utf-8')
+    if user_id != builder_user_id:
+      raise UserNotAuthorizedError(
+          'Could not use builder id = %s for user id = %s' %
+          (builder_id, user_id))
+    
+  # if scheduled_repetitions is not None schedule future repetitions using rq-scheduler
+  if scheduled_repetitions is not None:
+    if not isinstance(scheduled_repetitions, dict):
+      raise ValueError('scheduled_repetitions must be a dict')
+    if 'repetition_period_in_months' not in scheduled_repetitions:
+      raise ValueError(
+          'scheduled_repetitions must contain repetition_period_in_months')
+    if 'number_of_repetitions' not in scheduled_repetitions:
+      raise ValueError('scheduled_repetitions must contain number_of_repetitions')
+
+    queues.schedule_zim_file_repetitions(redis, wp10db, builder, builder_id, title, description, long_description, scheduled_repetitions)
+
+  task_id = request_zim_file(builder, builder_id, title, description, long_description)
 
   # In production, there is a web hook from the Zimfarm that notifies us
   # that the task is finished and we can start polling for the ZIM file
