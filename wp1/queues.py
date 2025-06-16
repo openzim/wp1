@@ -1,4 +1,5 @@
-from datetime import timedelta
+from datetime import datetime, timedelta, UTC
+from dateutil.relativedelta import relativedelta
 import logging
 
 from rq import Queue
@@ -16,6 +17,8 @@ from wp1 import logs
 from wp1 import tables
 from wp1.timestamp import utcnow
 from wp1.credentials import ENV
+from rq import get_current_job
+from rq.registry import FinishedJobRegistry, FailedJobRegistry, CanceledJobRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +38,9 @@ def _get_materializer_queue(redis):
 
 def _get_zimfile_poll_queue(redis):
   return Queue('zimfile-polling', connection=redis)
+
+def _get_zimfile_scheduling_queue(redis):
+  return Queue('zimfile-scheduling', connection=redis)
 
 
 def enqueue_all_projects(redis, wp10db):
@@ -182,3 +188,39 @@ def poll_for_zim_file_status(redis, task_id):
   scheduler = Scheduler(queue=poll_q, connection=redis)
   scheduler.enqueue_in(timedelta(minutes=2),
                        logic_builder.on_zim_file_status_poll, task_id)
+
+def schedule_zim_file_repetitions(redis, wp10db, builder, builder_id, title, description, long_description, scheduled_repetitions):
+  """Schedule future ZIM file creations using rq-scheduler.
+  
+  Args:
+      redis: Redis connection for job scheduling.
+      wp10db: Database connection for WP10.
+      builder: Builder instance to create ZIM files.
+      builder_id: ID of the builder to schedule.
+      title: Title of the ZIM file.
+      description: Description of the ZIM file.
+      long_description: Long description of the ZIM file.
+      scheduled_repetitions: Dict containing repetition details.
+  """
+
+  queue = _get_zimfile_scheduling_queue(redis)
+  scheduler = Scheduler(connection=queue.connection, queue=queue)
+
+  period_months = scheduled_repetitions['repetition_period_in_months']
+  num_repetitions = scheduled_repetitions['number_of_repetitions']
+  
+  first_run = datetime.now(UTC) + relativedelta(months=period_months)
+
+  cron_string = f"{first_run.minute} {first_run.hour} {first_run.day} */{period_months} *"
+
+  job = scheduler.cron(
+    cron_string,
+    func=logic_builder.request_zim_file,
+    args=[builder, builder_id, title, description, long_description],
+    kwargs={'rebuild_selection': True},
+    repeat=num_repetitions,
+    queue_name='zimfile-scheduling',
+    use_local_timezone=False    
+  )
+
+  return job.id
