@@ -254,7 +254,7 @@ def _get_zimfarm_headers(token):
   return {"Authorization": "Token %s" % token, 'User-Agent': WP1_USER_AGENT}
 
 
-def schedule_zim_file(s3,
+def request_zim_file_generation(s3,
                       redis,
                       wp10db,
                       builder,

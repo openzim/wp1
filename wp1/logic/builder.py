@@ -2,8 +2,10 @@ import json
 import logging
 
 import attr
+import flask
 
 import wp1.logic.selection as logic_selection
+import wp1.logic.zim_schedules as logic_zim_schedules
 import wp1.logic.util as logic_util
 from wp1 import app_logging, queues, zimfarm
 from wp1.constants import (CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE,
@@ -193,7 +195,7 @@ def auto_schedule_zim_file(s3, redis, wp10db, builder_id):
       'utf-8') if zim_file.z_description is not None else None
   long_description = zim_file.z_long_description.decode(
       'utf-8') if zim_file.z_long_description is not None else None
-  schedule_zim_file(s3,
+  request_zimfile_from_zimfarm(s3,
                     redis,
                     wp10db,
                     builder_id,
@@ -385,7 +387,7 @@ def latest_selections_with_errors(wp10db, builder_id):
   return res
 
 
-def request_zim_file( builder, builder_id, title, description, long_description, rebuild_selection=False):
+def request_zimfile_from_zimfarm( builder, builder_id, title, description, long_description, rebuild_selection=False):
   """Request a ZIM file creation for the given builder.
   """
   # logger.error("Inputs: builder_id=%s, title=%s, description=%s, long_description=%s", builder_id, title, description, long_description)
@@ -395,23 +397,20 @@ def request_zim_file( builder, builder_id, title, description, long_description,
   s3 = connect_storage()
 
   if rebuild_selection:
-    pass
-    ## WIP 
-    # create_or_update_builder(wp10db,
-    #                         list_name,
-    #                         user_id,
-    #                         project,
-    #                         params,
-    #                         model,
-    #                         builder_id=builder_id)
+    logger.error('Rebuilding selection for builder_id=%s', builder_id)
 
-  task_id = zimfarm.schedule_zim_file(s3,
-                                      redis,
-                                      wp10db,
-                                      builder,
-                                      title=title,
-                                      description=description,
-                                      long_description=long_description)
+    builder : Builder = get_builder(wp10db, builder_id)
+    update_builder(wp10db, builder)
+    # Rebuild the selection for the builder
+    materialize_builder(Builder, builder_id, 'text/tab-separated-values')
+
+  task_id = zimfarm.request_zim_file_generation(s3,
+                                                redis,
+                                                wp10db,
+                                                builder,
+                                                title=title,
+                                                description=description,
+                                                long_description=long_description)
   selection = latest_selection_for(wp10db, builder_id,
                                    'text/tab-separated-values')
 
@@ -427,7 +426,7 @@ def request_zim_file( builder, builder_id, title, description, long_description,
   return task_id
 
 
-def schedule_zim_file(s3,
+def handle_zimfile_generation(s3,
                       redis,
                       wp10db,
                       builder_id,
@@ -435,10 +434,11 @@ def schedule_zim_file(s3,
                       title='',
                       description='',
                       long_description=None,
-                      scheduled_repetitions=None
-                      ):
+                      scheduled_repetitions=None):
+  
   if isinstance(builder_id, str):
     builder_id = builder_id.encode('utf-8')
+
   builder = get_builder(wp10db, builder_id)
   if builder is None:
     raise ObjectNotFoundError('Could not find builder with id = %s' %
@@ -454,17 +454,9 @@ def schedule_zim_file(s3,
     
   # if scheduled_repetitions is not None schedule future repetitions using rq-scheduler
   if scheduled_repetitions is not None:
-    if not isinstance(scheduled_repetitions, dict):
-      raise ValueError('scheduled_repetitions must be a dict')
-    if 'repetition_period_in_months' not in scheduled_repetitions:
-      raise ValueError(
-          'scheduled_repetitions must contain repetition_period_in_months')
-    if 'number_of_repetitions' not in scheduled_repetitions:
-      raise ValueError('scheduled_repetitions must contain number_of_repetitions')
+    queues.schedule_future_zimfile_generations(redis, wp10db, builder, builder_id, title, description, long_description, scheduled_repetitions)
 
-    queues.schedule_zim_file_repetitions(redis, wp10db, builder, builder_id, title, description, long_description, scheduled_repetitions)
-
-  task_id = request_zim_file(builder, builder_id, title, description, long_description)
+  task_id = request_zimfile_from_zimfarm(builder, builder_id, title, description, long_description, rebuild_selection=False)
 
   # In production, there is a web hook from the Zimfarm that notifies us
   # that the task is finished and we can start polling for the ZIM file
@@ -520,6 +512,12 @@ def on_zim_file_status_poll(task_id):
                                         task_id,
                                         'FILE_READY',
                                         set_updated_now=True)
+
+
+    zim_schedule = logic_zim_schedules.get_scheduled_zimfarm_task_from_taskid(task_id)
+    if zim_schedule is not None:
+      logic_zim_schedules.decrement_remaining_generations(wp10db, zim_schedule.s_id)
+      ##SEND EMAIL TO USER
 
     update_version_for_finished_zim(wp10db, task_id)
   elif result == 'REQUESTED':

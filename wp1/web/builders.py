@@ -5,6 +5,8 @@ import flask
 
 import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
+import wp1.logic.zim_schedules as logic_zim_schedules
+
 from wp1 import queues
 from wp1.constants import EXT_TO_CONTENT_TYPE
 from wp1.credentials import CREDENTIALS, ENV
@@ -185,6 +187,8 @@ def create_zim_file_for_builder(builder_id):
 
   title = data.get('title')
   desc = data.get('description')
+  long_desc = data.get('long_description')
+  scheduled_repetitions = data.get('scheduled_repetitions')
 
   error_messages = []
   if not title:
@@ -193,14 +197,18 @@ def create_zim_file_for_builder(builder_id):
   if not desc:
     error_messages.append('Description is required for ZIM file')
 
+  if scheduled_repetitions is not None:
+    if not isinstance(scheduled_repetitions, dict):
+      error_messages.append('Invalid scheduled_repetitions format')
+    else:
+      if 'repetition_period_in_months' not in scheduled_repetitions or 'number_of_repetitions' not in scheduled_repetitions:
+        error_messages.append('Missing required fields in scheduled_repetitions')
+
   if error_messages:
     return flask.jsonify({'error_messages': error_messages}), 400
-
-  long_desc = data.get('long_description')
-  scheduled_repetitions = data.get('scheduled_repetitions')
-
+  
   try:
-    logic_builder.schedule_zim_file(s3,
+    logic_builder.handle_zimfile_generation(s3,
                                     redis,
                                     wp10db,
                                     builder_id,
@@ -263,6 +271,12 @@ def update_zimfarm_status():
                                           task_id,
                                           'FILE_READY',
                                           set_updated_now=True)
+      
+      zim_schedule = logic_zim_schedules.get_scheduled_zimfarm_task_from_taskid(task_id)
+      if zim_schedule is not None:
+        logic_zim_schedules.decrement_remaining_generations(wp10db, zim_schedule.s_id)
+        ##SEND EMAIL TO USER
+      
       return '', 204
 
   found = logic_selection.update_zimfarm_task(wp10db, task_id, 'ENDED')

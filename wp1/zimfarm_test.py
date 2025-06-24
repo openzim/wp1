@@ -357,7 +357,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_response.json.return_value = {'requested': ['9876']}
     mock_requests.post.side_effect = (MagicMock(), mock_response, MagicMock())
 
-    actual = zimfarm.schedule_zim_file(s3, redis, self.wp10db, self.builder)
+    actual = zimfarm.request_zim_file_generation(s3, redis, self.wp10db, self.builder)
 
     self.assertEqual('9876', actual)
 
@@ -369,7 +369,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     s3 = MagicMock()
 
     with self.assertRaises(ObjectNotFoundError):
-      zimfarm.schedule_zim_file(s3, redis, self.wp10db, None)
+      zimfarm.request_zim_file_generation(s3, redis, self.wp10db, None)
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
@@ -384,7 +384,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_response.json.return_value = {'requested': ['9876']}
     mock_requests.post.side_effect = (MagicMock(), mock_response)
 
-    zimfarm.schedule_zim_file(s3,
+    zimfarm.request_zim_file_generation(s3,
                               redis,
                               self.wp10db,
                               self.builder,
@@ -431,7 +431,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_requests.post.side_effect = (create_schedule_response, mock_response)
 
     with self.assertRaises(ZimFarmError):
-      zimfarm.schedule_zim_file(s3,
+      zimfarm.request_zim_file_generation(s3,
                                 redis,
                                 self.wp10db,
                                 self.builder,
@@ -454,7 +454,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     )
 
     with self.assertRaises(ZimFarmError):
-      zimfarm.schedule_zim_file(s3, redis, self.wp10db, self.builder)
+      zimfarm.request_zim_file_generation(s3, redis, self.wp10db, self.builder)
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
@@ -468,7 +468,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_requests.post.side_effect = (MagicMock(), mock_response, MagicMock())
 
     valid_title = "में" * (ZIM_TITLE_MAX_LENGTH)
-    actual = zimfarm.schedule_zim_file(s3,
+    actual = zimfarm.request_zim_file_generation(s3,
                                        redis,
                                        self.wp10db,
                                        self.builder,
@@ -486,7 +486,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     wrong_title = "a" * (ZIM_TITLE_MAX_LENGTH + 1)
     with self.assertRaises(InvalidZimTitleError):
-      zimfarm.schedule_zim_file(s3,
+      zimfarm.request_zim_file_generation(s3,
                                 redis,
                                 self.wp10db,
                                 self.builder,
@@ -502,7 +502,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     wrong_title = "a" * (ZIM_TITLE_MAX_LENGTH + 1)
     with self.assertRaises(InvalidZimTitleError):
-      zimfarm.schedule_zim_file(s3,
+      zimfarm.request_zim_file_generation(s3,
                                 redis,
                                 self.wp10db,
                                 self.builder,
@@ -519,7 +519,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     too_long_description = "z" * (ZIM_DESCRIPTION_MAX_LENGTH + 1)
     with self.assertRaises(InvalidZimDescriptionError):
-      zimfarm.schedule_zim_file(s3,
+      zimfarm.request_zim_file_generation(s3,
                                 redis,
                                 self.wp10db,
                                 self.builder,
@@ -537,7 +537,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     too_long_long_description = "z" * (ZIM_LONG_DESCRIPTION_MAX_LENGTH + 1)
     with self.assertRaises(InvalidZimLongDescriptionError):
-      zimfarm.schedule_zim_file(s3,
+      zimfarm.request_zim_file_generation(s3,
                                 redis,
                                 self.wp10db,
                                 self.builder,
@@ -555,7 +555,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     s3 = MagicMock()
 
     with self.assertRaises(InvalidZimLongDescriptionError):
-      zimfarm.schedule_zim_file(s3,
+      zimfarm.request_zim_file_generation(s3,
                                 redis,
                                 self.wp10db,
                                 self.builder,
@@ -572,7 +572,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     s3 = MagicMock()
 
     with self.assertRaises(InvalidZimLongDescriptionError):
-      zimfarm.schedule_zim_file(s3,
+      zimfarm.request_zim_file_generation(s3,
                                 redis,
                                 self.wp10db,
                                 self.builder,
@@ -596,7 +596,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_requests.exceptions.HTTPError = requests.exceptions.HTTPError
 
     with self.assertRaises(ZimFarmError):
-      zimfarm.schedule_zim_file(s3, redis, self.wp10db, self.builder)
+      zimfarm.request_zim_file_generation(s3, redis, self.wp10db, self.builder)
 
     mock_requests.delete.assert_called_once()
 
@@ -613,7 +613,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_requests.post.side_effect = (MagicMock(), mock_response, MagicMock())
 
     with self.assertRaises(ZimFarmError):
-      zimfarm.schedule_zim_file(s3, redis, self.wp10db, self.builder)
+      zimfarm.request_zim_file_generation(s3, redis, self.wp10db, self.builder)
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
@@ -629,7 +629,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     self.wp10db.commit()
 
     with self.assertRaises(ZimFarmTooManyArticlesError):
-      zimfarm.schedule_zim_file(s3, redis, self.wp10db, self.builder)
+      zimfarm.request_zim_file_generation(s3, redis, self.wp10db, self.builder)
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
@@ -645,7 +645,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     self.wp10db.commit()
 
     with self.assertRaises(ZimFarmTooManyArticlesError):
-      zimfarm.schedule_zim_file(s3, redis, self.wp10db, self.builder)
+      zimfarm.request_zim_file_generation(s3, redis, self.wp10db, self.builder)
 
   @patch('wp1.zimfarm.requests.get')
   def test_is_zim_file_ready(self, patched_get):

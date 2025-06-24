@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, UTC
 from dateutil.relativedelta import relativedelta
 import logging
+import uuid
 
 from rq import Queue
 import rq.exceptions
@@ -12,6 +13,7 @@ from wp1 import custom_tables
 from wp1.environment import Environment
 import wp1.logic.builder as logic_builder
 import wp1.logic.project as logic_project
+import wp1.logic.zim_schedules as logic_zim_schedules
 from wp1.wiki_db import connect as wiki_connect
 from wp1 import logs
 from wp1 import tables
@@ -182,14 +184,16 @@ def enqueue_materialize(redis, builder_cls, builder_id, content_type):
                         job_timeout=constants.JOB_TIMEOUT,
                         failure_ttl=constants.JOB_FAILURE_TTL)
 
+def sum(a,b):
+  return a + b
 
 def poll_for_zim_file_status(redis, task_id):
   poll_q = _get_zimfile_poll_queue(redis)
   scheduler = Scheduler(queue=poll_q, connection=redis)
-  scheduler.enqueue_in(timedelta(minutes=2),
+  scheduler.enqueue_in(timedelta(minutes=1),
                        logic_builder.on_zim_file_status_poll, task_id)
 
-def schedule_zim_file_repetitions(redis, wp10db, builder, builder_id, title, description, long_description, scheduled_repetitions):
+def schedule_future_zimfile_generations(redis, wp10db, builder, builder_id, title, description, long_description, scheduled_repetitions):
   """Schedule future ZIM file creations using rq-scheduler.
   
   Args:
@@ -202,6 +206,12 @@ def schedule_zim_file_repetitions(redis, wp10db, builder, builder_id, title, des
       long_description: Long description of the ZIM file.
       scheduled_repetitions: Dict containing repetition details.
   """
+  if not isinstance(scheduled_repetitions, dict):
+    raise ValueError('scheduled_repetitions must be a dict')
+  if 'repetition_period_in_months' not in scheduled_repetitions:
+    raise ValueError('scheduled_repetitions must contain repetition_period_in_months')
+  if 'number_of_repetitions' not in scheduled_repetitions:
+    raise ValueError('scheduled_repetitions must contain number_of_repetitions')
 
   queue = _get_zimfile_scheduling_queue(redis)
   scheduler = Scheduler(connection=queue.connection, queue=queue)
@@ -210,17 +220,30 @@ def schedule_zim_file_repetitions(redis, wp10db, builder, builder_id, title, des
   num_repetitions = scheduled_repetitions['number_of_repetitions']
   
   first_run = datetime.now(UTC) + relativedelta(months=period_months)
+  now = datetime.now(UTC)
+  interval_seconds = int((first_run - now).total_seconds())
 
-  cron_string = f"{first_run.minute} {first_run.hour} {first_run.day} */{period_months} *"
-
-  job = scheduler.cron(
-    cron_string,
-    func=logic_builder.request_zim_file,
+  job = scheduler.schedule(
+    scheduled_time=first_run,
+    func=logic_builder.request_zimfile_from_zimfarm,
     args=[builder, builder_id, title, description, long_description],
     kwargs={'rebuild_selection': True},
+    interval=interval_seconds,
     repeat=num_repetitions,
-    queue_name='zimfile-scheduling',
-    use_local_timezone=False    
+    queue_name='zimfile-scheduling'
   )
+
+  # Insert the new schedule into the zim_schedules table using the model
+  from wp1.models.wp10.zim_schedule import ZimSchedule
+  zim_schedule = ZimSchedule(
+      s_id=str(uuid.uuid4()),
+      s_builder_id=builder_id,
+      s_zim_file_id=None,
+      s_rq_job_id=job.id,
+      s_last_updated_at=datetime.now(UTC).strftime(constants.TS_FORMAT_WP10).encode('utf-8'),
+      s_interval_between_zim_generations=period_months,
+      s_remaining_generations=num_repetitions
+  )
+  logic_zim_schedules.insert_zim_schedule(wp10db, zim_schedule)
 
   return job.id
