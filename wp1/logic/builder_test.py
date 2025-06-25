@@ -373,9 +373,9 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.wp10_connect')
   @patch('wp1.logic.builder.redis_connect')
   @patch('wp1.logic.builder.connect_storage')
-  @patch('wp1.logic.builder.schedule_zim_file')
+  @patch('wp1.logic.builder.handle_zim_generation')
   def test_materialize_builder_no_update_zim_version(self,
-                                                     patched_schedule_zim_file,
+                                                     patched_handle_zim_generation,
                                                      patched_connect_storage,
                                                      patched_redis_connect,
                                                      patched_connect_wp10):
@@ -398,7 +398,7 @@ class BuilderTest(BaseWpOneDbTest):
 
       logic_builder.materialize_builder(TestBuilderClass, id_,
                                         'text/tab-separated-values')
-      patched_schedule_zim_file.assert_called_once_with(s3,
+      patched_handle_zim_generation.assert_called_once_with(s3,
                                                         redis,
                                                         self.wp10db,
                                                         id_,
@@ -828,7 +828,7 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
   @patch('wp1.logic.builder.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
-  def test_schedule_zim_file(self, patched_utcnow, patched_schedule_zim_file):
+  def test_handle_zim_generation(self, patched_utcnow, patched_schedule_zim_file):
     redis = MagicMock()
     s3 = MagicMock()
     patched_schedule_zim_file.return_value = '1234-a'
@@ -839,7 +839,7 @@ class BuilderTest(BaseWpOneDbTest):
                            builder_id=builder_id,
                            has_errors=False)
 
-    logic_builder.schedule_zim_file(s3,
+    logic_builder.handle_zim_generation(s3,
                                     redis,
                                     self.wp10db,
                                     builder_id,
@@ -871,14 +871,14 @@ class BuilderTest(BaseWpOneDbTest):
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
   @patch('wp1.logic.builder.zimfarm.get_zimfarm_token',
          return_value="test_token")
-  def test_schedule_zim_file_long_title(self, patched_utcnow, patched_get_zimfarm_token):
+  def test_handle_zim_generation_long_title(self, patched_utcnow, patched_get_zimfarm_token):
     redis = MagicMock()
     s3 = MagicMock()
 
     builder_id = self._insert_builder()
  
     with self.assertRaises(InvalidZimTitleError):
-      logic_builder.schedule_zim_file(s3,
+      logic_builder.handle_zim_generation(s3,
                                       redis,
                                       self.wp10db,
                                       builder_id,
@@ -888,20 +888,20 @@ class BuilderTest(BaseWpOneDbTest):
                                       long_description='z')
 
   @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
-  def test_schedule_zim_file_404(self, patched_schedule_zim_file):
+  def test_handle_zim_generation_404(self, patched_schedule_zim_file):
     redis = MagicMock()
     s3 = MagicMock()
     patched_schedule_zim_file.return_value = '1234-a'
 
     with self.assertRaises(ObjectNotFoundError):
-      logic_builder.schedule_zim_file(s3,
+      logic_builder.handle_zim_generation(s3,
                                       redis,
                                       self.wp10db,
                                       '404builder',
                                       user_id=1234)
 
   @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
-  def test_schedule_zim_file_not_authorized(self, patched_schedule_zim_file):
+  def test_handle_zim_generation_not_authorized(self, patched_schedule_zim_file):
     redis = MagicMock()
     s3 = MagicMock()
     patched_schedule_zim_file.return_value = '1234-a'
@@ -913,7 +913,7 @@ class BuilderTest(BaseWpOneDbTest):
                            has_errors=False)
 
     with self.assertRaises(UserNotAuthorizedError):
-      logic_builder.schedule_zim_file(s3,
+      logic_builder.handle_zim_generation(s3,
                                       redis,
                                       self.wp10db,
                                       builder_id,
@@ -1088,8 +1088,8 @@ class BuilderTest(BaseWpOneDbTest):
 
     self.assertEqual(2, data['b_selection_zim_version'])
 
-  @patch('wp1.logic.builder.schedule_zim_file')
-  def test_auto_schedule_zim_file(self, patched_schedule_zim_file):
+  @patch('wp1.logic.builder.handle_zim_generation')
+  def test_auto_handle_zim_generation(self, patched_handle_zim_generation):
     s3 = MagicMock()
     redis = MagicMock()
     builder_id = self._insert_builder(zim_version=1)
@@ -1100,19 +1100,19 @@ class BuilderTest(BaseWpOneDbTest):
                            has_errors=False,
                            zim_file_ready=True)
 
-    logic_builder.auto_schedule_zim_file(s3, redis, self.wp10db, builder_id)
+    logic_builder.auto_handle_zim_generation(s3, redis, self.wp10db, builder_id)
 
-    patched_schedule_zim_file.assert_called_once_with(s3,
-                                                      redis,
-                                                      self.wp10db,
-                                                      builder_id,
-                                                      description=None,
-                                                      long_description=None)
+    patched_handle_zim_generation.assert_called_once_with(s3,
+                                                          redis,
+                                                          self.wp10db,
+                                                          builder_id,
+                                                          description=None,
+                                                          long_description=None)
 
-  @patch('wp1.logic.builder.schedule_zim_file')
+  @patch('wp1.logic.builder.handle_zim_generation')
   @patch('wp1.logic.builder.zimfarm.cancel_zim_by_task_id')
-  def test_auto_schedule_zim_file_zimfarm_error(self, patched_cancel_zim,
-                                                patched_schedule_zim_file):
+  def test_auto_handle_zim_generation_zimfarm_error(self, patched_cancel_zim,
+                                                    patched_handle_zim_generation):
     s3 = MagicMock()
     redis = MagicMock()
     patched_cancel_zim.side_effect = ZimFarmError
@@ -1124,19 +1124,19 @@ class BuilderTest(BaseWpOneDbTest):
                            has_errors=False,
                            zim_file_ready=True)
 
-    logic_builder.auto_schedule_zim_file(s3, redis, self.wp10db, builder_id)
+    logic_builder.auto_handle_zim_generation(s3, redis, self.wp10db, builder_id)
 
-    patched_schedule_zim_file.assert_called_once_with(s3,
+    patched_handle_zim_generation.assert_called_once_with(s3,
                                                       redis,
                                                       self.wp10db,
                                                       builder_id,
                                                       description=None,
                                                       long_description=None)
 
-  @patch('wp1.logic.builder.schedule_zim_file')
+  @patch('wp1.logic.builder.handle_zim_generation')
   @patch('wp1.logic.builder.zimfarm.cancel_zim_by_task_id')
-  def test_auto_schedule_zim_file_cancel_tasks(self, patched_cancel_zim,
-                                               patched_schedule_zim_file):
+  def test_auto_handle_zim_generation_cancel_tasks(self, patched_cancel_zim,
+                                                   patched_handle_zim_generation):
     s3 = MagicMock()
     redis = MagicMock()
     builder_id = self._insert_builder(zim_version=1)
@@ -1174,12 +1174,12 @@ class BuilderTest(BaseWpOneDbTest):
                         SET z.z_description = "A desc", z.z_long_description = "Long desc"
                         WHERE s.s_id = 1''')
 
-    logic_builder.auto_schedule_zim_file(s3, redis, self.wp10db, builder_id)
+    logic_builder.auto_handle_zim_generation(s3, redis, self.wp10db, builder_id)
 
     patched_cancel_zim.assert_has_calls(
         (call(redis, '1abc'), call(redis, '9def')), any_order=True)
 
-    patched_schedule_zim_file.assert_called_once_with(
+    patched_handle_zim_generation.assert_called_once_with(
         s3,
         redis,
         self.wp10db,

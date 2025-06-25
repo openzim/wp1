@@ -199,7 +199,7 @@ def create_zim_file_for_builder(builder_id):
   long_desc = data.get('long_description')
 
   try:
-    logic_builder.schedule_zim_file(s3,
+    logic_builder.handle_zim_generation(s3,
                                     redis,
                                     wp10db,
                                     builder_id,

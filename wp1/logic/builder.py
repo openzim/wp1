@@ -158,7 +158,7 @@ def materialize_builder(builder_cls, builder_id, content_type):
       # be automatically created. We don't need to do this if the ZIM
       # version was updated, because that indicates that the ZIM file
       # was never requested or errored and should remain in that state.
-      auto_schedule_zim_file(s3, redis, wp10db, builder_id)
+      auto_handle_zim_generation(s3, redis, wp10db, builder_id)
   finally:
     wp10db.close()
 
@@ -179,7 +179,7 @@ def maybe_update_selection_zim_version(wp10db, builder, selection_version):
   return True
 
 
-def auto_schedule_zim_file(s3, redis, wp10db, builder_id):
+def auto_handle_zim_generation(s3, redis, wp10db, builder_id):
   # First, cancel any pending auto-scheduled tasks.
   for task_id in pending_zim_tasks_for(wp10db, builder_id):
     try:
@@ -193,7 +193,7 @@ def auto_schedule_zim_file(s3, redis, wp10db, builder_id):
       'utf-8') if zim_file.z_description is not None else None
   long_description = zim_file.z_long_description.decode(
       'utf-8') if zim_file.z_long_description is not None else None
-  schedule_zim_file(s3,
+  handle_zim_generation(s3,
                     redis,
                     wp10db,
                     builder_id,
@@ -385,7 +385,7 @@ def latest_selections_with_errors(wp10db, builder_id):
   return res
 
 
-def schedule_zim_file(s3,
+def handle_zim_generation(s3,
                       redis,
                       wp10db,
                       builder_id,
@@ -408,7 +408,7 @@ def schedule_zim_file(s3,
           'Could not use builder id = %s for user id = %s' %
           (builder_id, user_id))
 
-  task_id = zimfarm.schedule_zim_file(s3,
+  task_id = zimfarm.handle_zim_generation(s3,
                                       redis,
                                       wp10db,
                                       builder,
