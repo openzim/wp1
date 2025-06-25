@@ -825,13 +825,13 @@ class BuilderTest(BaseWpOneDbTest):
 
     self.assertEqual(0, len(actual))
 
-  @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
+  @patch('wp1.logic.builder.zimfarm.request_zimfarm_task')
   @patch('wp1.logic.builder.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
-  def test_handle_zim_generation(self, patched_utcnow, patched_schedule_zim_file):
+  def test_handle_zim_generation(self, patched_utcnow, patched_request_zimfarm_task):
     redis = MagicMock()
     s3 = MagicMock()
-    patched_schedule_zim_file.return_value = '1234-a'
+    patched_request_zimfarm_task.return_value = '1234-a'
 
     builder_id = self._insert_builder()
     self._insert_selection(1,
@@ -848,7 +848,7 @@ class BuilderTest(BaseWpOneDbTest):
                                     description='a',
                                     long_description='z')
 
-    patched_schedule_zim_file.assert_called_once_with(s3,
+    patched_request_zimfarm_task.assert_called_once_with(s3,
                                                       redis,
                                                       self.wp10db,
                                                       self.builder,
@@ -887,11 +887,11 @@ class BuilderTest(BaseWpOneDbTest):
                                       description='a',
                                       long_description='z')
 
-  @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
-  def test_handle_zim_generation_404(self, patched_schedule_zim_file):
+  @patch('wp1.logic.builder.zimfarm.request_zimfarm_task')
+  def test_handle_zim_generation_404(self, patched_request_zimfarm_task):
     redis = MagicMock()
     s3 = MagicMock()
-    patched_schedule_zim_file.return_value = '1234-a'
+    patched_request_zimfarm_task.return_value = '1234-a'
 
     with self.assertRaises(ObjectNotFoundError):
       logic_builder.handle_zim_generation(s3,
@@ -900,11 +900,11 @@ class BuilderTest(BaseWpOneDbTest):
                                       '404builder',
                                       user_id=1234)
 
-  @patch('wp1.logic.builder.zimfarm.schedule_zim_file')
-  def test_handle_zim_generation_not_authorized(self, patched_schedule_zim_file):
+  @patch('wp1.logic.builder.zimfarm.request_zimfarm_task')
+  def test_handle_zim_generation_not_authorized(self, patched_request_zimfarm_task):
     redis = MagicMock()
     s3 = MagicMock()
-    patched_schedule_zim_file.return_value = '1234-a'
+    patched_request_zimfarm_task.return_value = '1234-a'
 
     builder_id = self._insert_builder()
     self._insert_selection(1,

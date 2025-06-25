@@ -347,7 +347,7 @@ class ZimFarmTest(BaseWpOneDbTest):
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
   @patch('wp1.zimfarm._get_params')
-  def test_schedule_zim_file(self, get_params_mock, get_token_mock,
+  def test_request_zimfarm_task(self, get_params_mock, get_token_mock,
                              mock_requests):
     redis = MagicMock()
     s3 = MagicMock()
@@ -357,24 +357,24 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_response.json.return_value = {'requested': ['9876']}
     mock_requests.post.side_effect = (MagicMock(), mock_response, MagicMock())
 
-    actual = zimfarm.schedule_zim_file(s3, redis, self.wp10db, self.builder)
+    actual = zimfarm.request_zimfarm_task(s3, redis, self.wp10db, self.builder)
 
     self.assertEqual('9876', actual)
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
-  def test_schedule_zim_file_missing_builder(self, get_token_mock,
+  def test_request_zimfarm_task_missing_builder(self, get_token_mock,
                                              mock_requests):
     redis = MagicMock()
     s3 = MagicMock()
 
     with self.assertRaises(ObjectNotFoundError):
-      zimfarm.schedule_zim_file(s3, redis, self.wp10db, None)
+      zimfarm.request_zimfarm_task(s3, redis, self.wp10db, None)
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
   @patch('wp1.zimfarm._get_params')
-  def test_schedule_zim_file_post_requests(self, get_params_mock,
+  def test_request_zimfarm_task_post_requests(self, get_params_mock,
                                            get_token_mock, mock_requests):
     redis = MagicMock()
     s3 = MagicMock()
@@ -384,7 +384,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_response.json.return_value = {'requested': ['9876']}
     mock_requests.post.side_effect = (MagicMock(), mock_response)
 
-    zimfarm.schedule_zim_file(s3,
+    zimfarm.request_zimfarm_task(s3,
                               redis,
                               self.wp10db,
                               self.builder,
@@ -419,7 +419,7 @@ class ZimFarmTest(BaseWpOneDbTest):
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
   @patch('wp1.zimfarm._get_params')
-  def test_schedule_zim_file_schedule_create_raises(self, get_params_mock,
+  def test_request_zimfarm_task_schedule_create_raises(self, get_params_mock,
                                                     get_token_mock,
                                                     mock_requests):
     redis = MagicMock()
@@ -431,7 +431,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_requests.post.side_effect = (create_schedule_response, mock_response)
 
     with self.assertRaises(ZimFarmError):
-      zimfarm.schedule_zim_file(s3,
+      zimfarm.request_zimfarm_task(s3,
                                 redis,
                                 self.wp10db,
                                 self.builder,
@@ -441,7 +441,7 @@ class ZimFarmTest(BaseWpOneDbTest):
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
   @patch('wp1.zimfarm._get_params')
-  def test_schedule_zim_file_task_create_raises(self, get_params_mock,
+  def test_request_zimfarm_task_task_create_raises(self, get_params_mock,
                                                 get_token_mock, mock_requests):
     redis = MagicMock()
     s3 = MagicMock()
@@ -454,7 +454,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     )
 
     with self.assertRaises(ZimFarmError):
-      zimfarm.schedule_zim_file(s3, redis, self.wp10db, self.builder)
+      zimfarm.request_zimfarm_task(s3, redis, self.wp10db, self.builder)
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
@@ -468,7 +468,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_requests.post.side_effect = (MagicMock(), mock_response, MagicMock())
 
     valid_title = "में" * (ZIM_TITLE_MAX_LENGTH)
-    actual = zimfarm.schedule_zim_file(s3,
+    actual = zimfarm.request_zimfarm_task(s3,
                                        redis,
                                        self.wp10db,
                                        self.builder,
@@ -479,14 +479,14 @@ class ZimFarmTest(BaseWpOneDbTest):
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
   @patch('wp1.zimfarm._get_params')
-  def test_schedule_zim_file_too_long_title(self, get_params_mock,
+  def test_request_zimfarm_task_too_long_title(self, get_params_mock,
                                             get_token_mock, mock_requests):
     redis = MagicMock()
     s3 = MagicMock()
 
     wrong_title = "a" * (ZIM_TITLE_MAX_LENGTH + 1)
     with self.assertRaises(InvalidZimTitleError):
-      zimfarm.schedule_zim_file(s3,
+      zimfarm.request_zimfarm_task(s3,
                                 redis,
                                 self.wp10db,
                                 self.builder,
@@ -495,14 +495,14 @@ class ZimFarmTest(BaseWpOneDbTest):
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
   @patch('wp1.zimfarm._get_params')
-  def test_schedule_zim_file_too_long_title(self, get_params_mock,
+  def test_request_zimfarm_task_too_long_title(self, get_params_mock,
                                             get_token_mock, mock_requests):
     redis = MagicMock()
     s3 = MagicMock()
 
     wrong_title = "a" * (ZIM_TITLE_MAX_LENGTH + 1)
     with self.assertRaises(InvalidZimTitleError):
-      zimfarm.schedule_zim_file(s3,
+      zimfarm.request_zimfarm_task(s3,
                                 redis,
                                 self.wp10db,
                                 self.builder,
@@ -511,7 +511,7 @@ class ZimFarmTest(BaseWpOneDbTest):
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
   @patch('wp1.zimfarm._get_params')
-  def test_schedule_zim_file_too_long_description(self, get_params_mock,
+  def test_request_zimfarm_task_too_long_description(self, get_params_mock,
                                                   get_token_mock,
                                                   mock_requests):
     redis = MagicMock()
@@ -519,7 +519,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     too_long_description = "z" * (ZIM_DESCRIPTION_MAX_LENGTH + 1)
     with self.assertRaises(InvalidZimDescriptionError):
-      zimfarm.schedule_zim_file(s3,
+      zimfarm.request_zimfarm_task(s3,
                                 redis,
                                 self.wp10db,
                                 self.builder,
@@ -529,7 +529,7 @@ class ZimFarmTest(BaseWpOneDbTest):
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
   @patch('wp1.zimfarm._get_params')
-  def test_schedule_zim_file_too_long_long_description(self, get_params_mock,
+  def test_request_zimfarm_task_too_long_long_description(self, get_params_mock,
                                                        get_token_mock,
                                                        mock_requests):
     redis = MagicMock()
@@ -537,7 +537,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     too_long_long_description = "z" * (ZIM_LONG_DESCRIPTION_MAX_LENGTH + 1)
     with self.assertRaises(InvalidZimLongDescriptionError):
-      zimfarm.schedule_zim_file(s3,
+      zimfarm.request_zimfarm_task(s3,
                                 redis,
                                 self.wp10db,
                                 self.builder,
@@ -548,14 +548,14 @@ class ZimFarmTest(BaseWpOneDbTest):
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
   @patch('wp1.zimfarm._get_params')
-  def test_schedule_zim_file_too_short_long_description(self, get_params_mock,
+  def test_request_zimfarm_task_too_short_long_description(self, get_params_mock,
                                                         get_token_mock,
                                                         mock_requests):
     redis = MagicMock()
     s3 = MagicMock()
 
     with self.assertRaises(InvalidZimLongDescriptionError):
-      zimfarm.schedule_zim_file(s3,
+      zimfarm.request_zimfarm_task(s3,
                                 redis,
                                 self.wp10db,
                                 self.builder,
@@ -566,13 +566,13 @@ class ZimFarmTest(BaseWpOneDbTest):
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
   @patch('wp1.zimfarm._get_params')
-  def test_schedule_zim_file_equal_descriptions(self, get_params_mock,
+  def test_request_zimfarm_task_equal_descriptions(self, get_params_mock,
                                                 get_token_mock, mock_requests):
     redis = MagicMock()
     s3 = MagicMock()
 
     with self.assertRaises(InvalidZimLongDescriptionError):
-      zimfarm.schedule_zim_file(s3,
+      zimfarm.request_zimfarm_task(s3,
                                 redis,
                                 self.wp10db,
                                 self.builder,
@@ -583,7 +583,7 @@ class ZimFarmTest(BaseWpOneDbTest):
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
   @patch('wp1.zimfarm._get_params')
-  def test_schedule_zim_file_delete_schedule_even_if_task_create_raises(
+  def test_request_zimfarm_task_delete_schedule_even_if_task_create_raises(
       self, get_params_mock, get_token_mock, mock_requests):
     redis = MagicMock()
     s3 = MagicMock()
@@ -596,14 +596,14 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_requests.exceptions.HTTPError = requests.exceptions.HTTPError
 
     with self.assertRaises(ZimFarmError):
-      zimfarm.schedule_zim_file(s3, redis, self.wp10db, self.builder)
+      zimfarm.request_zimfarm_task(s3, redis, self.wp10db, self.builder)
 
     mock_requests.delete.assert_called_once()
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
   @patch('wp1.zimfarm._get_params')
-  def test_schedule_zim_file_missing_task_id(self, get_params_mock,
+  def test_request_zimfarm_task_missing_task_id(self, get_params_mock,
                                              get_token_mock, mock_requests):
     redis = MagicMock()
     s3 = MagicMock()
@@ -613,12 +613,12 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_requests.post.side_effect = (MagicMock(), mock_response, MagicMock())
 
     with self.assertRaises(ZimFarmError):
-      zimfarm.schedule_zim_file(s3, redis, self.wp10db, self.builder)
+      zimfarm.request_zimfarm_task(s3, redis, self.wp10db, self.builder)
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
   @patch('wp1.zimfarm._get_params')
-  def test_schedule_zim_file_missing_article_count(self, get_params_mock,
+  def test_request_zimfarm_task_missing_article_count(self, get_params_mock,
                                                    get_token_mock,
                                                    mock_requests):
     redis = MagicMock()
@@ -629,12 +629,12 @@ class ZimFarmTest(BaseWpOneDbTest):
     self.wp10db.commit()
 
     with self.assertRaises(ZimFarmTooManyArticlesError):
-      zimfarm.schedule_zim_file(s3, redis, self.wp10db, self.builder)
+      zimfarm.request_zimfarm_task(s3, redis, self.wp10db, self.builder)
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
   @patch('wp1.zimfarm._get_params')
-  def test_schedule_zim_file_too_many_articles(self, get_params_mock,
+  def test_request_zimfarm_task_too_many_articles(self, get_params_mock,
                                                get_token_mock, mock_requests):
     redis = MagicMock()
     s3 = MagicMock()
@@ -645,7 +645,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     self.wp10db.commit()
 
     with self.assertRaises(ZimFarmTooManyArticlesError):
-      zimfarm.schedule_zim_file(s3, redis, self.wp10db, self.builder)
+      zimfarm.request_zimfarm_task(s3, redis, self.wp10db, self.builder)
 
   @patch('wp1.zimfarm.requests.get')
   def test_is_zim_file_ready(self, patched_get):
