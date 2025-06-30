@@ -529,6 +529,14 @@ class BuildersTest(BaseWebTestcase):
                                                 patched_schedule_zim_file):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
+    
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/%s/zim' % builder_id,
+                       json={'description': 'Test description'})
+      self.assertEqual('400 BAD REQUEST', rv.status)
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
