@@ -68,13 +68,9 @@ def decrement_remaining_generations(wp10db, schedule_id):
             'SELECT s_remaining_generations FROM zim_schedules WHERE s_id = %s', (schedule_id,)
         )
         row = cursor.fetchone()
-        if not row or row['s_remaining_generations'] is None:
+        if not row or not row['s_remaining_generations'] or row['s_remaining_generations'] <= 0:
             return False
-        current = row['s_remaining_generations']
-        if current <= 0:
-            new_value = 0
-        else:
-            new_value = current - 1
+        new_value = row['s_remaining_generations'] - 1
         cursor.execute(
             'UPDATE zim_schedules SET s_remaining_generations = %s, s_last_updated_at = %s WHERE s_id = %s',
             (new_value, updated_at, schedule_id)

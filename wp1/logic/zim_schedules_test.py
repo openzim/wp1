@@ -17,12 +17,12 @@ from wp1.timestamp import utcnow
 
 class LogicZimSchedulesTest(BaseWpOneDbTest):
 
-  def new_schedule(self, builder_id="test_builder", interval=2, remaining=5):
+  def new_schedule(self, builder_id=b'test-builder-id', interval=2, remaining=5):
     return ZimSchedule(
-      s_id=str(uuid.uuid4()),
+      s_id=str(uuid.uuid4()).encode('utf-8'),
       s_builder_id=builder_id,
       s_zim_file_id=None,
-      s_rq_job_id=str(uuid.uuid4()),
+      s_rq_job_id='test-job-id'.encode('utf-8'),
       s_last_updated_at=utcnow().strftime(TS_FORMAT_WP10).encode('utf-8'),
       s_interval=interval,
       s_remaining_generations=remaining
@@ -41,10 +41,10 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
                      fetched.s_remaining_generations)
 
   def test_list_for_builder(self):
-    b1 = "test_builder_1"
+    b1 = b"test_builder_1"
     s1 = self.new_schedule(builder_id=b1, interval=1, remaining=1)
     s2 = self.new_schedule(builder_id=b1, interval=2, remaining=2)
-    s3 = self.new_schedule(builder_id="test_builder_2", interval=3, remaining=3)
+    s3 = self.new_schedule(builder_id=b"test_builder_2", interval=3, remaining=3)
     insert_zim_schedule(self.wp10db, s1)
     insert_zim_schedule(self.wp10db, s2)
     insert_zim_schedule(self.wp10db, s3)
@@ -84,20 +84,20 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
     self.assertEqual(fetched.s_remaining_generations, 0)
     # Should not go below zero
     ok = decrement_remaining_generations(self.wp10db, schedule.s_id)
-    self.assertTrue(ok)
+    self.assertFalse(ok)
     fetched = get_zim_schedule(self.wp10db, schedule.s_id)
     self.assertEqual(fetched.s_remaining_generations, 0)
 
-def test_get_scheduled_zimfarm_task_from_taskid(self):
-
+  def test_get_scheduled_zimfarm_task_from_taskid(self):
     # Insert a zim_file with a specific z_task_id
     zim_file_id = 12345
-    z_task_id = str(uuid.uuid4())
+    z_task_id = str(uuid.uuid4()).encode('utf-8')
+    z_selection_id = b"test_selection_id"
     with self.wp10db.cursor() as cursor:
-            cursor.execute(
-                    'INSERT INTO zim_files (z_id, z_status, z_task_id) VALUES (%s, %s, %s)',
-                    (zim_file_id, 'NOT_REQUESTED', z_task_id)
-            )
+      cursor.execute(
+        'INSERT INTO zim_files (z_id, z_status, z_task_id, z_selection_id) VALUES (%s, %s, %s, %s)',
+        (zim_file_id, 'NOT_REQUESTED', z_task_id, z_selection_id)
+      )
     # No schedule yet
     self.assertIsNone(get_scheduled_zimfarm_task_from_taskid(self.wp10db, z_task_id))
     # Insert a schedule linked to the zim_file
@@ -109,4 +109,4 @@ def test_get_scheduled_zimfarm_task_from_taskid(self):
     self.assertEqual(found.s_zim_file_id, zim_file_id)
     self.assertEqual(found.s_id, schedule.s_id)
     # Should return None for non-existent z_task_id
-    self.assertIsNone(get_scheduled_zimfarm_task_from_taskid(self.wp10db, "non_existent_task_id"))
+    self.assertIsNone(get_scheduled_zimfarm_task_from_taskid(self.wp10db, b"non_existent_task_id"))
