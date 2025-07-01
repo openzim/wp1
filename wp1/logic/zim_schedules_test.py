@@ -82,12 +82,12 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
     ok = decrement_remaining_generations(self.wp10db, schedule.s_id)
     self.assertTrue(ok)
     fetched = get_zim_schedule(self.wp10db, schedule.s_id)
-    self.assertEqual(fetched.s_remaining_generations, 1)
+    self.assertEqual(1, fetched.s_remaining_generations)
     # Decrement again
     ok = decrement_remaining_generations(self.wp10db, schedule.s_id)
     self.assertTrue(ok)
     fetched = get_zim_schedule(self.wp10db, schedule.s_id)
-    self.assertEqual(fetched.s_remaining_generations, 0)
+    self.assertEqual(0, fetched.s_remaining_generations)
   
   def test_decrement_remaining_generations_from_0(self):
     schedule = self.new_schedule(remaining=0)
@@ -96,7 +96,7 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
     ok = decrement_remaining_generations(self.wp10db, schedule.s_id)
     self.assertFalse(ok)
     fetched = get_zim_schedule(self.wp10db, schedule.s_id)
-    self.assertEqual(fetched.s_remaining_generations, 0)
+    self.assertEqual(0, fetched.s_remaining_generations)
 
   def test_decrement_remaining_generations_from_minus_1(self):
     schedule = self.new_schedule(remaining=-1)
@@ -105,7 +105,7 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
     ok = decrement_remaining_generations(self.wp10db, schedule.s_id)
     self.assertFalse(ok)
     fetched = get_zim_schedule(self.wp10db, schedule.s_id)
-    self.assertEqual(fetched.s_remaining_generations, -1)
+    self.assertEqual(-1, fetched.s_remaining_generations)
 
   def test_get_scheduled_zimfarm_task_from_taskid(self):
     # Insert a zim_file with a specific z_task_id
@@ -123,8 +123,8 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
     insert_zim_schedule(self.wp10db, schedule)
     found = get_scheduled_zimfarm_task_from_taskid(self.wp10db, z_task_id)
     self.assertIsNotNone(found)
-    self.assertEqual(found.s_zim_file_id, zim_file_id)
-    self.assertEqual(found.s_id, schedule.s_id)
+    self.assertEqual(zim_file_id, found.s_zim_file_id)
+    self.assertEqual(schedule.s_id, found.s_id)
 
   def test_get_scheduled_zimfarm_task_from_taskid_is_none(self):
     # Insert a zim_file with a specific z_task_id
