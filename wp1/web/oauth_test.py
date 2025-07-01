@@ -31,6 +31,7 @@ class IdentifyTest(BaseWebTestcase):
       'access_token': 'access_token',
       'identity': {
           'username': 'WP1_user',
+          'email': 'wp1user@email.ch',
           'sub': '1234'
       }
   }
@@ -168,3 +169,21 @@ class IdentifyTest(BaseWebTestcase):
     with self.app.test_client() as client:
       rv = client.get('/v1/oauth/logout')
       self.assertEqual('404 NOT FOUND', rv.status)
+
+  @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
+  @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
+  @patch('wp1.web.oauth.homepage_url',
+         TEST_OAUTH_CREDS[ENV]['CLIENT_URL']['homepage'])
+  @patch('wp1.web.oauth.handshaker', handshaker)
+  def test_complete_sets_email_in_session(self):
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['request_token'] = self.REQUEST_TOKEN
+        sess['next_path'] = ''
+      rv = client.get('/v1/oauth/complete?query_string')
+      with client.session_transaction() as sess:
+        user = sess.get('user')
+        self.assertIsNotNone(user)
+        self.assertIn('email', user['identity'])
+        self.assertEqual(user['identity']['email'], self.USER['identity']['email'])
