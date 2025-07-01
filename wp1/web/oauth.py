@@ -44,22 +44,37 @@ def complete():
   session.pop('request_token')
   identity = handshaker.identify(access_token)
 
+  wp10db = get_db('wp10db')
+  
+  if identity.get('email') is None:
+    with wp10db.cursor() as cursor:
+      cursor.execute(
+          '''SELECT u_email FROM users WHERE u_id = %(u_id)s''',
+          {'u_id': identity['sub']}
+      )
+      result = cursor.fetchone()
+      email = result['u_email'] if result else None
+  else:
+    email = identity.get('email')
+
   session['user'] = {
       'access_token': access_token,
       'identity': {
           'username': identity['username'],
+          'email': email,
           'sub': identity['sub']
       }
   }
-  wp10db = get_db('wp10db')
+
   with wp10db.cursor() as cursor:
     cursor.execute(
-        '''INSERT INTO users (u_id, u_username)
-                      VALUES (%(u_id)s, %(u_username)s)
-                      ON DUPLICATE KEY UPDATE u_id= %(u_id)s, u_username= %(u_username)s''',
+        '''INSERT INTO users (u_id, u_username, u_email)
+                      VALUES (%(u_id)s, %(u_username)s, %(u_email)s)
+                      ON DUPLICATE KEY UPDATE u_id= %(u_id)s, u_username= %(u_username)s, u_email= %(u_email)s''',
         {
             'u_id': identity['sub'],
-            'u_username': identity['username']
+            'u_username': identity['username'],
+            'u_email': email
         })
     wp10db.commit()
   next_path = session.pop('next_path')
