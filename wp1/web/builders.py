@@ -195,7 +195,10 @@ def create_zim_file_for_builder(builder_id):
   if not desc:
     error_messages.append('Description is required for ZIM file')
 
-  if scheduled_repetitions is not None:
+  if error_messages:
+    return flask.jsonify({'error_messages': error_messages}), 400
+
+  if scheduled_repetitions not in (None, {}):
     if not (
       isinstance(scheduled_repetitions, dict) and
       all(k in scheduled_repetitions for k in (
@@ -204,11 +207,11 @@ def create_zim_file_for_builder(builder_id):
           "email",
       ))
   ):
-      error_messages.append('Invalid or missing fields in scheduled_repetitions')
+      return 'Invalid or missing fields in scheduled_repetitions', 400
 
-  if error_messages:
-    return flask.jsonify({'error_messages': error_messages}), 400
-
+  # Set scheduled_repetitions to None if it's an empty dict
+  if scheduled_repetitions == {}:
+    scheduled_repetitions = None
 
   try:
     logic_builder.handle_zim_generation(s3,
