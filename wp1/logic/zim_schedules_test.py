@@ -40,6 +40,12 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
     self.assertEqual(schedule.s_remaining_generations,
                      fetched.s_remaining_generations)
 
+  def test_get_zim_schedule_returns_none_for_missing_id(self):
+    # Try to fetch a schedule that does not exist
+    missing_id = str(uuid.uuid4()).encode('utf-8')
+    result = get_zim_schedule(self.wp10db, missing_id)
+    self.assertIsNone(result) 
+
   def test_list_for_builder(self):
     b1 = b"test_builder_1"
     s1 = self.new_schedule(builder_id=b1, interval=1, remaining=1)
