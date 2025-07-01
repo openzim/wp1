@@ -38,7 +38,7 @@ class IdentifyTest(BaseWebTestcase):
   USER_NO_EMAIL = {
       'access_token': 'access_token',
       'identity': {
-          'username': 'WP1_user',
+          'username': 'WP1_user_noemail',
           'sub': '1234'
       }
   }
@@ -115,29 +115,50 @@ class IdentifyTest(BaseWebTestcase):
   @patch('wp1.web.oauth.homepage_url',
          TEST_OAUTH_CREDS[ENV]['CLIENT_URL']['homepage'])
   @patch('wp1.web.oauth.handshaker', handshaker_no_email)
-  def test_complete_authorized_user_doesnt_overwrite_email(self):
+  def test_complete_authorized_user_doesnt_remove_email(self):
     self.app = create_app()
+    user_id = self.USER_NO_EMAIL['identity']['sub']
     with self.override_db(self.app), self.app.test_client() as client:
       with self.app.app_context():
-        wp10db = get_db('wp10db')
-        with wp10db.cursor() as cursor:
-          cursor.execute('INSERT INTO users (u_id, u_username, u_email) VALUES (%s, %s, %s)', (self.USER_NO_EMAIL['identity']['sub'], 'overwrite', 'test@test.it'))
-          wp10db.commit()
+        with self.wp10db.cursor() as cursor:
+          cursor.execute('INSERT INTO users (u_id, u_username, u_email) VALUES (%s, %s, %s)', (user_id, 'overwrite', 'test@test.it'))
+          self.wp10db.commit()
       with client.session_transaction() as sess:
         sess['request_token'] = self.REQUEST_TOKEN
-        sess['next_path'] = ''
-      rv = client.get('/v1/oauth/complete?query_string')
-      self.assertEqual(
-          self.TEST_OAUTH_CREDS[self.ENV]['CLIENT_URL']['homepage'],
-          rv.location)
-      wp10db = get_db('wp10db')
-      with wp10db.cursor() as cursor:
-        cursor.execute('SELECT * FROM users WHERE u_id = %s', (self.USER_NO_EMAIL['identity']['sub'],))
+      client.get('/v1/oauth/complete?query_string')
+
+      with self.wp10db.cursor() as cursor:
+        cursor.execute('SELECT * FROM users WHERE u_id = %s', (user_id))
         row = cursor.fetchone()
         self.assertIsNotNone(row)
         # should only overwrite username, not email
-        self.assertEqual(row['u_email'].decode('utf-8'), 'test@test.it')
-        self.assertEqual(row['u_username'].decode('utf-8'), self.USER_NO_EMAIL['identity']['username'])
+        self.assertEqual('test@test.it', row['u_email'].decode('utf-8'))
+        self.assertEqual('WP1_user_noemail', row['u_username'].decode('utf-8'))
+
+  @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
+  @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
+  @patch('wp1.web.oauth.homepage_url',
+         TEST_OAUTH_CREDS[ENV]['CLIENT_URL']['homepage'])
+  @patch('wp1.web.oauth.handshaker', handshaker)
+  def test_complete_authorized_user_doesnt_overwrite_email(self):
+    self.app = create_app()
+    user_id = self.USER['identity']['sub']
+    with self.override_db(self.app), self.app.test_client() as client:
+      with self.app.app_context():
+        with self.wp10db.cursor() as cursor:
+          cursor.execute('INSERT INTO users (u_id, u_username, u_email) VALUES (%s, %s, %s)', (user_id, 'overwrite', 'test@test.it'))
+          self.wp10db.commit()
+      with client.session_transaction() as sess:
+        sess['request_token'] = self.REQUEST_TOKEN
+      client.get('/v1/oauth/complete?query_string')
+
+      with self.wp10db.cursor() as cursor:
+        cursor.execute('SELECT * FROM users WHERE u_id = %s', (user_id))
+        row = cursor.fetchone()
+        self.assertIsNotNone(row)
+        # should only overwrite username, not email
+        self.assertEqual('test@test.it', row['u_email'].decode('utf-8'))
+        self.assertEqual('WP1_user', row['u_username'].decode('utf-8'))
 
   @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
   @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
@@ -146,20 +167,17 @@ class IdentifyTest(BaseWebTestcase):
   @patch('wp1.web.oauth.handshaker', handshaker)
   def test_complete_authorized_user(self):
     self.app = create_app()
+    user_id = self.USER['identity']['sub']
     with self.override_db(self.app), self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['request_token'] = self.REQUEST_TOKEN
-        sess['next_path'] = ''
-      rv = client.get('/v1/oauth/complete?query_string')
-      self.assertEqual(
-          self.TEST_OAUTH_CREDS[self.ENV]['CLIENT_URL']['homepage'],
-          rv.location)
-      wp10db = get_db('wp10db')
-      with wp10db.cursor() as cursor:
-        cursor.execute('SELECT * FROM users WHERE u_id = %s', (self.USER['identity']['sub']))
+      client.get('/v1/oauth/complete?query_string')
+
+      with self.wp10db.cursor() as cursor:
+        cursor.execute('SELECT * FROM users WHERE u_id = %s', (user_id))
         row = cursor.fetchone()
         self.assertIsNotNone(row)
-        self.assertEqual(row['u_email'].decode('utf-8'), self.USER['identity']['email'])
+        self.assertEqual('wp1user@email.ch', row['u_email'].decode('utf-8')) 
 
   @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
   @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)

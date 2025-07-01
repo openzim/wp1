@@ -61,7 +61,7 @@ def complete():
       VALUES (%(u_id)s, %(u_username)s, %(u_email)s)
       ON DUPLICATE KEY UPDATE
         u_username = VALUES(u_username),
-        u_email = COALESCE(VALUES(u_email), u_email)
+        u_email = IF(u_email IS NULL, VALUES(u_email), u_email)
       ''',
       {
         'u_id': identity['sub'],
