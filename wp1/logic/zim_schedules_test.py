@@ -56,8 +56,9 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
     insert_zim_schedule(self.wp10db, s3)
 
     lst = list_zim_schedules_for_builder(self.wp10db, b1)
-    ids = {s.s_id for s in lst}
-    self.assertEqual({s1.s_id, s2.s_id}, ids)
+    actual = sorted([s.s_id for s in lst])
+    expected = sorted([s1.s_id, s2.s_id])
+    self.assertEqual(expected, actual)
 
   def test_update_schedule(self):
     schedule = self.new_schedule(interval=1, remaining=1)
