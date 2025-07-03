@@ -1,3 +1,4 @@
+import importlib
 import json
 import logging
 
@@ -385,29 +386,34 @@ def latest_selections_with_errors(wp10db, builder_id):
   return res
 
 
-def handle_zim_generation(s3,
-                      redis,
-                      wp10db,
-                      builder_id,
-                      user_id=None,
-                      title='',
-                      description='',
-                      long_description=None,
-                      scheduled_repetitions=None):
-  if isinstance(builder_id, str):
-    builder_id = builder_id.encode('utf-8')
-  builder = get_builder(wp10db, builder_id)
-  if builder is None:
-    raise ObjectNotFoundError('Could not find builder with id = %s' %
-                              builder_id)
+def request_zimfile_from_zimfarm(builder,
+                                 builder_id,
+                                 title,
+                                 description,
+                                 long_description,
+                                 rebuild_selection=False,
+                                 wp10db=None,
+                                 redis=None,
+                                 s3=None):
+  """
+  Requests a ZIM file from the Zimfarm for the given builder.
+  If rebuild_selection is True, it will rebuild the selection for the builder
+  before requesting the ZIM file.
+  """
 
-  if user_id is not None:
-    user_id = str(user_id)
-    builder_user_id = builder.b_user_id.decode('utf-8')
-    if user_id != builder_user_id:
-      raise UserNotAuthorizedError(
-          'Could not use builder id = %s for user id = %s' %
-          (builder_id, user_id))
+  if wp10db is None:
+    wp10db = wp10_connect()
+  if redis is None:
+    redis = redis_connect()
+  if s3 is None:
+    s3 = connect_storage()
+
+  if rebuild_selection:
+    # Rebuild the selection for the builder
+    builder: Builder = get_builder(wp10db, builder_id)
+    builder_module = importlib.import_module(builder.b_model.decode('utf-8'))
+    builder_cls = getattr(builder_module, 'Builder')
+    materialize_builder(builder_cls, builder_id, 'text/tab-separated-values')
 
   task_id = zimfarm.request_zimfarm_task(s3,
                                          redis,
@@ -428,6 +434,39 @@ def handle_zim_generation(s3,
         ''', (task_id, utcnow().strftime(TS_FORMAT_WP10), long_description or
               None, description or None, selection.s_id))
   wp10db.commit()
+  return task_id
+
+
+def handle_zim_generation(s3,
+                      redis,
+                      wp10db,
+                      builder_id,
+                      user_id=None,
+                      title='',
+                      description='',
+                      long_description=None,
+                      scheduled_repetitions=None):
+  """
+  Handles the ZIM file generation and scheduling for a builder.
+  """
+  
+  if isinstance(builder_id, str):
+    builder_id = builder_id.encode('utf-8')
+
+  builder = get_builder(wp10db, builder_id)
+  if builder is None:
+    raise ObjectNotFoundError('Could not find builder with id = %s' %
+                              builder_id)
+
+  if user_id is not None:
+    user_id = str(user_id)
+    builder_user_id = builder.b_user_id.decode('utf-8')
+    if user_id != builder_user_id:
+      raise UserNotAuthorizedError(
+          'Could not use builder id = %s for user id = %s' %
+          (builder_id, user_id))
+
+  task_id = request_zimfile_from_zimfarm(builder, builder_id, title, description, long_description, rebuild_selection=False, wp10db=wp10db, redis=redis, s3=s3)
 
   # In production, there is a web hook from the Zimfarm that notifies us
   # that the task is finished and we can start polling for the ZIM file
