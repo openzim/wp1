@@ -4,6 +4,10 @@ import logging
 
 import attr
 
+from kiwixstorage import KiwixStorage
+from pymysql.connections import Connection
+from redis import Redis
+
 import wp1.logic.selection as logic_selection
 import wp1.logic.util as logic_util
 from wp1 import app_logging, queues, zimfarm
@@ -17,6 +21,7 @@ from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
 from wp1.models.wp10.zim_file import ZimFile
 from wp1.redis_db import connect as redis_connect
+from wp1.selection.abstract_builder import AbstractBuilder
 from wp1.storage import connect_storage
 from wp1.timestamp import utcnow
 from wp1.wp10_db import connect as wp10_connect
@@ -136,8 +141,36 @@ def get_builder(wp10db, id_):
       raise ObjectNotFoundError(f'No builder with id={id_}')
     return Builder(**db_builder)
 
+def materialize_builder_with_connections(s3: KiwixStorage,
+                                         redis: Redis,
+                                         wp10db: Connection,
+                                         materializer: AbstractBuilder,
+                                         builder: Builder,
+                                         content_type: str):
+  """
+  Materializes a builder selection using the given builder, materializer, and content type.
+  S3, Redis, and WP10DB connections must be provided.
+  """
+
+  next_version = logic_selection.get_next_version(wp10db, builder.b_id, content_type)
+  logger.info('Materializing builder id=%s, content_type=%s with class=%s',
+        builder.b_id, content_type, materializer.__class__.__name__)
+  materializer.materialize(s3, wp10db, builder, content_type, next_version)
+  update_current_version(wp10db, builder, next_version)
+  updated = maybe_update_selection_zim_version(wp10db, builder, next_version)
+  if not updated:
+    # The ZIM file was not updated, which means there's an existing ZIM
+    # that's ready that needs to be replaced. Schedule the ZIM file to
+    # be automatically created. We don't need to do this if the ZIM
+    # version was updated, because that indicates that the ZIM file
+    # was never requested or errored and should remain in that state.
+    auto_handle_zim_generation(s3, redis, wp10db, builder.b_id)
 
 def materialize_builder(builder_cls, builder_id, content_type):
+  """
+  Materializes a builder selection using the given builder class and content type.
+  This is intended to be used by worker processes.
+  """
   wp10db = wp10_connect()
   redis = redis_connect()
   s3 = connect_storage()
@@ -146,20 +179,7 @@ def materialize_builder(builder_cls, builder_id, content_type):
   try:
     builder = get_builder(wp10db, builder_id)
     materializer = builder_cls()
-    logger.info('Materializing builder id=%s, content_type=%s with class=%s' %
-                (builder_id, content_type, builder_cls))
-    next_version = logic_selection.get_next_version(wp10db, builder.b_id,
-                                                    content_type)
-    materializer.materialize(s3, wp10db, builder, content_type, next_version)
-    update_current_version(wp10db, builder, next_version)
-    updated = maybe_update_selection_zim_version(wp10db, builder, next_version)
-    if not updated:
-      # The ZIM file was not updated, which means there's an existing ZIM
-      # that's ready that needs to be replaced. Schedule the ZIM file to
-      # be automatically created. We don't need to do this if the ZIM
-      # version was updated, because that indicates that the ZIM file
-      # was never requested or errored and should remain in that state.
-      auto_handle_zim_generation(s3, redis, wp10db, builder_id)
+    materialize_builder_with_connections(s3, redis, wp10db, materializer, builder, content_type)
   finally:
     wp10db.close()
 
@@ -385,36 +405,16 @@ def latest_selections_with_errors(wp10db, builder_id):
 
   return res
 
-
-def request_zimfile_from_zimfarm(builder,
-                                 builder_id,
-                                 title,
-                                 description,
-                                 long_description,
-                                 rebuild_selection=False,
-                                 wp10db=None,
-                                 redis=None,
-                                 s3=None):
+def request_zim_file_for_builder(s3: KiwixStorage,
+                                 redis: Redis,
+                                 wp10db: Connection,
+                                 builder: Builder,
+                                 title: str,
+                                 description: str,
+                                 long_description: str = None):
   """
   Requests a ZIM file from the Zimfarm for the given builder.
-  If rebuild_selection is True, it will rebuild the selection for the builder
-  before requesting the ZIM file.
   """
-
-  if wp10db is None:
-    wp10db = wp10_connect()
-  if redis is None:
-    redis = redis_connect()
-  if s3 is None:
-    s3 = connect_storage()
-
-  if rebuild_selection:
-    # Rebuild the selection for the builder
-    builder: Builder = get_builder(wp10db, builder_id)
-    builder_module = importlib.import_module(builder.b_model.decode('utf-8'))
-    builder_cls = getattr(builder_module, 'Builder')
-    materialize_builder(builder_cls, builder_id, 'text/tab-separated-values')
-
   task_id = zimfarm.request_zimfarm_task(s3,
                                          redis,
                                          wp10db,
@@ -422,7 +422,7 @@ def request_zimfile_from_zimfarm(builder,
                                          title=title,
                                          description=description,
                                          long_description=long_description)
-  selection = latest_selection_for(wp10db, builder_id,
+  selection = latest_selection_for(wp10db, builder.b_id,
                                    'text/tab-separated-values')
 
   with wp10db.cursor() as cursor:
@@ -436,6 +436,31 @@ def request_zimfile_from_zimfarm(builder,
   wp10db.commit()
   return task_id
 
+def request_scheduled_zim_file_for_builder(builder: Builder,
+                                           title: str,
+                                           description: str,
+                                           long_description: str = None):
+  """
+  Requests a scheduled ZIM file generation from the Zimfarm for the given builder.
+  It will reopen connections and rebuild the selection for the builder.
+  This is used for scheduled ZIM file generations.
+  """
+
+  # Reconnect to the databases and storage (this is needed for scheduled tasks)
+  wp10db = wp10_connect()
+  redis = redis_connect()
+  s3 = connect_storage()
+
+  # Rebuild the selection for the builder
+  builder: Builder = get_builder(wp10db, builder.b_id)
+  builder_module = importlib.import_module(builder.b_model.decode('utf-8'))
+  builder_cls = getattr(builder_module, 'Builder')
+  materializer = builder_cls()
+  materialize_builder_with_connections(s3, redis, wp10db, materializer, builder,
+                                       'text/tab-separated-values')
+
+  task_id = request_zim_file_for_builder(s3, redis, wp10db, builder, title, description, long_description)
+  return task_id
 
 def handle_zim_generation(s3,
                       redis,
@@ -466,7 +491,7 @@ def handle_zim_generation(s3,
           'Could not use builder id = %s for user id = %s' %
           (builder_id, user_id))
 
-  task_id = request_zimfile_from_zimfarm(builder, builder_id, title, description, long_description, rebuild_selection=False, wp10db=wp10db, redis=redis, s3=s3)
+  task_id = request_zim_file_for_builder(s3, redis, wp10db, builder, title, description, long_description)
 
   # In production, there is a web hook from the Zimfarm that notifies us
   # that the task is finished and we can start polling for the ZIM file
