@@ -342,6 +342,32 @@ class BuilderTest(BaseWpOneDbTest):
     self.builder.b_id = id_
     self.assertEqual(self.builder, actual)
 
+  def test_materialize_builder_with_connections(self):
+    s3 = MagicMock()
+    redis = MagicMock()
+    materializer = MagicMock()
+    builder_id = self._insert_builder()
+    self._insert_selection(1, 'text/tab-separated-values', builder_id=builder_id)
+        
+    # Mock builder retrieval and module import
+    mock_builder = Builder(
+        b_id=builder_id,
+        b_name=b'Test Builder',
+        b_user_id=b'1234',
+        b_project=b'en.wikipedia.fake',
+        b_model=b'wp1.selection.models.simple',
+        b_params=b'{}',
+    )
+    content_type = 'text/tab-separated-values'
+
+    logic_builder.materialize_builder_with_connections(s3, redis, self.wp10db, materializer, mock_builder, content_type)
+    materializer.materialize.assert_called_once_with(ANY, ANY, mock_builder, 'text/tab-separated-values', 2)
+    builder = self._get_builder_by_user_id()
+    expected = dict(**self.expected_builder)
+    expected['b_current_version'] = 2
+    expected['b_selection_zim_version'] = 2
+    self.assertEqual(expected, builder)
+
   @patch('wp1.logic.builder.wp10_connect')
   @patch('wp1.logic.builder.connect_storage')
   def test_materialize_builder(self, patched_connect_storage,
@@ -1238,11 +1264,11 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.connect_storage')
   @patch('wp1.logic.builder.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
-  def test_request_zimfile_from_zimfarm_basic(self, patched_utcnow,
-                                              patched_connect_storage,
-                                              patched_redis_connect,
-                                              patched_wp10_connect,
-                                              patched_request_zimfarm_task):
+  def test_request_zim_file_for_builder(self, patched_utcnow,
+                                        patched_connect_storage,
+                                        patched_redis_connect,
+                                        patched_wp10_connect,
+                                        patched_request_zimfarm_task):
     """Test basic zimfile request functionality"""
     builder_id = self._insert_builder()
     self._insert_selection(1, 'text/tab-separated-values', builder_id=builder_id)
@@ -1257,7 +1283,7 @@ class BuilderTest(BaseWpOneDbTest):
     # Mock zimfarm response
     patched_request_zimfarm_task.return_value = 'test_task_id_123'
     
-    builder = Builder(
+    mock_builder = Builder(
         b_id=builder_id,
         b_name=b'Test Builder',
         b_user_id=b'1234',
@@ -1267,9 +1293,11 @@ class BuilderTest(BaseWpOneDbTest):
     )
     
     # Call the function
-    result = logic_builder.request_zimfile_from_zimfarm(
-        builder=builder,
-        builder_id=builder_id,
+    result = logic_builder.request_zim_file_for_builder(
+        s3_mock,
+        redis_mock,
+        self.wp10db,
+        builder=mock_builder,
         title='Test Title',
         description='Test Description',
         long_description='Test Long Description'
@@ -1283,7 +1311,7 @@ class BuilderTest(BaseWpOneDbTest):
         s3_mock,
         redis_mock,
         self.wp10db,
-        builder,
+        mock_builder,
         title='Test Title',
         description='Test Description',
         long_description='Test Long Description'
@@ -1299,7 +1327,7 @@ class BuilderTest(BaseWpOneDbTest):
       self.assertEqual(zim_file['z_description'], b'Test Description')
       self.assertEqual(zim_file['z_long_description'], b'Test Long Description')
 
-  @patch('wp1.logic.builder.materialize_builder')
+  @patch('wp1.logic.builder.materialize_builder_with_connections')
   @patch('wp1.logic.builder.get_builder')
   @patch('wp1.logic.builder.zimfarm.request_zimfarm_task')
   @patch('wp1.logic.builder.wp10_connect')
@@ -1307,14 +1335,14 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.connect_storage')
   @patch('wp1.logic.builder.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
-  def test_request_zimfile_from_zimfarm_with_rebuild_selection(self, 
-                                                               patched_utcnow,
-                                                               patched_connect_storage,
-                                                               patched_redis_connect,
-                                                               patched_wp10_connect,
-                                                               patched_request_zimfarm_task,
-                                                               patched_get_builder,
-                                                               patched_materialize_builder):
+  def test_request_scheduled_zim_file_for_builder(self,
+                                                  patched_utcnow,
+                                                  patched_connect_storage,
+                                                  patched_redis_connect,
+                                                  patched_wp10_connect,
+                                                  patched_request_zimfarm_task,
+                                                  patched_get_builder,
+                                                  patched_materialize_builder_with_connections):
     """Test zimfile request with rebuild_selection=True"""
     builder_id = self._insert_builder()
     self._insert_selection(1, 'text/tab-separated-values', builder_id=builder_id)
@@ -1340,15 +1368,6 @@ class BuilderTest(BaseWpOneDbTest):
     )
     patched_get_builder.return_value = mock_builder
     
-    builder = Builder(
-        b_id=builder_id,
-        b_name=b'Test Builder',
-        b_user_id=b'1234',
-        b_project=b'en.wikipedia.fake',
-        b_model=b'wp1.selection.models.simple',
-        b_params=b'{}',
-    )
-    
     # Mock the builder class import
     with patch('wp1.logic.builder.importlib.import_module') as mock_import:
       mock_module = MagicMock()
@@ -1357,13 +1376,11 @@ class BuilderTest(BaseWpOneDbTest):
       mock_import.return_value = mock_module
       
       # Call the function with rebuild_selection=True
-      result = logic_builder.request_zimfile_from_zimfarm(
-          builder=builder,
-          builder_id=builder_id,
+      result = logic_builder.request_scheduled_zim_file_for_builder(
+          builder=mock_builder,
           title='Test Title',
           description='Test Description',
-          long_description='Test Long Description',
-          rebuild_selection=True
+          long_description='Test Long Description'
       )
     
     # Verify return value
@@ -1373,63 +1390,10 @@ class BuilderTest(BaseWpOneDbTest):
     patched_get_builder.assert_called_once_with(self.wp10db, builder_id)
     
     # Verify materialize_builder was called
-    patched_materialize_builder.assert_called_once_with(
-        mock_builder_cls, builder_id, 'text/tab-separated-values'
-    )
+    patched_materialize_builder_with_connections.assert_called_once()
     
     # Verify zimfarm was called
     patched_request_zimfarm_task.assert_called_once()
-
-  @patch('wp1.logic.builder.zimfarm.request_zimfarm_task')
-  @patch('wp1.logic.builder.utcnow',
-         return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
-  def test_request_zimfile_from_zimfarm_custom_connections(self, patched_utcnow,
-                                                           patched_request_zimfarm_task):
-    """Test zimfile request with custom database connections"""
-    builder_id = self._insert_builder()
-    self._insert_selection(1, 'text/tab-separated-values', builder_id=builder_id)
-    
-    # Create custom mocks
-    custom_redis = MagicMock()
-    custom_s3 = MagicMock()
-    
-    # Mock zimfarm response
-    patched_request_zimfarm_task.return_value = 'test_task_id_789'
-    
-    builder = Builder(
-        b_id=builder_id,
-        b_name=b'Test Builder',
-        b_user_id=b'1234',
-        b_project=b'en.wikipedia.fake',
-        b_model=b'wp1.selection.models.simple',
-        b_params=b'{}',
-    )
-    
-    # Call the function with custom connections
-    result = logic_builder.request_zimfile_from_zimfarm(
-        builder=builder,
-        builder_id=builder_id,
-        title='Test Title',
-        description='Test Description',
-        long_description='Test Long Description',
-        wp10db=self.wp10db,
-        redis=custom_redis,
-        s3=custom_s3
-    )
-    
-    # Verify return value
-    self.assertEqual(result, 'test_task_id_789')
-    
-    # Verify custom connections were used
-    patched_request_zimfarm_task.assert_called_once_with(
-        custom_s3,
-        custom_redis,
-        self.wp10db,
-        builder,
-        title='Test Title',
-        description='Test Description',
-        long_description='Test Long Description'
-    )
 
   @patch('wp1.logic.builder.zimfarm.request_zimfarm_task')
   @patch('wp1.logic.builder.wp10_connect')
@@ -1437,7 +1401,7 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.connect_storage')
   @patch('wp1.logic.builder.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
-  def test_request_zimfile_from_zimfarm_empty_descriptions(self, patched_utcnow,
+  def test_request_zim_file_for_builder_empty_descriptions(self, patched_utcnow,
                                                            patched_connect_storage,
                                                            patched_redis_connect,
                                                            patched_wp10_connect,
@@ -1456,7 +1420,7 @@ class BuilderTest(BaseWpOneDbTest):
     # Mock zimfarm response
     patched_request_zimfarm_task.return_value = 'test_task_id_empty'
     
-    builder = Builder(
+    mock_builder = Builder(
         b_id=builder_id,
         b_name=b'Test Builder',
         b_user_id=b'1234',
@@ -1466,9 +1430,11 @@ class BuilderTest(BaseWpOneDbTest):
     )
     
     # Call the function with empty descriptions
-    result = logic_builder.request_zimfile_from_zimfarm(
-        builder=builder,
-        builder_id=builder_id,
+    result = logic_builder.request_zim_file_for_builder(
+        s3_mock,
+        redis_mock,
+        self.wp10db,
+        builder=mock_builder,
         title='Test Title',
         description='',
         long_description=None
@@ -1493,7 +1459,7 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.connect_storage')
   @patch('wp1.logic.builder.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
-  def test_request_zimfile_from_zimfarm_no_selection_found(self, patched_utcnow,
+  def test_request_zim_file_for_builder_no_selection_found(self, patched_utcnow,
                                                            patched_connect_storage,
                                                            patched_redis_connect,
                                                            patched_wp10_connect,
@@ -1511,8 +1477,8 @@ class BuilderTest(BaseWpOneDbTest):
     
     # Mock zimfarm response
     patched_request_zimfarm_task.return_value = 'test_task_id_no_selection'
-    
-    builder = Builder(
+
+    mock_builder = Builder(
         b_id=builder_id,
         b_name=b'Test Builder',
         b_user_id=b'1234',
@@ -1524,9 +1490,11 @@ class BuilderTest(BaseWpOneDbTest):
     # This should raise an exception or handle gracefully
     # The function calls latest_selection_for which may return None
     try:
-      result = logic_builder.request_zimfile_from_zimfarm(
-          builder=builder,
-          builder_id=builder_id,
+      result = logic_builder.request_zim_file_for_builder(
+          s3=s3_mock,
+          redis=redis_mock,
+          wp10db=self.wp10db,
+          builder=mock_builder,
           title='Test Title',
           description='Test Description',
           long_description='Test Long Description'
