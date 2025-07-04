@@ -10,6 +10,7 @@ from pymysql.connections import Connection
 from redis import Redis
 
 import wp1.logic.selection as logic_selection
+import wp1.logic.zim_schedules as logic_zim_schedules
 import wp1.logic.util as logic_util
 from wp1 import app_logging, queues, zimfarm
 from wp1.constants import (CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE,
@@ -21,6 +22,7 @@ from wp1.exceptions import (ObjectNotFoundError, UserNotAuthorizedError,
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
 from wp1.models.wp10.zim_file import ZimFile
+from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.redis_db import connect as redis_connect
 from wp1.selection.abstract_builder import AbstractBuilder
 from wp1.storage import connect_storage
@@ -433,7 +435,8 @@ def request_zim_file_for_builder(s3: KiwixStorage,
 def request_scheduled_zim_file_for_builder(builder: Builder,
                                            title: str,
                                            description: str,
-                                           long_description: str = None):
+                                           long_description: str = None,
+                                           zim_schedule_id: str = None):
   """
   Requests a scheduled ZIM file generation from the Zimfarm for the given builder.
   It will reopen connections and rebuild the selection for the builder.
@@ -449,10 +452,14 @@ def request_scheduled_zim_file_for_builder(builder: Builder,
   builder: Builder = get_builder(wp10db, builder.b_id)
   builder_module = importlib.import_module(builder.b_model.decode('utf-8'))
   builder_cls = getattr(builder_module, 'Builder')
-  # materializer = builder_cls()
   materialize_builder(builder_cls, builder, 'text/tab-separated-values', s3, redis, wp10db)
 
+  if zim_schedule_id is not None:
+    zim_file = zim_file_for_latest_selection(wp10db, builder.b_id)
+    logic_zim_schedules.update_zim_schedule_zim_file_id(wp10db, zim_schedule_id, zim_file.z_id)
+
   task_id = request_zim_file_for_builder(s3, redis, wp10db, builder, title, description, long_description)
+
   return task_id
 
 def handle_zim_generation(s3,
