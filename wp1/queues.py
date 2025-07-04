@@ -16,6 +16,7 @@ from wp1.environment import Environment
 import wp1.logic.builder as logic_builder
 import wp1.logic.project as logic_project
 import wp1.logic.zim_schedules as logic_zim_schedules
+from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.models.wp10.builder import Builder
 from wp1.wiki_db import connect as wiki_connect
 from wp1 import logs
@@ -210,32 +211,28 @@ def schedule_future_zimfile_generations(redis: Redis,
   scheduler = Scheduler(connection=queue.connection, queue=queue)
 
   period_months = scheduled_repetitions['repetition_period_in_months']
-  num_repetitions = scheduled_repetitions['number_of_repetitions']
-  
-  # Calculate the first run time: period_months from now
-  first_run = datetime.now(UTC) + relativedelta(months=period_months)
+  num_scheduled_repetitions = scheduled_repetitions['number_of_repetitions']
+  first_future_run = datetime.now(UTC) + relativedelta(months=period_months)
 
-  # Calculate the interval in seconds for the repetition period in months
-  interval_seconds = period_months * 30 * 24 * 3600  # Approximate month as 30 days
+  # For simplicity, we assume 30 days per month and 24 hours per day to calculate the interval.
+  interval_seconds = period_months * 30 * 24 * 3600
 
   job = scheduler.schedule(
-    scheduled_time=first_run,
+    scheduled_time=first_future_run,
     func=logic_builder.request_scheduled_zim_file_for_builder,
     args=[builder, title, description, long_description],
     interval=interval_seconds,
-    repeat=num_repetitions,
+    repeat=num_scheduled_repetitions,
     queue_name='zimfile-scheduling',
   )
 
-  # Insert the new schedule into the zim_schedules table using the model
-  from wp1.models.wp10.zim_schedule import ZimSchedule
   zim_schedule = ZimSchedule(
       s_id=str(uuid.uuid4()).encode('utf-8'),
       s_builder_id=builder.b_id,
       s_zim_file_id=None,
       s_rq_job_id=job.id.encode('utf-8'),
       s_interval=period_months,
-      s_remaining_generations=num_repetitions,
+      s_remaining_generations=num_scheduled_repetitions,
       # s_email=scheduled_repetitions['email'].encode('utf-8'),
       s_last_updated_at=datetime.now(UTC).strftime(constants.TS_FORMAT_WP10).encode('utf-8'),
   )
