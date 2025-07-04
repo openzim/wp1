@@ -1,6 +1,10 @@
-from datetime import timedelta
+from datetime import datetime, timedelta, UTC
+from dateutil.relativedelta import relativedelta
 import logging
+import uuid
 
+from pymysql import Connection
+from redis import Redis
 from rq import Queue
 import rq.exceptions
 from rq.job import Job
@@ -11,6 +15,8 @@ from wp1 import custom_tables
 from wp1.environment import Environment
 import wp1.logic.builder as logic_builder
 import wp1.logic.project as logic_project
+import wp1.logic.zim_schedules as logic_zim_schedules
+from wp1.models.wp10.builder import Builder
 from wp1.wiki_db import connect as wiki_connect
 from wp1 import logs
 from wp1 import tables
@@ -35,6 +41,9 @@ def _get_materializer_queue(redis):
 
 def _get_zimfile_poll_queue(redis):
   return Queue('zimfile-polling', connection=redis)
+
+def _get_zimfile_scheduling_queue(redis):
+  return Queue('zimfile-scheduling', connection=redis)
 
 
 def enqueue_all_projects(redis, wp10db):
@@ -182,3 +191,54 @@ def poll_for_zim_file_status(redis, task_id):
   scheduler = Scheduler(queue=poll_q, connection=redis)
   scheduler.enqueue_in(timedelta(minutes=2),
                        logic_builder.on_zim_file_status_poll, task_id)
+
+def schedule_future_zimfile_generations(redis: Redis,
+                                        wp10db: Connection,
+                                        builder: Builder,
+                                        title: str,
+                                        description: str,
+                                        long_description: str,
+                                        scheduled_repetitions: dict):
+  """
+  Schedule future ZIM file creations using rq-scheduler.
+  """
+  required_keys = {'repetition_period_in_months', 'number_of_repetitions', 'email'}
+  if not isinstance(scheduled_repetitions, dict) or not required_keys <= scheduled_repetitions.keys():
+    raise ValueError(f'scheduled_repetitions must be a dict containing {required_keys}')
+
+  queue = _get_zimfile_scheduling_queue(redis)
+  scheduler = Scheduler(connection=queue.connection, queue=queue)
+
+  period_months = scheduled_repetitions['repetition_period_in_months']
+  num_repetitions = scheduled_repetitions['number_of_repetitions']
+  
+  # Calculate the first run time: period_months from now
+  first_run = datetime.now(UTC) + relativedelta(months=period_months)
+
+  # Calculate the interval in seconds for the repetition period in months
+  interval_seconds = period_months * 30 * 24 * 3600  # Approximate month as 30 days
+
+  job = scheduler.schedule(
+    scheduled_time=first_run,
+    func=logic_builder.request_scheduled_zim_file_for_builder,
+    args=[builder, title, description, long_description],
+    interval=interval_seconds,
+    repeat=num_repetitions,
+    queue_name='zimfile-scheduling',
+  )
+
+  # Insert the new schedule into the zim_schedules table using the model
+  from wp1.models.wp10.zim_schedule import ZimSchedule
+  zim_schedule = ZimSchedule(
+      s_id=str(uuid.uuid4()).encode('utf-8'),
+      s_builder_id=builder.b_id,
+      s_zim_file_id=None,
+      s_rq_job_id=job.id.encode('utf-8'),
+      s_interval=period_months,
+      s_remaining_generations=num_repetitions,
+      # s_email=scheduled_repetitions['email'].encode('utf-8'),
+      s_last_updated_at=datetime.now(UTC).strftime(constants.TS_FORMAT_WP10).encode('utf-8'),
+  )
+  logic_zim_schedules.insert_zim_schedule(wp10db, zim_schedule)
+
+  return job.id
