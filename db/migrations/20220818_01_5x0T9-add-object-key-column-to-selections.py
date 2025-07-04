@@ -5,6 +5,7 @@ Add object_key column to selections
 from yoyo import group, step
 
 import wp1.logic.selection as logic_selection
+from wp1.models.wp10.builder import Builder
 from wp1.redis_db import connect
 from wp1.selection.models.simple import Builder as SimpleBuilder
 from wp1 import queues
@@ -33,10 +34,11 @@ def re_materialize_builders(conn):
   redis = connect()
 
   cursor = conn.cursor()
-  cursor.execute('''SELECT b_id FROM builders''')
+  cursor.execute('''SELECT * FROM builders''')
   data = cursor.fetchall()
   for row in data:
-    queues.enqueue_materialize(redis, SimpleBuilder, row[0],
+    builder = Builder(**row)
+    queues.enqueue_materialize(redis, SimpleBuilder, builder,
                                'text/tab-separated-values')
 
 
