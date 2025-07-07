@@ -18,6 +18,7 @@ class ZimFile:
   z_updated_at = attr.ib(default=None)
   z_long_description = attr.ib(default=None)
   z_description = attr.ib(default=None)
+  z_title = attr.ib(default=None)
 
   @property
   def updated_at_dt(self):
