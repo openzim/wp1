@@ -877,13 +877,14 @@ class BuilderTest(BaseWpOneDbTest):
                                                       long_description='z')
     with self.wp10db.cursor() as cursor:
       cursor.execute('SELECT z_task_id, z_status, z_requested_at,'
-                     '       z_description, z_long_description'
+                     '       z_title, z_description, z_long_description'
                      ' FROM zim_files'
                      ' WHERE z_selection_id = 1')
       data = cursor.fetchone()
     self.assertEqual(b'1234-a', data['z_task_id'])
     self.assertEqual(b'REQUESTED', data['z_status'])
     self.assertEqual(b'20221225000102', data['z_requested_at'])
+    self.assertEqual(b'test_title', data['z_title'])
     self.assertEqual(b'a', data['z_description'])
     self.assertEqual(b'z', data['z_long_description'])
 
@@ -1191,7 +1192,7 @@ class BuilderTest(BaseWpOneDbTest):
       cursor.execute('''UPDATE zim_files z
                         JOIN selections s
                           ON s.s_id = z.z_selection_id
-                        SET z.z_description = "A desc", z.z_long_description = "Long desc"
+                        SET z.z_title = "Title", z.z_description = "A desc", z.z_long_description = "Long desc"
                         WHERE s.s_id = 1''')
 
     logic_builder.auto_handle_zim_generation(s3, redis, self.wp10db, builder_id)
@@ -1204,6 +1205,7 @@ class BuilderTest(BaseWpOneDbTest):
         redis,
         self.wp10db,
         builder_id,
+        title='Title',
         description='A desc',
         long_description='Long desc')
 
@@ -1411,6 +1413,7 @@ class BuilderTest(BaseWpOneDbTest):
       self.assertEqual(zim_file['z_status'], b'REQUESTED')
       self.assertEqual(zim_file['z_task_id'], b'test_task_id_empty')
       self.assertEqual(zim_file['z_requested_at'], b'20221225000102')
+      self.assertEqual(zim_file['z_title'], b'Test Title')
       self.assertIsNone(zim_file['z_description'])
       self.assertIsNone(zim_file['z_long_description'])
 

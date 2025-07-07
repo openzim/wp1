@@ -4,7 +4,6 @@ import logging
 
 import attr
 
-from typing import Type
 from kiwixstorage import KiwixStorage
 from pymysql.connections import Connection
 from redis import Redis
@@ -22,7 +21,6 @@ from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
 from wp1.models.wp10.zim_file import ZimFile
 from wp1.redis_db import connect as redis_connect
-from wp1.selection.abstract_builder import AbstractBuilder
 from wp1.storage import connect_storage
 from wp1.timestamp import utcnow
 from wp1.wp10_db import connect as wp10_connect
@@ -143,7 +141,7 @@ def get_builder(wp10db, id_):
     return Builder(**db_builder)
 
 
-def materialize_builder(builder_cls: Type[AbstractBuilder],
+def materialize_builder(builder_cls,
                         builder: Builder,
                         content_type: str,
                         s3: KiwixStorage = None,
@@ -204,6 +202,8 @@ def auto_handle_zim_generation(s3, redis, wp10db, builder_id):
       logging.exception('Could not cancel task_id=%s', task_id)
 
   zim_file = latest_zim_file_for(wp10db, builder_id)
+  title = zim_file.z_title.decode(
+      'utf-8') if zim_file.z_title is not None else None
   description = zim_file.z_description.decode(
       'utf-8') if zim_file.z_description is not None else None
   long_description = zim_file.z_long_description.decode(
@@ -212,6 +212,7 @@ def auto_handle_zim_generation(s3, redis, wp10db, builder_id):
                     redis,
                     wp10db,
                     builder_id,
+                    title=title,
                     description=description,
                     long_description=long_description)
 
@@ -423,9 +424,9 @@ def request_zim_file_for_builder(s3: KiwixStorage,
     cursor.execute(
         '''UPDATE zim_files SET
              z_status = 'REQUESTED', z_task_id = %s, z_requested_at = %s,
-             z_long_description = %s, z_description = %s
+             z_title = %s, z_long_description = %s, z_description = %s
            WHERE z_selection_id = %s
-        ''', (task_id, utcnow().strftime(TS_FORMAT_WP10), long_description or
+        ''', (task_id, utcnow().strftime(TS_FORMAT_WP10), title or None, long_description or
               None, description or None, selection.s_id))
   wp10db.commit()
   return task_id
@@ -519,6 +520,8 @@ def zim_file_status_for(wp10db, builder_id):
   if zim_file.z_updated_at:
     data['is_deleted'] = logic_selection.is_zim_file_deleted(
         logic_util.wp10_timestamp_to_unix(zim_file.z_updated_at))
+  data['title'] = zim_file.z_title.decode(
+      'utf-8') if zim_file.z_title else None
   data['description'] = zim_file.z_description.decode(
       'utf-8') if zim_file.z_description else None
   data['long_description'] = zim_file.z_long_description.decode(
