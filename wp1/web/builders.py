@@ -8,12 +8,8 @@ import wp1.logic.selection as logic_selection
 from wp1 import queues
 from wp1.constants import EXT_TO_CONTENT_TYPE
 from wp1.credentials import CREDENTIALS, ENV
-from wp1.exceptions import (
-    ObjectNotFoundError,
-    UserNotAuthorizedError,
-    ZimFarmError,
-    ZimFarmTooManyArticlesError,
-)
+from wp1.exceptions import (ObjectNotFoundError, UserNotAuthorizedError,
+                            ZimFarmError, ZimFarmTooManyArticlesError)
 from wp1.web import authenticate
 from wp1.web.db import get_db
 from wp1.web.redis import get_redis
@@ -201,14 +197,12 @@ def create_zim_file_for_builder(builder_id):
     return flask.jsonify({'error_messages': error_messages}), 400
 
   if scheduled_repetitions not in (None, {}):
-    if not (
-      isinstance(scheduled_repetitions, dict) and
-      all(k in scheduled_repetitions for k in (
-          "repetition_period_in_months",
-          "number_of_repetitions",
-          "email",
-      ))
-  ):
+    if not (isinstance(scheduled_repetitions, dict) and
+            all(k in scheduled_repetitions for k in (
+                "repetition_period_in_months",
+                "number_of_repetitions",
+                "email",
+            ))):
       return 'Invalid or missing fields in scheduled_repetitions', 400
 
   # Set scheduled_repetitions to None if it's an empty dict
@@ -216,15 +210,16 @@ def create_zim_file_for_builder(builder_id):
     scheduled_repetitions = None
 
   try:
-    logic_builder.handle_zim_generation(s3,
-                                    redis,
-                                    wp10db,
-                                    builder_id,
-                                    user_id=user_id,
-                                    title=title,
-                                    description=desc,
-                                    long_description=long_desc,
-                                    scheduled_repetitions=scheduled_repetitions)
+    logic_builder.handle_zim_generation(
+        s3,
+        redis,
+        wp10db,
+        builder_id,
+        user_id=user_id,
+        title=title,
+        description=desc,
+        long_description=long_desc,
+        scheduled_repetitions=scheduled_repetitions)
   except ObjectNotFoundError:
     return flask.jsonify(
         {'error_messages': ['No builder found with id = %s' % builder_id]}), 404
@@ -265,7 +260,7 @@ def update_zimfarm_status():
 
   wp10db = get_db('wp10db')
 
-  if data.get('status') == 'failed':
+  if data.get('status') in ('failed', 'cancelled', None):
     # Update the status as FAILED and return.
     logic_selection.update_zimfarm_task(wp10db, task_id, 'FAILED')
     return '', 204
@@ -279,13 +274,6 @@ def update_zimfarm_status():
                                           'FILE_READY',
                                           set_updated_now=True)
       return '', 204
-
-  found = logic_selection.update_zimfarm_task(wp10db, task_id, 'ENDED')
-  if found:
-    # If the task_id exists, start polling for the file to be ready.
-    redis = get_redis()
-    queues.poll_for_zim_file_status(redis, task_id)
-  return '', 204
 
 
 @builders.route('/<builder_id>/zim/latest')
