@@ -1,5 +1,5 @@
 import attr
-
+from wp1 import zimfarm
 from wp1.constants import TS_FORMAT_WP10
 from wp1.timestamp import utcnow
 from wp1.models.wp10.zim_schedule import ZimSchedule
@@ -92,3 +92,15 @@ def get_scheduled_zimfarm_task_from_taskid(wp10db, task_id):
         return None
     return ZimSchedule(**row)
 
+
+def get_username_by_zim_schedule_id(wp10db, schedule_id):
+    """Retrieves the username associated with a ZimSchedule by its ID. Returns the username or None."""
+    with wp10db.cursor() as cursor:
+        cursor.execute(
+            'SELECT u.u_username FROM zim_schedules zs JOIN users u ON zs.s_builder_id = u.u_id WHERE zs.s_id = %s',
+            (schedule_id,)
+        )
+        row = cursor.fetchone()
+    if not row:
+        return None
+    return row['u_username'].decode('utf-8') if row['u_username'] else None

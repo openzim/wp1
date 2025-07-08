@@ -15,7 +15,7 @@ from wp1.exceptions import (
     ZimFarmError,
     ZimFarmTooManyArticlesError,
 )
-from wp1.web import authenticate
+from wp1.web import authenticate, emails
 from wp1.web.db import get_db
 from wp1.web.redis import get_redis
 from wp1.web.storage import get_storage
@@ -283,8 +283,7 @@ def update_zimfarm_status():
       zim_schedule = logic_zim_schedules.get_scheduled_zimfarm_task_from_taskid(wp10db, task_id)
       if zim_schedule is not None:
         logic_zim_schedules.decrement_remaining_generations(wp10db, zim_schedule.s_id)
-        ## TODO: Get the zim_file_id either from latest selection or from the zim_schedule
-        ## TODO: Send email to the user that the ZIM file is ready with the link to download it.
+        emails.notify_user_for_scheduled_zim(wp10db, zim_schedule)
       return '', 204
 
   found = logic_selection.update_zimfarm_task(wp10db, task_id, 'ENDED')
