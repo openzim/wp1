@@ -9,6 +9,7 @@ from pymysql.connections import Connection
 from redis import Redis
 
 import wp1.logic.selection as logic_selection
+import wp1.logic.zim_schedules as logic_zim_schedules
 import wp1.logic.util as logic_util
 from wp1 import app_logging, queues, zimfarm
 from wp1.constants import (CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE,
@@ -23,6 +24,7 @@ from wp1.models.wp10.zim_file import ZimFile
 from wp1.redis_db import connect as redis_connect
 from wp1.storage import connect_storage
 from wp1.timestamp import utcnow
+from wp1.web import emails
 from wp1.wp10_db import connect as wp10_connect
 
 logger = logging.getLogger(__name__)
@@ -322,7 +324,7 @@ def latest_selection_url(wp10db, builder_id, ext):
   return logic_selection.url_for(selection.s_object_key.decode('utf-8'))
 
 
-def latest_zim_file_for(wp10db, builder_id):
+def latest_zim_file_for(wp10db, builder_id) -> ZimFile:
   """Returns the ZIM file that matches the ZIM version of the Builder."""
   with wp10db.cursor() as cursor:
     cursor.execute(
@@ -340,7 +342,7 @@ def latest_zim_file_for(wp10db, builder_id):
     return ZimFile(**db_zim)
 
 
-def zim_file_for_latest_selection(wp10db, builder_id):
+def zim_file_for_latest_selection(wp10db, builder_id) -> ZimFile:
   """Returns the ZIM file of the latest Selection for a Builder."""
   with wp10db.cursor() as cursor:
     cursor.execute(
@@ -545,6 +547,12 @@ def on_zim_file_status_poll(task_id):
                                         set_updated_now=True)
 
     update_version_for_finished_zim(wp10db, task_id)
+
+    zim_schedule = logic_zim_schedules.get_scheduled_zimfarm_task_from_taskid(wp10db, task_id)
+    if zim_schedule is not None:
+      logic_zim_schedules.decrement_remaining_generations(wp10db, zim_schedule.s_id)
+      emails.notify_user_for_scheduled_zim(wp10db, zim_schedule)
+
   elif result == 'REQUESTED':
     requested = logic_selection.zim_file_requested_at_for(wp10db, task_id)
     if requested is not None:

@@ -5,6 +5,7 @@ import flask
 
 import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
+import wp1.logic.zim_schedules as logic_zim_schedules
 from wp1 import queues
 from wp1.constants import EXT_TO_CONTENT_TYPE
 from wp1.credentials import CREDENTIALS, ENV
@@ -14,7 +15,7 @@ from wp1.exceptions import (
     ZimFarmError,
     ZimFarmTooManyArticlesError,
 )
-from wp1.web import authenticate
+from wp1.web import authenticate, emails
 from wp1.web.db import get_db
 from wp1.web.redis import get_redis
 from wp1.web.storage import get_storage
@@ -278,6 +279,11 @@ def update_zimfarm_status():
                                           task_id,
                                           'FILE_READY',
                                           set_updated_now=True)
+
+      zim_schedule = logic_zim_schedules.get_scheduled_zimfarm_task_from_taskid(wp10db, task_id)
+      if zim_schedule is not None:
+        logic_zim_schedules.decrement_remaining_generations(wp10db, zim_schedule.s_id)
+        emails.notify_user_for_scheduled_zim(wp10db, zim_schedule)
       return '', 204
 
   found = logic_selection.update_zimfarm_task(wp10db, task_id, 'ENDED')
