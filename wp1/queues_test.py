@@ -231,7 +231,7 @@ class QueuesTest(BaseWpOneDbTest):
     self.assertEqual(expected_args, call_kwargs['args'])
     expected_interval = scheduled_repetitions['repetition_period_in_months'] * 30 * 24 * 3600
     self.assertEqual(expected_interval, call_kwargs['interval'])
-    self.assertEqual(scheduled_repetitions['number_of_repetitions'], call_kwargs['repeat'])
+    self.assertEqual(scheduled_repetitions['number_of_repetitions'] - 1, call_kwargs['repeat'])
     self.assertEqual('zimfile-scheduling', call_kwargs['queue_name'])
 
     with self.wp10db.cursor() as cursor:
