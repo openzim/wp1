@@ -8,6 +8,7 @@ from wp1.exceptions import (InvalidZimTitleError, ObjectNotFoundError,
                             UserNotAuthorizedError, ZimFarmError)
 from wp1.logic import builder as logic_builder
 from wp1.models.wp10.builder import Builder
+from wp1.selection.models.simple import Builder as SimpleBuilder
 
 
 class BuilderTest(BaseWpOneDbTest):
@@ -1600,3 +1601,13 @@ class BuilderTest(BaseWpOneDbTest):
 
     # If the function completes, zimfarm should still be called
     mock_request_zimfarm_task.assert_called_once()
+
+  def test_get_builder_module_class_success(self):
+      cls = logic_builder.get_builder_module_class('wp1.selection.models.simple')
+      self.assertIs(cls, SimpleBuilder)
+
+  def test_get_builder_module_class_no_builder_attribute(self):
+      with self.assertRaises(ImportError) as cm:
+          logic_builder.get_builder_module_class('nonexistent.module')
+      self.assertIn('No module named', str(cm.exception))
+
