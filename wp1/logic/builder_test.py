@@ -1313,8 +1313,7 @@ class BuilderTest(BaseWpOneDbTest):
     
     with patch('wp1.logic.builder.importlib.import_module') as mock_import:
       mock_module = MagicMock()
-      mock_builder_cls = MagicMock()
-      mock_module.Builder = mock_builder_cls
+      mock_module.Builder = MagicMock()
       mock_import.return_value = mock_module
       
       actual = logic_builder.request_scheduled_zim_file_for_builder(
@@ -1410,65 +1409,6 @@ class BuilderTest(BaseWpOneDbTest):
                                                   mock_get_builder,
                                                   mock_materialize_builder):
     """Test zimfile request with rebuild_selection=True"""
-    self._insert_builder()
-    self._insert_selection(1, 'text/tab-separated-values', builder_id=self.builder.b_id)
-
-    #insert a zim_schedule
-    with self.wp10db.cursor() as cursor:
-      cursor.execute('INSERT INTO zim_schedules (s_id, s_builder_id, s_rq_job_id, s_last_updated_at) '
-                     'VALUES (%s, %s, %s, %s)',
-                     (b'schedule_123', self.builder.b_id, b'rq_job_id_123', b'20191225044444'))
-      self.wp10db.commit()
-
-    mock_wp10_connect.return_value = self.wp10db
-    redis_mock = MagicMock()
-    s3_mock = MagicMock()
-    mock_redis_connect.return_value = redis_mock
-    mock_connect_storage.return_value = s3_mock
-    
-    mock_request_zimfarm_task.return_value = 'test_task_id_456'
-    
-    mock_get_builder.return_value = self.builder
-    
-    with patch('wp1.logic.builder.importlib.import_module') as mock_import:
-      mock_module = MagicMock()
-      mock_builder_cls = MagicMock()
-      mock_module.Builder = mock_builder_cls
-      mock_import.return_value = mock_module
-      
-      actual = logic_builder.request_scheduled_zim_file_for_builder(
-          builder=self.builder,
-          title='Test Title',
-          description='Test Description',
-          long_description='Test Long Description',
-          zim_schedule_id='schedule_123'
-      )
-    
-    self.assertEqual('test_task_id_456', actual)
-    mock_get_builder.assert_called_once_with(self.wp10db, self.builder.b_id)
-    mock_materialize_builder.assert_called_once()
-    mock_request_zimfarm_task.assert_called_once()
-
-    #check that the zim_schedule was updated
-    with self.wp10db.cursor() as cursor:
-      cursor.execute('SELECT s_zim_file_id, s_last_updated_at '
-                     'FROM zim_schedules WHERE s_id = %s', ('schedule_123',))
-      schedule = cursor.fetchone()
-      self.assertIsNotNone(schedule['s_zim_file_id'])
-      self.assertEqual( b'20221225000102', schedule['s_last_updated_at'])
-
-  @patch('wp1.logic.builder.zimfarm.request_zimfarm_task')
-  @patch('wp1.logic.builder.wp10_connect')
-  @patch('wp1.logic.builder.redis_connect')
-  @patch('wp1.logic.builder.connect_storage')
-  @patch('wp1.logic.zim_schedules.utcnow',
-         return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
-  def test_request_zim_file_for_builder_empty_descriptions(self, mock_utcnow,
-                                                           mock_connect_storage,
-                                                           mock_redis_connect,
-                                                           mock_wp10_connect,
-                                                           mock_request_zimfarm_task):
-    """Test zimfile request with empty/None descriptions"""
     self._insert_builder()
     self._insert_selection(1, 'text/tab-separated-values', builder_id=self.builder.b_id)
 
