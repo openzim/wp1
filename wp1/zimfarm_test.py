@@ -148,8 +148,6 @@ class ZimFarmTest(BaseWpOneDbTest):
         Environment.TEST]['ZIMFARM']['cache_url'] = 'https://wasabi.fake/bucket'
 
     actual = zimfarm._get_params(
-        s3,
-        self.wp10db,
         self.builder,
         self.selection,
         title='My Builder',
@@ -175,8 +173,6 @@ class ZimFarmTest(BaseWpOneDbTest):
     }
 
     actual = zimfarm._get_params(
-        s3,
-        self.wp10db,
         self.builder,
         self.selection,
         title='My Builder',
@@ -190,7 +186,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     s3 = MagicMock()
 
     with self.assertRaises(ObjectNotFoundError):
-      zimfarm._get_params(s3, self.wp10db, None, self.selection)
+      zimfarm._get_params(None, self.selection)
 
   @patch('wp1.zimfarm.requests')
   def test_request_zimfarm_token(self, mock_requests):
