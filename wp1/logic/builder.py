@@ -415,23 +415,18 @@ def latest_selections_with_errors(wp10db, builder_id):
 
   return res
 
-def request_zim_file_for_builder(s3: KiwixStorage,
-                                 redis: Redis,
-                                 wp10db: Connection,
-                                 builder: Builder,
-                                 title: str,
-                                 description: str,
-                                 long_description: str = None):
+def request_zim_file_task_for_builder(redis: Redis,
+                                      wp10db: Connection,
+                                      builder: Builder,
+                                      title: str,
+                                      description: str,
+                                      long_description: str = None):
   """
   Requests a ZIM file from the Zimfarm for the given builder.
   """
-  task_id = zimfarm.request_zimfarm_task(s3,
-                                         redis,
+  task_id = zimfarm.request_zimfarm_task(redis,
                                          wp10db,
-                                         builder,
-                                         title=title,
-                                         description=description,
-                                         long_description=long_description)
+                                         builder)
   selection = latest_selection_for(wp10db, builder.b_id,
                                    'text/tab-separated-values')
 
@@ -475,7 +470,7 @@ def request_scheduled_zim_file_for_builder(builder: Builder,
     zim_file = zim_file_for_latest_selection(wp10db, builder.b_id)
     logic_zim_schedules.update_zim_schedule_zim_file_id(wp10db, zim_schedule_id, zim_file.z_id)
 
-  task_id = request_zim_file_for_builder(s3, redis, wp10db, builder, title, description, long_description)
+  task_id = request_zim_file_task_for_builder(redis, wp10db, builder, title, description, long_description)
 
   return task_id
 
@@ -507,8 +502,14 @@ def handle_zim_generation(s3,
       raise UserNotAuthorizedError(
           'Could not use builder id = %s for user id = %s' %
           (builder_id, user_id))
-
-  task_id = request_zim_file_for_builder(s3, redis, wp10db, builder, title, description, long_description)
+  
+  zimfarm.create_zimfarm_schedule(redis,
+                                  wp10db,
+                                  builder,
+                                  title=title,
+                                  description=description,
+                                  long_description=long_description)
+  task_id = request_zim_file_task_for_builder(redis, wp10db, builder, title, description, long_description)
 
   # if scheduled_repetitions is not None schedule future ZIMfile generations
   if scheduled_repetitions is not None:
