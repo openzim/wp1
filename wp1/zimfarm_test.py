@@ -27,7 +27,7 @@ from wp1.zimfarm import (
 
 class ZimFarmTest(BaseWpOneDbTest):
   expected_params = {
-      'name': 'wp1_selection_def',
+      'name': 'wp1_selection_12345def',
       'language': {
           'code': 'eng',
           'name_en': 'English',
@@ -68,7 +68,7 @@ class ZimFarmTest(BaseWpOneDbTest):
               'adminEmail':
                   'contact+wp1@kiwix.org',
               'articleList':
-                  'http://credentials.not.found.fake/selections/foo/1234/name.tsv',
+                  'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv',
               'customZimTitle':
                   'My Builder',
               'filenamePrefix':
