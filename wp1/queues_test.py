@@ -6,6 +6,8 @@ import fakeredis
 from wp1 import constants, queues
 from wp1.base_db_test import BaseWpOneDbTest
 from wp1.environment import Environment
+from wp1 import queues  
+from wp1.models.wp10.builder import Builder
 from wp1.selection.models.simple import Builder as SimpleBuilder
 
 
@@ -176,3 +178,73 @@ class QueuesTest(BaseWpOneDbTest):
         'text/tab-separated-values',
         job_timeout=constants.JOB_TIMEOUT,
         failure_ttl=constants.JOB_FAILURE_TTL)
+
+  @patch('wp1.queues.Queue')
+  @patch('wp1.queues.Scheduler')
+  def test_poll_for_zim_file_status(self, patched_scheduler, patched_queue):
+    poll_q_mock = MagicMock()
+    patched_queue.return_value = poll_q_mock
+    scheduler_mock = MagicMock()
+    patched_scheduler.return_value = scheduler_mock
+
+    queues.poll_for_zim_file_status(self.redis, '1234')
+
+    scheduler_mock.enqueue_in.assert_called_once()
+
+  @patch('wp1.queues.Scheduler')
+  @patch('wp1.queues.uuid.uuid4')
+  @patch('wp1.queues.logic_zim_schedules.insert_zim_schedule')
+  def test_schedule_future_zimfile_generations(self, patched_insert, patched_uuid4, patched_scheduler):
+    # Prepare a fake builder and parameters
+    mock_builder = Builder(
+        b_id=b'builder-id',
+        b_name=b'Test Builder',
+        b_user_id=b'1234',
+        b_project=b'en.wikipedia.fake',
+        b_model=b'wp1.selection.models.simple',
+        b_params=b'{}',
+    )
+    title = 'Title'
+    description = 'Description'
+    long_description = 'Long Description'
+    scheduled_repetitions = {
+        'repetition_period_in_months': 2,
+        'number_of_repetitions': 3,
+        'email': 'user@example.com'
+    }
+    # Fake job returned by scheduler
+    job_mock = MagicMock()
+    job_mock.id = 'job-id'
+    patched_scheduler.return_value.schedule.return_value = job_mock
+    patched_uuid4.return_value = 'uuid-1'
+
+    # Call the function under test
+    result = queues.schedule_future_zimfile_generations(
+        self.redis, self.wp10db,
+        mock_builder, title, description, long_description,
+        scheduled_repetitions
+    )
+
+    # Should return the job ID
+    self.assertEqual(result, job_mock.id)
+    # Verify scheduler.schedule was called with correct parameters
+    patched_scheduler.return_value.schedule.assert_called_once()
+    _, call_kwargs = patched_scheduler.return_value.schedule.call_args
+    self.assertEqual(queues.logic_builder.request_scheduled_zim_file_for_builder, call_kwargs['func'])
+    expected_args = [mock_builder, title, description, long_description]
+    self.assertEqual(expected_args, call_kwargs['args'])
+    expected_interval = scheduled_repetitions['repetition_period_in_months'] * 30 * 24 * 3600
+    self.assertEqual(expected_interval, call_kwargs['interval'])
+    self.assertEqual(scheduled_repetitions['number_of_repetitions'], call_kwargs['repeat'])
+    self.assertEqual('zimfile-scheduling', call_kwargs['queue_name'])
+
+    # Verify insert_zim_schedule call and attributes on the model
+    patched_insert.assert_called_once()
+    insert_args = patched_insert.call_args[0]
+    self.assertIs(insert_args[0], self.wp10db)
+    zim_schedule = insert_args[1]
+    self.assertEqual(b'uuid-1', zim_schedule.s_id)
+    self.assertEqual(b'builder-id', zim_schedule.s_builder_id)
+    self.assertEqual(b'job-id', zim_schedule.s_rq_job_id)
+    self.assertEqual(scheduled_repetitions['repetition_period_in_months'], zim_schedule.s_interval)
+    self.assertEqual(scheduled_repetitions['number_of_repetitions'], zim_schedule.s_remaining_generations)
