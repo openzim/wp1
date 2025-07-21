@@ -18,6 +18,8 @@ from wp1.exceptions import (
     ZimFarmTooManyArticlesError,
 )
 from wp1.logic import util
+from wp1.models.wp10.selection import Selection
+from wp1.models.wp10.builder import Builder
 from wp1.time import get_current_datetime
 
 REDIS_AUTH_KEY = 'zimfarm.auth'
@@ -168,20 +170,35 @@ def _validate_zim_metadata(title=None, description=None, long_description=None):
         f"Long description must be different from the description.")
 
 
-def _get_params(s3,
-                wp10db,
-                builder,
-                selection,
-                title='',
-                description='',
-                long_description=''):
+def get_zimfarm_schedule_name(selection_id: str) -> str:
+    """Generate a unique schedule name for the ZIM file based on builder and selection."""
+    if not selection_id:
+        raise ObjectNotFoundError('Selection ID cannot be None')
+    parts = selection_id.split('-')
+    # Use last two parts of the UUIDv4 for more uniqueness
+    short_id = ''.join(parts[-2:])
+    return f'wp1_selection_{short_id}'
+
+
+def get_zim_filename_prefix(builder: Builder, selection: Selection) -> str:
+  """Generate a filename prefix for the ZIM file based on builder and selection."""
+  if builder is None or selection is None:
+    raise ObjectNotFoundError(f"Given builder or selection was None")
+
+  selection_id_frag = selection.s_id.decode('utf-8').split('-')[-1]
+  builder_name = builder.b_name.decode('utf-8')
+  return f"{util.safe_name(builder_name)}-{selection_id_frag}"
+
+
+def _get_params(builder: Builder,
+                selection: Selection,
+                title: str = '',
+                description: str = '',
+                long_description: str = '') -> dict:
   if builder is None:
     raise ObjectNotFoundError('Given builder was None: %r' % builder)
 
   project = builder.b_project.decode('utf-8')
-  selection_id_frag = selection.s_id.decode('utf-8').split('-')[-1]
-  filename_prefix = '%s-%s' % (util.safe_name(
-      builder.b_name.decode('utf-8')), selection_id_frag)
 
   image = CREDENTIALS[ENV].get('ZIMFARM', {}).get('image')
   if image is None:
@@ -217,7 +234,7 @@ def _get_params(s3,
               long_description if long_description else
               f"ZIM file created from a WP1 Selection. {description}",
           'filenamePrefix':
-              filename_prefix,
+              get_zim_filename_prefix(builder, selection),
       }
   }
   cache_url = CREDENTIALS[ENV].get('ZIMFARM', {}).get('cache_url')
@@ -227,11 +244,10 @@ def _get_params(s3,
     logger.warning('No cache_url found in credentials, skipping '
                    'optimisationCacheUrl URL for zimfarm request')
 
-  name = 'wp1_selection_%s' % selection_id_frag
   webhook_url = get_webhook_url()
 
   return {
-      'name': name,
+      'name': get_zimfarm_schedule_name(selection.s_id.decode('utf-8')),
       'language': {
           'code': 'eng',
           'name_en': 'English',
