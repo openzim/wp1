@@ -225,7 +225,7 @@ def _get_params(builder: Builder,
           'forceRender':
               'ActionParse',
           'articleList':
-              logic_selection.url_for_selection(selection),
+              logic_builder.latest_url_for(builder.b_id.decode('utf-8'), selection.s_content_type.decode('utf-8')),
           'customZimTitle':
               title,
           'customZimDescription':
