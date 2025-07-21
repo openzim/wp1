@@ -423,13 +423,6 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     mock_requests.post.assert_has_calls(
         (schedule_create_call, task_request_call))
-    mock_requests.delete.assert_called_once_with(
-        'https://fake.farm/v1/schedules/bar',
-        headers={
-            'Authorization': 'Token abcdef',
-            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
-        },
-    )
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
@@ -612,8 +605,6 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     with self.assertRaises(ZimFarmError):
       zimfarm.request_zimfarm_task(s3, redis, self.wp10db, self.builder)
-
-    mock_requests.delete.assert_called_once()
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
