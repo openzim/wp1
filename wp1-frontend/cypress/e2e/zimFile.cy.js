@@ -31,6 +31,9 @@ describe('the zim file creation page', () => {
             cy.intercept('v1/builders/1/zim/status', {
               fixture: 'zim_status_not_requested.json',
             }).as('status');
+            cy.intercept('POST', 'v1/builders/1/zim', { statusCode: 204 }).as(
+              'create',
+            );
             cy.visit('/#/selections/1/zim');
             cy.wait('@identity');
             cy.wait('@builder');
@@ -60,7 +63,7 @@ describe('the zim file creation page', () => {
             );
           });
 
-          it('handles graphems correctly', () => {
+          it('handles graphemes correctly', () => {
             const longTitle = 'में'.repeat(30);
             cy.get('#zimtitle').click();
             cy.get('#zimtitle').clear();
@@ -68,26 +71,12 @@ describe('the zim file creation page', () => {
             cy.get('#zimtitle').should('have.value', 'में'.repeat(30));
           });
 
-          it('validates the description input on losing focus', () => {
+          it('does not show the long description invalid feedback if it is empty', () => {
             cy.get('#desc').click();
             cy.get('#longdesc').click();
-            cy.get('#desc-group > .invalid-feedback').should('be.visible');
-          });
-
-          it('disables the submit button when the description is missing', () => {
-            cy.get('#zimtitle').click();
-            cy.get('#zimtitle').type('Title from user');
-            cy.get('#request').should('be.visible');
-            cy.get('#request').should('have.attr', 'disabled');
-          });
-
-          it('disables the submit button when the title is missing', () => {
-            cy.get('#zimtitle').click();
-            cy.get('#zimtitle').clear();
-            cy.get('#desc').click();
-            cy.get('#desc').type('Description from user');
-            cy.get('#request').should('be.visible');
-            cy.get('#request').should('have.attr', 'disabled');
+            cy.get('#long-desc-group > .invalid-feedback').should(
+              'not.be.visible',
+            );
           });
 
           it('does not allow submission if the long desc is shorter than the desc', () => {
@@ -99,8 +88,12 @@ describe('the zim file creation page', () => {
             cy.get('#desc').type('The description, which is longer');
             cy.get('#longdesc').click();
             cy.get('#longdesc').type('Shorter desc');
-            cy.get('#request').should('be.visible');
-            cy.get('#request').should('have.attr', 'disabled');
+            cy.get('#request').click();
+            cy.get('#long-desc-group > .invalid-feedback').should('be.visible');
+            cy.wait(400);
+            cy.get('@create.all').then((interceptions) => {
+              expect(interceptions).to.have.length(0);
+            });
           });
 
           it('does not allow submission if the long desc equals the desc', () => {
@@ -112,8 +105,25 @@ describe('the zim file creation page', () => {
             cy.get('#desc').type('The description');
             cy.get('#longdesc').click();
             cy.get('#longdesc').type('The description');
-            cy.get('#request').should('be.visible');
-            cy.get('#request').should('have.attr', 'disabled');
+            cy.get('#request').click();
+            cy.get('#long-desc-group > .invalid-feedback').should('be.visible');
+            cy.wait(400);
+            cy.get('@create.all').then((interceptions) => {
+              expect(interceptions).to.have.length(0);
+            });
+          });
+
+          it('allows submission if the long desc is empty', () => {
+            cy.get('#zimtitle').click();
+            cy.get('#zimtitle').clear();
+            cy.get('#zimtitle').type('Title from user');
+            cy.get('#desc').click();
+            cy.get('#desc').clear();
+            cy.get('#desc').type('The description');
+            cy.get('#longdesc').click();
+            cy.get('#longdesc').clear();
+            cy.get('#request').click();
+            cy.wait('@create');
           });
         });
 
