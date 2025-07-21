@@ -295,9 +295,7 @@ def request_zimfarm_task(s3,
         (article_count if article_count is not None else 'UNKNOWN number of',
          MAX_ZIMFARM_ARTICLE_COUNT))
 
-  params = _get_params(s3,
-                       wp10db,
-                       builder,
+  params = _get_params(builder,
                        selection,
                        title=title,
                        description=description,
