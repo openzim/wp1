@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import  timedelta
 import logging
 
 from rq import Queue
@@ -35,6 +35,9 @@ def _get_materializer_queue(redis):
 
 def _get_zimfile_poll_queue(redis):
   return Queue('zimfile-polling', connection=redis)
+
+def _get_zimfile_scheduling_queue(redis):
+  return Queue('zimfile-scheduling', connection=redis)
 
 
 def enqueue_all_projects(redis, wp10db):
@@ -182,3 +185,20 @@ def poll_for_zim_file_status(redis, task_id):
   scheduler = Scheduler(queue=poll_q, connection=redis)
   scheduler.enqueue_in(timedelta(minutes=2),
                        logic_builder.on_zim_file_status_poll, task_id)
+
+
+def schedule_recurring_zimfarm_task(redis, args, scheduled_time, interval_seconds, repeat_count):
+  """Schedule a recurring zimfarm task using rq-scheduler."""
+  queue = _get_zimfile_scheduling_queue(redis)
+  scheduler = Scheduler(connection=queue.connection, queue=queue)
+  
+  job = scheduler.schedule(
+    scheduled_time=scheduled_time,
+    func=logic_builder.request_scheduled_zim_file_for_builder,
+    args=args,
+    interval=interval_seconds,
+    repeat=repeat_count,
+    queue_name='zimfile-scheduling',
+  )
+  
+  return job

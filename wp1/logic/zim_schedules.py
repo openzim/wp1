@@ -1,6 +1,9 @@
 import attr
+import uuid
+from dateutil.relativedelta import relativedelta
+import wp1.queues as queues
 
-from wp1.constants import TS_FORMAT_WP10
+from wp1.constants import TS_FORMAT_WP10, SECONDS_PER_MONTH
 from wp1.timestamp import utcnow
 from wp1.models.wp10.zim_schedule import ZimSchedule
 
@@ -31,6 +34,22 @@ def update_zim_schedule(wp10db, zim_schedule : ZimSchedule):
          s_remaining_generations = %(s_remaining_generations)s
          WHERE s_id = %(s_id)s
       ''', attr.asdict(zim_schedule)
+    )
+    updated = bool(cursor.rowcount)
+  wp10db.commit()
+  return updated
+
+
+def update_zim_schedule_zim_file_id(wp10db, schedule_id, zim_file_id):
+  """Updates the s_zim_file_id of a ZimSchedule by its s_id. Returns True if updated."""
+  updated_at = utcnow().strftime(TS_FORMAT_WP10).encode('utf-8')
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+      '''UPDATE zim_schedules SET
+         s_zim_file_id = %s,
+         s_last_updated_at = %s
+         WHERE s_id = %s
+      ''', (zim_file_id, updated_at, schedule_id)
     )
     updated = bool(cursor.rowcount)
   wp10db.commit()
@@ -91,4 +110,53 @@ def get_scheduled_zimfarm_task_from_taskid(wp10db, task_id):
     if not row:
         return None
     return ZimSchedule(**row)
+
+
+def create_zim_schedule_with_job(wp10db, builder, scheduled_repetitions, job_id, schedule_id=None):
+    """Create and save a ZimSchedule with the given RQ job information."""
+    required_keys = {'repetition_period_in_months', 'number_of_repetitions', 'email'}
+    has_min_required_keys = required_keys <= scheduled_repetitions.keys()
+    if not isinstance(scheduled_repetitions, dict) or not has_min_required_keys:
+        raise ValueError(f'scheduled_repetitions must be a dict containing {required_keys}')
+
+    period_months = scheduled_repetitions['repetition_period_in_months']
+    num_scheduled_repetitions = scheduled_repetitions['number_of_repetitions']
+    
+    if schedule_id is None:
+        schedule_id = str(uuid.uuid4())
+    
+    zim_schedule = ZimSchedule(
+        s_id=schedule_id.encode('utf-8'),
+        s_builder_id=builder.b_id,
+        s_zim_file_id=None,
+        s_rq_job_id=job_id.encode('utf-8'),
+        s_interval=period_months,
+        s_remaining_generations=num_scheduled_repetitions,
+        # s_email=scheduled_repetitions['email'].encode('utf-8')
+    )
+    zim_schedule.set_last_updated_at_now()
+    insert_zim_schedule(wp10db, zim_schedule)
+    
+    return schedule_id
+
+
+def schedule_future_zimfile_generations(redis, wp10db, builder, title, description, long_description, scheduled_repetitions):
+  """
+  Calculate timing and schedule future ZIM file creations using rq-scheduler, then save the schedule to the database.
+  """
+  period_months = scheduled_repetitions['repetition_period_in_months']
+  interval_seconds = period_months * SECONDS_PER_MONTH
+  first_future_run = utcnow() + relativedelta(seconds=interval_seconds)
+  zim_schedule_id = str(uuid.uuid4())
+
+  job = queues.schedule_recurring_zimfarm_task(
+    redis=redis,
+    args=[builder, title, description, long_description, zim_schedule_id],
+    scheduled_time=first_future_run,
+    interval_seconds=interval_seconds,
+    repeat_count=scheduled_repetitions['number_of_repetitions'] - 1,
+  )
+
+  create_zim_schedule_with_job(wp10db, builder, scheduled_repetitions, job.id, zim_schedule_id)
+  return job.id
 
