@@ -170,11 +170,11 @@ def _validate_zim_metadata(title=None, description=None, long_description=None):
         f"Long description must be different from the description.")
 
 
-def get_zimfarm_schedule_name(selection_id: str) -> str:
-    """Generate a unique schedule name for the ZIM file based on builder and selection."""
-    if not selection_id:
-        raise ObjectNotFoundError('Selection ID cannot be None')
-    parts = selection_id.split('-')
+def get_zimfarm_schedule_name(builder_id: str) -> str:
+    """Generate a unique schedule name for the ZIM file based on builder"""
+    if not builder_id:
+        raise ValueError('Builder ID cannot be None')
+    parts = builder_id.split('-')
     # Use last two parts of the UUIDv4 for more uniqueness
     short_id = ''.join(parts[-2:])
     return f'wp1_selection_{short_id}'
@@ -183,7 +183,7 @@ def get_zimfarm_schedule_name(selection_id: str) -> str:
 def get_zim_filename_prefix(builder: Builder, selection: Selection) -> str:
   """Generate a filename prefix for the ZIM file based on builder and selection."""
   if builder is None or selection is None:
-    raise ObjectNotFoundError(f"Given builder or selection was None")
+    raise ValueError(f"Given builder or selection was None")
 
   selection_id_frag = selection.s_id.decode('utf-8').split('-')[-1]
   builder_name = builder.b_name.decode('utf-8')
@@ -196,7 +196,7 @@ def _get_params(builder: Builder,
                 description: str = '',
                 long_description: str = '') -> dict:
   if builder is None:
-    raise ObjectNotFoundError('Given builder was None: %r' % builder)
+    raise ValueError('Given builder was None: %r' % builder)
 
   project = builder.b_project.decode('utf-8')
 
@@ -247,7 +247,7 @@ def _get_params(builder: Builder,
   webhook_url = get_webhook_url()
 
   return {
-      'name': get_zimfarm_schedule_name(selection.s_id.decode('utf-8')),
+      'name': get_zimfarm_schedule_name(builder.b_id.decode('utf-8')),
       'language': {
           'code': 'eng',
           'name_en': 'English',
@@ -304,7 +304,7 @@ def request_zimfarm_task(s3,
   headers = _get_zimfarm_headers(token)
 
   builder_id = builder.b_id.decode('utf-8')
-  logger.info('Creating schedule for ZIM for builder id=%s', builder_id)
+  logger.info('Creating zimfarm schedule for ZIM for builder id=%s', builder_id)
   r = requests.post('%s/schedules/' % base_url, headers=headers, json=params)
 
   try:
