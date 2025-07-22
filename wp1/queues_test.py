@@ -1,14 +1,13 @@
-import unittest
-from unittest.mock import ANY, patch, MagicMock
+import datetime
+from unittest.mock import patch, MagicMock
 
-import fakeredis
 
 from wp1 import constants, queues
 from wp1.base_db_test import BaseWpOneDbTest
 from wp1.environment import Environment
 from wp1 import queues  
-from wp1.models.wp10.builder import Builder
 from wp1.selection.models.simple import Builder as SimpleBuilder
+import wp1.logic.builder as logic_builder
 
 
 class QueuesTest(BaseWpOneDbTest):
@@ -192,78 +191,23 @@ class QueuesTest(BaseWpOneDbTest):
     scheduler_mock.enqueue_in.assert_called_once()
 
   @patch('wp1.queues.Scheduler')
-  @patch('wp1.queues.uuid.uuid4')
-  def test_schedule_future_zimfile_generations(self, mock_uuid4, mock_scheduler):
-    builder = Builder(
-        b_id=b'builder-id',
-        b_name=b'Test Builder',
-        b_user_id=b'1234',
-        b_project=b'en.wikipedia.fake',
-        b_model=b'wp1.selection.models.simple',
-        b_params=b'{}',
-    )
-    title = 'Title'
-    description = 'Description'
-    long_description = 'Long Description'
-    scheduled_repetitions = {
-        'repetition_period_in_months': 2,
-        'number_of_repetitions': 3,
-        'email': 'user@example.com'
-    }
-    job_mock = MagicMock()
-    job_mock.id = 'job-id'
-    mock_scheduler.return_value.schedule.return_value = job_mock
-    mock_uuid4.return_value = 'uuid-1'
+  def test_schedule_recurring_zimfarm_task(self, mock_scheduler):
+    mock_scheduler_instance = MagicMock()
+    mock_scheduler_instance.schedule.return_value = 'job-id'
+    mock_scheduler.return_value = mock_scheduler_instance
 
-    result = queues.schedule_future_zimfile_generations(
-        self.redis, self.wp10db,
-        builder, title, description, long_description,
-        scheduled_repetitions
+    time = datetime.datetime(2026, 12, 25, 4, 44, 44)
+    result = queues.schedule_recurring_zimfarm_task(
+      self.redis, ['arg1', 'arg2'], time, 42000, 3
     )
-    two_months_in_seconds = constants.SECONDS_PER_MONTH * 2
+  
     self.assertEqual('job-id', result)
-    # Verify scheduler.schedule was called with correct parameters
-    mock_scheduler.return_value.schedule.assert_called_once_with(
-      scheduled_time=ANY,
-      func=queues.logic_builder.request_scheduled_zim_file_for_builder,
-      args=[builder, title, description, long_description, 'uuid-1'],
-      interval=two_months_in_seconds,
-      repeat=scheduled_repetitions['number_of_repetitions'] - 1,
+    mock_scheduler_instance.schedule.assert_called_once_with(
+      scheduled_time=time,
+      func=logic_builder.request_scheduled_zim_file_for_builder,
+      args=['arg1', 'arg2'],
+      interval=42000,
+      repeat=3,
       queue_name='zimfile-scheduling',
     )
-
-    with self.wp10db.cursor() as cursor:
-      cursor.execute('SELECT * FROM zim_schedules WHERE s_id = %s', (b'uuid-1',))
-      zim_schedule = cursor.fetchone()
-      self.assertIsNotNone(zim_schedule)
-      self.assertEqual(b'uuid-1', zim_schedule['s_id'])
-      self.assertEqual(b'builder-id', zim_schedule['s_builder_id'])
-      self.assertEqual(b'job-id', zim_schedule['s_rq_job_id'])
-      self.assertEqual(scheduled_repetitions['repetition_period_in_months'], zim_schedule['s_interval'])
-      self.assertEqual(scheduled_repetitions['number_of_repetitions'] - 1, zim_schedule['s_remaining_generations'])
-  
-  def test_schedule_future_zimfile_generations_missing_fields(self):
-    
-    builder = Builder(
-        b_id=b'builder-id',
-        b_name=b'Test Builder',
-        b_user_id=b'1234',
-        b_project=b'en.wikipedia.fake',
-        b_model=b'wp1.selection.models.simple',
-        b_params=b'{}',
-    )
-    title = 'Title'
-    description = 'Description'
-    long_description = 'Long Description'
-    scheduled_repetitions = {
-        'repetition_period_in_months': 2,
-        'number_of_repetitions': 3,
-    }
-
-    with self.assertRaises(ValueError):
-      queues.schedule_future_zimfile_generations(
-          self.redis, self.wp10db,
-          builder, title, description, long_description,
-          scheduled_repetitions
-      )
       
