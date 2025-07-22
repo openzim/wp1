@@ -17,11 +17,11 @@ class ZimSchedule:
   s_id: bytes = attr.ib()
   s_builder_id: bytes = attr.ib()
   s_rq_job_id: bytes = attr.ib()
-  s_last_updated_at: bytes = attr.ib()
   s_zim_file_id: int = attr.ib(default=None)
   s_interval: int = attr.ib(default=None)  # in months
   s_email: bytes = attr.ib(default=None)  # Email to notify when the zim generation is done
   s_remaining_generations: int = attr.ib(default=None)  # how many more ZIMs to generate
+  s_last_updated_at: bytes = attr.ib(default=None)
 
   def set_id(self):
     self.s_id = str(uuid.uuid4()).encode('utf-8')
