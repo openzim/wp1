@@ -8,7 +8,7 @@ import requests
 from wp1.credentials import CREDENTIALS, ENV
 
 logger = logging.getLogger(__name__)
-MW_USER_AGENT = 'WP1.0Bot/3.0. Run by User:Audiodude. Using mwclient/0.9.1'
+MW_USER_AGENT = 'WP1.0Bot/3.0. Run by User:Audiodude. Using mwclient/0.11.0'
 
 
 def get_credentials():
@@ -42,10 +42,9 @@ def login():
 
   connection = requests.Session()
   connection.cookies = cookie_jar
+  connection.headers.update({'User-Agent': MW_USER_AGENT})
 
-  site = mwclient.Site('en.wikipedia.org',
-                       clients_useragent=MW_USER_AGENT,
-                       pool=connection)
+  site = mwclient.Site('en.wikipedia.org', pool=connection)
   if not site.logged_in:
     try:
       logger.info('Logging into API site')
