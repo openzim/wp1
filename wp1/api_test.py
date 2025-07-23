@@ -46,7 +46,8 @@ class ApiWithCredsTest(unittest.TestCase):
     patched_site.logged_in = False
     site = patched_mwsite()
     site.logged_in = False
-    site.login.side_effect = mwclient.errors.LoginError()
+    site.login.side_effect = mwclient.errors.LoginError('foo.wikipedia.fake',
+                                                        403, '')
     actual = wp1.api.login()
     self.assertFalse(actual)
     self.assertEqual(1, patched_logger.exception.call_count)
