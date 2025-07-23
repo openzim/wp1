@@ -177,7 +177,7 @@ def get_zimfarm_schedule_name(builder_id: str) -> str:
     parts = builder_id.split('-')
     # Use last two parts of the UUIDv4 for more uniqueness
     short_id = ''.join(parts[-2:])
-    return f'wp1_builder_{short_id}'
+    return f'wp1_selection_{short_id}'
 
 
 def get_zim_filename_prefix(builder: Builder, selection: Selection) -> str:
@@ -341,19 +341,21 @@ def request_zimfarm_task(redis,
   base_url = get_zimfarm_url()
   headers = _get_zimfarm_headers(token)
 
+  schedule_name = get_zimfarm_schedule_name(builder.b_id.decode('utf-8'))
+
   logger.info('Creating ZIM task for builder id=%s', builder.b_id.decode('utf-8'))
   r = requests.post('%s/requested-tasks/' % base_url,
                     headers=headers,
-                    json={'schedule_names': [get_zimfarm_schedule_name(builder.b_id.decode('utf-8')),]})
-
+                    json={'schedule_names': [schedule_name]})
+  print (f"r: {r}")
   try:
     r.raise_for_status()
-
+    print (f"r status: {r.status_code}")
     data = r.json()
     requested = data.get('requested')
     task_id = requested[0] if requested else None
     logger.info('Found task id=%s for builder id=%s', task_id, builder.b_id.decode('utf-8'))
-
+    print (f"task_id: {task_id}")
     if task_id is None:
       raise ZimFarmError('Did not get scheduled task id')
   except requests.exceptions.HTTPError as e:
