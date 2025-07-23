@@ -850,10 +850,13 @@ class BuilderTest(BaseWpOneDbTest):
 
     self.assertEqual(0, len(actual))
 
+  @patch('wp1.logic.builder.zimfarm.create_zimfarm_schedule')
   @patch('wp1.logic.builder.zimfarm.request_zimfarm_task')
   @patch('wp1.logic.builder.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
-  def test_handle_zim_generation(self, mock_utcnow, mock_request_zimfarm_task):
+  def test_handle_zim_generation(self, mock_utcnow,
+                                 mock_request_zimfarm_task,
+                                 mock_create_zimfarm_schedule):
     redis = MagicMock()
     s3 = MagicMock()
     mock_request_zimfarm_task.return_value = '1234-a'
@@ -871,15 +874,15 @@ class BuilderTest(BaseWpOneDbTest):
                                         user_id=1234,
                                         title='test_title',
                                         description='a',
-                                        long_description='z')
+                                        long_description='zz')
 
-    mock_request_zimfarm_task.assert_called_once_with(s3,
-                                                      redis,
+    mock_create_zimfarm_schedule.assert_called_once_with(redis, self.wp10db,
+                                                         self.builder,
+                                                         'test_title',
+                                                         'a', 'zz')
+    mock_request_zimfarm_task.assert_called_once_with(redis,
                                                       self.wp10db,
-                                                      self.builder,
-                                                      title='test_title',
-                                                      description='a',
-                                                      long_description='z')
+                                                      self.builder)
     with self.wp10db.cursor() as cursor:
       cursor.execute('SELECT z_task_id, z_status, z_requested_at,'
                      '       z_title, z_description, z_long_description'
@@ -891,7 +894,7 @@ class BuilderTest(BaseWpOneDbTest):
     self.assertEqual(b'20221225000102', data['z_requested_at'])
     self.assertEqual(b'test_title', data['z_title'])
     self.assertEqual(b'a', data['z_description'])
-    self.assertEqual(b'z', data['z_long_description'])
+    self.assertEqual(b'zz', data['z_long_description'])
 
   @patch('wp1.logic.builder.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
@@ -1234,7 +1237,7 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.connect_storage')
   @patch('wp1.logic.builder.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
-  def test_request_zim_file_for_builder(self, mock_utcnow, mock_connect_storage,
+  def test_request_zim_file_task_for_builder(self, mock_utcnow, mock_connect_storage,
                                         mock_redis_connect, mock_wp10_connect,
                                         mock_request_zimfarm_task):
     """Test basic zimfile request functionality"""
@@ -1251,35 +1254,25 @@ class BuilderTest(BaseWpOneDbTest):
 
     mock_request_zimfarm_task.return_value = 'test_task_id_123'
 
-    actual = logic_builder.request_zim_file_for_builder(
-        s3_mock,
-        redis_mock,
-        self.wp10db,
-        builder=self.builder,
-        title='Test Title',
-        description='Test Description',
-        long_description='Test Long Description')
+    actual = logic_builder.request_zim_file_task_for_builder(redis_mock,
+                                                             self.wp10db,
+                                                             builder=self.builder,
+                                                             title='Test Title',
+                                                             description='Test Description',
+                                                             long_description='Test Long Description')
 
-    # Verify return value
     self.assertEqual('test_task_id_123', actual)
+    mock_request_zimfarm_task.assert_called_once_with(redis_mock,
+                                                      self.wp10db,
+                                                      self.builder)
 
-    # Verify zimfarm was called correctly
-    mock_request_zimfarm_task.assert_called_once_with(
-        s3_mock,
-        redis_mock,
-        self.wp10db,
-        self.builder,
-        title='Test Title',
-        description='Test Description',
-        long_description='Test Long Description')
-
-    # Verify database was updated
     with self.wp10db.cursor() as cursor:
       cursor.execute('SELECT * FROM zim_files WHERE z_selection_id = 1')
       zim_file = cursor.fetchone()
       self.assertEqual(zim_file['z_status'], b'REQUESTED')
       self.assertEqual(zim_file['z_task_id'], b'test_task_id_123')
       self.assertEqual(zim_file['z_requested_at'], b'20221225000102')
+      self.assertEqual(zim_file['z_title'], b'Test Title')
       self.assertEqual(zim_file['z_description'], b'Test Description')
       self.assertEqual(zim_file['z_long_description'], b'Test Long Description')
 
@@ -1434,7 +1427,7 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.connect_storage')
   @patch('wp1.logic.builder.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
-  def test_request_zim_file_for_builder_empty_descriptions(
+  def test_request_zim_file_task_for_builder_empty_descriptions(
       self, mock_utcnow, mock_connect_storage, mock_redis_connect,
       mock_wp10_connect, mock_request_zimfarm_task):
     """Test zimfile request with empty/None descriptions"""
@@ -1452,13 +1445,12 @@ class BuilderTest(BaseWpOneDbTest):
     mock_request_zimfarm_task.return_value = 'test_task_id_empty'
 
     # Call the function with empty descriptions
-    actual = logic_builder.request_zim_file_for_builder(s3_mock,
-                                                        redis_mock,
-                                                        self.wp10db,
-                                                        builder=self.builder,
-                                                        title='Test Title',
-                                                        description='',
-                                                        long_description=None)
+    actual = logic_builder.request_zim_file_task_for_builder(redis_mock,
+                                                             self.wp10db,
+                                                             builder=self.builder,
+                                                             title='Test Title',
+                                                             description='',
+                                                             long_description=None)
 
     # Verify return value
     self.assertEqual('test_task_id_empty', actual)
@@ -1480,7 +1472,7 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.connect_storage')
   @patch('wp1.logic.builder.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
-  def test_request_zim_file_for_builder_no_selection_found(
+  def test_request_zim_file_task_for_builder_no_selection_found(
       self, mock_utcnow, mock_connect_storage, mock_redis_connect,
       mock_wp10_connect, mock_request_zimfarm_task):
     """Test zimfile request when no selection is found"""
@@ -1495,23 +1487,17 @@ class BuilderTest(BaseWpOneDbTest):
 
     mock_request_zimfarm_task.return_value = 'test_task_id_no_selection'
 
-    # This should raise an exception or handle gracefully
-    # The function calls latest_selection_for which may return None
     try:
-      actual = logic_builder.request_zim_file_for_builder(
-          s3=s3_mock,
-          redis=redis_mock,
-          wp10db=self.wp10db,
-          builder=self.builder.b_id,
-          title='Test Title',
-          description='Test Description',
-          long_description='Test Long Description')
-      # If no exception, access result to avoid unused variable warning
+      actual = logic_builder.request_zim_file_task_for_builder(redis=redis_mock,
+                                                               wp10db=self.wp10db,
+                                                               builder=self.builder.b_id,
+                                                               title='Test Title',
+                                                               description='Test Description',
+                                                               long_description='Test Long Description')
       self.assertIsNotNone(actual)
     except Exception:
-      pass  # Exception is expected if no selection is found
+      pass  
 
-    # If the function completes, zimfarm should still be called
     mock_request_zimfarm_task.assert_called_once()
 
   def test_get_builder_module_class_success(self):
