@@ -137,7 +137,7 @@
               </small>
               <div class="invalid-feedback">Please provide a description</div>
             </div>
-            <div class="form-group">
+            <div id="long-desc-group" class="form-group">
               <label for="longdesc">Long Description</label>
               <textarea
                 id="longdesc"
@@ -186,7 +186,7 @@
               v-on:click.prevent="onSubmit"
               class="btn btn-primary"
               type="button"
-              :disabled="processing || hasLengthErrors || tooManyArticles()"
+              :disabled="processing || tooManyArticles()"
             >
               Request ZIM file
             </button>
@@ -339,9 +339,10 @@ export default {
     },
     onSubmit: async function () {
       const form = this.$refs.form;
-      if (!form.checkValidity()) {
+      if (!form.checkValidity() || !this.isLongDescriptionValid) {
         this.$refs.form_group.classList.add('was-validated');
         this.$refs.zimtitle_form_group.classList.add('was-validated');
+        this.$refs.longdesc.classList.add('was-validated');
         return;
       }
 
