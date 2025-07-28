@@ -1,6 +1,4 @@
-import datetime
 import uuid
-import time
 from unittest.mock import patch, MagicMock, ANY
 
 from wp1.base_db_test import BaseWpOneDbTest
@@ -12,7 +10,8 @@ from wp1.logic.zim_schedules import (
     update_zim_schedule_zim_file_id,
     decrement_remaining_generations,
     get_scheduled_zimfarm_task_from_taskid,
-    schedule_future_zimfile_generations
+    schedule_future_zimfile_generations,
+    create_zim_schedule_with_job
 )
 from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.models.wp10.builder import Builder
@@ -159,7 +158,6 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
     self.assertIsNone(get_scheduled_zimfarm_task_from_taskid(self.wp10db, b"non_existent_task_id"))
 
   def test_create_zim_schedule_with_job(self):
-    from wp1.logic.zim_schedules import create_zim_schedule_with_job
     builder = Builder(
         b_id=b'test-builder-id',
         b_name=b'Test Builder',
@@ -186,6 +184,35 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
     schedule = get_zim_schedule(self.wp10db, custom_schedule_id.encode('utf-8'))
     self.assertIsNotNone(schedule)
     self.assertEqual(custom_schedule_id.encode('utf-8'), schedule.s_id)
+    self.assertEqual(b'test-builder-id', schedule.s_builder_id)
+    self.assertEqual(job_id.encode('utf-8'), schedule.s_rq_job_id)
+    self.assertEqual(2, schedule.s_interval)
+    self.assertEqual(5, schedule.s_remaining_generations)
+
+  def test_create_zim_schedule_with_job_no_id(self):
+    builder = Builder(
+        b_id=b'test-builder-id',
+        b_name=b'Test Builder',
+        b_user_id=b'1234',
+        b_project=b'en.wikipedia.fake',
+        b_model=b'wp1.selection.models.simple',
+        b_params=b'{}',
+    )
+    scheduled_repetitions = {
+        'repetition_period_in_months': 2,
+        'number_of_repetitions': 5,
+        'email': 'test@example.com'
+    }
+    job_id = 'test-job-id'
+    
+    result_id = create_zim_schedule_with_job(
+        self.wp10db, builder, scheduled_repetitions, job_id
+    )
+    
+    # Verify the schedule was saved correctly
+    schedule = get_zim_schedule(self.wp10db, result_id.encode('utf-8'))
+    self.assertIsNotNone(schedule)
+    self.assertEqual(result_id.encode('utf-8'), schedule.s_id)
     self.assertEqual(b'test-builder-id', schedule.s_builder_id)
     self.assertEqual(job_id.encode('utf-8'), schedule.s_rq_job_id)
     self.assertEqual(2, schedule.s_interval)
