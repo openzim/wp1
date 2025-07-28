@@ -9,6 +9,7 @@ from pymysql.connections import Connection
 from redis import Redis
 
 import wp1.logic.selection as logic_selection
+import wp1.logic.zim_schedules as logic_zim_schedules
 import wp1.logic.util as logic_util
 from wp1 import app_logging, queues, zimfarm
 from wp1.constants import (CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE,
@@ -27,6 +28,15 @@ from wp1.wp10_db import connect as wp10_connect
 
 logger = logging.getLogger(__name__)
 
+
+def get_builder_module_class(model: str):
+  """Dynamically imports the builder module and returns the Builder class."""
+  builder_module = importlib.import_module(model)
+  builder_cls = getattr(builder_module, 'Builder')
+  if builder_cls is None:
+    logger.warning('Could not find model: %s', model)
+    raise ImportError(f'Builder class not found in module {model}')
+  return builder_cls
 
 def create_or_update_builder(wp10db,
                              name,
@@ -170,6 +180,11 @@ def materialize_builder(builder_cls,
     update_current_version(wp10db, builder, next_version)
     updated = maybe_update_selection_zim_version(wp10db, builder, next_version)
     if not updated:
+      # The ZIM file was not updated, which means there's an existing ZIM
+      # that's ready that needs to be replaced. Schedule the ZIM file to
+      # be automatically created. We don't need to do this if the ZIM
+      # version was updated, because that indicates that the ZIM file
+      # was never requested or errored and should remain in that state.
       auto_handle_zim_generation(s3, redis, wp10db, builder.b_id)
   finally:
     if should_close:
@@ -434,7 +449,8 @@ def request_zim_file_for_builder(s3: KiwixStorage,
 def request_scheduled_zim_file_for_builder(builder: Builder,
                                            title: str,
                                            description: str,
-                                           long_description: str = None):
+                                           long_description: str = None,
+                                           zim_schedule_id: str = None):
   """
   Requests a scheduled ZIM file generation from the Zimfarm for the given builder.
   It will reopen connections and rebuild the selection for the builder.
@@ -448,12 +464,19 @@ def request_scheduled_zim_file_for_builder(builder: Builder,
 
   # Rebuild the selection for the builder
   builder: Builder = get_builder(wp10db, builder.b_id)
-  builder_module = importlib.import_module(builder.b_model.decode('utf-8'))
-  builder_cls = getattr(builder_module, 'Builder')
-  # materializer = builder_cls()
+  try:
+      builder_cls = get_builder_module_class(builder.b_model.decode('utf-8'))
+  except ImportError as e:
+      logger.error(f"Failed to load builder module class: {e}")
+      raise
   materialize_builder(builder_cls, builder, 'text/tab-separated-values', s3, redis, wp10db)
 
+  if zim_schedule_id is not None:
+    zim_file = zim_file_for_latest_selection(wp10db, builder.b_id)
+    logic_zim_schedules.update_zim_schedule_zim_file_id(wp10db, zim_schedule_id, zim_file.z_id)
+
   task_id = request_zim_file_for_builder(s3, redis, wp10db, builder, title, description, long_description)
+
   return task_id
 
 def handle_zim_generation(s3,
@@ -486,6 +509,10 @@ def handle_zim_generation(s3,
           (builder_id, user_id))
 
   task_id = request_zim_file_for_builder(s3, redis, wp10db, builder, title, description, long_description)
+
+  # if scheduled_repetitions is not None schedule future ZIMfile generations
+  if scheduled_repetitions is not None:
+    logic_zim_schedules.schedule_future_zimfile_generations(redis, wp10db, builder, title, description, long_description, scheduled_repetitions)
 
   # In production, there is a web hook from the Zimfarm that notifies us
   # that the task is finished and we can start polling for the ZIM file

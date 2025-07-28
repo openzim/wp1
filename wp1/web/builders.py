@@ -1,4 +1,3 @@
-import importlib
 import logging
 
 import flask
@@ -30,10 +29,10 @@ def _create_or_update_builder(wp10db, data, builder_id=None):
   if not list_name or not project or not model or not params:
     return 'Missing list_name or project or model or params', 400
 
-  builder_module = importlib.import_module(model)
-  builder_cls = getattr(builder_module, 'Builder')
-  if builder_cls is None:
-    logger.warning('Could not find model: %s', model)
+  try:
+    builder_cls = logic_builder.get_builder_module_class(model)
+  except ImportError as e:
+    logger.warning(str(e))
     flask.abort(400)
 
   builder_obj = builder_cls()
