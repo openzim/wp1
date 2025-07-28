@@ -878,8 +878,9 @@ class BuilderTest(BaseWpOneDbTest):
 
     mock_create_zimfarm_schedule.assert_called_once_with(redis, self.wp10db,
                                                          self.builder,
-                                                         'test_title',
-                                                         'a', 'zz')
+                                                         title='test_title',
+                                                         description='a',
+                                                         long_description='zz')
     mock_request_zimfarm_task.assert_called_once_with(redis,
                                                       self.wp10db,
                                                       self.builder)
