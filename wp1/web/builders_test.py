@@ -9,6 +9,7 @@ from wp1.models.wp10.builder import Builder
 from wp1.web.app import create_app
 from wp1.web.base_web_testcase import BaseWebTestcase
 from wp1.zimfarm import MAX_ZIMFARM_ARTICLE_COUNT
+from wp1.web.builders import _create_or_update_builder
 
 
 class BuildersTest(BaseWebTestcase):
@@ -160,6 +161,22 @@ class BuildersTest(BaseWebTestcase):
                            'project': 'my_project'
                        })
       self.assertEqual(self.successful_response, rv.get_json())
+
+  def test_create_throws(self):
+    self.app = create_app()
+    with self.app.test_client() as client, self.override_db(self.app):
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/',
+               json={
+                 'model': 'fake_model',
+                 'params': {
+                   'list': self.valid_article_name
+                 },
+                 'name': 'my_list',
+                 'project': 'my_project'
+               })
+      self.assertEqual('400 BAD REQUEST', rv.status)
 
   def test_update_unsuccessful(self):
     builder_id = self._insert_builder()
