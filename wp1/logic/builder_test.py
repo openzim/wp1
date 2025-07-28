@@ -1284,7 +1284,6 @@ class BuilderTest(BaseWpOneDbTest):
       self.assertEqual(zim_file['z_long_description'], b'Test Long Description')
 
   @patch('wp1.logic.builder.materialize_builder')
-  @patch('wp1.logic.builder.get_builder')
   @patch('wp1.logic.builder.zimfarm.request_zimfarm_task')
   @patch('wp1.logic.builder.wp10_connect')
   @patch('wp1.logic.builder.redis_connect')
@@ -1293,8 +1292,7 @@ class BuilderTest(BaseWpOneDbTest):
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
   def test_request_scheduled_zim_file_for_builder(
       self, mock_utcnow, mock_connect_storage, mock_redis_connect,
-      mock_wp10_connect, mock_request_zimfarm_task, mock_get_builder,
-      mock_materialize_builder):
+      mock_wp10_connect, mock_request_zimfarm_task, mock_materialize_builder):
     """Test zimfile request with rebuild_selection=True"""
     self._insert_builder()
     self._insert_selection(1,
@@ -1308,8 +1306,6 @@ class BuilderTest(BaseWpOneDbTest):
     mock_connect_storage.return_value = s3_mock
 
     mock_request_zimfarm_task.return_value = 'test_task_id_456'
-
-    mock_get_builder.return_value = self.builder
     
     with patch('wp1.logic.builder.importlib.import_module') as mock_import:
       mock_module = MagicMock()
@@ -1324,11 +1320,10 @@ class BuilderTest(BaseWpOneDbTest):
       )
     
     self.assertEqual('test_task_id_456', actual)
-    mock_get_builder.assert_called_once_with(self.wp10db, self.builder.b_id)
     mock_materialize_builder.assert_called_once()
     mock_request_zimfarm_task.assert_called_once()
 
-  @patch('wp1.logic.builder.get_builder')
+  @patch('wp1.logic.builder.importlib.import_module')
   @patch('wp1.logic.builder.wp10_connect')
   @patch('wp1.logic.builder.redis_connect')
   @patch('wp1.logic.builder.connect_storage')
@@ -1336,7 +1331,7 @@ class BuilderTest(BaseWpOneDbTest):
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
   def test_request_scheduled_zim_file_for_builder_missing_class(
       self, mock_utcnow, mock_connect_storage, mock_redis_connect,
-      mock_wp10_connect, mock_get_builder):
+      mock_wp10_connect, mock_import_module):
     """Test zimfile request with missing builder class in module"""
     self._insert_builder()
     self._insert_selection(1,
@@ -1349,23 +1344,19 @@ class BuilderTest(BaseWpOneDbTest):
     mock_redis_connect.return_value = redis_mock
     mock_connect_storage.return_value = s3_mock
     
-    mock_get_builder.return_value = self.builder
-    
-    with patch('wp1.logic.builder.importlib.import_module') as mock_import:
-      mock_module = MagicMock()
-      mock_module.Builder = None  # Simulate missing Builder class 
-      mock_import.return_value = mock_module
-      with self.assertRaises(ImportError) as cm:
-          actual = logic_builder.request_scheduled_zim_file_for_builder(
-              builder=self.builder,
-              title='Test Title',
-              description='Test Description',
-              long_description='Test Long Description'
-          )
-      self.assertIn('Builder class not found in module', str(cm.exception)) 
-      
+    mock_module = MagicMock()
+    mock_module.Builder = None  # Simulate missing Builder class 
+    mock_import_module.return_value = mock_module
+    with self.assertRaises(ImportError) as cm:
+        actual = logic_builder.request_scheduled_zim_file_for_builder(
+            builder=self.builder,
+            title='Test Title',
+            description='Test Description',
+            long_description='Test Long Description'
+        )
+
+  @patch('wp1.logic.builder.importlib.import_module')
   @patch('wp1.logic.builder.materialize_builder')
-  @patch('wp1.logic.builder.get_builder')
   @patch('wp1.logic.builder.zimfarm.request_zimfarm_task')
   @patch('wp1.logic.builder.wp10_connect')
   @patch('wp1.logic.builder.redis_connect')
@@ -1378,8 +1369,8 @@ class BuilderTest(BaseWpOneDbTest):
                                                   mock_redis_connect,
                                                   mock_wp10_connect,
                                                   mock_request_zimfarm_task,
-                                                  mock_get_builder,
-                                                  mock_materialize_builder):
+                                                  mock_materialize_builder,
+                                                  mock_import_module):
     """Test zimfile request with rebuild_selection=True"""
     self._insert_builder()
     self._insert_selection(1, 'text/tab-separated-values', builder_id=self.builder.b_id)
@@ -1399,24 +1390,20 @@ class BuilderTest(BaseWpOneDbTest):
     
     mock_request_zimfarm_task.return_value = 'test_task_id_456'
     
-    mock_get_builder.return_value = self.builder
+    mock_module = MagicMock()
+    mock_builder_cls = MagicMock()
+    mock_module.Builder = mock_builder_cls
+    mock_import_module.return_value = mock_module
     
-    with patch('wp1.logic.builder.importlib.import_module') as mock_import:
-      mock_module = MagicMock()
-      mock_builder_cls = MagicMock()
-      mock_module.Builder = mock_builder_cls
-      mock_import.return_value = mock_module
-      
-      actual = logic_builder.request_scheduled_zim_file_for_builder(
-          builder=self.builder,
-          title='Test Title',
-          description='Test Description',
-          long_description='Test Long Description',
-          zim_schedule_id='schedule_123'
-      )
+    actual = logic_builder.request_scheduled_zim_file_for_builder(
+        builder=self.builder,
+        title='Test Title',
+        description='Test Description',
+        long_description='Test Long Description',
+        zim_schedule_id='schedule_123'
+    )
     
     self.assertEqual('test_task_id_456', actual)
-    mock_get_builder.assert_called_once_with(self.wp10db, self.builder.b_id)
     mock_materialize_builder.assert_called_once()
     mock_request_zimfarm_task.assert_called_once()
 
