@@ -170,11 +170,11 @@ def _validate_zim_metadata(title=None, description=None, long_description=None):
         f"Long description must be different from the description.")
 
 
-def get_zimfarm_schedule_name(selection_id: str) -> str:
-    """Generate a unique schedule name for the ZIM file based on builder and selection."""
-    if not selection_id:
-        raise ObjectNotFoundError('Selection ID cannot be None')
-    parts = selection_id.split('-')
+def get_zimfarm_schedule_name(builder_id: str) -> str:
+    """Generate a unique schedule name for the ZIM file based on builder"""
+    if not builder_id:
+        raise ValueError('Builder ID cannot be None')
+    parts = builder_id.split('-')
     # Use last two parts of the UUIDv4 for more uniqueness
     short_id = ''.join(parts[-2:])
     return f'wp1_selection_{short_id}'
@@ -183,7 +183,7 @@ def get_zimfarm_schedule_name(selection_id: str) -> str:
 def get_zim_filename_prefix(builder: Builder, selection: Selection) -> str:
   """Generate a filename prefix for the ZIM file based on builder and selection."""
   if builder is None or selection is None:
-    raise ObjectNotFoundError(f"Given builder or selection was None")
+    raise ValueError(f"Given builder or selection was None")
 
   selection_id_frag = selection.s_id.decode('utf-8').split('-')[-1]
   builder_name = builder.b_name.decode('utf-8')
@@ -196,7 +196,7 @@ def _get_params(builder: Builder,
                 description: str = '',
                 long_description: str = '') -> dict:
   if builder is None:
-    raise ObjectNotFoundError('Given builder was None: %r' % builder)
+    raise ValueError('Given builder was None: %r' % builder)
 
   project = builder.b_project.decode('utf-8')
 
@@ -247,7 +247,7 @@ def _get_params(builder: Builder,
   webhook_url = get_webhook_url()
 
   return {
-      'name': get_zimfarm_schedule_name(selection.s_id.decode('utf-8')),
+      'name': get_zimfarm_schedule_name(builder.b_id.decode('utf-8')),
       'language': {
           'code': 'eng',
           'name_en': 'English',
@@ -270,13 +270,15 @@ def _get_zimfarm_headers(token):
   return {"Authorization": "Token %s" % token, 'User-Agent': WP1_USER_AGENT}
 
 
-def request_zimfarm_task(s3,
-                      redis,
-                      wp10db,
-                      builder,
-                      title='',
-                      description='',
-                      long_description=None):
+def create_zimfarm_schedule(redis,
+                            wp10db,
+                            builder,
+                            title='',
+                            description='',
+                            long_description=None):
+  """
+  Requests a ZIM file schedule from the Zimfarm for the given builder.
+  """
   token = get_zimfarm_token(redis)
   if token is None:
     raise ZimFarmError('Error retrieving auth token for request')
@@ -304,7 +306,7 @@ def request_zimfarm_task(s3,
   headers = _get_zimfarm_headers(token)
 
   builder_id = builder.b_id.decode('utf-8')
-  logger.info('Creating schedule for ZIM for builder id=%s', builder_id)
+  logger.info('Creating zimfarm schedule for ZIM for builder id=%s', builder_id)
   r = requests.post('%s/schedules/' % base_url, headers=headers, json=params)
 
   try:
@@ -313,19 +315,44 @@ def request_zimfarm_task(s3,
     logger.exception(r.text)
     raise ZimFarmError('Error creating schedule for ZIM file creation') from e
 
-  logger.info('Creating ZIM task for builder id=%s', builder_id)
+
+def request_zimfarm_task(redis,
+                         wp10db,
+                         builder):
+  """
+  Requests a ZIM file task from the Zimfarm for the given builder.
+  """
+  token = get_zimfarm_token(redis)
+  if token is None:
+    raise ZimFarmError('Error retrieving auth token for request')
+
+  if builder is None:
+    raise ObjectNotFoundError('Cannot schedule for None builder')
+
+  selection = logic_builder.latest_selection_for(wp10db, builder.b_id,
+                                                 'text/tab-separated-values')
+  article_count = selection.s_article_count
+  if article_count is None or article_count > MAX_ZIMFARM_ARTICLE_COUNT:
+    raise ZimFarmTooManyArticlesError(
+        'Cannot create ZIM file for selection with %s articles, max is %s' %
+        (article_count if article_count is not None else 'UNKNOWN number of',
+         MAX_ZIMFARM_ARTICLE_COUNT))
+
+  base_url = get_zimfarm_url()
+  headers = _get_zimfarm_headers(token)
+
+  schedule_name = get_zimfarm_schedule_name(builder.b_id.decode('utf-8'))
+
+  logger.info('Creating ZIM task for builder id=%s', builder.b_id.decode('utf-8'))
   r = requests.post('%s/requested-tasks/' % base_url,
                     headers=headers,
-                    json={'schedule_names': [params['name'],]})
-
+                    json={'schedule_names': [schedule_name]})
   try:
     r.raise_for_status()
-
     data = r.json()
     requested = data.get('requested')
     task_id = requested[0] if requested else None
-    logger.info('Found task id=%s for builder id=%s', task_id, builder_id)
-
+    logger.info('Found task id=%s for builder id=%s', task_id, builder.b_id.decode('utf-8'))
     if task_id is None:
       raise ZimFarmError('Did not get scheduled task id')
   except requests.exceptions.HTTPError as e:
