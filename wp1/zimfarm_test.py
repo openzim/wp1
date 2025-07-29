@@ -27,7 +27,7 @@ from wp1.zimfarm import (
 
 class ZimFarmTest(BaseWpOneDbTest):
   expected_params = {
-      'name': 'wp1_builder_3c4d',
+      'name': 'wp1_selection_3c4d',
       'language': {
           'code': 'eng',
           'name_en': 'English',
@@ -143,8 +143,8 @@ class ZimFarmTest(BaseWpOneDbTest):
   def test_get_zimfarm_schedule_name_valid(self):
     builder_id = '123e4567-e89b-12d3-a456-abc123456789'
     result = zimfarm.get_zimfarm_schedule_name(builder_id)
-    # Should join last two parts: 'a456-abc123456789' -> 'wp1_builder_a456abc123456789'
-    self.assertEqual(result, 'wp1_builder_a456abc123456789')
+    # Should join last two parts: 'a456-abc123456789' -> 'wp1_selection_a456abc123456789'
+    self.assertEqual(result, 'wp1_selection_a456abc123456789')
 
   def test_get_zimfarm_schedule_name_none(self):
     with self.assertRaises(ObjectNotFoundError):

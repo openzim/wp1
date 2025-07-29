@@ -173,17 +173,17 @@ def _validate_zim_metadata(title=None, description=None, long_description=None):
 def get_zimfarm_schedule_name(builder_id: str) -> str:
     """Generate a unique schedule name for the ZIM file based on builder"""
     if not builder_id:
-        raise ObjectNotFoundError('Builder ID cannot be None')
+        raise ValueError('Builder ID cannot be None')
     parts = builder_id.split('-')
     # Use last two parts of the UUIDv4 for more uniqueness
     short_id = ''.join(parts[-2:])
-    return f'wp1_builder_{short_id}'
+    return f'wp1_selection_{short_id}'
 
 
 def get_zim_filename_prefix(builder: Builder, selection: Selection) -> str:
   """Generate a filename prefix for the ZIM file based on builder and selection."""
   if builder is None or selection is None:
-    raise ObjectNotFoundError(f"Given builder or selection was None")
+    raise ValueError(f"Given builder or selection was None")
 
   selection_id_frag = selection.s_id.decode('utf-8').split('-')[-1]
   builder_name = builder.b_name.decode('utf-8')
@@ -196,7 +196,7 @@ def _get_params(builder: Builder,
                 description: str = '',
                 long_description: str = '') -> dict:
   if builder is None:
-    raise ObjectNotFoundError('Given builder was None: %r' % builder)
+    raise ValueError('Given builder was None: %r' % builder)
 
   project = builder.b_project.decode('utf-8')
 
