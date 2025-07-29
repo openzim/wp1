@@ -357,6 +357,14 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     self.assertEqual(actual, 'bcdefg')
 
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  def test_create_zimfarm_schedule_missing_token(self, get_token_mock):
+    redis = MagicMock()
+    get_token_mock.return_value = None
+
+    with self.assertRaises(ZimFarmError):
+      zimfarm.create_zimfarm_schedule(redis, self.wp10db, None)
+
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
   def test_create_zimfarm_schedule_missing_builder(self, get_token_mock,
@@ -412,24 +420,6 @@ class ZimFarmTest(BaseWpOneDbTest):
                                       self.builder,
                                       title='a',
                                       description='b')
-
-  @patch('wp1.zimfarm.requests')
-  @patch('wp1.zimfarm.get_zimfarm_token')
-  @patch('wp1.zimfarm._get_params')
-  def test_schedule_zim_valid_graphemes(self, get_params_mock, get_token_mock,
-                                        mock_requests):
-    redis = MagicMock()
-    mock_response = MagicMock()
-    mock_response.json.return_value = {'requested': ['9876']}
-    mock_requests.post.side_effect = (MagicMock(), mock_response, MagicMock())
-
-    valid_title = "में" * (ZIM_TITLE_MAX_LENGTH)
-    zimfarm.create_zimfarm_schedule(redis,
-            self.wp10db,
-            self.builder,
-            title=valid_title,
-            description='b')
-    mock_requests.post.assert_called_once()
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
@@ -509,7 +499,32 @@ class ZimFarmTest(BaseWpOneDbTest):
                                       description='bb',
                                       long_description='bb')
 
+  @patch('wp1.zimfarm.requests')
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm._get_params')
+  def test_create_zimfarm_schedule_valid_graphemes(self, get_params_mock, get_token_mock,
+                                        mock_requests):
+    redis = MagicMock()
+    mock_response = MagicMock()
+    mock_response.json.return_value = {'requested': ['9876']}
+    mock_requests.post.side_effect = (MagicMock(), mock_response, MagicMock())
 
+    valid_title = "में" * (ZIM_TITLE_MAX_LENGTH)
+    zimfarm.create_zimfarm_schedule(redis,
+            self.wp10db,
+            self.builder,
+            title=valid_title,
+            description='b')
+    mock_requests.post.assert_called_once()
+
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  def test_request_zimfarm_task_missing_token(self, get_token_mock):
+    redis = MagicMock()
+    get_token_mock.return_value = None
+
+    with self.assertRaises(ZimFarmError):
+      zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
+  
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
   @patch('wp1.zimfarm.get_zimfarm_schedule_name')
