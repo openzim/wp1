@@ -347,15 +347,12 @@ def request_zimfarm_task(redis,
   r = requests.post('%s/requested-tasks/' % base_url,
                     headers=headers,
                     json={'schedule_names': [schedule_name]})
-  print (f"r: {r}")
   try:
     r.raise_for_status()
-    print (f"r status: {r.status_code}")
     data = r.json()
     requested = data.get('requested')
     task_id = requested[0] if requested else None
     logger.info('Found task id=%s for builder id=%s', task_id, builder.b_id.decode('utf-8'))
-    print (f"task_id: {task_id}")
     if task_id is None:
       raise ZimFarmError('Did not get scheduled task id')
   except requests.exceptions.HTTPError as e:
