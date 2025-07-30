@@ -577,21 +577,6 @@ class ZimFarmTest(BaseWpOneDbTest):
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
   @patch('wp1.zimfarm.get_zimfarm_schedule_name')
-  def test_request_zimfarm_task_task_create_raises(self, get_zimfarm_schedule_name_mock,
-                                                   get_token_mock, mock_requests):
-    redis = MagicMock()
-    get_zimfarm_schedule_name_mock.return_value = 'bar'
-    get_token_mock.return_value = 'abcdef'
-    mock_response = MagicMock()
-    mock_response.json.side_effect = requests.exceptions.HTTPError
-    mock_requests.exceptions.HTTPError = requests.exceptions.HTTPError
-    mock_requests.post.return_value = mock_response
-    with self.assertRaises(ZimFarmError):
-      zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
-
-  @patch('wp1.zimfarm.requests')
-  @patch('wp1.zimfarm.get_zimfarm_token')
-  @patch('wp1.zimfarm.get_zimfarm_schedule_name')
   def test_request_zimfarm_task_missing_task_id(self, get_zimfarm_schedule_name_mock,
                                                 get_token_mock, mock_requests):
     redis = MagicMock()

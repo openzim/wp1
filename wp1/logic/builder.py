@@ -20,7 +20,8 @@ from wp1.exceptions import (ObjectNotFoundError, UserNotAuthorizedError,
                             ZimFarmError)
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
-from wp1.models.wp10.zim_file import ZimFile
+from wp1.models.wp10.zim_file import ZimTask
+from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.redis_db import connect as redis_connect
 from wp1.storage import connect_storage
 from wp1.timestamp import utcnow
@@ -185,7 +186,7 @@ def materialize_builder(builder_cls,
       # be automatically created. We don't need to do this if the ZIM
       # version was updated, because that indicates that the ZIM file
       # was never requested or errored and should remain in that state.
-      auto_handle_zim_generation(s3, redis, wp10db, builder.b_id)
+      auto_handle_zim_generation(redis, wp10db, builder.b_id)
   finally:
     if should_close:
       wp10db.close()
@@ -193,7 +194,6 @@ def materialize_builder(builder_cls,
 
 def maybe_update_selection_zim_version(wp10db, builder, selection_version):
   current_zim = latest_zim_file_for(wp10db, builder.b_id)
-
   if current_zim is not None and current_zim.z_status == b'FILE_READY':
     # There is an existing ZIM that's ready. Leave it for now and
     # the version will get updated when the new ZIM is uploaded.
@@ -207,7 +207,7 @@ def maybe_update_selection_zim_version(wp10db, builder, selection_version):
   return True
 
 
-def auto_handle_zim_generation(s3, redis, wp10db, builder_id):
+def auto_handle_zim_generation(redis, wp10db, builder_id):
   # First, cancel any pending auto-scheduled tasks.
   for task_id in pending_zim_tasks_for(wp10db, builder_id):
     try:
@@ -217,25 +217,25 @@ def auto_handle_zim_generation(s3, redis, wp10db, builder_id):
       logging.exception('Could not cancel task_id=%s', task_id)
 
   zim_file = latest_zim_file_for(wp10db, builder_id)
-  title = zim_file.z_title.decode(
-      'utf-8') if zim_file.z_title is not None else None
-  description = zim_file.z_description.decode(
-      'utf-8') if zim_file.z_description is not None else None
-  long_description = zim_file.z_long_description.decode(
-      'utf-8') if zim_file.z_long_description is not None else None
-  handle_zim_generation(s3,
-                    redis,
-                    wp10db,
-                    builder_id,
-                    title=title,
-                    description=description,
-                    long_description=long_description)
+  zim_schedule: ZimSchedule = logic_zim_schedules.get_zim_schedule_by_zim_file_id(wp10db, zim_file.z_id)
+  title = zim_schedule.s_title.decode(
+      'utf-8') if zim_schedule.s_title is not None else None
+  description = zim_schedule.s_description.decode(
+      'utf-8') if zim_schedule.s_description is not None else None
+  long_description = zim_schedule.s_long_description.decode(
+      'utf-8') if zim_schedule.s_long_description is not None else None
+  handle_zim_generation(redis,
+                        wp10db,
+                        builder_id,
+                        title=title,
+                        description=description,
+                        long_description=long_description)
 
 
 def pending_zim_tasks_for(wp10db, builder_id):
   with wp10db.cursor() as cursor:
     cursor.execute(
-        '''SELECT z.z_task_id FROM zim_files z
+        '''SELECT z.z_task_id FROM zim_tasks z
            JOIN selections s
              ON s.s_id = z.z_selection_id
            JOIN builders b
@@ -255,7 +255,7 @@ def update_version_for_finished_zim(wp10db, task_id):
         '''UPDATE builders b
            LEFT JOIN selections s
              ON s.s_builder_id = b.b_id
-           LEFT JOIN zim_files z
+           LEFT JOIN zim_tasks z
              ON z.z_selection_id = s.s_id
            SET b.b_selection_zim_version = s.s_version
            WHERE z.z_task_id = %s''', (task_id,))
@@ -341,7 +341,7 @@ def latest_zim_file_for(wp10db, builder_id):
   """Returns the ZIM file that matches the ZIM version of the Builder."""
   with wp10db.cursor() as cursor:
     cursor.execute(
-        '''SELECT z.* FROM zim_files z
+        '''SELECT z.* FROM zim_tasks z
            INNER JOIN selections s
              ON s.s_id = z.z_selection_id
            INNER JOIN builders b
@@ -352,14 +352,14 @@ def latest_zim_file_for(wp10db, builder_id):
     db_zim = cursor.fetchone()
     if db_zim is None:
       return None
-    return ZimFile(**db_zim)
+    return ZimTask(**db_zim)
 
 
 def zim_file_for_latest_selection(wp10db, builder_id):
   """Returns the ZIM file of the latest Selection for a Builder."""
   with wp10db.cursor() as cursor:
     cursor.execute(
-        '''SELECT z.* FROM zim_files z
+        '''SELECT z.* FROM zim_tasks z
            INNER JOIN selections s
              ON s.s_id = z.z_selection_id
            INNER JOIN builders b
@@ -370,7 +370,7 @@ def zim_file_for_latest_selection(wp10db, builder_id):
     db_zim = cursor.fetchone()
     if db_zim is None:
       return None
-    return ZimFile(**db_zim)
+    return ZimTask(**db_zim)
 
 
 def latest_zim_file_url_for(wp10db, builder_id):
@@ -418,34 +418,30 @@ def latest_selections_with_errors(wp10db, builder_id):
 def request_zim_file_task_for_builder(redis: Redis,
                                       wp10db: Connection,
                                       builder: Builder,
-                                      title: str,
-                                      description: str,
-                                      long_description: str = None):
+                                      zim_schedule_id: bytes) -> ZimTask:
   """
   Requests a ZIM file from the Zimfarm for the given builder.
+  Returns the entire ZimTask object instead of just the z_id.
   """
-  task_id = zimfarm.request_zimfarm_task(redis,
-                                         wp10db,
-                                         builder)
+  task_id = zimfarm.request_zimfarm_task(redis, wp10db, builder)
   selection = latest_selection_for(wp10db, builder.b_id,
-                                   'text/tab-separated-values')
+           'text/tab-separated-values')
 
   with wp10db.cursor() as cursor:
     cursor.execute(
-        '''UPDATE zim_files SET
-             z_status = 'REQUESTED', z_task_id = %s, z_requested_at = %s,
-             z_title = %s, z_long_description = %s, z_description = %s
-           WHERE z_selection_id = %s
-        ''', (task_id, utcnow().strftime(TS_FORMAT_WP10), title or None, long_description or
-              None, description or None, selection.s_id))
+      '''UPDATE zim_tasks SET
+      z_status = 'REQUESTED', z_task_id = %s, z_zim_schedule_id = %s, z_requested_at = %s
+      WHERE z_selection_id = %s
+      ''', (task_id, zim_schedule_id, utcnow().strftime(TS_FORMAT_WP10), selection.s_id))
+    cursor.execute(
+      '''SELECT * FROM zim_tasks WHERE z_selection_id = %s''',
+      (selection.s_id,))
+    row = cursor.fetchone()
+    zim_file = ZimTask(**row) if row else None
   wp10db.commit()
-  return task_id
+  return zim_file
 
-def request_scheduled_zim_file_for_builder(builder: Builder,
-                                           title: str,
-                                           description: str,
-                                           long_description: str = None,
-                                           zim_schedule_id: str = None):
+def request_scheduled_zim_file_for_builder(builder: Builder, zim_schedule_id: bytes):
   """
   Requests a scheduled ZIM file generation from the Zimfarm for the given builder.
   It will reopen connections and rebuild the selection for the builder.
@@ -466,16 +462,17 @@ def request_scheduled_zim_file_for_builder(builder: Builder,
       raise
   materialize_builder(builder_cls, builder, 'text/tab-separated-values', s3, redis, wp10db)
 
-  if zim_schedule_id is not None:
-    zim_file = zim_file_for_latest_selection(wp10db, builder.b_id)
-    logic_zim_schedules.update_zim_schedule_zim_file_id(wp10db, zim_schedule_id, zim_file.z_id)
+  if zim_schedule_id is None:
+    return None 
 
-  task_id = request_zim_file_task_for_builder(redis, wp10db, builder, title, description, long_description)
+  zim_file = zim_file_for_latest_selection(wp10db, builder.b_id)
+  logic_zim_schedules.decrement_remaining_generations_and_update_file_id(wp10db, zim_schedule_id, zim_file.z_id)
+
+  task_id = request_zim_file_task_for_builder(redis, wp10db, builder, zim_schedule_id=zim_schedule_id)
 
   return task_id
 
-def handle_zim_generation(s3,
-                          redis,
+def handle_zim_generation(redis,
                           wp10db,
                           builder_id,
                           user_id=None,
@@ -503,17 +500,17 @@ def handle_zim_generation(s3,
           'Could not use builder id = %s for user id = %s' %
           (builder_id, user_id))
   
-  zimfarm.create_zimfarm_schedule(redis,
+  zim_schedule : ZimSchedule = zimfarm.create_zimfarm_schedule(redis,
                                   wp10db,
                                   builder,
                                   title=title,
                                   description=description,
                                   long_description=long_description)
-  task_id = request_zim_file_task_for_builder(redis, wp10db, builder, title, description, long_description)
+  zim_file: ZimTask = request_zim_file_task_for_builder(redis, wp10db, builder, zim_schedule.s_id)
 
   # if scheduled_repetitions is not None schedule future ZIMfile generations
   if scheduled_repetitions is not None:
-    logic_zim_schedules.schedule_future_zimfile_generations(redis, wp10db, builder, title, description, long_description, scheduled_repetitions)
+    logic_zim_schedules.schedule_future_zimfile_generations(redis, wp10db, builder, zim_schedule.s_id, scheduled_repetitions)
 
   # In production, there is a web hook from the Zimfarm that notifies us
   # that the task is finished and we can start polling for the ZIM file
@@ -522,10 +519,10 @@ def handle_zim_generation(s3,
   # creation work end to end, start polling immediately in Development.
   if ENV == Environment.DEVELOPMENT:
     logger.info('DEVELOPMENT: Polling for zim file status for task_id=%s',
-                task_id)
-    queues.poll_for_zim_file_status(redis, task_id)
+                zim_file.z_task_id)
+    queues.poll_for_zim_file_status(redis, zim_file.z_task_id)
 
-  return task_id
+  return zim_file.z_task_id
 
 
 def zim_file_status_for(wp10db, builder_id):
@@ -548,12 +545,13 @@ def zim_file_status_for(wp10db, builder_id):
   if zim_file.z_updated_at:
     data['is_deleted'] = logic_selection.is_zim_file_deleted(
         logic_util.wp10_timestamp_to_unix(zim_file.z_updated_at))
-  data['title'] = zim_file.z_title.decode(
-      'utf-8') if zim_file.z_title else None
-  data['description'] = zim_file.z_description.decode(
-      'utf-8') if zim_file.z_description else None
-  data['long_description'] = zim_file.z_long_description.decode(
-      'utf-8') if zim_file.z_long_description else None
+  zim_schedule: ZimSchedule = logic_zim_schedules.get_zim_schedule_by_zim_file_id(wp10db, zim_file.z_id)
+  data['title'] = zim_schedule.s_title.decode(
+      'utf-8') if zim_schedule.s_title else None
+  data['description'] = zim_schedule.s_description.decode(
+      'utf-8') if zim_schedule.s_description else None
+  data['long_description'] = zim_schedule.s_long_description.decode(
+      'utf-8') if zim_schedule.s_long_description else None
 
   return data
 
@@ -672,7 +670,7 @@ def get_builders_with_selections(wp10db, user_id):
            LEFT JOIN selections s1
              ON s1.s_builder_id = b.b_id
              AND s1.s_version = b.b_selection_zim_version
-           LEFT JOIN zim_files z
+           LEFT JOIN zim_tasks z
              ON z.z_selection_id = s1.s_id
            WHERE b_user_id = %s
            ORDER BY b.b_updated_at DESC

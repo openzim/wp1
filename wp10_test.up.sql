@@ -117,27 +117,27 @@ CREATE TABLE custom (
   c_is_active TINYINT
 );
 
-CREATE TABLE zim_files (
+CREATE TABLE zim_tasks (
   z_id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
   z_selection_id VARBINARY(255) NOT NULL,
+  z_zim_schedule_id VARBINARY(36) NOT NULL,
   z_status VARBINARY(255) DEFAULT "NOT_REQUESTED",
   z_task_id VARBINARY(255),
   z_requested_at BINARY(14),
-  z_updated_at BINARY(14),
-  z_long_description blob,
-  z_description tinyblob,
-  z_title tinyblob
+  z_updated_at BINARY(14)
 );
 
 CREATE TABLE zim_schedules (
   s_id VARBINARY(36) NOT NULL PRIMARY KEY,
   s_builder_id VARBINARY(255) NOT NULL,
-  s_zim_file_id INTEGER NULL,
-  s_rq_job_id VARBINARY(36) NOT NULL,
+  s_rq_job_id VARBINARY(36) NULL,
   s_interval INTEGER NULL,
   s_remaining_generations INTEGER NULL,
   s_email VARBINARY(255) NULL,
-  s_last_updated_at BINARY(14) NOT NULL
+  s_last_updated_at BINARY(14) NOT NULL,
+  s_long_description blob,
+  s_description tinyblob,
+  s_title tinyblob
 );
 
 CREATE TABLE `temp_pageviews` (

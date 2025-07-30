@@ -2,15 +2,16 @@ import datetime
 from unittest.mock import patch
 
 from wp1.base_db_test import BaseWpOneDbTest
-from wp1.models.wp10.zim_file import ZimFile
+from wp1.models.wp10.zim_file import ZimTask
 
 
-class ZimFileTest(BaseWpOneDbTest):
+class ZimTaskTest(BaseWpOneDbTest):
 
   def setUp(self):
     super().setUp()
-    self.zim_file = ZimFile(z_id=1,
+    self.zim_file = ZimTask(z_id=1,
                             z_selection_id='deadbeef',
+                            z_zim_schedule_id='schedule_123',
                             z_task_id='abcd-5678',
                             z_updated_at=b'20190830112844')
 
