@@ -1016,6 +1016,58 @@ class BuilderTest(BaseWpOneDbTest):
 
     self.assertEqual(2, zim_version)
 
+  @patch('wp1.web.emails.notify_user_for_scheduled_zim')
+  @patch('wp1.logic.builder.zimfarm.is_zim_file_ready')
+  @patch('wp1.logic.builder.wp10_connect')
+  @patch('wp1.logic.builder.redis_connect')
+  @patch('wp1.logic.selection.utcnow',
+         return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
+  def test_on_zim_file_status_poll_notify(self, mock_utcnow, mock_redis,
+                                          mock_connect, mock_is_ready,
+                                          mock_notify):
+    mock_is_ready.return_value = 'FILE_READY'
+    builder_id = self._insert_builder(zim_version=1)
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           version=1,
+                           builder_id=builder_id,
+                           has_errors=False,
+                           zim_file_ready=True)
+    self._insert_selection(2,
+                           'text/tab-separated-values',
+                           version=2,
+                           builder_id=builder_id,
+                           has_errors=False,
+                           zim_task_id='9abc',
+                           zim_file_ready=False)
+    self._insert_zim_schedule(b'schedule_123', builder_id, b'rq_job_id_123')
+
+    orig_close = self.wp10db.close
+    try:
+      self.wp10db.close = lambda: True
+      mock_connect.return_value = self.wp10db
+      logic_builder.on_zim_file_status_poll('9abc')
+    finally:
+      self.wp10db.close = orig_close
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT z_status, z_updated_at '
+                     'FROM zim_tasks WHERE z_selection_id = 2')
+      data = cursor.fetchone()
+
+    self.assertIsNotNone(data)
+    self.assertEqual(b'FILE_READY', data['z_status'])
+    self.assertEqual(b'20221225000102', data['z_updated_at'])
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+          'SELECT b.b_selection_zim_version FROM builders b '
+          'WHERE b.b_id = %s', (builder_id,))
+      zim_version = cursor.fetchone()['b_selection_zim_version']
+
+    self.assertEqual(2, zim_version)
+    mock_notify.assert_called_once()
+
   @patch('wp1.logic.builder.utcnow',
          return_value=datetime.datetime(2023, 1, 1, 5, 5, 5))
   @patch('wp1.logic.builder.zimfarm.is_zim_file_ready')
