@@ -1,5 +1,4 @@
 import attr
-import uuid
 from dateutil.relativedelta import relativedelta
 import wp1.queues as queues
 
@@ -52,7 +51,7 @@ def get_zim_schedule(wp10db, schedule_id):
   return ZimSchedule(**row)
 
 
-def get_zim_schedule_by_zim_file_id(wp10db, zim_file_id):
+def get_zim_schedule_by_zim_file_id(wp10db, z_id):
   """Retrieves a ZimSchedule by its associated zim_file_id."""
   with wp10db.cursor() as cursor:
     cursor.execute(
@@ -60,7 +59,7 @@ def get_zim_schedule_by_zim_file_id(wp10db, zim_file_id):
       SELECT zs.* FROM zim_schedules zs
       JOIN zim_tasks zf ON zs.s_id = zf.z_zim_schedule_id
       WHERE zf.z_id = %s
-      ''', (zim_file_id,)
+      ''', (z_id,)
     )
     row = cursor.fetchone()
   if not row:
@@ -80,7 +79,7 @@ def list_zim_schedules_for_builder(wp10db, builder_id):
   ]
 
 
-def decrement_remaining_generations_and_update_file_id(wp10db, schedule_id: bytes, zim_file_id: int):
+def decrement_remaining_generations(wp10db, schedule_id: bytes):
     """Decrements s_remaining_generations by 1 for the given schedule, not going below 0. Also updates s_last_updated_at. Returns True if updated."""
     updated_at = utcnow().strftime(TS_FORMAT_WP10).encode('utf-8')
     with wp10db.cursor() as cursor:
@@ -112,6 +111,17 @@ def get_scheduled_zimfarm_task_from_taskid(wp10db, task_id):
         return None
     return ZimSchedule(**row)
 
+def get_username_by_zim_schedule_id(wp10db, schedule_id):
+    """Retrieves the username associated with a ZimSchedule by its ID. Returns the username or None."""
+    with wp10db.cursor() as cursor:
+        cursor.execute(
+            'SELECT u.u_username FROM zim_schedules zs JOIN users u ON zs.s_builder_id = u.u_id WHERE zs.s_id = %s',
+            (schedule_id,)
+        )
+        row = cursor.fetchone()
+    if not row:
+        return None
+    return row['u_username'].decode('utf-8') if row['u_username'] else None
 
 def set_zim_schedule_id_to_zim_task_by_selection(wp10db, selection_id: bytes, zim_schedule_id: bytes):
     """Sets the z_zim_schedule_id field in zim_tasks to the given the selection_id."""

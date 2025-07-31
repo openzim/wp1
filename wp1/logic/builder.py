@@ -10,6 +10,7 @@ from redis import Redis
 
 import wp1.logic.selection as logic_selection
 import wp1.logic.zim_schedules as logic_zim_schedules
+import wp1.logic.zim_files as logic_zim_tasks
 import wp1.logic.util as logic_util
 from wp1 import app_logging, queues, zimfarm
 from wp1.constants import (CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE,
@@ -25,6 +26,7 @@ from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.redis_db import connect as redis_connect
 from wp1.storage import connect_storage
 from wp1.timestamp import utcnow
+from wp1.web import emails
 from wp1.wp10_db import connect as wp10_connect
 
 logger = logging.getLogger(__name__)
@@ -337,7 +339,7 @@ def latest_selection_url(wp10db, builder_id, ext):
   return logic_selection.url_for(selection.s_object_key.decode('utf-8'))
 
 
-def latest_zim_file_for(wp10db, builder_id):
+def latest_zim_file_for(wp10db, builder_id) -> ZimTask:
   """Returns the ZIM file that matches the ZIM version of the Builder."""
   with wp10db.cursor() as cursor:
     cursor.execute(
@@ -355,7 +357,7 @@ def latest_zim_file_for(wp10db, builder_id):
     return ZimTask(**db_zim)
 
 
-def zim_file_for_latest_selection(wp10db, builder_id):
+def zim_file_for_latest_selection(wp10db, builder_id) -> ZimTask:
   """Returns the ZIM file of the latest Selection for a Builder."""
   with wp10db.cursor() as cursor:
     cursor.execute(
@@ -465,9 +467,6 @@ def request_scheduled_zim_file_for_builder(builder: Builder, zim_schedule_id: by
   if zim_schedule_id is None:
     return None 
 
-  zim_file = zim_file_for_latest_selection(wp10db, builder.b_id)
-  logic_zim_schedules.decrement_remaining_generations_and_update_file_id(wp10db, zim_schedule_id, zim_file.z_id)
-
   task_id = request_zim_file_task_for_builder(redis, wp10db, builder, zim_schedule_id=zim_schedule_id)
 
   return task_id
@@ -571,6 +570,14 @@ def on_zim_file_status_poll(task_id):
                                         set_updated_now=True)
 
     update_version_for_finished_zim(wp10db, task_id)
+
+    zim_task = logic_zim_tasks.get_zim_task_by_task_id(wp10db, task_id)
+    zim_schedule = logic_zim_schedules.get_zim_schedule(wp10db, zim_task.z_zim_schedule_id)
+    if ( zim_schedule is not None and
+         zim_schedule.s_remaining_generations is not None and
+         zim_schedule.s_remaining_generations > 0):
+      emails.notify_user_for_scheduled_zim(wp10db, zim_task, zim_schedule)
+
   elif result == 'REQUESTED':
     requested = logic_selection.zim_file_requested_at_for(wp10db, task_id)
     if requested is not None:
