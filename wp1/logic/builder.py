@@ -25,6 +25,7 @@ from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.redis_db import connect as redis_connect
 from wp1.storage import connect_storage
 from wp1.timestamp import utcnow
+from wp1.web import emails
 from wp1.wp10_db import connect as wp10_connect
 
 logger = logging.getLogger(__name__)
@@ -572,12 +573,10 @@ def on_zim_file_status_poll(task_id):
 
     update_version_for_finished_zim(wp10db, task_id)
 
-
     zim_schedule = logic_zim_schedules.get_scheduled_zimfarm_task_from_taskid(wp10db, task_id)
     if zim_schedule is not None:
       logic_zim_schedules.decrement_remaining_generations(wp10db, zim_schedule.s_id)
-      ## TODO: Get the zim_file_id either from latest selection or from the zim_schedule
-      ## TODO: Send email to the user that the ZIM file is ready with the link to download it.
+      emails.notify_user_for_scheduled_zim(wp10db, zim_schedule)
 
   elif result == 'REQUESTED':
     requested = logic_selection.zim_file_requested_at_for(wp10db, task_id)

@@ -1,5 +1,4 @@
 import attr
-import uuid
 from dateutil.relativedelta import relativedelta
 import wp1.queues as queues
 
@@ -112,6 +111,17 @@ def get_scheduled_zimfarm_task_from_taskid(wp10db, task_id):
         return None
     return ZimSchedule(**row)
 
+def get_username_by_zim_schedule_id(wp10db, schedule_id):
+    """Retrieves the username associated with a ZimSchedule by its ID. Returns the username or None."""
+    with wp10db.cursor() as cursor:
+        cursor.execute(
+            'SELECT u.u_username FROM zim_schedules zs JOIN users u ON zs.s_builder_id = u.u_id WHERE zs.s_id = %s',
+            (schedule_id,)
+        )
+        row = cursor.fetchone()
+    if not row:
+        return None
+    return row['u_username'].decode('utf-8') if row['u_username'] else None
 
 def set_zim_schedule_id_to_zim_task_by_selection(wp10db, selection_id: bytes, zim_schedule_id: bytes):
     """Sets the z_zim_schedule_id field in zim_tasks to the given the selection_id."""
