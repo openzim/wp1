@@ -32,8 +32,8 @@ def insert_selection(wp10db, selection):
               %(s_article_count)s)
     ''', attr.asdict(selection))
     cursor.execute(
-        'INSERT INTO zim_tasks (z_selection_id, z_zim_schedule_id, z_status)'
-        ' VALUES (%s, %s, "NOT_REQUESTED")', (selection.s_id, b'schedule_123'))
+        'INSERT INTO zim_tasks (z_selection_id, z_status)'
+        ' VALUES (%s, "NOT_REQUESTED")', (selection.s_id, ))
   wp10db.commit()
 
 

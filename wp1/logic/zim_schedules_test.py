@@ -9,7 +9,8 @@ from wp1.logic.zim_schedules import (
     update_zim_schedule,
     decrement_remaining_generations_and_update_file_id,
     get_scheduled_zimfarm_task_from_taskid,
-    schedule_future_zimfile_generations
+    schedule_future_zimfile_generations,
+    set_zim_schedule_id_to_zim_task_by_selection,
 )
 from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.models.wp10.builder import Builder
@@ -218,3 +219,33 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
           builder, zim_schedule.s_id,
           scheduled_repetitions
       )
+
+  def test_set_zim_schedule_id_to_zim_task_by_selection_success(self):
+        zim_file_id = 55555
+        z_selection_id = b"sel_id_abc"
+        z_task_id = b"task_id_abc"
+        schedule = self.new_schedule()
+        insert_zim_schedule(self.wp10db, schedule)
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                'INSERT INTO zim_tasks (z_id, z_status, z_task_id, z_selection_id) VALUES (%s, %s, %s, %s)',
+                (zim_file_id, 'NOT_REQUESTED', z_task_id, z_selection_id)
+            )
+        updated = set_zim_schedule_id_to_zim_task_by_selection(self.wp10db, z_selection_id, schedule.s_id)
+        self.assertTrue(updated)
+        with self.wp10db.cursor() as cursor:
+            cursor.execute('SELECT z_zim_schedule_id FROM zim_tasks WHERE z_selection_id = %s', (z_selection_id,))
+            row = cursor.fetchone()
+            self.assertIsNotNone(row)
+            self.assertEqual(row['z_zim_schedule_id'], schedule.s_id)
+
+  def test_set_zim_schedule_id_to_zim_task_by_selection_no_match(self):
+      z_selection_id = b"nonexistent_sel"
+      schedule = self.new_schedule()
+      insert_zim_schedule(self.wp10db, schedule)
+      updated = set_zim_schedule_id_to_zim_task_by_selection(self.wp10db, z_selection_id, schedule.s_id)
+      self.assertFalse(updated)
+      with self.wp10db.cursor() as cursor:
+          cursor.execute('SELECT * FROM zim_tasks WHERE z_selection_id = %s', (z_selection_id,))
+          row = cursor.fetchone()
+          self.assertIsNone(row)

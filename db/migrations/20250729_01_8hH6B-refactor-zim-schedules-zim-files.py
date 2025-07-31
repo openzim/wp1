@@ -16,7 +16,7 @@ steps = [
       DROP COLUMN z_title, 
       DROP COLUMN z_description, 
       DROP COLUMN z_long_description, 
-      ADD COLUMN z_zim_schedule_id VARBINARY(36) NOT NULL
+      ADD COLUMN z_zim_schedule_id VARBINARY(36) NULL
     ''',
     '''
     ALTER TABLE zim_tasks 

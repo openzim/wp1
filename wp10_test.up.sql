@@ -120,7 +120,7 @@ CREATE TABLE custom (
 CREATE TABLE zim_tasks (
   z_id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
   z_selection_id VARBINARY(255) NOT NULL,
-  z_zim_schedule_id VARBINARY(36) NOT NULL,
+  z_zim_schedule_id VARBINARY(36) NULL,
   z_status VARBINARY(255) DEFAULT "NOT_REQUESTED",
   z_task_id VARBINARY(255),
   z_requested_at BINARY(14),

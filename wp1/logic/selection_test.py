@@ -72,8 +72,7 @@ class SelectionTest(BaseWpOneDbTest):
   def test_insert_selection(self):
     logic_selection.insert_selection(self.wp10db, self.selection)
     actual = _get_selection(self.wp10db)
-    expected_zim = ZimTask(z_id=1, z_selection_id=self.selection.s_id,
-                           z_zim_schedule_id=b'schedule_123')
+    expected_zim = ZimTask(z_id=1, z_selection_id=self.selection.s_id)
     actual_zim = _get_zim_file_for_selection(self.wp10db, self.selection.s_id)
     self.assertEqual(self.selection, actual)
     self.assertEqual(expected_zim, actual_zim)
