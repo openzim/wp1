@@ -4,7 +4,7 @@ import uuid
 from wp1.base_db_test import BaseWpOneDbTest
 from wp1.web.emails import send_zim_ready_email, notify_user_for_scheduled_zim
 from wp1.models.wp10.zim_schedule import ZimSchedule
-from wp1.models.wp10.zim_file import ZimFile
+from wp1.models.wp10.zim_file import ZimTask
 from wp1.constants import TS_FORMAT_WP10
 from wp1.timestamp import utcnow
 
@@ -13,12 +13,12 @@ class EmailsTest(BaseWpOneDbTest):
 
     def setUp(self):
         super().setUp()
-        self.mock_zim_file = ZimFile(
+        self.mock_zim_task = ZimTask(
             z_id=b'test-zim-id',
             z_selection_id=b'test-selection-id',
             z_status=b'COMPLETED',
             z_task_id=b'test-task-id',
-            z_title=b'Test ZIM File',
+            z_title=b'Test ZIM Task',
             z_description=b'Test description',
             z_long_description=b'Test long description'
         )

@@ -1,12 +1,12 @@
-from wp1.models.wp10.zim_file import ZimFile
+from wp1.models.wp10.zim_file import ZimTask
 
-def get_zim_file(wp10db, zim_file_id):
-    """Retrieves a ZIM file by its ID. Returns a ZimFile or None."""
+def get_zim_task(wp10db, zim_task_id):
+    """Retrieves a ZIM task by its ID. Returns a ZimTask or None."""
     with wp10db.cursor() as cursor:
         cursor.execute(
-            'SELECT * FROM zim_files WHERE z_id = %s', (zim_file_id,)
+            'SELECT * FROM zim_tasks WHERE z_id = %s', (zim_task_id,)
         )
         row = cursor.fetchone()
     if not row:
         return None
-    return ZimFile(**row)
+    return ZimTask(**row)
