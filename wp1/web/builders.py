@@ -5,6 +5,7 @@ import flask
 import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
 import wp1.logic.zim_schedules as logic_zim_schedules
+import wp1.logic.zim_files as logic_zim_tasks
 from wp1 import queues
 from wp1.constants import EXT_TO_CONTENT_TYPE
 from wp1.credentials import CREDENTIALS, ENV
@@ -273,10 +274,14 @@ def update_zimfarm_status():
                                           'FILE_READY',
                                           set_updated_now=True)
 
-      zim_schedule = logic_zim_schedules.get_scheduled_zimfarm_task_from_taskid(wp10db, task_id)
-      if zim_schedule is not None:
+      zim_task = logic_zim_tasks.get_zim_task_by_task_id(wp10db, task_id)
+      zim_schedule = logic_zim_schedules.get_zim_schedule(wp10db, zim_task.z_zim_schedule_id)
+      if zim_schedule is None:
+        return 'Error: ZIM not found for task_id %s' % task_id, 404
+
+      if zim_schedule.s_remaining_generations is not None and zim_schedule.s_remaining_generations > 0:
         logic_zim_schedules.decrement_remaining_generations(wp10db, zim_schedule.s_id)
-        emails.notify_user_for_scheduled_zim(wp10db, zim_schedule)
+        emails.notify_user_for_scheduled_zim(wp10db, zim_task, zim_schedule)
       return '', 204
 
 

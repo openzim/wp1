@@ -782,7 +782,8 @@ class BuildersTest(BaseWebTestcase):
         schedule_id=b'schedule_123',
         builder_id=builder_id.encode('utf-8'),
         rq_job_id=b'task-id-1234',
-        last_updated_at='20221225000102'
+        last_updated_at='20221225000102',
+        remaining_generations=None
     )
     self.app = create_app()
     with self.override_db(self.app), self.app.test_client() as client:
