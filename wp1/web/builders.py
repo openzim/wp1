@@ -174,12 +174,9 @@ def latest_selection_article_count_for_builder(builder_id):
 def create_zim_file_for_builder(builder_id):
   redis = get_redis()
   wp10db = get_db('wp10db')
-  s3 = get_storage()
 
   user_id = flask.session['user']['identity']['sub']
-
   data = flask.request.get_json()
-
   title = data.get('title')
   desc = data.get('description')
   long_desc = data.get('long_description')
@@ -209,16 +206,14 @@ def create_zim_file_for_builder(builder_id):
     scheduled_repetitions = None
 
   try:
-    logic_builder.handle_zim_generation(
-        s3,
-        redis,
-        wp10db,
-        builder_id,
-        user_id=user_id,
-        title=title,
-        description=desc,
-        long_description=long_desc,
-        scheduled_repetitions=scheduled_repetitions)
+    logic_builder.handle_zim_generation(redis,
+                    wp10db,
+                    builder_id,
+                    user_id=user_id,
+                    title=title,
+                    description=desc,
+                    long_description=long_desc,
+                    scheduled_repetitions=scheduled_repetitions)
   except ObjectNotFoundError:
     return flask.jsonify(
         {'error_messages': ['No builder found with id = %s' % builder_id]}), 404
