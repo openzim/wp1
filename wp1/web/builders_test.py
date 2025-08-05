@@ -6,6 +6,7 @@ import attr
 from wp1.exceptions import (ObjectNotFoundError, UserNotAuthorizedError,
                             ZimFarmError)
 from wp1.models.wp10.builder import Builder
+from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.web.app import create_app
 from wp1.web.base_web_testcase import BaseWebTestcase
 from wp1.zimfarm import MAX_ZIMFARM_ARTICLE_COUNT
@@ -79,7 +80,7 @@ class BuildersTest(BaseWebTestcase):
                   (2, builder_id, 'application/vnd.ms-excel', '20201225105544',
                    1, 'object_key2'),
                   (3, builder_id, 'text/tab-separated-values', '20201225105544',
-                   2, 'latest_object_key_tsv', 'task-id-1234', 'FILE_READY'),
+                   2, 'latest_object_key_tsv', 'task-id-1234', 'FILE_READY', b'schedule_123'),
                   (4, builder_id, 'application/vnd.ms-excel', '20201225105544',
                    2, 'latest_object_key_xls')]
     with self.wp10db.cursor() as cursor:
@@ -90,15 +91,33 @@ class BuildersTest(BaseWebTestcase):
              VALUES (%s, %s, %s, %s, %s, %s, 1000)
       ''', [s[:6] for s in selections])
       cursor.execute(
-          '''INSERT INTO zim_files
-               (z_id, z_selection_id, z_task_id, z_status)
+          '''INSERT INTO zim_tasks
+               (z_id, z_selection_id, z_task_id, z_status, z_zim_schedule_id)
              VALUES
-               (1, %s, %s, %s)''', (
+               (1, %s, %s, %s, %s)''', (
               selections[2][0],
               selections[2][6],
               selections[2][7],
+              selections[2][8]
           ))
     self.wp10db.commit()
+
+  def _insert_zim_schedule(self,
+                           schedule_id=b'schedule_123',
+                           builder_id=b'1a-2b-3c-4d',
+                           rq_job_id=b'rq_job_id_123',
+                           last_updated_at='20191225044444',
+                           title=None,
+                           description=None,
+                           long_description=None,
+                           remaining_generations=3):
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+          '''INSERT INTO zim_schedules (s_id, s_builder_id, s_rq_job_id, s_remaining_generations, s_last_updated_at, s_title, s_description, s_long_description)
+             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+          ''', (schedule_id, builder_id, rq_job_id, remaining_generations, last_updated_at, title, description, long_description))
+    self.wp10db.commit()
+    return schedule_id
 
   def test_get_builder(self):
     self.app = create_app()
@@ -459,6 +478,11 @@ class BuildersTest(BaseWebTestcase):
     self._insert_selections(builder_id)
 
     patched_request_zimfarm_task.return_value = '1234-a'
+    patched_create_zimfarm_schedule.return_value = ZimSchedule(
+        s_id=b'schedule_123',
+        s_builder_id=b'1a-2b-3c-4d',
+        s_rq_job_id=b'rq_job_id_123',
+        s_last_updated_at=b'20240101000000')
 
     self.app = create_app()
     with self.override_db(self.app), self.app.test_client() as client:
@@ -473,7 +497,7 @@ class BuildersTest(BaseWebTestcase):
 
     patched_request_zimfarm_task.assert_called_once()
     with self.wp10db.cursor() as cursor:
-      cursor.execute('SELECT z_task_id, z_status FROM zim_files '
+      cursor.execute('SELECT z_task_id, z_status FROM zim_tasks '
                      'WHERE z_selection_id = 3')
       data = cursor.fetchone()
 
@@ -580,8 +604,16 @@ class BuildersTest(BaseWebTestcase):
       self, patched_create_zimfarm_schedule, patched_request_zimfarm_task):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
+    self._insert_zim_schedule(builder_id=b'1a-2b-3c-4d',)
 
     patched_request_zimfarm_task.return_value = '1234-a'
+    patched_create_zimfarm_schedule.return_value = ZimSchedule(
+      s_id=b'schedule_123',
+      s_builder_id=b'1a-2b-3c-4d',
+      s_rq_job_id=b'rq_job_id_123',
+      s_last_updated_at=b'20240101000000',
+      s_remaining_generations=3
+    )
 
     self.app = create_app()
     with self.override_db(self.app), self.app.test_client() as client:
@@ -595,6 +627,40 @@ class BuildersTest(BaseWebTestcase):
                                'repetition_period_in_months': 6,
                                'number_of_repetitions': 3,
                                'email': 'test@example.com'
+                           }
+                       })
+      self.assertEqual('204 NO CONTENT', rv.status)
+
+  @patch('wp1.zimfarm.request_zimfarm_task')
+  @patch('wp1.zimfarm.create_zimfarm_schedule')
+  def test_create_zim_file_for_builder_scheduled_repetitions_extra_fields(
+      self, patched_create_zimfarm_schedule, patched_request_zimfarm_task):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+    self._insert_zim_schedule(builder_id=b'1a-2b-3c-4d',)
+
+    patched_request_zimfarm_task.return_value = '1234-a'
+    patched_create_zimfarm_schedule.return_value = ZimSchedule(
+      s_id=b'schedule_123',
+      s_builder_id=b'1a-2b-3c-4d',
+      s_rq_job_id=b'rq_job_id_123',
+      s_last_updated_at=b'20240101000000',
+      s_remaining_generations=3
+    )
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/%s/zim' % builder_id,
+                       json={
+                           'title': 'Test title',
+                           'description': 'Test description',
+                           'scheduled_repetitions': {
+                               'repetition_period_in_months': 6,
+                               'number_of_repetitions': 3,
+                               'email': 'test@example.com',
+                               'extra_field': 'should be ignored'
                            }
                        })
       self.assertEqual('204 NO CONTENT', rv.status)
@@ -651,6 +717,11 @@ class BuildersTest(BaseWebTestcase):
       self, patched_create_zimfarm_schedule, patched_request_zimfarm_task):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
+    patched_create_zimfarm_schedule.return_value = ZimSchedule(
+        s_id=b'schedule_123',
+        s_builder_id=b'1a-2b-3c-4d',
+        s_rq_job_id=b'rq_job_id_123',
+        s_last_updated_at=b'20240101000000')
 
     self.app = create_app()
     with self.override_db(self.app), self.app.test_client() as client:
@@ -671,8 +742,19 @@ class BuildersTest(BaseWebTestcase):
       self, patched_create_zimfarm_schedule, patched_request_zimfarm_task):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
-
+    self._insert_zim_schedule(
+        schedule_id=b'schedule_123',
+        builder_id=builder_id.encode('utf-8'),
+        rq_job_id=b'task-id-1234',
+        last_updated_at='20221225000102'
+    )
     patched_request_zimfarm_task.return_value = '1234-a'
+    patched_create_zimfarm_schedule.return_value = ZimSchedule(
+        s_id=b'schedule_123',
+        s_builder_id=b'1a-2b-3c-4d',
+        s_rq_job_id=b'rq_job_id_123',
+        s_last_updated_at=b'20240101000000'
+    )
 
     self.app = create_app()
     with self.override_db(self.app), self.app.test_client() as client:
@@ -696,27 +778,32 @@ class BuildersTest(BaseWebTestcase):
   def test_update_zimfarm_status_file_ready(self, patched_utcnow):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
-
+    self._insert_zim_schedule(
+        schedule_id=b'schedule_123',
+        builder_id=builder_id.encode('utf-8'),
+        rq_job_id=b'task-id-1234',
+        last_updated_at='20221225000102'
+    )
     self.app = create_app()
     with self.override_db(self.app), self.app.test_client() as client:
       with client.session_transaction() as sess:
         sess['user'] = self.USER
       rv = client.post('/v1/builders/zim/status?token=hook-token-abc',
-                       json={
-                           '_id': 'task-id-1234',
-                           'foo': 'bar',
-                           'status': 'succeeded',
-                           'files': {
-                               'zimfile.1234': {
-                                   'status': 'uploaded'
-                               }
-                           }
-                       })
+                      json={
+                          '_id': 'task-id-1234',
+                          'foo': 'bar',
+                          'status': 'succeeded',
+                          'files': {
+                              'zimfile.1234': {
+                                  'status': 'uploaded'
+                              }
+                          }
+                      })
       self.assertEqual('204 NO CONTENT', rv.status)
 
     with self.wp10db.cursor() as cursor:
       cursor.execute('SELECT z_status, z_updated_at '
-                     'FROM zim_files WHERE z_task_id = "task-id-1234"')
+                    'FROM zim_tasks WHERE z_task_id = "task-id-1234"')
       status = cursor.fetchone()
 
     self.assertIsNotNone(status)
@@ -726,7 +813,13 @@ class BuildersTest(BaseWebTestcase):
   def test_update_zimfarm_status_bad_token(self):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
-
+    self._insert_zim_schedule(
+        schedule_id=b'schedule_123',
+        builder_id=builder_id.encode('utf-8'),
+        rq_job_id=b'task-id-1234',
+        last_updated_at='20221225000102'
+    )
+    
     self.app = create_app()
     with self.override_db(self.app), self.app.test_client() as client:
       with client.session_transaction() as sess:
@@ -771,6 +864,12 @@ class BuildersTest(BaseWebTestcase):
   def test_zimfarm_status(self):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
+    self._insert_zim_schedule(
+        schedule_id=b'schedule_123',
+        builder_id=builder_id.encode('utf-8'),
+        rq_job_id=b'task-id-1234',
+        last_updated_at='20240101000000'
+    )
     with self.app.test_client() as client:
       rv = client.get('/v1/builders/%s/zim/status' % builder_id)
     self.assertEqual('200 OK', rv.status)
