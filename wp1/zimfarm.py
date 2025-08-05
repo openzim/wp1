@@ -1,12 +1,15 @@
 import logging
 import urllib.parse
-from datetime import datetime
+from datetime import UTC, datetime
+import uuid
 
 import regex
 import requests
 
+from wp1 import constants
 import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
+import wp1.logic.zim_schedules as logic_zim_schedules
 from wp1.constants import WP1_USER_AGENT
 from wp1.credentials import CREDENTIALS, ENV
 from wp1.exceptions import (
@@ -20,6 +23,7 @@ from wp1.exceptions import (
 from wp1.logic import util
 from wp1.models.wp10.selection import Selection
 from wp1.models.wp10.builder import Builder
+from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.time import get_current_datetime
 
 REDIS_AUTH_KEY = 'zimfarm.auth'
@@ -315,6 +319,20 @@ def create_zimfarm_schedule(redis,
     logger.exception(r.text)
     raise ZimFarmError('Error creating schedule for ZIM file creation') from e
 
+  zim_schedule_id = str(uuid.uuid4())
+  zim_schedule = ZimSchedule(
+      s_id=zim_schedule_id.encode('utf-8'),
+      s_builder_id=builder.b_id,
+      s_last_updated_at=datetime.now(UTC).strftime(constants.TS_FORMAT_WP10).encode('utf-8'),
+      s_title=title.encode('utf-8'),
+      s_description=description.encode('utf-8'),
+      s_long_description=long_description.encode('utf-8') if long_description else None,
+  )
+  logic_zim_schedules.insert_zim_schedule(wp10db, zim_schedule)
+
+  return zim_schedule
+
+
 
 def request_zimfarm_task(redis,
                          wp10db,
@@ -342,22 +360,22 @@ def request_zimfarm_task(redis,
   headers = _get_zimfarm_headers(token)
 
   schedule_name = get_zimfarm_schedule_name(builder.b_id.decode('utf-8'))
-
   logger.info('Creating ZIM task for builder id=%s', builder.b_id.decode('utf-8'))
   r = requests.post('%s/requested-tasks/' % base_url,
                     headers=headers,
                     json={'schedule_names': [schedule_name]})
   try:
     r.raise_for_status()
-    data = r.json()
-    requested = data.get('requested')
-    task_id = requested[0] if requested else None
-    logger.info('Found task id=%s for builder id=%s', task_id, builder.b_id.decode('utf-8'))
-    if task_id is None:
-      raise ZimFarmError('Did not get scheduled task id')
   except requests.exceptions.HTTPError as e:
     logger.exception(r.text)
     raise ZimFarmError('Error requesting task for ZIM file creation') from e
+  
+  data = r.json()
+  requested = data.get('requested')
+  task_id = requested[0] if requested else None
+  logger.info('Found task id=%s for builder id=%s', task_id, builder.b_id.decode('utf-8'))
+  if task_id is None:
+    raise ZimFarmError('Did not get scheduled task id')
 
   return task_id
 
