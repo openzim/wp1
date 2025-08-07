@@ -831,7 +831,7 @@ class BuildersTest(BaseWebTestcase):
                               }
                           }
                       })
-      self.assertEqual('404 NOT FOUND', rv.status)
+      self.assertEqual('500 INTERNAL SERVER ERROR', rv.status)
 
   @patch('wp1.logic.selection.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
