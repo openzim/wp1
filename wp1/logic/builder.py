@@ -568,16 +568,7 @@ def on_zim_file_status_poll(task_id):
                                         task_id,
                                         'FILE_READY',
                                         set_updated_now=True)
-
     update_version_for_finished_zim(wp10db, task_id)
-
-    zim_task = logic_zim_tasks.get_zim_task_by_task_id(wp10db, task_id)
-    zim_schedule = logic_zim_schedules.get_zim_schedule(wp10db, zim_task.z_zim_schedule_id)
-    if ( zim_schedule is not None and
-         zim_schedule.s_remaining_generations is not None and
-         zim_schedule.s_remaining_generations > 0):
-      emails.respond_to_zim_task_completed(wp10db, zim_task, zim_schedule)
-
   elif result == 'REQUESTED':
     requested = logic_selection.zim_file_requested_at_for(wp10db, task_id)
     if requested is not None:
