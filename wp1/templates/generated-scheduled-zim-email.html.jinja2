@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your ZIM File is Ready for Download</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+    <div style="background-color: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <div style="background-color: #0066cc; color: white; text-align: center; padding: 30px 20px; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 24px;">Your ZIM File is Ready</h1>
+            <div>Wikipedia WP 1.0 Selection - {{ title }}</div>
+        </div>
+        <div style="padding: 30px;">
+            <p>Hello {{ user }},</p>
+            <p>Your scheduled ZIM file generation for <strong>{{ title }}</strong> has been completed successfully and is now ready for download.</p>
+            <div style="text-align: center;">
+                <a href="{{ download_url }}" style="display: inline-block; background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">📥 Download ZIM File</a>
+                <p><small>Download expires in 2 weeks</small></p>
+            </div>
+            <div style="background-color: #f8f9fa; border-left: 4px solid #0066cc; padding: 15px; margin: 20px 0;">
+                <h3 style="margin-top: 0;">📚 About Your ZIM File</h3>
+                <p>Your ZIM file contains offline Wikipedia content that you can access without an internet connection. Use it with Kiwix reader or other compatible applications to browse Wikipedia offline.</p>
+            </div>
+            {% if next_generation_months %}
+            <div style="background-color: #f8f9fa; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0;">
+                <h3 style="margin-top: 0;">📅 Next Scheduled Generation</h3>
+                <p>Your next ZIM file will be automatically generated in <strong>{{ next_generation_months }} months</strong>.</p>
+                <p><a href="{{ manage_schedule_url }}" style="color: #0066cc; text-decoration: none;">Manage your schedule →</a></p>
+            </div>
+            {% endif %}
+        </div>
+        <div style="background-color: #f8f9fa; padding: 20px 30px; font-size: 14px; color: #666; border-radius: 0 0 8px 8px;">
+            <div><strong>Wikipedia WP 1.0 Project</strong></div>
+            <div style="margin-top: 15px;">
+                <a href="{{ unsubscribe_url }}" style="color: #0066cc; text-decoration: none; margin-right: 15px;">Unsubscribe</a>
+                <a href="{{ block_email }}" style="color: #0066cc; text-decoration: none; margin-right: 15px;">Stop these emails</a>
+            </div>
+            <div style="margin-top: 15px; font-size: 12px; color: #888;">
+                This email was sent because you have scheduled ZIM file generations enabled for your account.
+            </div>
+        </div>
+    </div>
+</body>
+</html>
