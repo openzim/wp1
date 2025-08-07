@@ -7,7 +7,7 @@ from wp1.logic.zim_schedules import (
     get_zim_schedule,
     list_zim_schedules_for_builder,
     update_zim_schedule,
-    decrement_remaining_generations_and_update_file_id,
+    decrement_remaining_generations,
     get_scheduled_zimfarm_task_from_taskid,
     schedule_future_zimfile_generations,
     set_zim_schedule_id_to_zim_task_by_selection,
@@ -79,33 +79,33 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
     self.assertEqual(10, fetched.s_remaining_generations)
     self.assertEqual(schedule.s_last_updated_at, fetched.s_last_updated_at)
 
-  def test_decrement_remaining_generations_and_update_file_id(self):
+  def test_decrement_remaining_generations(self):
     schedule = self.new_schedule(remaining=2)
     insert_zim_schedule(self.wp10db, schedule)
-    ok = decrement_remaining_generations_and_update_file_id(self.wp10db, schedule.s_id, 999)
+    ok = decrement_remaining_generations(self.wp10db, schedule.s_id)
     self.assertTrue(ok)
     fetched = get_zim_schedule(self.wp10db, schedule.s_id)
     self.assertEqual(1, fetched.s_remaining_generations)
     # Decrement again
-    ok = decrement_remaining_generations_and_update_file_id(self.wp10db, schedule.s_id, 999)
+    ok = decrement_remaining_generations(self.wp10db, schedule.s_id)
     self.assertTrue(ok)
     fetched = get_zim_schedule(self.wp10db, schedule.s_id)
     self.assertEqual(0, fetched.s_remaining_generations)
   
-  def test_decrement_remaining_generations_and_update_file_id_from_0(self):
+  def test_decrement_remaining_generations_from_0(self):
     schedule = self.new_schedule(remaining=0)
     insert_zim_schedule(self.wp10db, schedule)
     # Should not go below zero
-    ok = decrement_remaining_generations_and_update_file_id(self.wp10db, schedule.s_id, 999)
+    ok = decrement_remaining_generations(self.wp10db, schedule.s_id)
     self.assertFalse(ok)
     fetched = get_zim_schedule(self.wp10db, schedule.s_id)
     self.assertEqual(0, fetched.s_remaining_generations)
 
-  def test_decrement_remaining_generations_and_update_file_id_from_minus_1(self):
+  def test_decrement_remaining_generations_from_minus_1(self):
     schedule = self.new_schedule(remaining=-1)
     insert_zim_schedule(self.wp10db, schedule)
     # Should not change from -1
-    ok = decrement_remaining_generations_and_update_file_id(self.wp10db, schedule.s_id, 999)
+    ok = decrement_remaining_generations(self.wp10db, schedule.s_id)
     self.assertFalse(ok)
     fetched = get_zim_schedule(self.wp10db, schedule.s_id)
     self.assertEqual(-1, fetched.s_remaining_generations)
@@ -145,9 +145,8 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
     # Should return None for non-existent z_task_id
     self.assertIsNone(get_scheduled_zimfarm_task_from_taskid(self.wp10db, b"non_existent_task_id"))
 
-  @patch('wp1.logic.zim_schedules.uuid.uuid4')
   @patch('wp1.queues.schedule_recurring_zimfarm_task')
-  def test_schedule_future_zimfile_generations(self, mock_schedule_recurring_zimfarm_task, mock_uuid4):
+  def test_schedule_future_zimfile_generations(self, mock_schedule_recurring_zimfarm_task):
     builder = Builder(
         b_id=b'builder-id',
         b_name=b'Test Builder',
@@ -164,7 +163,6 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
     job_mock = MagicMock()
     job_mock.id = 'job-id'
     mock_schedule_recurring_zimfarm_task.return_value = job_mock
-    mock_uuid4.return_value = 'uuid-1'
 
     zim_schedule = self.new_schedule()
     insert_zim_schedule(self.wp10db, zim_schedule)
@@ -179,23 +177,23 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
     # Verify scheduler.schedule was called with correct parameters
     mock_schedule_recurring_zimfarm_task.assert_called_once_with(
       redis=self.redis,
-      args=[builder, b'uuid-1'],
+      args=[builder, zim_schedule.s_id],
       scheduled_time=ANY,
       interval_seconds=two_months_in_seconds,
       repeat_count=scheduled_repetitions['number_of_repetitions'] - 1
     )
 
     with self.wp10db.cursor() as cursor:
-      cursor.execute('SELECT * FROM zim_schedules WHERE s_id = %s', (b'uuid-1',))
-      zim_schedule = cursor.fetchone()
-      self.assertIsNotNone(zim_schedule)
-      self.assertEqual(b'uuid-1', zim_schedule['s_id'])
-      self.assertEqual(b'builder-id', zim_schedule['s_builder_id'])
-      self.assertEqual(b'job-id', zim_schedule['s_rq_job_id'])
-      self.assertEqual(scheduled_repetitions['email'].encode('utf-8'), zim_schedule['s_email'])
-      self.assertEqual(scheduled_repetitions['repetition_period_in_months'], zim_schedule['s_interval'])
-      self.assertEqual(scheduled_repetitions['number_of_repetitions'], zim_schedule['s_remaining_generations'])
-  
+      cursor.execute('SELECT * FROM zim_schedules WHERE s_id = %s', (zim_schedule.s_id,))
+      actual_zim_schedule = cursor.fetchone()
+      self.assertIsNotNone(actual_zim_schedule)
+      self.assertEqual(zim_schedule.s_id, actual_zim_schedule['s_id'])
+      self.assertEqual(b'builder-id', actual_zim_schedule['s_builder_id'])
+      self.assertEqual(b'job-id', actual_zim_schedule['s_rq_job_id'])
+      self.assertEqual(scheduled_repetitions['email'].encode('utf-8'), actual_zim_schedule['s_email'])
+      self.assertEqual(scheduled_repetitions['repetition_period_in_months'], actual_zim_schedule['s_interval'])
+      self.assertEqual(scheduled_repetitions['number_of_repetitions'], actual_zim_schedule['s_remaining_generations'])
+
   def test_schedule_future_zimfile_generations_missing_fields(self):
     builder = Builder(
         b_id=b'builder-id',
