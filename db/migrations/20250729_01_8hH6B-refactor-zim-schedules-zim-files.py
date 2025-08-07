@@ -71,6 +71,7 @@ steps = [
     JOIN selections s ON zf.z_selection_id = s.s_id
     ''',
     '''
+    DELETE FROM zim_schedules
     '''
   ),
   
