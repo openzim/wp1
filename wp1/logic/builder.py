@@ -338,7 +338,7 @@ def latest_selection_url(wp10db, builder_id, ext):
   return logic_selection.url_for(selection.s_object_key.decode('utf-8'))
 
 
-def latest_zim_file_for(wp10db, builder_id) -> ZimFile:
+def latest_zim_file_for(wp10db, builder_id) -> ZimTask:
   """Returns the ZIM file that matches the ZIM version of the Builder."""
   with wp10db.cursor() as cursor:
     cursor.execute(
@@ -356,7 +356,7 @@ def latest_zim_file_for(wp10db, builder_id) -> ZimFile:
     return ZimTask(**db_zim)
 
 
-def zim_file_for_latest_selection(wp10db, builder_id) -> ZimFile:
+def zim_file_for_latest_selection(wp10db, builder_id) -> ZimTask:
   """Returns the ZIM file of the latest Selection for a Builder."""
   with wp10db.cursor() as cursor:
     cursor.execute(
