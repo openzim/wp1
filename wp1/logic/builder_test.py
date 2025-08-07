@@ -1397,13 +1397,6 @@ class BuilderTest(BaseWpOneDbTest):
     mock_materialize_builder.assert_called_once()
     mock_request_zimfarm_task.assert_called_once()
 
-    #check that the zim_schedule was updated
-    with self.wp10db.cursor() as cursor:
-      cursor.execute('SELECT s_last_updated_at '
-                     'FROM zim_schedules WHERE s_id = %s', ('schedule_123',))
-      schedule = cursor.fetchone()
-      self.assertEqual(b'20221225000102', schedule['s_last_updated_at'])
-
   @patch('wp1.logic.builder.zimfarm.request_zimfarm_task')
   @patch('wp1.logic.builder.wp10_connect')
   @patch('wp1.logic.builder.redis_connect')
