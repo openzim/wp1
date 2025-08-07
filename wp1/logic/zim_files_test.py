@@ -11,13 +11,11 @@ class ZimTasksTest(BaseWpOneDbTest):
         self.test_zim_task_data = {
             'z_id': self.test_zim_task_id,
             'z_selection_id': b'test-selection-id',
+            'z_zim_schedule_id': b'schedule-123',
             'z_status': b'COMPLETED',
             'z_task_id': b'test-task-id',
             'z_requested_at': None,
-            'z_updated_at': None,
-            'z_long_description': b'Test long description',
-            'z_description': b'Test description',
-            'z_title': b'Test ZIM File Title'
+            'z_updated_at': None
         }
 
     def test_get_zim_file(self):
@@ -25,19 +23,17 @@ class ZimTasksTest(BaseWpOneDbTest):
         with self.wp10db.cursor() as cursor:
             cursor.execute('''
                 INSERT INTO zim_tasks (
-                    z_id, z_selection_id, z_status, z_task_id, z_requested_at,
-                    z_updated_at, z_long_description, z_description, z_title
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    z_id, z_selection_id, z_zim_schedule_id, z_status,
+                    z_task_id, z_requested_at, z_updated_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
             ''', (
                 self.test_zim_task_data['z_id'],
                 self.test_zim_task_data['z_selection_id'],
+                self.test_zim_task_data['z_zim_schedule_id'],
                 self.test_zim_task_data['z_status'],
                 self.test_zim_task_data['z_task_id'],
                 self.test_zim_task_data['z_requested_at'],
                 self.test_zim_task_data['z_updated_at'],
-                self.test_zim_task_data['z_long_description'],
-                self.test_zim_task_data['z_description'],
-                self.test_zim_task_data['z_title']
             ))
 
         result = get_zim_task(self.wp10db, self.test_zim_task_id)
@@ -46,11 +42,9 @@ class ZimTasksTest(BaseWpOneDbTest):
         self.assertIsInstance(result, ZimTask)
         self.assertEqual(result.z_id, self.test_zim_task_id)
         self.assertEqual(result.z_selection_id, self.test_zim_task_data['z_selection_id'])
+        self.assertEqual(result.z_zim_schedule_id, self.test_zim_task_data['z_zim_schedule_id'])
         self.assertEqual(result.z_status, self.test_zim_task_data['z_status'])
         self.assertEqual(result.z_task_id, self.test_zim_task_data['z_task_id'])
-        self.assertEqual(result.z_title, self.test_zim_task_data['z_title'])
-        self.assertEqual(result.z_description, self.test_zim_task_data['z_description'])
-        self.assertEqual(result.z_long_description, self.test_zim_task_data['z_long_description'])
 
     def test_get_zim_file_not_found(self):
         """Test retrieval of a non-existent ZIM file."""
@@ -67,18 +61,15 @@ class ZimTasksTest(BaseWpOneDbTest):
             'z_status': b'IN_PROGRESS',
             'z_task_id': None,  # Null task_id
             'z_requested_at': None,
-            'z_updated_at': None,
-            'z_long_description': None,  # Null long description
-            'z_description': None,  # Null description
-            'z_title': None  # Null title
+            'z_updated_at': None
         }
         
         with self.wp10db.cursor() as cursor:
             cursor.execute('''
-                INSERT INTO zim_files (
-                    z_id, z_selection_id, z_zim_schedule_id, z_status, z_task_id, z_requested_at,
-                    z_updated_at, z_long_description, z_description, z_title
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO zim_tasks (
+                    z_id, z_selection_id, z_zim_schedule_id, z_status,
+                    z_task_id, z_requested_at, z_updated_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
             ''', (
                 zim_file_data_with_nulls['z_id'],
                 zim_file_data_with_nulls['z_selection_id'],
@@ -123,9 +114,9 @@ class ZimTasksTest(BaseWpOneDbTest):
         with self.wp10db.cursor() as cursor:
             # Insert first record
             cursor.execute('''
-                INSERT INTO zim_files (
-                    z_id, z_selection_id, z_zim_schedule_id, z_status, z_task_id, z_requested_at,
-                    z_updated_at
+                INSERT INTO zim_tasks (
+                    z_id, z_selection_id, z_zim_schedule_id, z_status,
+                    z_task_id, z_requested_at, z_updated_at
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s)
             ''', (
                 zim_file_1_data['z_id'],
@@ -139,9 +130,9 @@ class ZimTasksTest(BaseWpOneDbTest):
 
             # Insert second record
             cursor.execute('''
-                INSERT INTO zim_files (
-                    z_id, z_selection_id, z_zim_schedule_id, z_status, z_task_id, z_requested_at,
-                    z_updated_at
+                INSERT INTO zim_tasks (
+                    z_id, z_selection_id, z_zim_schedule_id, z_status,
+                    z_task_id, z_requested_at, z_updated_at
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s)
             ''', (
                 zim_file_2_data['z_id'],
