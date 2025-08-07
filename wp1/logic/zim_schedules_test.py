@@ -10,6 +10,7 @@ from wp1.logic.zim_schedules import (
     decrement_remaining_generations,
     get_scheduled_zimfarm_task_from_taskid,
     schedule_future_zimfile_generations,
+    get_username_by_zim_schedule_id,
     set_zim_schedule_id_to_zim_task_by_selection,
 )
 from wp1.models.wp10.zim_schedule import ZimSchedule
@@ -217,6 +218,39 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
           builder, zim_schedule.s_id,
           scheduled_repetitions
       )
+
+  def test_get_username_by_zim_schedule_id_found(self):
+    # Insert user and schedule
+    user_id = b'user-123'
+    username = 'testuser'
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+        'INSERT INTO users (u_id, u_username) VALUES (%s, %s)',
+        (user_id, username.encode('utf-8'))
+      )
+    schedule = self.new_schedule(builder_id=user_id)
+    insert_zim_schedule(self.wp10db, schedule)
+    result = get_username_by_zim_schedule_id(self.wp10db, schedule.s_id)
+    self.assertEqual(username, result)
+
+  def test_get_username_by_zim_schedule_id_username_is_none(self):
+    # Insert user with null username and schedule
+    user_id = b'user-456'
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+        'INSERT INTO users (u_id, u_username) VALUES (%s, %s)',
+        (user_id, None)
+      )
+    schedule = self.new_schedule(builder_id=user_id)
+    insert_zim_schedule(self.wp10db, schedule)
+    result = get_username_by_zim_schedule_id(self.wp10db, schedule.s_id)
+    self.assertIsNone(result)
+
+  def test_get_username_by_zim_schedule_id_not_found(self):
+    # No such schedule or user
+    missing_id = b'not-a-real-schedule'
+    result = get_username_by_zim_schedule_id(self.wp10db, missing_id)
+    self.assertIsNone(result)
 
   def test_set_zim_schedule_id_to_zim_task_by_selection_success(self):
         zim_file_id = 55555

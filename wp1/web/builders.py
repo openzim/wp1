@@ -279,8 +279,9 @@ def update_zimfarm_status():
       if zim_schedule is None:
         return 'Error: ZIM not found for task_id %s' % task_id, 404
 
+      print(f"ZIM file ready for schedule {zim_schedule}")
+
       if zim_schedule.s_remaining_generations is not None and zim_schedule.s_remaining_generations > 0:
-        logic_zim_schedules.decrement_remaining_generations(wp10db, zim_schedule.s_id)
         emails.notify_user_for_scheduled_zim(wp10db, zim_task, zim_schedule)
       return '', 204
 

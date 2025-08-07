@@ -467,8 +467,6 @@ def request_scheduled_zim_file_for_builder(builder: Builder, zim_schedule_id: by
   if zim_schedule_id is None:
     return None 
 
-  logic_zim_schedules.decrement_remaining_generations(wp10db, zim_schedule_id)
-
   task_id = request_zim_file_task_for_builder(redis, wp10db, builder, zim_schedule_id=zim_schedule_id)
 
   return task_id
@@ -578,7 +576,6 @@ def on_zim_file_status_poll(task_id):
     if ( zim_schedule is not None and
          zim_schedule.s_remaining_generations is not None and
          zim_schedule.s_remaining_generations > 0):
-      logic_zim_schedules.decrement_remaining_generations(wp10db, zim_schedule.s_id)
       emails.notify_user_for_scheduled_zim(wp10db, zim_task, zim_schedule)
 
   elif result == 'REQUESTED':
