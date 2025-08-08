@@ -30,7 +30,10 @@ def update_zim_schedule(wp10db, zim_schedule : ZimSchedule):
          s_last_updated_at = %(s_last_updated_at)s,
          s_interval = %(s_interval)s,
          s_remaining_generations = %(s_remaining_generations)s,
-         s_email = %(s_email)s
+         s_email = %(s_email)s,
+         s_title = %(s_title)s,
+         s_description = %(s_description)s,
+         s_long_description = %(s_long_description)s
          WHERE s_id = %(s_id)s
       ''', attr.asdict(zim_schedule)
     )

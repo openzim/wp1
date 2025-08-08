@@ -73,12 +73,14 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
     schedule.s_last_updated_at = new_time.strftime(TS_FORMAT_WP10).encode('utf-8')
     schedule.s_interval = 5
     schedule.s_remaining_generations = 10
+    schedule.s_title = b'New Title'
     ok = update_zim_schedule(self.wp10db, schedule)
     self.assertTrue(ok)
     fetched = get_zim_schedule(self.wp10db, schedule.s_id)
     self.assertEqual(5, fetched.s_interval)
     self.assertEqual(10, fetched.s_remaining_generations)
     self.assertEqual(schedule.s_last_updated_at, fetched.s_last_updated_at)
+    self.assertEqual(b'New Title', fetched.s_title)
 
   def test_decrement_remaining_generations(self):
     schedule = self.new_schedule(remaining=2)

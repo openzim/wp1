@@ -18,6 +18,7 @@ from wp1.exceptions import (
 )
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
+from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.zimfarm import (
     ZIM_DESCRIPTION_MAX_LENGTH,
     ZIM_LONG_DESCRIPTION_MAX_LENGTH,
@@ -149,6 +150,10 @@ class ZimFarmTest(BaseWpOneDbTest):
   def test_get_zimfarm_schedule_name_none(self):
     with self.assertRaises(ValueError):
       zimfarm.get_zimfarm_schedule_name(None)
+
+  def test_get_zimfarm_schedule_name_empty(self):
+    with self.assertRaises(ValueError):
+      zimfarm.get_zimfarm_schedule_name('')
 
   def test_get_zim_filename_prefix_valid(self):
     # builder_name: 'My Builder' -> safe_name: 'MyBuilder', selection_id_frag: 'def'
@@ -523,7 +528,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     get_token_mock.return_value = None
 
     with self.assertRaises(ZimFarmError):
-      zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
+      zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder, zim_schedule_id="1234-5678-90ab-cdef")
   
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
@@ -537,7 +542,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_response.json.return_value = {'requested': ['9876']}
     mock_requests.post.return_value = mock_response
 
-    actual = zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
+    actual = zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder, zim_schedule_id="1234")
 
     self.assertEqual('9876', actual)
 
@@ -548,7 +553,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     redis = MagicMock()
 
     with self.assertRaises(ObjectNotFoundError):
-      zimfarm.request_zimfarm_task(redis, self.wp10db, None)
+      zimfarm.request_zimfarm_task(redis, self.wp10db, None, zim_schedule_id="1234-5678-90ab-cdef")
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
@@ -564,7 +569,8 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     zimfarm.request_zimfarm_task(redis,
                                  self.wp10db,
-                                 self.builder)
+                                 self.builder,
+                                 zim_schedule_id="1234-5678-90ab-cdef")
 
     mock_requests.post.assert_called_once_with(
       'https://fake.farm/v1/requested-tasks/',
@@ -587,7 +593,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_requests.post.return_value = mock_response
 
     with self.assertRaises(ZimFarmError):
-      zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
+      zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder, zim_schedule_id="1234-5678-90ab-cdef")
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
@@ -603,7 +609,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     self.wp10db.commit()
 
     with self.assertRaises(ZimFarmTooManyArticlesError):
-      zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
+      zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder, zim_schedule_id="1234-5678-90ab-cdef")
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
@@ -619,7 +625,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     self.wp10db.commit()
 
     with self.assertRaises(ZimFarmTooManyArticlesError):
-      zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
+      zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder, zim_schedule_id="1234-5678-90ab-cdef")
 
   @patch('wp1.zimfarm.requests.get')
   def test_is_zim_file_ready(self, patched_get):
@@ -814,3 +820,300 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     with self.assertRaises(ZimFarmError):
       zimfarm.cancel_zim_by_task_id(redis, 'task-abc-123')
+
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm.requests')
+  def test_zimfarm_schedule_exists_true(self, mock_requests, mock_get_token):
+    """Test zimfarm_schedule_exists returns True when schedule exists (200 status)"""
+    mock_get_token.return_value = 'test-token'
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_requests.get.return_value = mock_response
+    
+    redis = MagicMock()
+    builder_id = '1a-2b-3c-4d'
+    
+    result = zimfarm.zimfarm_schedule_exists(redis, builder_id)
+    
+    self.assertTrue(result)
+    mock_requests.get.assert_called_once_with(
+        'https://fake.farm/v1/schedules/wp1_selection_3c4d',
+        headers={
+            'Authorization': 'Token test-token',
+            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
+        }
+    )
+
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm.requests')
+  def test_zimfarm_schedule_exists_false(self, mock_requests, mock_get_token):
+    """Test zimfarm_schedule_exists returns False when schedule doesn't exist (404 status)"""
+    mock_get_token.return_value = 'test-token'
+    mock_response = MagicMock()
+    mock_response.status_code = 404
+    mock_requests.get.return_value = mock_response
+    
+    redis = MagicMock()
+    builder_id = '1a-2b-3c-4d'
+    
+    result = zimfarm.zimfarm_schedule_exists(redis, builder_id)
+    
+    self.assertFalse(result)
+
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  def test_zimfarm_schedule_exists_no_token(self, mock_get_token):
+    """Test zimfarm_schedule_exists raises error when token is None"""
+    mock_get_token.return_value = None
+    
+    redis = MagicMock()
+    builder_id = '1a-2b-3c-4d'
+    
+    with self.assertRaises(ZimFarmError) as cm:
+      zimfarm.zimfarm_schedule_exists(redis, builder_id)
+    
+    self.assertEqual(str(cm.exception), 'Error retrieving auth token for request')
+
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm.requests')
+  def test_zimfarm_schedule_exists_http_error(self, mock_requests, mock_get_token):
+    """Test zimfarm_schedule_exists raises error when HTTP request fails"""
+    mock_get_token.return_value = 'test-token'
+    mock_response = MagicMock()
+    mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError
+    mock_requests.get.return_value = mock_response
+    mock_requests.exceptions.HTTPError = requests.exceptions.HTTPError
+    
+    redis = MagicMock()
+    builder_id = '1a-2b-3c-4d'
+    
+    with self.assertRaises(ZimFarmError):
+      zimfarm.zimfarm_schedule_exists(redis, builder_id)
+
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm.requests')
+  @patch('wp1.logic.builder.latest_selection_for')
+  @patch('wp1.logic.zim_schedules.update_zim_schedule')
+  @patch('wp1.logic.zim_schedules.set_zim_schedule_id_to_zim_task_by_selection')
+  def test_update_zimfarm_schedule_success(self, mock_set_zim_schedule, mock_update_zim_schedule,
+                                          mock_latest_selection, mock_requests, mock_get_token):
+    """Test update_zimfarm_schedule succeeds with valid parameters"""
+    mock_get_token.return_value = 'test-token'
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_requests.patch.return_value = mock_response
+    
+    mock_selection = MagicMock()
+    mock_selection.s_article_count = 1000
+    mock_selection.s_id = b'selection-123'
+    mock_latest_selection.return_value = mock_selection
+    
+    zim_schedule = ZimSchedule(
+        s_id=b'schedule-123',
+        s_builder_id=b'1a-2b-3c-4d',
+        s_last_updated_at=b'20240101000000'
+    )
+    
+    redis = MagicMock()
+    wp10db = MagicMock()
+    builder = self.builder
+    title = 'Test Title'
+    description = 'Test Description'
+    long_description = 'Test Long Description'
+    
+    result = zimfarm.update_zimfarm_schedule(
+        redis, wp10db, builder, zim_schedule, title, description, long_description
+    )
+    
+    self.assertEqual(result.s_title, title.encode('utf-8'))
+    self.assertEqual(result.s_description, description.encode('utf-8'))
+    self.assertEqual(result.s_long_description, long_description.encode('utf-8'))
+    self.assertIsNone(result.s_remaining_generations)
+    
+    mock_requests.patch.assert_called_once()
+    call_args = mock_requests.patch.call_args
+    self.assertTrue(call_args[0][0].endswith('/schedules/wp1_selection_3c4d'))
+    
+    mock_update_zim_schedule.assert_called_once_with(wp10db, zim_schedule)
+    mock_set_zim_schedule.assert_called_once_with(wp10db, mock_selection.s_id, zim_schedule.s_id)
+    wp10db.commit.assert_called_once()
+
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  def test_update_zimfarm_schedule_no_token(self, mock_get_token):
+    """Test update_zimfarm_schedule raises error when token is None"""
+    mock_get_token.return_value = None
+    
+    zim_schedule = ZimSchedule(
+        s_id=b'schedule-123',
+        s_builder_id=b'1a-2b-3c-4d',
+        s_last_updated_at=b'20240101000000'
+    )
+    
+    redis = MagicMock()
+    wp10db = MagicMock()
+    builder = self.builder
+    
+    with self.assertRaises(ZimFarmError) as cm:
+      zimfarm.update_zimfarm_schedule(redis, wp10db, builder, zim_schedule)
+
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  def test_update_zimfarm_schedule_none_builder(self, mock_get_token):
+    """Test update_zimfarm_schedule raises error when builder is None"""
+    mock_get_token.return_value = 'test-token'
+
+    zim_schedule = ZimSchedule(
+        s_id=b'schedule-123',
+        s_builder_id=b'1a-2b-3c-4d',
+        s_last_updated_at=b'20240101000000'
+    )
+    
+    redis = MagicMock()
+    wp10db = MagicMock()
+    
+    with self.assertRaises(ObjectNotFoundError) as cm:
+      zimfarm.update_zimfarm_schedule(redis, wp10db, None, zim_schedule)
+    
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.logic.builder.latest_selection_for')
+  def test_update_zimfarm_schedule_too_many_articles(self, mock_latest_selection, mock_get_token):
+    """Test update_zimfarm_schedule raises error when article count is too high"""
+    mock_get_token.return_value = 'test-token'
+    
+    mock_selection = MagicMock()
+    mock_selection.s_article_count = 60000  # Above MAX_ZIMFARM_ARTICLE_COUNT
+    mock_latest_selection.return_value = mock_selection
+    
+    zim_schedule = ZimSchedule(
+        s_id=b'schedule-123',
+        s_builder_id=b'1a-2b-3c-4d',
+        s_last_updated_at=b'20240101000000'
+    )
+    
+    redis = MagicMock()
+    wp10db = MagicMock()
+    builder = self.builder
+    
+    with self.assertRaises(ZimFarmTooManyArticlesError):
+      zimfarm.update_zimfarm_schedule(redis, wp10db, builder, zim_schedule)
+
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.logic.builder.latest_selection_for')
+  def test_update_zimfarm_schedule_none_article_count(self, mock_latest_selection, mock_get_token):
+    """Test update_zimfarm_schedule raises error when article count is None"""
+    mock_get_token.return_value = 'test-token'
+    
+    mock_selection = MagicMock()
+    mock_selection.s_article_count = None
+    mock_latest_selection.return_value = mock_selection
+    
+    zim_schedule = ZimSchedule(
+        s_id=b'schedule-123',
+        s_builder_id=b'1a-2b-3c-4d',
+        s_last_updated_at=b'20240101000000'
+    )
+    
+    redis = MagicMock()
+    wp10db = MagicMock()
+    builder = self.builder
+    
+    with self.assertRaises(ZimFarmTooManyArticlesError):
+      zimfarm.update_zimfarm_schedule(redis, wp10db, builder, zim_schedule)
+
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm.requests')
+  @patch('wp1.logic.builder.latest_selection_for')
+  def test_update_zimfarm_schedule_http_error(self, mock_latest_selection, mock_requests, mock_get_token):
+    """Test update_zimfarm_schedule raises error when HTTP request fails"""
+    mock_get_token.return_value = 'test-token'
+    mock_response = MagicMock()
+    mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError
+    mock_requests.patch.return_value = mock_response
+    mock_requests.exceptions.HTTPError = requests.exceptions.HTTPError
+    
+    mock_selection = MagicMock()
+    mock_selection.s_article_count = 1000
+    mock_latest_selection.return_value = mock_selection
+    
+    zim_schedule = ZimSchedule(
+        s_id=b'schedule-123',
+        s_builder_id=b'1a-2b-3c-4d',
+        s_last_updated_at=b'20240101000000'
+    )
+    
+    redis = MagicMock()
+    wp10db = MagicMock()
+    builder = self.builder
+    
+    with self.assertRaises(ZimFarmError):
+      zimfarm.update_zimfarm_schedule(redis, wp10db, builder, zim_schedule)
+
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.logic.builder.latest_selection_for')
+  def test_update_zimfarm_schedule_validates_title_too_long(self, mock_latest_selection, mock_get_token):
+    """Test update_zimfarm_schedule validates title length"""
+    mock_get_token.return_value = 'test-token'
+    
+    mock_selection = MagicMock()
+    mock_selection.s_article_count = 1000
+    mock_latest_selection.return_value = mock_selection
+    
+    zim_schedule = ZimSchedule(
+        s_id=b'schedule-123',
+        s_builder_id=b'1a-2b-3c-4d',
+        s_last_updated_at=b'20240101000000'
+    )
+    
+    redis = MagicMock()
+    wp10db = MagicMock()
+    builder = self.builder
+    title = 'x' * (ZIM_TITLE_MAX_LENGTH + 1)  # Too long
+    
+    with self.assertRaises(InvalidZimTitleError):
+      zimfarm.update_zimfarm_schedule(redis, wp10db, builder, zim_schedule, title=title)
+
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.logic.builder.latest_selection_for')
+  def test_update_zimfarm_schedule_validates_description_too_long(self, mock_latest_selection, mock_get_token):
+    """Test update_zimfarm_schedule validates description length"""
+    mock_get_token.return_value = 'test-token'
+    
+    mock_selection = MagicMock()
+    mock_selection.s_article_count = 1000
+    mock_latest_selection.return_value = mock_selection
+    
+    zim_schedule = ZimSchedule(
+        s_id=b'schedule-123',
+        s_builder_id=b'1a-2b-3c-4d',
+        s_last_updated_at=b'20240101000000'
+    )
+    
+    redis = MagicMock()
+    wp10db = MagicMock()
+    builder = self.builder
+    description = 'x' * (ZIM_DESCRIPTION_MAX_LENGTH + 1)  # Too long
+    
+    with self.assertRaises(InvalidZimDescriptionError):
+      zimfarm.update_zimfarm_schedule(redis, wp10db, builder, zim_schedule, description=description)
+
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.logic.builder.latest_selection_for')
+  def test_update_zimfarm_schedule_validates_long_description_too_long(self, mock_latest_selection, mock_get_token):
+    """Test update_zimfarm_schedule validates long description length"""
+    mock_get_token.return_value = 'test-token'
+    
+    mock_selection = MagicMock()
+    mock_selection.s_article_count = 1000
+    mock_latest_selection.return_value = mock_selection
+    
+    zim_schedule = ZimSchedule(
+        s_id=b'schedule-123',
+        s_builder_id=b'1a-2b-3c-4d',
+        s_last_updated_at=b'20240101000000'
+    )
+    
+    redis = MagicMock()
+    wp10db = MagicMock()
+    builder = self.builder
+    long_description = 'x' * (ZIM_LONG_DESCRIPTION_MAX_LENGTH + 1)  # Too long
+    
+    with self.assertRaises(InvalidZimLongDescriptionError):
+      zimfarm.update_zimfarm_schedule(redis, wp10db, builder, zim_schedule, long_description=long_description)

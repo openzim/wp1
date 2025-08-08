@@ -425,7 +425,7 @@ def request_zim_file_task_for_builder(redis: Redis,
   Requests a ZIM file from the Zimfarm for the given builder.
   Returns the entire ZimTask object instead of just the z_id.
   """
-  task_id = zimfarm.request_zimfarm_task(redis, wp10db, builder)
+  task_id = zimfarm.request_zimfarm_task(redis, wp10db, builder, zim_schedule_id)
   selection = latest_selection_for(wp10db, builder.b_id,
            'text/tab-separated-values')
 
@@ -471,6 +471,22 @@ def request_scheduled_zim_file_for_builder(builder: Builder, zim_schedule_id: by
 
   return task_id
 
+
+def find_existing_schedule_in_db(wp10db, builder_b_id, scheduled_repetitions):
+  """
+  Returns an existing schedule based on scheduled_repetitions.
+  If scheduled_repetitions is set, looks for a manual schedule (s_remaining_generations is None).
+  Otherwise, looks for a schedule with s_remaining_generations == 0.
+  """
+  
+  # Get all ZIM schedules for this builder
+  schedules = logic_zim_schedules.list_zim_schedules_for_builder(wp10db, builder_b_id)
+  print(f"Existing schedules in DB: {schedules}, scheduled_repetitions={scheduled_repetitions}")
+  for schedule in schedules:
+    print(f"Checking schedule: {schedule.s_remaining_generations}")
+    if schedule.s_remaining_generations == 0 or schedule.s_remaining_generations is None: # Look for a schedule with no remaining generations
+      return schedule
+
 def handle_zim_generation(redis,
                           wp10db,
                           builder_id,
@@ -499,17 +515,30 @@ def handle_zim_generation(redis,
           'Could not use builder id = %s for user id = %s' %
           (builder_id, user_id))
   
-  zim_schedule : ZimSchedule = zimfarm.create_zimfarm_schedule(redis,
-                                  wp10db,
-                                  builder,
-                                  title=title,
-                                  description=description,
-                                  long_description=long_description)
+  existing_schedule_in_db = find_existing_schedule_in_db(wp10db, builder.b_id, scheduled_repetitions)
+  print(f"Existing schedule in DB: {existing_schedule_in_db}")
+  if existing_schedule_in_db and zimfarm.zimfarm_schedule_exists(redis, existing_schedule_in_db.s_id):
+    zim_schedule = zimfarm.update_zimfarm_schedule(
+      redis, wp10db, builder, zim_schedule=existing_schedule_in_db,
+      title=title,
+      description=description,
+      long_description=long_description
+    )
+  else:
+    zim_schedule = zimfarm.create_zimfarm_schedule(
+      redis, wp10db, builder,
+      title=title,
+      description=description,
+      long_description=long_description
+    )
+  print(f"ZIM schedule created/updated: {zim_schedule.s_id}")
   zim_file: ZimTask = request_zim_file_task_for_builder(redis, wp10db, builder, zim_schedule.s_id)
 
-  # if scheduled_repetitions is not None schedule future ZIMfile generations
+  # If scheduled_repetitions is set, schedule future ZIM file generations
   if scheduled_repetitions is not None:
-    logic_zim_schedules.schedule_future_zimfile_generations(redis, wp10db, builder, zim_schedule.s_id, scheduled_repetitions)
+    logic_zim_schedules.schedule_future_zimfile_generations(
+      redis, wp10db, builder, zim_schedule.s_id, scheduled_repetitions
+    )
 
   # In production, there is a web hook from the Zimfarm that notifies us
   # that the task is finished and we can start polling for the ZIM file

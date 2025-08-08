@@ -4,6 +4,7 @@ from unittest.mock import ANY, MagicMock, call, patch
 import attr
 
 from wp1.base_db_test import BaseWpOneDbTest
+from wp1.environment import Environment
 from wp1.exceptions import (InvalidZimTitleError, ObjectNotFoundError,
                             UserNotAuthorizedError, ZimFarmError)
 from wp1.logic import builder as logic_builder
@@ -907,7 +908,8 @@ class BuilderTest(BaseWpOneDbTest):
                                                          long_description='zz')
     mock_request_zimfarm_task.assert_called_once_with(redis,
                                                       self.wp10db,
-                                                      self.builder)
+                                                      self.builder,
+                                                      ANY)
     with self.wp10db.cursor() as cursor:
       cursor.execute('SELECT z_task_id, z_status, z_requested_at'
                      ' FROM zim_tasks'
@@ -953,7 +955,6 @@ class BuilderTest(BaseWpOneDbTest):
   def test_handle_zim_generation_not_authorized(self,
                                                 mock_request_zimfarm_task):
     redis = MagicMock()
-    s3 = MagicMock()
     mock_request_zimfarm_task.return_value = '1234-a'
 
     builder_id = self._insert_builder()
@@ -967,6 +968,91 @@ class BuilderTest(BaseWpOneDbTest):
                                           self.wp10db,
                                           builder_id,
                                           user_id=5678)
+
+  @patch('wp1.logic.builder.zimfarm.update_zimfarm_schedule')
+  @patch('wp1.logic.builder.zimfarm.request_zimfarm_task')
+  @patch('wp1.logic.zim_schedules.schedule_future_zimfile_generations')
+  @patch('wp1.logic.builder.zimfarm.zimfarm_schedule_exists', return_value=True)
+  @patch('wp1.logic.builder.utcnow',
+         return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
+  def test_handle_zim_generation_with_existing_schedule_update(
+      self, mock_utcnow, mock_zimfarm_schedule_exists, 
+      mock_schedule_future, mock_request_zimfarm_task, mock_update_schedule):
+    """Test handle_zim_generation when existing schedule exists and needs updating."""
+    redis = MagicMock()
+
+    builder_id = self._insert_builder()
+    self._insert_selection(1, 'text/tab-separated-values', builder_id=builder_id)
+    self._insert_zim_schedule(schedule_id=b'schedule_123',
+                              builder_id=builder_id,
+                              rq_job_id=b'rq_job_id_123',
+                              last_updated_at=b'20191225044444',
+                              remaining_generations=0)
+
+    mock_request_zimfarm_task.return_value = '1234-a'
+    mock_update_schedule.return_value = ZimSchedule(s_id=b'schedule_123',
+                                                            s_builder_id=b'1a-2b-3c-4d',
+                                                            s_rq_job_id=b'rq_job_id_123',
+                                                            s_last_updated_at=b'20191225044444',)
+    
+    result = logic_builder.handle_zim_generation(
+        redis, self.wp10db, builder_id,
+        user_id=1234,
+        title='Updated Title',
+        description='Updated Description',
+        long_description='Updated Long Description',
+        scheduled_repetitions=5
+    )
+    
+    mock_update_schedule.assert_called_once_with(
+        redis, self.wp10db, self.builder,
+        zim_schedule=ANY,
+        title='Updated Title',
+        description='Updated Description',
+        long_description='Updated Long Description'
+    )
+    mock_request_zimfarm_task.assert_called_once_with(redis, self.wp10db, self.builder, b'schedule_123')
+    mock_schedule_future.assert_called_once_with(redis, self.wp10db, self.builder, b'schedule_123', 5)
+
+    self.assertEqual(b'1234-a', result)
+
+  @patch('wp1.logic.builder.zimfarm.create_zimfarm_schedule')
+  @patch('wp1.logic.builder.zimfarm.request_zimfarm_task')
+  @patch('wp1.logic.builder.zimfarm.zimfarm_schedule_exists', return_value=True)
+  @patch('wp1.logic.builder.utcnow',
+         return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
+  def test_handle_zim_generation_create_new_schedule(
+      self, mock_utcnow, mock_zimfarm_schedule_exists, 
+      mock_request_zimfarm_task, mock_create_schedule):
+    """Test handle_zim_generation when no existing schedule exists, creates new one."""
+    redis = MagicMock()
+
+    builder_id = self._insert_builder()
+    self._insert_selection(1, 'text/tab-separated-values', builder_id=builder_id)
+
+    mock_request_zimfarm_task.return_value = '1234-a'
+    mock_create_schedule.return_value = ZimSchedule(s_id=b'schedule_123',
+                                                            s_builder_id=b'1a-2b-3c-4d',
+                                                            s_rq_job_id=b'rq_job_id_123',
+                                                            s_last_updated_at=b'20191225044444',)
+    
+    result = logic_builder.handle_zim_generation(
+        redis, self.wp10db, builder_id,
+        user_id=1234,
+        title='New Title',
+        description='New Description',
+        long_description='New Long Description'
+    )
+    
+    mock_create_schedule.assert_called_once_with(
+        redis, self.wp10db, self.builder,
+        title='New Title',
+        description='New Description',
+        long_description='New Long Description'
+    )
+    mock_request_zimfarm_task.assert_called_once_with(redis, self.wp10db, self.builder, b'schedule_123')
+
+    self.assertEqual(b'1234-a', result)
 
   @patch('wp1.logic.builder.zimfarm.is_zim_file_ready')
   @patch('wp1.logic.builder.wp10_connect')
@@ -1272,7 +1358,8 @@ class BuilderTest(BaseWpOneDbTest):
     self.assertEqual(b'test_task_id_123', actual_zim_file.z_task_id)
     mock_request_zimfarm_task.assert_called_once_with(redis_mock,
                                                       self.wp10db,
-                                                      self.builder)
+                                                      self.builder,
+                                                      ANY)
 
     with self.wp10db.cursor() as cursor:
       cursor.execute('SELECT * FROM zim_tasks WHERE z_selection_id = 1')
@@ -1447,3 +1534,96 @@ class BuilderTest(BaseWpOneDbTest):
           logic_builder.get_builder_module_class('wp1.selection.models.simple')
 
       self.assertIn('Builder class not found in module', str(cm.exception))
+
+  def test_find_existing_schedule_in_db_with_scheduled_repetitions(self):
+    """Test finding existing manual schedule when scheduled_repetitions is set."""
+    builder_id = self._insert_builder()
+    
+    # Insert a manual schedule (remaining_generations = None)
+    manual_schedule_id = self._insert_zim_schedule(
+        schedule_id=b'manual_schedule_123',
+        builder_id=builder_id,
+        remaining_generations=None
+    )
+    
+    # Insert an automatic schedule (remaining_generations = 5)
+    self._insert_zim_schedule(
+        schedule_id=b'auto_schedule_456',
+        builder_id=builder_id,
+        remaining_generations=5
+    )
+    
+    # Should find the manual schedule
+    result = logic_builder.find_existing_schedule_in_db(
+        self.wp10db, builder_id, scheduled_repetitions=3
+    )
+    
+    self.assertIsNotNone(result)
+    self.assertEqual(result.s_id, manual_schedule_id)
+    self.assertIsNone(result.s_remaining_generations)
+
+  def test_find_existing_schedule_in_db_without_scheduled_repetitions(self):
+    """Test finding existing schedule with 0 remaining generations when scheduled_repetitions is None."""
+    builder_id = self._insert_builder()
+    
+    # Insert a schedule with remaining generations = 0
+    zero_schedule_id = self._insert_zim_schedule(
+        schedule_id=b'zero_schedule_123',
+        builder_id=builder_id,
+        remaining_generations=0
+    )
+    
+    # Insert a schedule with remaining generations = 5
+    self._insert_zim_schedule(
+        schedule_id=b'active_schedule_456',
+        builder_id=builder_id,
+        remaining_generations=5
+    )
+    
+    # Should find the schedule with 0 remaining generations
+    result = logic_builder.find_existing_schedule_in_db(
+        self.wp10db, builder_id, scheduled_repetitions=None
+    )
+    
+    self.assertIsNotNone(result)
+    self.assertEqual(result.s_id, zero_schedule_id)
+    self.assertEqual(result.s_remaining_generations, 0)
+
+  def test_find_existing_schedule_in_db_no_matching_schedule(self):
+    """Test when no matching schedule exists."""
+    builder_id = self._insert_builder()
+    
+    # Insert only a schedule with remaining generations = 5
+    self._insert_zim_schedule(
+        schedule_id=b'active_schedule_456',
+        builder_id=builder_id,
+        remaining_generations=5
+    )
+    
+    # Should not find any schedule when looking for manual schedule
+    result = logic_builder.find_existing_schedule_in_db(
+        self.wp10db, builder_id, scheduled_repetitions=3
+    )
+    self.assertIsNone(result)
+    
+    # Should not find any schedule when looking for zero remaining generations
+    result = logic_builder.find_existing_schedule_in_db(
+        self.wp10db, builder_id, scheduled_repetitions=None
+    )
+    self.assertIsNone(result)
+
+  def test_find_existing_schedule_in_db_no_schedules(self):
+    """Test when no schedules exist for the builder."""
+    builder_id = self._insert_builder()
+    
+    # Should return None when no schedules exist
+    result = logic_builder.find_existing_schedule_in_db(
+        self.wp10db, builder_id, scheduled_repetitions=3
+    )
+    self.assertIsNone(result)
+    
+    result = logic_builder.find_existing_schedule_in_db(
+        self.wp10db, builder_id, scheduled_repetitions=None
+    )
+    self.assertIsNone(result)
+
