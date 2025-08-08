@@ -56,7 +56,7 @@ steps = [
         s_zim_file_id
     )
     SELECT
-        UUID_TO_BIN(UUID()), 
+        UUID(),
         s.s_builder_id,
         NULL,
         NULL,
