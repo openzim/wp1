@@ -135,9 +135,9 @@ CREATE TABLE zim_schedules (
   s_remaining_generations INTEGER NULL,
   s_email VARBINARY(255) NULL,
   s_last_updated_at BINARY(14) NOT NULL,
-  s_long_description blob,
-  s_description tinyblob,
-  s_title tinyblob
+  s_long_description mediumblob,
+  s_description blob,
+  s_title blob
 );
 
 CREATE TABLE `temp_pageviews` (

@@ -13,10 +13,11 @@ def insert_zim_schedule(wp10db, zim_schedule : ZimSchedule):
     cursor.execute(
       '''INSERT INTO zim_schedules
          (s_id, s_builder_id, s_rq_job_id, s_last_updated_at,
-          s_interval, s_remaining_generations)
+          s_interval, s_remaining_generations, s_email, s_title, s_description, s_long_description)
          VALUES
          (%(s_id)s, %(s_builder_id)s,  %(s_rq_job_id)s,
-          %(s_last_updated_at)s, %(s_interval)s, %(s_remaining_generations)s)
+          %(s_last_updated_at)s, %(s_interval)s, %(s_remaining_generations)s,
+          %(s_email)s, %(s_title)s, %(s_description)s, %(s_long_description)s)
       ''', attr.asdict(zim_schedule)
     )
   wp10db.commit()
