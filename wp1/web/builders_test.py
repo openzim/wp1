@@ -468,7 +468,7 @@ class BuildersTest(BaseWebTestcase):
       self.assertEqual('404 NOT FOUND', rv.status)
 
   @patch('wp1.zimfarm.request_zimfarm_task')
-  @patch('wp1.zimfarm.create_zimfarm_schedule')
+  @patch('wp1.zimfarm.create_or_update_zimfarm_schedule')
   def test_create_zim_file_for_builder(
       self, patched_create_zimfarm_schedule, patched_request_zimfarm_task):
     builder_id = self._insert_builder()
@@ -502,7 +502,7 @@ class BuildersTest(BaseWebTestcase):
     self.assertEqual(b'REQUESTED', data['z_status'])
 
   @patch('wp1.zimfarm.request_zimfarm_task')
-  @patch('wp1.zimfarm.create_zimfarm_schedule')
+  @patch('wp1.zimfarm.create_or_update_zimfarm_schedule')
   def test_create_zim_file_for_builder_not_found(
       self, patched_create_zimfarm_schedule, patched_request_zimfarm_task):
     builder_id = self._insert_builder()
@@ -520,7 +520,7 @@ class BuildersTest(BaseWebTestcase):
       self.assertEqual('404 NOT FOUND', rv.status)
 
   @patch('wp1.zimfarm.request_zimfarm_task')
-  @patch('wp1.zimfarm.create_zimfarm_schedule')
+  @patch('wp1.zimfarm.create_or_update_zimfarm_schedule')
   def test_create_zim_file_for_builder_unauthorized(
       self, patched_create_zimfarm_schedule, patched_request_zimfarm_task):
     builder_id = self._insert_builder()
@@ -538,7 +538,7 @@ class BuildersTest(BaseWebTestcase):
       self.assertEqual('403 FORBIDDEN', rv.status)
 
   @patch('wp1.zimfarm.request_zimfarm_task')
-  @patch('wp1.zimfarm.create_zimfarm_schedule')
+  @patch('wp1.zimfarm.create_or_update_zimfarm_schedule')
   def test_create_zim_file_for_builder_500(
       self, patched_create_zimfarm_schedule, patched_request_zimfarm_task):
     builder_id = self._insert_builder()
@@ -570,7 +570,7 @@ class BuildersTest(BaseWebTestcase):
       self.assertEqual('400 BAD REQUEST', rv.status)
 
   @patch('wp1.zimfarm.request_zimfarm_task')
-  @patch('wp1.zimfarm.create_zimfarm_schedule')
+  @patch('wp1.zimfarm.create_or_update_zimfarm_schedule')
   def test_create_zim_file_for_builder_no_title(
       self, patched_create_zimfarm_schedule, patched_request_zimfarm_task):
     builder_id = self._insert_builder()
@@ -596,7 +596,7 @@ class BuildersTest(BaseWebTestcase):
       self.assertEqual('400 BAD REQUEST', rv.status)
 
   @patch('wp1.zimfarm.request_zimfarm_task')
-  @patch('wp1.zimfarm.create_zimfarm_schedule')
+  @patch('wp1.zimfarm.create_or_update_zimfarm_schedule')
   def test_create_zim_file_for_builder_scheduled_repetitions(
       self, patched_create_zimfarm_schedule, patched_request_zimfarm_task):
     builder_id = self._insert_builder()
@@ -629,7 +629,7 @@ class BuildersTest(BaseWebTestcase):
       self.assertEqual('204 NO CONTENT', rv.status)
 
   @patch('wp1.zimfarm.request_zimfarm_task')
-  @patch('wp1.zimfarm.create_zimfarm_schedule')
+  @patch('wp1.zimfarm.create_or_update_zimfarm_schedule')
   def test_create_zim_file_for_builder_scheduled_repetitions_extra_fields(
       self, patched_create_zimfarm_schedule, patched_request_zimfarm_task):
     builder_id = self._insert_builder()
@@ -688,7 +688,7 @@ class BuildersTest(BaseWebTestcase):
                     rv.data.decode('utf-8'))
 
   @patch('wp1.zimfarm.request_zimfarm_task')
-  @patch('wp1.zimfarm.create_zimfarm_schedule')
+  @patch('wp1.zimfarm.create_or_update_zimfarm_schedule')
   def test_create_zim_file_for_builder_scheduled_repetitions_not_dict(
       self, patched_create_zimfarm_schedule, patched_request_zimfarm_task):
     builder_id = self._insert_builder()
@@ -709,7 +709,7 @@ class BuildersTest(BaseWebTestcase):
                     rv.data.decode('utf-8'))
 
   @patch('wp1.zimfarm.request_zimfarm_task')
-  @patch('wp1.zimfarm.create_zimfarm_schedule')
+  @patch('wp1.zimfarm.create_or_update_zimfarm_schedule')
   def test_create_zim_file_for_builder_scheduled_repetitions_empty_dict(
       self, patched_create_zimfarm_schedule, patched_request_zimfarm_task):
     builder_id = self._insert_builder()
@@ -734,7 +734,7 @@ class BuildersTest(BaseWebTestcase):
       self.assertEqual('204 NO CONTENT', rv.status)
 
   @patch('wp1.zimfarm.request_zimfarm_task')
-  @patch('wp1.zimfarm.create_zimfarm_schedule')
+  @patch('wp1.zimfarm.create_or_update_zimfarm_schedule')
   def test_create_zim_file_for_builder_scheduled_repetitions_extra_fields(
       self, patched_create_zimfarm_schedule, patched_request_zimfarm_task):
     builder_id = self._insert_builder()
