@@ -631,7 +631,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     get_token_mock.return_value = None
 
     with self.assertRaises(ZimFarmError):
-      zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder, zim_schedule_id="1234-5678-90ab-cdef")
+      zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
   
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
@@ -645,7 +645,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_response.json.return_value = {'requested': ['9876']}
     mock_requests.post.return_value = mock_response
 
-    actual = zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder, zim_schedule_id="1234")
+    actual = zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
 
     self.assertEqual('9876', actual)
 
@@ -656,7 +656,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     redis = MagicMock()
 
     with self.assertRaises(ObjectNotFoundError):
-      zimfarm.request_zimfarm_task(redis, self.wp10db, None, zim_schedule_id="1234-5678-90ab-cdef")
+      zimfarm.request_zimfarm_task(redis, self.wp10db, None)
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
@@ -672,8 +672,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     zimfarm.request_zimfarm_task(redis,
                                  self.wp10db,
-                                 self.builder,
-                                 zim_schedule_id="1234-5678-90ab-cdef")
+                                 self.builder)
 
     mock_requests.post.assert_called_once_with(
       'https://fake.farm/v1/requested-tasks/',
@@ -696,7 +695,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_requests.post.return_value = mock_response
 
     with self.assertRaises(ZimFarmError):
-      zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder, zim_schedule_id="1234-5678-90ab-cdef")
+      zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
@@ -712,7 +711,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     self.wp10db.commit()
 
     with self.assertRaises(ZimFarmTooManyArticlesError):
-      zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder, zim_schedule_id="1234-5678-90ab-cdef")
+      zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
@@ -728,7 +727,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     self.wp10db.commit()
 
     with self.assertRaises(ZimFarmTooManyArticlesError):
-      zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder, zim_schedule_id="1234-5678-90ab-cdef")
+      zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
 
   @patch('wp1.zimfarm.requests.get')
   def test_is_zim_file_ready(self, patched_get):

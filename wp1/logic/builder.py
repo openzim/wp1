@@ -425,7 +425,7 @@ def request_zim_file_task_for_builder(redis: Redis,
   Requests a ZIM file from the Zimfarm for the given builder.
   Returns the entire ZimTask object instead of just the z_id.
   """
-  task_id = zimfarm.request_zimfarm_task(redis, wp10db, builder, zim_schedule_id)
+  task_id = zimfarm.request_zimfarm_task(redis, wp10db, builder)
   selection = latest_selection_for(wp10db, builder.b_id,
            'text/tab-separated-values')
 
@@ -549,11 +549,11 @@ def zim_file_status_for(wp10db, builder_id):
         logic_util.wp10_timestamp_to_unix(zim_file.z_updated_at))
   zim_schedule: ZimSchedule = logic_zim_schedules.get_zim_schedule_by_zim_file_id(wp10db, zim_file.z_id)
   data['title'] = zim_schedule.s_title.decode(
-      'utf-8') if zim_schedule.s_title else None
+      'utf-8') if zim_schedule and zim_schedule.s_title else None
   data['description'] = zim_schedule.s_description.decode(
-      'utf-8') if zim_schedule.s_description else None
+      'utf-8') if zim_schedule and zim_schedule.s_description else None
   data['long_description'] = zim_schedule.s_long_description.decode(
-      'utf-8') if zim_schedule.s_long_description else None
+      'utf-8') if zim_schedule and zim_schedule.s_long_description else None
 
   return data
 

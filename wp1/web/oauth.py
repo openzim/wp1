@@ -83,6 +83,28 @@ def identify():
     flask.abort(401, 'Unauthorized')
   return jsonify({'username': user['identity']['username']})
 
+@oauth.route('/email')
+def email():
+  user = session.get('user')
+  if user is None:
+    flask.abort(401, 'Unauthorized')
+  email = user['identity'].get('email')
+  if email is None:
+    wp10db = get_db('wp10db')
+    with wp10db.cursor() as cursor:
+      cursor.execute(
+        'SELECT u_email FROM users WHERE u_id = %s',
+        (user['identity']['sub'],)
+      )
+      result = cursor.fetchone()
+      if result:
+        email = result['u_email'].decode('utf-8') if isinstance(result, dict) and 'u_email' in result else result[0]
+      else:
+        email = None
+      user['identity']['email'] = email
+      session['user'] = user
+  return jsonify({'email': email})
+
 
 @oauth.route('/logout')
 def logout():

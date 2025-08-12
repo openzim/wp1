@@ -283,7 +283,6 @@ def zimfarm_schedule_exists(redis, builder_id: str) -> bool:
   headers = _get_zimfarm_headers(token)
 
   r = requests.get('%s/schedules/%s' % (base_url, get_zimfarm_schedule_name(builder_id)), headers=headers)
-  
   # 404 means the schedule doesn't exist, which is not an error
   if r.status_code == 404:
     return False
@@ -343,36 +342,38 @@ def create_or_update_zimfarm_schedule(redis,
   headers = _get_zimfarm_headers(token)
 
   builder_id = builder.b_id.decode('utf-8')
-  logger.info('Creating zimfarm schedule for ZIM for builder id=%s', builder_id)
-  r = requests.post('%s/schedules/' % base_url, headers=headers, json=params)
-
+      
+      
+  logger.info('Creating or Updating zimfarm schedule for ZIM for builder id=%s', builder_id)
   try:
-    r.raise_for_status()
+    existing_zim_schedule = find_existing_schedule_in_db(wp10db, builder.b_id)
+    if existing_zim_schedule and zimfarm_schedule_exists(redis, existing_zim_schedule.s_id.decode('utf-8')):
+      r = requests.patch('%s/schedules/' % base_url, headers=headers, json=params) 
+      r.raise_for_status()
+      zim_schedule = existing_zim_schedule
+      zim_schedule.s_title = title.encode('utf-8')
+      zim_schedule.s_description = description.encode('utf-8')
+      zim_schedule.s_long_description = long_description.encode('utf-8') if long_description else None
+      zim_schedule.s_remaining_generations = None
+      logic_zim_schedules.update_zim_schedule(wp10db, zim_schedule)
+      zim_schedule_id_to_set = zim_schedule.s_id.decode('utf-8')
+    else:
+      r = requests.post('%s/schedules/' % base_url, headers=headers, json=params) 
+      r.raise_for_status()
+      zim_schedule_id = str(uuid.uuid4())
+      zim_schedule = ZimSchedule(
+          s_id=zim_schedule_id.encode('utf-8'),
+          s_builder_id=builder.b_id,
+          s_last_updated_at=datetime.now(UTC).strftime(constants.TS_FORMAT_WP10).encode('utf-8'),
+          s_title=title.encode('utf-8'),
+          s_description=description.encode('utf-8'),
+          s_long_description=long_description.encode('utf-8') if long_description else None,
+      )
+      logic_zim_schedules.insert_zim_schedule(wp10db, zim_schedule)
+      zim_schedule_id_to_set = zim_schedule_id
   except requests.exceptions.HTTPError as e:
     logger.exception(r.text)
-    raise ZimFarmError('Error creating schedule for ZIM file creation') from e
-
-  existing_zim_schedule = find_existing_schedule_in_db(wp10db, builder.b_id)
-  if existing_zim_schedule and zimfarm_schedule_exists(redis, existing_zim_schedule.s_id.decode('utf-8')):
-    zim_schedule = existing_zim_schedule
-    zim_schedule.s_title = title.encode('utf-8')
-    zim_schedule.s_description = description.encode('utf-8')
-    zim_schedule.s_long_description = long_description.encode('utf-8') if long_description else None
-    zim_schedule.s_remaining_generations = None
-    logic_zim_schedules.update_zim_schedule(wp10db, zim_schedule)
-    zim_schedule_id_to_set = zim_schedule.s_id.decode('utf-8')
-  else: 
-    zim_schedule_id = str(uuid.uuid4())
-    zim_schedule = ZimSchedule(
-        s_id=zim_schedule_id.encode('utf-8'),
-        s_builder_id=builder.b_id,
-        s_last_updated_at=datetime.now(UTC).strftime(constants.TS_FORMAT_WP10).encode('utf-8'),
-        s_title=title.encode('utf-8'),
-        s_description=description.encode('utf-8'),
-        s_long_description=long_description.encode('utf-8') if long_description else None,
-    )
-    logic_zim_schedules.insert_zim_schedule(wp10db, zim_schedule)
-    zim_schedule_id_to_set = zim_schedule_id
+    raise ZimFarmError('Error creating or updating schedule for ZIM file creation') from e
 
   logic_zim_schedules.set_zim_schedule_id_to_zim_task_by_selection(
       wp10db, selection.s_id, zim_schedule_id_to_set)
@@ -383,8 +384,7 @@ def create_or_update_zimfarm_schedule(redis,
 
 def request_zimfarm_task(redis,
                          wp10db,
-                         builder,
-                         zim_schedule_id: str):
+                         builder):
   """
   Requests a ZIM file task from the Zimfarm for the given builder.
   """
@@ -407,8 +407,8 @@ def request_zimfarm_task(redis,
   base_url = get_zimfarm_url()
   headers = _get_zimfarm_headers(token)
 
-  schedule_name = get_zimfarm_schedule_name(zim_schedule_id)
-  logger.info('Creating ZIM task for schedule id=%s', zim_schedule_id)
+  schedule_name = get_zimfarm_schedule_name(builder.b_id.decode('utf-8'))
+  logger.info('Creating ZIM task for builder id=%s', builder.b_id.decode('utf-8'))
   r = requests.post('%s/requested-tasks/' % base_url,
                     headers=headers,
                     json={'schedule_names': [schedule_name]})
