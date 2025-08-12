@@ -1,6 +1,7 @@
 import datetime
 import uuid
 import time
+from unittest.mock import patch, MagicMock, ANY
 
 from wp1.base_db_test import BaseWpOneDbTest
 from wp1.logic.zim_schedules import (
@@ -10,10 +11,12 @@ from wp1.logic.zim_schedules import (
     update_zim_schedule,
     update_zim_schedule_zim_file_id,
     decrement_remaining_generations,
-    get_scheduled_zimfarm_task_from_taskid
+    get_scheduled_zimfarm_task_from_taskid,
+    schedule_future_zimfile_generations
 )
 from wp1.models.wp10.zim_schedule import ZimSchedule
-from wp1.constants import TS_FORMAT_WP10
+from wp1.models.wp10.builder import Builder
+from wp1.constants import TS_FORMAT_WP10, SECONDS_PER_MONTH
 from wp1.timestamp import utcnow
 
 class LogicZimSchedulesTest(BaseWpOneDbTest):
@@ -154,3 +157,110 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
     insert_zim_schedule(self.wp10db, schedule)
     # Should return None for non-existent z_task_id
     self.assertIsNone(get_scheduled_zimfarm_task_from_taskid(self.wp10db, b"non_existent_task_id"))
+
+  def test_create_zim_schedule_with_job(self):
+    from wp1.logic.zim_schedules import create_zim_schedule_with_job
+    builder = Builder(
+        b_id=b'test-builder-id',
+        b_name=b'Test Builder',
+        b_user_id=b'1234',
+        b_project=b'en.wikipedia.fake',
+        b_model=b'wp1.selection.models.simple',
+        b_params=b'{}',
+    )
+    scheduled_repetitions = {
+        'repetition_period_in_months': 2,
+        'number_of_repetitions': 5,
+        'email': 'test@example.com'
+    }
+    job_id = 'test-job-id'
+    custom_schedule_id = 'custom-uuid'
+    
+    result_id = create_zim_schedule_with_job(
+        self.wp10db, builder, scheduled_repetitions, job_id, custom_schedule_id
+    )
+    
+    self.assertEqual(custom_schedule_id, result_id)
+    
+    # Verify the schedule was saved correctly
+    schedule = get_zim_schedule(self.wp10db, custom_schedule_id.encode('utf-8'))
+    self.assertIsNotNone(schedule)
+    self.assertEqual(custom_schedule_id.encode('utf-8'), schedule.s_id)
+    self.assertEqual(b'test-builder-id', schedule.s_builder_id)
+    self.assertEqual(job_id.encode('utf-8'), schedule.s_rq_job_id)
+    self.assertEqual(2, schedule.s_interval)
+    self.assertEqual(5, schedule.s_remaining_generations)
+
+  @patch('wp1.logic.zim_schedules.uuid.uuid4')
+  @patch('wp1.queues.schedule_recurring_zimfarm_task')
+  def test_schedule_future_zimfile_generations(self, mock_schedule_recurring_zimfarm_task, mock_uuid4):
+    builder = Builder(
+        b_id=b'builder-id',
+        b_name=b'Test Builder',
+        b_user_id=b'1234',
+        b_project=b'en.wikipedia.fake',
+        b_model=b'wp1.selection.models.simple',
+        b_params=b'{}',
+    )
+    title = 'Title'
+    description = 'Description'
+    long_description = 'Long Description'
+    scheduled_repetitions = {
+        'repetition_period_in_months': 2,
+        'number_of_repetitions': 3,
+        'email': 'user@example.com'
+    }
+    job_mock = MagicMock()
+    job_mock.id = 'job-id'
+    mock_schedule_recurring_zimfarm_task.return_value = job_mock
+    mock_uuid4.return_value = 'uuid-1'
+
+    result = schedule_future_zimfile_generations(
+        self.redis, self.wp10db,
+        builder, title, description, long_description,
+        scheduled_repetitions
+    )
+    two_months_in_seconds = SECONDS_PER_MONTH * 2
+    self.assertEqual('job-id', result)
+    # Verify scheduler.schedule was called with correct parameters
+    mock_schedule_recurring_zimfarm_task.assert_called_once_with(
+      redis=self.redis,
+      args=[builder, title, description, long_description, 'uuid-1'],
+      scheduled_time=ANY,
+      interval_seconds=two_months_in_seconds,
+      repeat_count=scheduled_repetitions['number_of_repetitions'] - 1
+    )
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT * FROM zim_schedules WHERE s_id = %s', (b'uuid-1',))
+      zim_schedule = cursor.fetchone()
+      self.assertIsNotNone(zim_schedule)
+      self.assertEqual(b'uuid-1', zim_schedule['s_id'])
+      self.assertEqual(b'builder-id', zim_schedule['s_builder_id'])
+      self.assertEqual(b'job-id', zim_schedule['s_rq_job_id'])
+      self.assertEqual(scheduled_repetitions['repetition_period_in_months'], zim_schedule['s_interval'])
+      self.assertEqual(scheduled_repetitions['number_of_repetitions'], zim_schedule['s_remaining_generations'])
+  
+  def test_schedule_future_zimfile_generations_missing_fields(self):
+    builder = Builder(
+        b_id=b'builder-id',
+        b_name=b'Test Builder',
+        b_user_id=b'1234',
+        b_project=b'en.wikipedia.fake',
+        b_model=b'wp1.selection.models.simple',
+        b_params=b'{}',
+    )
+    title = 'Title'
+    description = 'Description'
+    long_description = 'Long Description'
+    scheduled_repetitions = {
+        'repetition_period_in_months': 2,
+        'number_of_repetitions': 3,
+    }
+
+    with self.assertRaises(ValueError):
+      schedule_future_zimfile_generations(
+          self.redis, self.wp10db,
+          builder, title, description, long_description,
+          scheduled_repetitions
+      )
