@@ -171,6 +171,62 @@
                 Long description must differ from description and not be shorter
               </div>
             </div>
+            <!-- Scheduling options -->
+            <div class="form-group form-check mt-3">
+              <input
+                type="checkbox"
+                class="form-check-input"
+                id="enableScheduling"
+                v-model="schedulingEnabled"
+              />
+              <label class="form-check-label" for="enableScheduling"
+                >Schedule repeated ZIM generations</label
+              >
+            </div>
+
+            <div v-if="schedulingEnabled" class="border rounded p-3 mb-3">
+              <div class="form-group">
+                <label for="repetitionPeriod">Repetition period (months)</label>
+                <select
+                  id="repetitionPeriod"
+                  class="form-control"
+                  v-model.number="repetitionPeriodInMonths"
+                >
+                  <option v-for="m in [1,2,3,4,5]" :key="m" :value="m">
+                    {{ m }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="numberOfRepetitions">Number of repetitions</label>
+                <select
+                  id="numberOfRepetitions"
+                  class="form-control"
+                  v-model.number="numberOfRepetitions"
+                >
+                  <option v-for="n in [1,2,3]" :key="n" :value="n">
+                    {{ n }}
+                  </option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="scheduleEmail">Notification email</label>
+                <input
+                  id="scheduleEmail"
+                  type="email"
+                  class="form-control"
+                  v-model.trim="scheduleEmail"
+                  :required="schedulingEnabled"
+                  placeholder="you@example.org"
+                />
+                <small class="form-text text-muted"
+                  >We'll notify you when each scheduled ZIM is ready.</small
+                >
+                <div class="invalid-feedback">Please provide a valid email</div>
+              </div>
+            </div>
             <div v-if="!success" class="error-list errors">
               <p>The following errors occurred:</p>
               <ul>
@@ -262,14 +318,31 @@ export default {
       maxTitleLength: 30,
       maxDescriptionLength: 80,
       maxLongDescriptionLength: 4000,
+      schedulingEnabled: false,
+      repetitionPeriodInMonths: 1,
+      numberOfRepetitions: 1,
+      scheduleEmail: '',
     };
   },
   created: async function () {
     await this.getBuilder();
     await this.getStatus();
+    await this.loadUserEmail();
     this.ready = true;
   },
   methods: {
+    loadUserEmail: async function () {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/oauth/email`,
+        { credentials: 'include' },
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.email && !this.scheduleEmail) {
+          this.scheduleEmail = data.email;
+        }
+      }
+    },
     getBuilder: async function () {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/builders/${this.builderId}`,
@@ -351,22 +424,36 @@ export default {
       }/zim`;
 
       this.processing = true;
+      const payload = {
+        title: this.zimTitle,
+        description: this.description,
+        long_description: this.longDescription,
+      };
+      if (this.schedulingEnabled) {
+        payload.scheduled_repetitions = {
+          repetition_period_in_months: this.repetitionPeriodInMonths,
+          number_of_repetitions: this.numberOfRepetitions,
+          email: this.scheduleEmail || undefined,
+        };
+      }
+
       const response = await fetch(postUrl, {
         headers: { 'Content-Type': 'application/json' },
         method: 'post',
         credentials: 'include',
-        body: JSON.stringify({
-          title: this.zimTitle,
-          description: this.description,
-          long_description: this.longDescription,
-        }),
+        body: JSON.stringify(payload),
       });
       this.processing = false;
 
       if (!response.ok) {
         this.success = false;
-        const data = await response.json();
-        this.errors = data.error_messages;
+        try {
+          const data = await response.json();
+          this.errors = data.error_messages || [data.error || 'Request failed'];
+        } catch (e) {
+          const text = await response.text();
+          this.errors = [text || 'Request failed'];
+        }
         return;
       }
 
@@ -416,6 +503,10 @@ export default {
         count === maxLength ? ' (max reached)' : ''
       }`;
     },
+    isValidEmail: function (email) {
+      if (!email) return false;
+      return /.+@.+\..+/.test(email);
+    },
   },
   computed: {
     isLoggedIn: function () {
@@ -441,9 +532,12 @@ export default {
     },
     hasLengthErrors: function () {
       // Prevent empty required fields and invalid long description
-      return (
-        !this.zimTitle || !this.description || !this.isLongDescriptionValid
-      );
+      const baseInvalid =
+        !this.zimTitle || !this.description || !this.isLongDescriptionValid;
+      const scheduleInvalid = this.schedulingEnabled
+        ? !this.isValidEmail(this.scheduleEmail)
+        : false;
+      return baseInvalid || scheduleInvalid;
     },
   },
   watch: {
