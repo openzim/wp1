@@ -20,6 +20,7 @@ class ZimSchedule:
   s_last_updated_at: bytes = attr.ib()
   s_zim_file_id: int = attr.ib(default=None)
   s_interval: int = attr.ib(default=None)  # in months
+  s_email: bytes = attr.ib(default=None)  # Email to notify when the zim generation is done
   s_remaining_generations: int = attr.ib(default=None)  # how many more ZIMs to generate
 
   def set_id(self):

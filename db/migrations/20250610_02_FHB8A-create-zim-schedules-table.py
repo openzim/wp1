@@ -15,6 +15,7 @@ steps = [
         '  s_rq_job_id VARBINARY(36) NOT NULL,' # ID of the job in the rq-scheduler
         '  s_interval INTEGER NULL,' # Interval between ZIM generations
         '  s_remaining_generations INTEGER NULL,' # Remaining generations to be created
+        '  s_email VARBINARY(255) NULL,' # Email to notify when the zim generation is done
         '  s_last_updated_at BINARY(14) NOT NULL' # Last update to the schedule
         ')', 
         'DROP TABLE zim_schedules'
