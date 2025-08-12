@@ -127,6 +127,14 @@ CREATE TABLE zim_files (
   z_description tinyblob
 );
 
+CREATE TABLE zim_schedules (
+  s_id VARCHAR(36) NOT NULL PRIMARY KEY,
+  s_builder_id VARCHAR(255) NOT NULL,
+  s_zim_file_id INTEGER NULL,
+  s_rq_job_id INTEGER NOT NULL,
+  s_last_updated_at BINARY(14) NOT NULL
+);
+
 CREATE TABLE `temp_pageviews` (
   `tp_lang` varbinary(255) NOT NULL,
   `tp_page_id` int(11) NOT NULL,
