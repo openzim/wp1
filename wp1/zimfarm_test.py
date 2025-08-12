@@ -147,7 +147,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     self.assertEqual(result, 'wp1_selection_a456abc123456789')
 
   def test_get_zimfarm_schedule_name_none(self):
-    with self.assertRaises(ObjectNotFoundError):
+    with self.assertRaises(ValueError):
       zimfarm.get_zimfarm_schedule_name(None)
 
   def test_get_zim_filename_prefix_valid(self):
@@ -156,7 +156,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     self.assertEqual(result, 'MyBuilder-def')
 
   def test_get_zim_filename_prefix_none(self):
-    with self.assertRaises(ObjectNotFoundError):
+    with self.assertRaises(ValueError):
       zimfarm.get_zim_filename_prefix(None, None)
 
   def test_get_params(self):
@@ -202,9 +202,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     self.assertEqual(expected, actual)
 
   def test_get_params_missing_builder(self):
-    s3 = MagicMock()
-
-    with self.assertRaises(ObjectNotFoundError):
+    with self.assertRaises(ValueError):
       zimfarm._get_params(None, self.selection)
 
   @patch('wp1.zimfarm.requests')
