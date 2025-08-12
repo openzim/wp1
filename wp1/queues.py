@@ -204,20 +204,19 @@ def schedule_future_zimfile_generations(redis: Redis,
   Schedule future ZIM file creations using rq-scheduler.
   """
   required_keys = {'repetition_period_in_months', 'number_of_repetitions', 'email'}
-  if not isinstance(scheduled_repetitions, dict) or not required_keys <= scheduled_repetitions.keys():
+  has_min_required_keys = required_keys <= scheduled_repetitions.keys()
+  if not isinstance(scheduled_repetitions, dict) or not has_min_required_keys:
     raise ValueError(f'scheduled_repetitions must be a dict containing {required_keys}')
 
   queue = _get_zimfile_scheduling_queue(redis)
   scheduler = Scheduler(connection=queue.connection, queue=queue)
 
   period_months = scheduled_repetitions['repetition_period_in_months']
-  # Calculate the number of scheduled repetitions minus one, 
-  # since the first run is still considered a repetition.
-  num_scheduled_repetitions = scheduled_repetitions['number_of_repetitions'] - 1
-  first_future_run = datetime.now(UTC) + relativedelta(months=period_months)
-
   # For simplicity, we assume 30 days per month and 24 hours per day to calculate the interval.
-  interval_seconds = period_months * 30 * 24 * 3600
+  interval_seconds = period_months * constants.SECONDS_PER_MONTH
+  first_future_run = datetime.now(UTC) + relativedelta(seconds=interval_seconds)
+
+  num_scheduled_repetitions = scheduled_repetitions['number_of_repetitions']
 
   zim_schedule_id = str(uuid.uuid4())
 
@@ -226,7 +225,7 @@ def schedule_future_zimfile_generations(redis: Redis,
     func=logic_builder.request_scheduled_zim_file_for_builder,
     args=[builder, title, description, long_description, zim_schedule_id],
     interval=interval_seconds,
-    repeat=num_scheduled_repetitions,
+    repeat=num_scheduled_repetitions - 1,  # Repeat for the specified number of repetitions minus the first one
     queue_name='zimfile-scheduling',
   )
 
@@ -237,9 +236,9 @@ def schedule_future_zimfile_generations(redis: Redis,
       s_rq_job_id=job.id.encode('utf-8'),
       s_interval=period_months,
       s_remaining_generations=num_scheduled_repetitions,
-      # s_email=scheduled_repetitions['email'].encode('utf-8'),
-      s_last_updated_at=datetime.now(UTC).strftime(constants.TS_FORMAT_WP10).encode('utf-8'),
+      # s_email=scheduled_repetitions['email'].encode('utf-8')
   )
+  zim_schedule.set_last_updated_at_now()
   logic_zim_schedules.insert_zim_schedule(wp10db, zim_schedule)
 
   return job.id

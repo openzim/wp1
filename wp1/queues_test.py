@@ -220,16 +220,23 @@ class QueuesTest(BaseWpOneDbTest):
         builder, title, description, long_description,
         scheduled_repetitions
     )
-
+    two_months_in_seconds = constants.SECONDS_PER_MONTH * 2
     self.assertEqual('job-id', result)
     # Verify scheduler.schedule was called with correct parameters
-    mock_scheduler.return_value.schedule.assert_called_once()
+    mock_scheduler.return_value.schedule.assert_called_once_with(
+      scheduled_time=ANY,
+      func=queues.logic_builder.request_scheduled_zim_file_for_builder,
+      args=[builder, title, description, long_description, 'uuid-1'],
+      interval=two_months_in_seconds
+      repeat=scheduled_repetitions['number_of_repetitions'] - 1,
+      queue_name='zimfile-scheduling',
+    )
     _, call_kwargs = mock_scheduler.return_value.schedule.call_args
     self.assertEqual(queues.logic_builder.request_scheduled_zim_file_for_builder, call_kwargs['func'])
 
     expected_args = [builder, title, description, long_description, ANY]
     self.assertEqual(expected_args, call_kwargs['args'])
-    expected_interval = scheduled_repetitions['repetition_period_in_months'] * 30 * 24 * 3600
+    expected_interval = two_months_in_seconds
     self.assertEqual(expected_interval, call_kwargs['interval'])
     self.assertEqual(scheduled_repetitions['number_of_repetitions'] - 1, call_kwargs['repeat'])
     self.assertEqual('zimfile-scheduling', call_kwargs['queue_name'])
