@@ -993,7 +993,7 @@ class BuildersTest(BaseWebTestcase):
     self.assertEqual('200 OK', rv.status)
     self.assertEqual(
         {
-            'error_url': 'https://fake.farm/v1/tasks/task-id-1234',
+            'error_url': 'https://fake.farm/v2/tasks/task-id-1234',
             'status': 'FILE_READY',
             'title': None,
             'description': None,
