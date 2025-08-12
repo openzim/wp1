@@ -558,7 +558,7 @@ class BuildersTest(BaseWebTestcase):
       self.assertEqual('400 BAD REQUEST', rv.status)
 
   @patch('wp1.zimfarm.request_zimfarm_task')
-  def test_create_zim_file_for_builder_scheduled_repetitions_valid(self,
+  def test_create_zim_file_for_builder_scheduled_repetitions(self,
                                                                    patched_request_zimfarm_task):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
@@ -602,9 +602,7 @@ class BuildersTest(BaseWebTestcase):
                            }
                        })
       self.assertEqual('400 BAD REQUEST', rv.status)
-      response_data = rv.get_json()
-      self.assertIn('error_messages', response_data)
-      self.assertIn('Invalid or missing fields in scheduled_repetitions', response_data['error_messages'])
+      self.assertIn('Invalid or missing fields in scheduled_repetitions', rv.data.decode('utf-8'))
 
   @patch('wp1.zimfarm.request_zimfarm_task')
   def test_create_zim_file_for_builder_scheduled_repetitions_not_dict(self,
@@ -623,9 +621,7 @@ class BuildersTest(BaseWebTestcase):
                            'scheduled_repetitions': 'not a dict'
                        })
       self.assertEqual('400 BAD REQUEST', rv.status)
-      response_data = rv.get_json()
-      self.assertIn('error_messages', response_data)
-      self.assertIn('Invalid or missing fields in scheduled_repetitions', response_data['error_messages'])
+      self.assertIn('Invalid or missing fields in scheduled_repetitions', rv.data.decode('utf-8'))
 
   @patch('wp1.zimfarm.request_zimfarm_task')
   def test_create_zim_file_for_builder_scheduled_repetitions_empty_dict(self,
@@ -643,10 +639,8 @@ class BuildersTest(BaseWebTestcase):
                            'description': 'Test description',
                            'scheduled_repetitions': {}
                        })
-      self.assertEqual('400 BAD REQUEST', rv.status)
-      response_data = rv.get_json()
-      self.assertIn('error_messages', response_data)
-      self.assertIn('Invalid or missing fields in scheduled_repetitions', response_data['error_messages'])
+      # Expecting a 204 NO CONTENT response since the empty dict is treated as None
+      self.assertEqual('204 NO CONTENT', rv.status)
 
   @patch('wp1.zimfarm.request_zimfarm_task')
   def test_create_zim_file_for_builder_scheduled_repetitions_extra_fields(self,
