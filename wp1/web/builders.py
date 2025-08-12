@@ -14,6 +14,7 @@ from wp1.exceptions import (
     ZimFarmError,
     ZimFarmTooManyArticlesError,
 )
+from wp1.selection.abstract_builder import AbstractBuilder
 from wp1.web import authenticate
 from wp1.web.db import get_db
 from wp1.web.redis import get_redis
@@ -35,13 +36,13 @@ def _create_or_update_builder(wp10db, data, builder_id=None):
     return 'Missing list_name or project or model or params', 400
 
   builder_module = importlib.import_module(model)
-  Builder = getattr(builder_module, 'Builder')
-  if Builder is None:
+  builder_cls = getattr(builder_module, 'Builder')
+  if builder_cls is None:
     logger.warning('Could not find model: %s', model)
     flask.abort(400)
 
-  builder = Builder()
-  valid_values, invalid_values, errors = builder.validate(project=project,
+  builder_obj: AbstractBuilder = builder_cls()
+  valid_values, invalid_values, errors = builder_obj.validate(project=project,
                                                           wp10db=wp10db,
                                                           **params)
   if invalid_values or errors:
@@ -69,10 +70,12 @@ def _create_or_update_builder(wp10db, data, builder_id=None):
   # updated, return 404.
   if builder_id is None:
     flask.abort(404)
+  
+  builder = logic_builder.get_builder(wp10db, builder_id)
 
   # The builder has been updated. Enqueue a task to materialize selections and
   # update the current version.
-  queues.enqueue_materialize(redis, Builder, builder_id,
+  queues.enqueue_materialize(redis, builder_cls, builder,
                              'text/tab-separated-values')
   return flask.jsonify({'success': True, 'items': {}})
 
