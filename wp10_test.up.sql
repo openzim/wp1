@@ -77,7 +77,8 @@ CREATE TABLE `global_rankings` (
 
 CREATE TABLE `users` (
   `u_id` VARCHAR(255) NOT NULL,
-  `u_username` varchar(255) DEFAULT NULL
+  `u_username` varchar(255) DEFAULT NULL,
+  `u_email` varchar(255) DEFAULT NULL,
 );
 
 CREATE TABLE `builders` (
@@ -128,10 +129,10 @@ CREATE TABLE zim_files (
 );
 
 CREATE TABLE zim_schedules (
-  s_id VARCHAR(36) NOT NULL PRIMARY KEY,
-  s_builder_id VARCHAR(255) NOT NULL,
+  s_id VARBINARY(36) NOT NULL PRIMARY KEY,
+  s_builder_id VARBINARY(255) NOT NULL,
   s_zim_file_id INTEGER NULL,
-  s_rq_job_id VARCHAR(36) NOT NULL,
+  s_rq_job_id VARBINARY(36) NOT NULL,
   s_interval INTEGER NULL,
   s_remaining_generations INTEGER NULL,
   s_last_updated_at BINARY(14) NOT NULL
