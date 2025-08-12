@@ -475,14 +475,14 @@ def request_scheduled_zim_file_for_builder(builder: Builder,
   return task_id
 
 def handle_zim_generation(s3,
-                      redis,
-                      wp10db,
-                      builder_id,
-                      user_id=None,
-                      title='',
-                      description='',
-                      long_description=None,
-                      scheduled_repetitions=None):
+                          redis,
+                          wp10db,
+                          builder_id,
+                          user_id=None,
+                          title='',
+                          description='',
+                          long_description=None,
+                          scheduled_repetitions=None):
   """
   Handles the ZIM file generation and scheduling for a builder.
   """
