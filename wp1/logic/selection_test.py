@@ -5,7 +5,7 @@ import attr
 import wp1.logic.selection as logic_selection
 from wp1.base_db_test import BaseWpOneDbTest
 from wp1.models.wp10.selection import Selection
-from wp1.models.wp10.zim_file import ZimFile
+from wp1.models.wp10.zim_file import ZimTask
 
 
 def _get_selection(wp10db):
@@ -17,10 +17,10 @@ def _get_selection(wp10db):
 
 def _get_zim_file_for_selection(wp10db, selection_id):
   with wp10db.cursor() as cursor:
-    cursor.execute('SELECT * FROM zim_files WHERE z_selection_id = %s LIMIT 1',
+    cursor.execute('SELECT * FROM zim_tasks WHERE z_selection_id = %s LIMIT 1',
                    (selection_id,))
     db_zim_file = cursor.fetchone()
-    return ZimFile(**db_zim_file)
+    return ZimTask(**db_zim_file)
 
 
 class SelectionTest(BaseWpOneDbTest):
@@ -36,19 +36,20 @@ class SelectionTest(BaseWpOneDbTest):
         s_object_key=b'selections/foo.bar.model/deadbeef/name.tsv',
         s_article_count=420,
     )
-    self.zim_file = ZimFile(z_id=1,
+    self.zim_file = ZimTask(z_id=1,
                             z_selection_id=b'deadbeef',
+                            z_zim_schedule_id=b'schedule_123',
                             z_status=b'NOT_REQUESTED',
                             z_task_id=b'xyz1',
                             z_requested_at=b'20230101020202')
 
-  def _insert_selections(self, selections=None, zim_files=None):
+  def _insert_selections(self, selections=None, zim_tasks=None):
     if selections is None:
       selections = [self.selection]
-    if zim_files is None:
-      zim_files = [self.zim_file]
+    if zim_tasks is None:
+      zim_tasks = [self.zim_file]
     selections = [attr.asdict(s) for s in selections]
-    zim_files = [attr.asdict(z) for z in zim_files]
+    zim_tasks = [attr.asdict(z) for z in zim_tasks]
 
     with self.wp10db.cursor() as cursor:
       cursor.executemany(
@@ -60,18 +61,19 @@ class SelectionTest(BaseWpOneDbTest):
                %(s_updated_at)s, %(s_object_key)s)
            ''', selections)
       cursor.executemany(
-          '''INSERT INTO zim_files
-             (z_id, z_selection_id, z_status, z_task_id, z_requested_at)
+          '''INSERT INTO zim_tasks
+             (z_id, z_selection_id, z_zim_schedule_id, z_status, z_task_id, z_requested_at)
            VALUES
-             (%(z_id)s, %(z_selection_id)s, %(z_status)s, %(z_task_id)s,
+             (%(z_id)s, %(z_selection_id)s, %(z_zim_schedule_id)s, %(z_status)s, %(z_task_id)s,
               %(z_requested_at)s)
-          ''', zim_files)
+          ''', zim_tasks)
     self.wp10db.commit()
 
   def test_insert_selection(self):
     logic_selection.insert_selection(self.wp10db, self.selection)
     actual = _get_selection(self.wp10db)
-    expected_zim = ZimFile(z_id=1, z_selection_id=self.selection.s_id)
+    expected_zim = ZimTask(z_id=1, z_selection_id=self.selection.s_id,
+                           z_zim_schedule_id=b'schedule_123')
     actual_zim = _get_zim_file_for_selection(self.wp10db, self.selection.s_id)
     self.assertEqual(self.selection, actual)
     self.assertEqual(expected_zim, actual_zim)

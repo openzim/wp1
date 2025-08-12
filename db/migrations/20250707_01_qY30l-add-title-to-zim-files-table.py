@@ -1,5 +1,5 @@
 """
-
+Migration to add a title column to the zim_files table
 """
 
 from yoyo import step
