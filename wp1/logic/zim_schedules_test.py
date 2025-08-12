@@ -2,17 +2,7 @@ import uuid
 from unittest.mock import patch, MagicMock, ANY
 
 from wp1.base_db_test import BaseWpOneDbTest
-from wp1.logic.zim_schedules import (
-    insert_zim_schedule,
-    get_zim_schedule,
-    list_zim_schedules_for_builder,
-    update_zim_schedule,
-    decrement_remaining_generations,
-    get_scheduled_zimfarm_task_from_taskid,
-    schedule_future_zimfile_generations,
-    get_username_by_zim_schedule_id,
-    set_zim_schedule_id_to_zim_task_by_selection,
-)
+from wp1.logic.zim_schedules import *
 from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.models.wp10.builder import Builder
 from wp1.constants import TS_FORMAT_WP10, SECONDS_PER_MONTH
@@ -49,6 +39,12 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
     # Try to fetch a schedule that does not exist
     missing_id = str(uuid.uuid4()).encode('utf-8')
     result = get_zim_schedule(self.wp10db, missing_id)
+    self.assertIsNone(result) 
+
+  def test_get_zim_schedule_by_zim_file_id_returns_none_for_missing_id(self):
+    # Try to fetch a schedule that does not exist
+    missing_id = str(uuid.uuid4()).encode('utf-8')
+    result = get_zim_schedule_by_zim_file_id(self.wp10db, missing_id)
     self.assertIsNone(result) 
 
   def test_list_for_builder(self):
