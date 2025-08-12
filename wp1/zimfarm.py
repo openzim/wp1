@@ -329,6 +329,9 @@ def create_zimfarm_schedule(redis,
       s_long_description=long_description.encode('utf-8') if long_description else None,
   )
   logic_zim_schedules.insert_zim_schedule(wp10db, zim_schedule)
+  logic_zim_schedules.set_zim_schedule_id_to_zim_task_by_selection(
+      wp10db, selection.s_id, zim_schedule_id)
+  wp10db.commit()
 
   return zim_schedule
 
