@@ -11,5 +11,6 @@ DROP TABLE IF EXISTS `builders`;
 DROP TABLE IF EXISTS `selections`;
 DROP TABLE IF EXISTS `custom`;
 DROP TABLE IF EXISTS `zim_files`;
+DROP TABLE IF EXISTS `zim_schedules`;
 DROP TABLE IF EXISTS `page_scores`;
 DROP TABLE IF EXISTS `temp_pageviews`;
