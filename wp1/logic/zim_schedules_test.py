@@ -24,7 +24,7 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
       s_zim_file_id=None,
       s_rq_job_id=str(uuid.uuid4()),
       s_last_updated_at=utcnow().strftime(TS_FORMAT_WP10).encode('utf-8'),
-      s_interval_between_zim_generations=interval,
+      s_interval=interval,
       s_remaining_generations=remaining
     )
 
@@ -35,8 +35,8 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
     self.assertIsNotNone(fetched)
     self.assertEqual(schedule.s_id, fetched.s_id)
     self.assertEqual(schedule.s_builder_id, fetched.s_builder_id)
-    self.assertEqual(schedule.s_interval_between_zim_generations,
-                     fetched.s_interval_between_zim_generations)
+    self.assertEqual(schedule.s_interval,
+                     fetched.s_interval)
     self.assertEqual(schedule.s_remaining_generations,
                      fetched.s_remaining_generations)
 
@@ -60,13 +60,13 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
     schedule.s_zim_file_id = 999
     new_time = utcnow()
     schedule.s_last_updated_at = new_time.strftime(TS_FORMAT_WP10).encode('utf-8')
-    schedule.s_interval_between_zim_generations = 5
+    schedule.s_interval = 5
     schedule.s_remaining_generations = 10
     ok = update_zim_schedule(self.wp10db, schedule)
     self.assertTrue(ok)
     fetched = get_zim_schedule(self.wp10db, schedule.s_id)
     self.assertEqual(999, fetched.s_zim_file_id)
-    self.assertEqual(5, fetched.s_interval_between_zim_generations)
+    self.assertEqual(5, fetched.s_interval)
     self.assertEqual(10, fetched.s_remaining_generations)
     self.assertEqual(schedule.s_last_updated_at, fetched.s_last_updated_at)
 
