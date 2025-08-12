@@ -408,13 +408,13 @@ def handle_zim_generation(s3,
           'Could not use builder id = %s for user id = %s' %
           (builder_id, user_id))
 
-  task_id = zimfarm.handle_zim_generation(s3,
-                                      redis,
-                                      wp10db,
-                                      builder,
-                                      title=title,
-                                      description=description,
-                                      long_description=long_description)
+  task_id = zimfarm.request_zimfarm_task(s3,
+                                         redis,
+                                         wp10db,
+                                         builder,
+                                         title=title,
+                                         description=description,
+                                         long_description=long_description)
   selection = latest_selection_for(wp10db, builder_id,
                                    'text/tab-separated-values')
 
