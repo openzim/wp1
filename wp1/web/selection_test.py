@@ -140,7 +140,7 @@ class SelectionTest(BaseWebTestcase):
 
   def _insert_selection(self, values, zim_values=None):
     if zim_values is None:
-      zim_values = ('NOT_REQUESTED',)
+      zim_values = ('NOT_REQUESTED', b'schedule_123')
     zim_values = zim_values + (values[0],)
 
     with self.wp10db.cursor() as cursor:
@@ -152,7 +152,7 @@ class SelectionTest(BaseWebTestcase):
               (%s, %s, %s, %s, %s, %s, %s, %s)
         ''', values)
       cursor.execute(
-          'INSERT INTO zim_files (z_status, z_selection_id) VALUES (%s, %s)',
+          'INSERT INTO zim_tasks (z_status, z_zim_schedule_id, z_selection_id) VALUES (%s, %s, %s)',
           zim_values)
     self.wp10db.commit()
 
@@ -178,7 +178,7 @@ class SelectionTest(BaseWebTestcase):
            'object_key_1', 'CAN_RETRY', '{"errors"["error1"]}'))
       self._insert_selection((2, '1a-2b-3c-4d', 'application/vnd.ms-excel',
                               '20201225105544', 1, 'object_key_2', None, None),
-                             ('NOT_REQUESTED',))
+                             ('NOT_REQUESTED', b'schedule_123'))
       self.wp10db.commit()
       with client.session_transaction() as sess:
         sess['user'] = self.USER

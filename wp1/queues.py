@@ -1,6 +1,7 @@
 from datetime import  timedelta
 import logging
 
+from redis import Redis
 from rq import Queue
 import rq.exceptions
 from rq.job import Job
@@ -11,6 +12,7 @@ from wp1 import custom_tables
 from wp1.environment import Environment
 import wp1.logic.builder as logic_builder
 import wp1.logic.project as logic_project
+from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.wiki_db import connect as wiki_connect
 from wp1 import logs
 from wp1 import tables
@@ -186,12 +188,13 @@ def poll_for_zim_file_status(redis, task_id):
   scheduler.enqueue_in(timedelta(minutes=2),
                        logic_builder.on_zim_file_status_poll, task_id)
 
-
-def schedule_recurring_zimfarm_task(redis, args, scheduled_time, interval_seconds, repeat_count):
-  """Schedule a recurring zimfarm task using rq-scheduler."""
+def schedule_recurring_zimfarm_task(redis: Redis, args, scheduled_time, interval_seconds, repeat_count):
+  """
+  Schedule a recurring zimfarm task using rq-scheduler.
+  """
   queue = _get_zimfile_scheduling_queue(redis)
   scheduler = Scheduler(connection=queue.connection, queue=queue)
-  
+
   job = scheduler.schedule(
     scheduled_time=scheduled_time,
     func=logic_builder.request_scheduled_zim_file_for_builder,
@@ -200,5 +203,5 @@ def schedule_recurring_zimfarm_task(redis, args, scheduled_time, interval_second
     repeat=repeat_count,
     queue_name='zimfile-scheduling',
   )
-  
+
   return job

@@ -32,8 +32,8 @@ def insert_selection(wp10db, selection):
               %(s_article_count)s)
     ''', attr.asdict(selection))
     cursor.execute(
-        'INSERT INTO zim_files (z_selection_id, z_status)'
-        ' VALUES (%s, "NOT_REQUESTED")', (selection.s_id,))
+        'INSERT INTO zim_tasks (z_selection_id, z_zim_schedule_id, z_status)'
+        ' VALUES (%s, %s, "NOT_REQUESTED")', (selection.s_id, b'schedule_123'))
   wp10db.commit()
 
 
@@ -70,7 +70,7 @@ def zim_file_requested_at_for(wp10db, task_id):
   with wp10db.cursor() as cursor:
     cursor.execute(
         'SELECT z_requested_at '
-        'FROM zim_files WHERE z_task_id = %s', task_id)
+        'FROM zim_tasks WHERE z_task_id = %s', task_id)
     data = cursor.fetchone()
     if data is None or data['z_requested_at'] is None:
       return None
@@ -161,16 +161,15 @@ def update_zimfarm_task(wp10db, task_id, status, set_updated_now=False):
       updated_at = utcnow().strftime(TS_FORMAT_WP10).encode('utf-8')
       with wp10db.cursor() as cursor:
         cursor.execute(
-            '''UPDATE zim_files SET z_status = %s, z_updated_at = %s
+            '''UPDATE zim_tasks SET z_status = %s, z_updated_at = %s
                WHERE z_task_id = %s''', (status, updated_at, task_id))
         found = bool(cursor.rowcount)
     else:
-      cursor.execute('UPDATE zim_files SET z_status = %s WHERE z_task_id = %s',
+      cursor.execute('UPDATE zim_tasks SET z_status = %s WHERE z_task_id = %s',
                      (status, task_id))
       found = bool(cursor.rowcount)
   wp10db.commit()
   return found
-
 
 def is_zim_file_deleted(update_at_timestamp):
   return utcnow().timestamp() - update_at_timestamp > ZIM_FILE_TTL
