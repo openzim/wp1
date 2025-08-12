@@ -211,7 +211,9 @@ def schedule_future_zimfile_generations(redis: Redis,
   scheduler = Scheduler(connection=queue.connection, queue=queue)
 
   period_months = scheduled_repetitions['repetition_period_in_months']
-  num_scheduled_repetitions = scheduled_repetitions['number_of_repetitions']
+  # Calculate the number of scheduled repetitions minus one, 
+  # since the first run is still considered a repetition.
+  num_scheduled_repetitions = scheduled_repetitions['number_of_repetitions'] - 1
   first_future_run = datetime.now(UTC) + relativedelta(months=period_months)
 
   # For simplicity, we assume 30 days per month and 24 hours per day to calculate the interval.
