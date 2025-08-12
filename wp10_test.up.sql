@@ -78,7 +78,8 @@ CREATE TABLE `global_rankings` (
 CREATE TABLE `users` (
   `u_id` VARCHAR(255) NOT NULL PRIMARY KEY,
   `u_username` varchar(255) DEFAULT NULL,
-  `u_email` varchar(255) DEFAULT NULL
+  `u_email_oauth` varchar(255) DEFAULT NULL,
+  `u_email_custom` varchar(255) DEFAULT NULL
 );
 
 CREATE TABLE `builders` (
@@ -135,6 +136,7 @@ CREATE TABLE zim_schedules (
   s_rq_job_id VARBINARY(36) NOT NULL,
   s_interval INTEGER NULL,
   s_remaining_generations INTEGER NULL,
+  s_email VARBINARY(255) NULL,
   s_last_updated_at BINARY(14) NOT NULL
 );
 
