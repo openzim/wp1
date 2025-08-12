@@ -25,9 +25,9 @@ steps = [
   step(
     '''
     ALTER TABLE zim_schedules
-    ADD COLUMN s_title tinyblob,
-    ADD COLUMN s_description tinyblob,
-    ADD COLUMN s_long_description blob,
+    ADD COLUMN s_title blob,
+    ADD COLUMN s_description blob,
+    ADD COLUMN s_long_description mediumblob,
     MODIFY COLUMN s_rq_job_id VARBINARY(36) NULL
     ''',
     '''
