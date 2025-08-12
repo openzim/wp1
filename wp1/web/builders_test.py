@@ -3,15 +3,12 @@ from unittest.mock import patch
 
 import attr
 
-from wp1.exceptions import (ObjectNotFoundError, UserNotAuthorizedError,
-                            ZimFarmError)
+from wp1.exceptions import (ZimFarmError)
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.web.app import create_app
 from wp1.web.base_web_testcase import BaseWebTestcase
 from wp1.zimfarm import MAX_ZIMFARM_ARTICLE_COUNT
-from wp1.web.builders import _create_or_update_builder
-
 
 class BuildersTest(BaseWebTestcase):
   USER = {
@@ -780,6 +777,69 @@ class BuildersTest(BaseWebTestcase):
                            }
                        })
       self.assertEqual('204 NO CONTENT', rv.status)
+
+  @patch('wp1.logic.selection.utcnow',
+         return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
+  @patch('wp1.web.emails.notify_user_for_scheduled_zim')
+  def test_update_zimfarm_status_file_scheduled(self, patched_utcnow, patched_notify_user):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+    self._insert_zim_schedule(
+        schedule_id=b'schedule_123',
+        builder_id=builder_id.encode('utf-8'),
+        rq_job_id=b'task-id-1234',
+        last_updated_at='20221225000102',
+        remaining_generations=2
+    )
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/zim/status?token=hook-token-abc',
+                      json={
+                          '_id': 'task-id-1234',
+                          'foo': 'bar',
+                          'status': 'succeeded',
+                          'files': {
+                              'zimfile.1234': {
+                                  'status': 'uploaded'
+                              }
+                          }
+                      })
+      self.assertEqual('204 NO CONTENT', rv.status)
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT z_status, z_updated_at '
+                    'FROM zim_tasks WHERE z_task_id = "task-id-1234"')
+      status = cursor.fetchone()
+
+    self.assertIsNotNone(status)
+    self.assertEqual(b'FILE_READY', status['z_status'])
+    self.assertEqual(b'20221225000102', status['z_updated_at'])
+    patched_notify_user.assert_called_once()
+
+  @patch('wp1.logic.selection.utcnow',
+         return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
+  @patch('wp1.web.emails.notify_user_for_scheduled_zim')
+  def test_update_zimfarm_status_file_missing_schedule(self, patched_utcnow, patched_notify_user):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/zim/status?token=hook-token-abc',
+                      json={
+                          '_id': 'task-id-1234',
+                          'foo': 'bar',
+                          'status': 'succeeded',
+                          'files': {
+                              'zimfile.1234': {
+                                  'status': 'uploaded'
+                              }
+                          }
+                      })
+      self.assertEqual('404 NOT FOUND', rv.status)
 
   @patch('wp1.logic.selection.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
