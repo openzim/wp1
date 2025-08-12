@@ -9,10 +9,8 @@ __depends__ = {'20250426_01_i656U-drop-logging-table'}
 steps = [
     step(
         'ALTER TABLE users '
-        '  ADD COLUMN u_email_oauth VARCHAR(255) NULL, '
-        '  ADD COLUMN u_email_custom VARCHAR(255) NULL',
+        '  ADD COLUMN u_email VARCHAR(255) NULL',
         'ALTER TABLE users '
-        '  DROP COLUMN u_email_oauth, '
-        '  DROP COLUMN u_email_custom'
+        '  DROP COLUMN u_email'
     )
 ]
