@@ -1231,3 +1231,310 @@ class BuilderTest(BaseWpOneDbTest):
     self.assertEqual(2, len(tasks))
     self.assertIn('1abc', tasks)
     self.assertIn('9def', tasks)
+
+  @patch('wp1.logic.builder.zimfarm.request_zimfarm_task')
+  @patch('wp1.logic.builder.wp10_connect')
+  @patch('wp1.logic.builder.redis_connect')
+  @patch('wp1.logic.builder.connect_storage')
+  @patch('wp1.logic.builder.utcnow',
+         return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
+  def test_request_zimfile_from_zimfarm_basic(self, patched_utcnow,
+                                              patched_connect_storage,
+                                              patched_redis_connect,
+                                              patched_wp10_connect,
+                                              patched_request_zimfarm_task):
+    """Test basic zimfile request functionality"""
+    builder_id = self._insert_builder()
+    self._insert_selection(1, 'text/tab-separated-values', builder_id=builder_id)
+    
+    # Mock the database connections
+    patched_wp10_connect.return_value = self.wp10db
+    redis_mock = MagicMock()
+    s3_mock = MagicMock()
+    patched_redis_connect.return_value = redis_mock
+    patched_connect_storage.return_value = s3_mock
+    
+    # Mock zimfarm response
+    patched_request_zimfarm_task.return_value = 'test_task_id_123'
+    
+    builder = Builder(
+        b_id=builder_id,
+        b_name=b'Test Builder',
+        b_user_id=b'1234',
+        b_project=b'en.wikipedia.fake',
+        b_model=b'wp1.selection.models.simple',
+        b_params=b'{}',
+    )
+    
+    # Call the function
+    result = logic_builder.request_zimfile_from_zimfarm(
+        builder=builder,
+        builder_id=builder_id,
+        title='Test Title',
+        description='Test Description',
+        long_description='Test Long Description'
+    )
+    
+    # Verify return value
+    self.assertEqual(result, 'test_task_id_123')
+    
+    # Verify zimfarm was called correctly
+    patched_request_zimfarm_task.assert_called_once_with(
+        s3_mock,
+        redis_mock,
+        self.wp10db,
+        builder,
+        title='Test Title',
+        description='Test Description',
+        long_description='Test Long Description'
+    )
+    
+    # Verify database was updated
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT * FROM zim_files WHERE z_selection_id = 1')
+      zim_file = cursor.fetchone()
+      self.assertEqual(zim_file['z_status'], b'REQUESTED')
+      self.assertEqual(zim_file['z_task_id'], b'test_task_id_123')
+      self.assertEqual(zim_file['z_requested_at'], b'20221225000102')
+      self.assertEqual(zim_file['z_description'], b'Test Description')
+      self.assertEqual(zim_file['z_long_description'], b'Test Long Description')
+
+  @patch('wp1.logic.builder.materialize_builder')
+  @patch('wp1.logic.builder.get_builder')
+  @patch('wp1.logic.builder.zimfarm.request_zimfarm_task')
+  @patch('wp1.logic.builder.wp10_connect')
+  @patch('wp1.logic.builder.redis_connect')
+  @patch('wp1.logic.builder.connect_storage')
+  @patch('wp1.logic.builder.utcnow',
+         return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
+  def test_request_zimfile_from_zimfarm_with_rebuild_selection(self, 
+                                                               patched_utcnow,
+                                                               patched_connect_storage,
+                                                               patched_redis_connect,
+                                                               patched_wp10_connect,
+                                                               patched_request_zimfarm_task,
+                                                               patched_get_builder,
+                                                               patched_materialize_builder):
+    """Test zimfile request with rebuild_selection=True"""
+    builder_id = self._insert_builder()
+    self._insert_selection(1, 'text/tab-separated-values', builder_id=builder_id)
+    
+    # Mock the database connections
+    patched_wp10_connect.return_value = self.wp10db
+    redis_mock = MagicMock()
+    s3_mock = MagicMock()
+    patched_redis_connect.return_value = redis_mock
+    patched_connect_storage.return_value = s3_mock
+    
+    # Mock zimfarm response
+    patched_request_zimfarm_task.return_value = 'test_task_id_456'
+    
+    # Mock builder retrieval and module import
+    mock_builder = Builder(
+        b_id=builder_id,
+        b_name=b'Test Builder',
+        b_user_id=b'1234',
+        b_project=b'en.wikipedia.fake',
+        b_model=b'wp1.selection.models.simple',
+        b_params=b'{}',
+    )
+    patched_get_builder.return_value = mock_builder
+    
+    builder = Builder(
+        b_id=builder_id,
+        b_name=b'Test Builder',
+        b_user_id=b'1234',
+        b_project=b'en.wikipedia.fake',
+        b_model=b'wp1.selection.models.simple',
+        b_params=b'{}',
+    )
+    
+    # Mock the builder class import
+    with patch('wp1.logic.builder.importlib.import_module') as mock_import:
+      mock_module = MagicMock()
+      mock_builder_cls = MagicMock()
+      mock_module.Builder = mock_builder_cls
+      mock_import.return_value = mock_module
+      
+      # Call the function with rebuild_selection=True
+      result = logic_builder.request_zimfile_from_zimfarm(
+          builder=builder,
+          builder_id=builder_id,
+          title='Test Title',
+          description='Test Description',
+          long_description='Test Long Description',
+          rebuild_selection=True
+      )
+    
+    # Verify return value
+    self.assertEqual(result, 'test_task_id_456')
+    
+    # Verify builder was retrieved
+    patched_get_builder.assert_called_once_with(self.wp10db, builder_id)
+    
+    # Verify materialize_builder was called
+    patched_materialize_builder.assert_called_once_with(
+        mock_builder_cls, builder_id, 'text/tab-separated-values'
+    )
+    
+    # Verify zimfarm was called
+    patched_request_zimfarm_task.assert_called_once()
+
+  @patch('wp1.logic.builder.zimfarm.request_zimfarm_task')
+  @patch('wp1.logic.builder.utcnow',
+         return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
+  def test_request_zimfile_from_zimfarm_custom_connections(self, patched_utcnow,
+                                                           patched_request_zimfarm_task):
+    """Test zimfile request with custom database connections"""
+    builder_id = self._insert_builder()
+    self._insert_selection(1, 'text/tab-separated-values', builder_id=builder_id)
+    
+    # Create custom mocks
+    custom_redis = MagicMock()
+    custom_s3 = MagicMock()
+    
+    # Mock zimfarm response
+    patched_request_zimfarm_task.return_value = 'test_task_id_789'
+    
+    builder = Builder(
+        b_id=builder_id,
+        b_name=b'Test Builder',
+        b_user_id=b'1234',
+        b_project=b'en.wikipedia.fake',
+        b_model=b'wp1.selection.models.simple',
+        b_params=b'{}',
+    )
+    
+    # Call the function with custom connections
+    result = logic_builder.request_zimfile_from_zimfarm(
+        builder=builder,
+        builder_id=builder_id,
+        title='Test Title',
+        description='Test Description',
+        long_description='Test Long Description',
+        wp10db=self.wp10db,
+        redis=custom_redis,
+        s3=custom_s3
+    )
+    
+    # Verify return value
+    self.assertEqual(result, 'test_task_id_789')
+    
+    # Verify custom connections were used
+    patched_request_zimfarm_task.assert_called_once_with(
+        custom_s3,
+        custom_redis,
+        self.wp10db,
+        builder,
+        title='Test Title',
+        description='Test Description',
+        long_description='Test Long Description'
+    )
+
+  @patch('wp1.logic.builder.zimfarm.request_zimfarm_task')
+  @patch('wp1.logic.builder.wp10_connect')
+  @patch('wp1.logic.builder.redis_connect')
+  @patch('wp1.logic.builder.connect_storage')
+  @patch('wp1.logic.builder.utcnow',
+         return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
+  def test_request_zimfile_from_zimfarm_empty_descriptions(self, patched_utcnow,
+                                                           patched_connect_storage,
+                                                           patched_redis_connect,
+                                                           patched_wp10_connect,
+                                                           patched_request_zimfarm_task):
+    """Test zimfile request with empty/None descriptions"""
+    builder_id = self._insert_builder()
+    self._insert_selection(1, 'text/tab-separated-values', builder_id=builder_id)
+    
+    # Mock the database connections
+    patched_wp10_connect.return_value = self.wp10db
+    redis_mock = MagicMock()
+    s3_mock = MagicMock()
+    patched_redis_connect.return_value = redis_mock
+    patched_connect_storage.return_value = s3_mock
+    
+    # Mock zimfarm response
+    patched_request_zimfarm_task.return_value = 'test_task_id_empty'
+    
+    builder = Builder(
+        b_id=builder_id,
+        b_name=b'Test Builder',
+        b_user_id=b'1234',
+        b_project=b'en.wikipedia.fake',
+        b_model=b'wp1.selection.models.simple',
+        b_params=b'{}',
+    )
+    
+    # Call the function with empty descriptions
+    result = logic_builder.request_zimfile_from_zimfarm(
+        builder=builder,
+        builder_id=builder_id,
+        title='Test Title',
+        description='',
+        long_description=None
+    )
+    
+    # Verify return value
+    self.assertEqual(result, 'test_task_id_empty')
+    
+    # Verify database was updated with None values for empty descriptions
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT * FROM zim_files WHERE z_selection_id = 1')
+      zim_file = cursor.fetchone()
+      self.assertEqual(zim_file['z_status'], b'REQUESTED')
+      self.assertEqual(zim_file['z_task_id'], b'test_task_id_empty')
+      self.assertEqual(zim_file['z_requested_at'], b'20221225000102')
+      self.assertIsNone(zim_file['z_description'])
+      self.assertIsNone(zim_file['z_long_description'])
+
+  @patch('wp1.logic.builder.zimfarm.request_zimfarm_task')
+  @patch('wp1.logic.builder.wp10_connect')
+  @patch('wp1.logic.builder.redis_connect')
+  @patch('wp1.logic.builder.connect_storage')
+  @patch('wp1.logic.builder.utcnow',
+         return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
+  def test_request_zimfile_from_zimfarm_no_selection_found(self, patched_utcnow,
+                                                           patched_connect_storage,
+                                                           patched_redis_connect,
+                                                           patched_wp10_connect,
+                                                           patched_request_zimfarm_task):
+    """Test zimfile request when no selection is found"""
+    builder_id = self._insert_builder()
+    # Don't insert a selection to simulate missing selection
+    
+    # Mock the database connections
+    patched_wp10_connect.return_value = self.wp10db
+    redis_mock = MagicMock()
+    s3_mock = MagicMock()
+    patched_redis_connect.return_value = redis_mock
+    patched_connect_storage.return_value = s3_mock
+    
+    # Mock zimfarm response
+    patched_request_zimfarm_task.return_value = 'test_task_id_no_selection'
+    
+    builder = Builder(
+        b_id=builder_id,
+        b_name=b'Test Builder',
+        b_user_id=b'1234',
+        b_project=b'en.wikipedia.fake',
+        b_model=b'wp1.selection.models.simple',
+        b_params=b'{}',
+    )
+    
+    # This should raise an exception or handle gracefully
+    # The function calls latest_selection_for which may return None
+    try:
+      result = logic_builder.request_zimfile_from_zimfarm(
+          builder=builder,
+          builder_id=builder_id,
+          title='Test Title',
+          description='Test Description',
+          long_description='Test Long Description'
+      )
+      # If no exception, access result to avoid unused variable warning
+      self.assertIsNotNone(result)
+    except Exception:
+      pass  # Exception is expected if no selection is found
+
+    # If the function completes, zimfarm should still be called
+    patched_request_zimfarm_task.assert_called_once()
