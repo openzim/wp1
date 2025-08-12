@@ -1,8 +1,8 @@
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 import uuid
 
 from wp1.base_db_test import BaseWpOneDbTest
-from wp1.web.emails import send_zim_ready_email, notify_user_for_scheduled_zim
+from wp1.web.emails import send_zim_ready_email, respond_to_zim_task_completed
 from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.models.wp10.zim_file import ZimTask
 from wp1.constants import TS_FORMAT_WP10
@@ -13,15 +13,15 @@ class EmailsTest(BaseWpOneDbTest):
 
     def setUp(self):
         super().setUp()
-        self.mock_zim_task = ZimTask(
-            z_id=b'test-zim-id',
+        self.zim_task = ZimTask(
+            z_id=1234578,
             z_selection_id=b'test-selection-id',
             z_zim_schedule_id=b'schedule_123',
             z_status=b'COMPLETED',
             z_task_id=b'test-task-id',
         )
         
-        self.mock_zim_schedule = ZimSchedule(
+        self.zim_schedule = ZimSchedule(
             s_id=str(uuid.uuid4()).encode('utf-8'),
             s_builder_id=b'test-builder-id',
             s_email=b'test@example.com',
@@ -33,6 +33,43 @@ class EmailsTest(BaseWpOneDbTest):
             s_description=b'Test description',
             s_long_description=b'Test long description'
         )
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO zim_tasks (z_id, z_selection_id, z_zim_schedule_id, z_status, z_task_id)
+                VALUES (%s, %s, %s, %s, %s)
+                """,
+                (
+                    self.zim_task.z_id,
+                    self.zim_task.z_selection_id,
+                    self.zim_task.z_zim_schedule_id,
+                    self.zim_task.z_status,
+                    self.zim_task.z_task_id,
+                )
+            )
+            cursor.execute(
+                """
+                INSERT INTO zim_schedules (
+                    s_id, s_builder_id, s_email, s_rq_job_id, s_last_updated_at,
+                    s_interval, s_remaining_generations, s_title, s_description, s_long_description
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    self.zim_schedule.s_id,
+                    self.zim_schedule.s_builder_id,
+                    self.zim_schedule.s_email,
+                    self.zim_schedule.s_rq_job_id,
+                    self.zim_schedule.s_last_updated_at,
+                    self.zim_schedule.s_interval,
+                    self.zim_schedule.s_remaining_generations,
+                    self.zim_schedule.s_title,
+                    self.zim_schedule.s_description,
+                    self.zim_schedule.s_long_description,
+                )
+            )
+        self.wp10db.commit()
 
     @patch('wp1.web.emails.requests.post')
     @patch('wp1.web.emails.CREDENTIALS')
@@ -223,29 +260,43 @@ class EmailsTest(BaseWpOneDbTest):
 
     @patch('wp1.web.emails.send_zim_ready_email')
     @patch('wp1.web.emails.zim_schedules.get_username_by_zim_schedule_id')
-    @patch('wp1.web.emails.zimfarm.zim_file_url_for_task_id')
-    @patch('wp1.web.emails.zim_schedules.decrement_remaining_generations')
-    def test_notify_user_for_scheduled_zim(self, 
-                                           mock_decrement,
-                                           mock_zimfile_url,
+    @patch('wp1.zimfarm.requests.get')
+    def test_respond_to_zim_task_completed(self,
+                                           patched_get,
                                            mock_get_username,
                                            mock_send_email):
         """Test successful user notification for scheduled ZIM."""
-        mock_zimfile_url.return_value = 'https://download.example.com/test.zim'
+        resp = MagicMock()
+        resp.json.return_value = {
+            'config': {
+                'warehouse_path': '/wikipedia'
+            },
+            'files': {
+                'foo.zim': {
+                    'name': 'foo.zim'
+                }
+            }
+        }
+        patched_get.return_value = resp
         mock_get_username.return_value = 'testuser'
         mock_send_email.return_value = True
 
-        notify_user_for_scheduled_zim(self.wp10db, self.mock_zim_task, self.mock_zim_schedule)
+        respond_to_zim_task_completed(self.wp10db, self.zim_task, self.zim_schedule)
 
-        mock_decrement.assert_called_once_with(self.wp10db, self.mock_zim_schedule.s_id)
-        mock_zimfile_url.assert_called_once_with(self.mock_zim_task.z_task_id)
-        mock_get_username.assert_called_once_with(self.wp10db, self.mock_zim_schedule.s_id)
-        
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "SELECT s_remaining_generations FROM zim_schedules WHERE s_id = %s",
+                (self.zim_schedule.s_id,)
+            )
+            row = cursor.fetchone()
+            self.assertEqual(1, row['s_remaining_generations'])  
+
+        mock_get_username.assert_called_once_with(self.wp10db, self.zim_schedule.s_id)
         mock_send_email.assert_called_once_with(
-            user_username='testuser',
-            user_email='test@example.com',
+            recipient_username='testuser',
+            recipient_email='test@example.com',
             zim_title='Test ZIM File',
-            download_url='https://download.example.com/test.zim',
+            download_url='https://fake.wasabisys.com/org-kiwix-zimit/wikipedia/foo.zim',
             next_generation_months=3
         )
 
@@ -253,7 +304,7 @@ class EmailsTest(BaseWpOneDbTest):
     @patch('wp1.web.emails.zim_schedules.get_username_by_zim_schedule_id')
     @patch('wp1.web.emails.zimfarm.zim_file_url_for_task_id')
     @patch('wp1.web.emails.zim_schedules.decrement_remaining_generations')
-    def test_notify_user_for_scheduled_zim_no_remaining_generations(self,
+    def test_respond_to_zim_task_completed_no_remaining_generations(self,
                                                                     mock_decrement,
                                                                     mock_zimfile_url,
                                                                     mock_get_username,
@@ -276,11 +327,11 @@ class EmailsTest(BaseWpOneDbTest):
         mock_get_username.return_value = 'testuser'
         mock_send_email.return_value = True
 
-        notify_user_for_scheduled_zim(self.wp10db, self.mock_zim_task, schedule_no_generations)
+        respond_to_zim_task_completed(self.wp10db, self.zim_task, schedule_no_generations)
 
         mock_send_email.assert_called_once_with(
-            user_username='testuser',
-            user_email='test@example.com',
+            recipient_username='testuser',
+            recipient_email='test@example.com',
             zim_title='Test ZIM File',
             download_url='https://download.example.com/test.zim',
             next_generation_months=None  # Should be None when no remaining generations
@@ -290,7 +341,7 @@ class EmailsTest(BaseWpOneDbTest):
     @patch('wp1.web.emails.zim_schedules.get_username_by_zim_schedule_id')
     @patch('wp1.web.emails.zimfarm.zim_file_url_for_task_id')
     @patch('wp1.web.emails.zim_schedules.decrement_remaining_generations')
-    def test_notify_user_for_scheduled_zim_no_title(self, mock_decrement, mock_zimfile_url,
+    def test_respond_to_zim_task_completed_no_title(self, mock_decrement, mock_zimfile_url,
                                                     mock_get_username, mock_send_email):
         """Test user notification when ZIM file has no title."""
         zim_schedule_no_title = ZimSchedule(
@@ -307,11 +358,11 @@ class EmailsTest(BaseWpOneDbTest):
         mock_get_username.return_value = 'testuser'
         mock_send_email.return_value = True
 
-        notify_user_for_scheduled_zim(self.wp10db, self.mock_zim_task, zim_schedule_no_title)
+        respond_to_zim_task_completed(self.wp10db, self.zim_task, zim_schedule_no_title)
 
         mock_send_email.assert_called_once_with(
-            user_username='testuser',
-            user_email='test@example.com',
+            recipient_username='testuser',
+            recipient_email='test@example.com',
             zim_title='Your ZIM File',  # Should use default title
             download_url='https://download.example.com/test.zim',
             next_generation_months=3

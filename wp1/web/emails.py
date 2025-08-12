@@ -63,14 +63,18 @@ def send_zim_ready_email(recipient_username,
             return False
             
     except Exception as e:
-        logger.error(f"Error sending email: {str(e)}")
+        logger.exception("Error sending email")
         return False
 
 
-def notify_user_for_scheduled_zim(wp10db, zim_file: ZimTask, zim_schedule: ZimSchedule):
-    """Checks if a ZIM file is scheduled in zim_schedules. Returns True if found, else False."""
-
+def respond_to_zim_task_completed(wp10db, zim_file: ZimTask, zim_schedule: ZimSchedule):
+    """Handles a completed ZIM task by decrementing generations and notifying the user."""
     zim_schedules.decrement_remaining_generations(wp10db, zim_schedule.s_id)
+    notify_user_for_scheduled_zim(wp10db, zim_file, zim_schedule)
+
+
+def notify_user_for_scheduled_zim(wp10db, zim_file: ZimTask, zim_schedule: ZimSchedule):
+    """Notifies the user when a scheduled ZIM file is ready."""
     zimfile_url = zimfarm.zim_file_url_for_task_id(zim_file.z_task_id)
     recipient_email = zim_schedule.s_email.decode('utf-8')
     recipient_username = zim_schedules.get_username_by_zim_schedule_id(wp10db, zim_schedule.s_id)
@@ -81,8 +85,8 @@ def notify_user_for_scheduled_zim(wp10db, zim_file: ZimTask, zim_schedule: ZimSc
         next_generation_months = zim_schedule.s_interval
     
     send_zim_ready_email(
-        user_username=recipient_username,
-        user_email=recipient_email,
+        recipient_username=recipient_username,
+        recipient_email=recipient_email,
         zim_title=zim_title,
         download_url=zimfile_url,
         next_generation_months=next_generation_months
