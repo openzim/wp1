@@ -783,6 +783,7 @@ class BuildersTest(BaseWebTestcase):
         {
             'error_url': 'https://fake.farm/v1/tasks/task-id-1234',
             'status': 'FILE_READY',
+            'title': None,
             'description': None,
             'long_description': None,
             'is_deleted': None,
