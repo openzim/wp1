@@ -78,8 +78,7 @@ CREATE TABLE `global_rankings` (
 CREATE TABLE `users` (
   `u_id` VARCHAR(255) NOT NULL PRIMARY KEY,
   `u_username` varchar(255) DEFAULT NULL,
-  `u_email_oauth` varchar(255) DEFAULT NULL,
-  `u_email_custom` varchar(255) DEFAULT NULL
+  `u_email` varchar(255) DEFAULT NULL
 );
 
 CREATE TABLE `builders` (
