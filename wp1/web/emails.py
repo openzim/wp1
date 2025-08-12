@@ -74,16 +74,16 @@ def notify_user_for_scheduled_zim(wp10db, zim_schedule):
     zimfile_url = zimfarm.zim_file_url_for_task_id(zim_file.z_task_id)
     recipient_email = zim_schedule.s_email.decode('utf-8')
     recipient_username = zim_schedules.get_username_by_zim_schedule_id(wp10db, zim_schedule.s_id)
+    zim_title = zim_file.z_title.decode('utf-8') if zim_file.z_title else 'Your ZIM File'
 
     next_generation_months = None
     if zim_schedule.s_remaining_generations and zim_schedule.s_remaining_generations > 0:
         next_generation_months = zim_schedule.s_interval
     
-    # NOTE: The Title is currently missing in the DB schema
     send_zim_ready_email(
         user_username=recipient_username,
         user_email=recipient_email,
-        zim_title='Your ZIM File',
+        zim_title=zim_title,
         download_url=zimfile_url,
         next_generation_months=next_generation_months
     )
