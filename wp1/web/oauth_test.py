@@ -194,3 +194,66 @@ class IdentifyTest(BaseWebTestcase):
     with self.app.test_client() as client:
       rv = client.get('/v1/oauth/logout')
       self.assertEqual('404 NOT FOUND', rv.status)
+
+  @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
+  @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
+  def test_email_unauthorized_user(self):
+      self.app = create_app()
+      with self.app.test_client() as client:
+          rv = client.get('/v1/oauth/email')
+          self.assertEqual('401 UNAUTHORIZED', rv.status)
+
+  @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
+  @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
+  def test_email_authorized_user_with_email_in_session(self):
+      self.app = create_app()
+      with self.app.test_client() as client:
+          with client.session_transaction() as sess:
+              sess['user'] = self.USER
+          rv = client.get('/v1/oauth/email')
+          self.assertEqual({'email': self.USER['identity']['email']},
+                            rv.get_json())
+
+  @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
+  @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
+  def test_email_authorized_user_without_session_exists_in_db(self):
+      self.app = create_app()
+      user_id = self.USER['identity']['sub']
+      with self.override_db(self.app), self.app.test_client() as client:
+          # seed database with an email
+          with self.app.app_context():
+              with self.wp10db.cursor() as cursor:
+                  cursor.execute(
+                    'INSERT INTO users (u_id, u_username, u_email) VALUES (%s, %s, %s)',
+                    (user_id, 'someuser', 'dbemail@domain.com')
+                  )
+                  self.wp10db.commit()
+          with client.session_transaction() as sess:
+              sess['user'] = {
+                  'access_token': self.USER['access_token'],
+                  'identity': {
+                      'username': self.USER['identity']['username'],
+                      'sub': user_id
+                  }
+              }
+          rv = client.get('/v1/oauth/email')
+          self.assertEqual({'email': 'dbemail@domain.com'},
+                            rv.get_json())
+
+  @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
+  @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
+  def test_email_authorized_user_without_session_not_in_db(self):
+      self.app = create_app()
+      user_id = self.USER['identity']['sub']
+      with self.override_db(self.app), self.app.test_client() as client:
+          # do not insert any user row
+          with client.session_transaction() as sess:
+              sess['user'] = {
+                  'access_token': self.USER['access_token'],
+                  'identity': {
+                      'username': self.USER['identity']['username'],
+                      'sub': user_id
+                  }
+              }
+          rv = client.get('/v1/oauth/email')
+          self.assertEqual({'email': None}, rv.get_json())

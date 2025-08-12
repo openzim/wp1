@@ -908,8 +908,7 @@ class BuilderTest(BaseWpOneDbTest):
                                                          long_description='zz')
     mock_request_zimfarm_task.assert_called_once_with(redis,
                                                       self.wp10db,
-                                                      self.builder,
-                                                      ANY)
+                                                      self.builder)
     with self.wp10db.cursor() as cursor:
       cursor.execute('SELECT z_task_id, z_status, z_requested_at'
                      ' FROM zim_tasks'
@@ -1010,7 +1009,7 @@ class BuilderTest(BaseWpOneDbTest):
         description='Updated Description',
         long_description='Updated Long Description'
     )
-    mock_request_zimfarm_task.assert_called_once_with(redis, self.wp10db, self.builder, b'schedule_123')
+    mock_request_zimfarm_task.assert_called_once_with(redis, self.wp10db, self.builder)
     mock_schedule_future.assert_called_once_with(redis, self.wp10db, self.builder, b'schedule_123', 5)
 
     self.assertEqual(b'1234-a', result)
@@ -1049,7 +1048,7 @@ class BuilderTest(BaseWpOneDbTest):
         description='New Description',
         long_description='New Long Description'
     )
-    mock_request_zimfarm_task.assert_called_once_with(redis, self.wp10db, self.builder, b'schedule_123')
+    mock_request_zimfarm_task.assert_called_once_with(redis, self.wp10db, self.builder)
 
     self.assertEqual(b'1234-a', result)
 
@@ -1357,8 +1356,7 @@ class BuilderTest(BaseWpOneDbTest):
     self.assertEqual(b'test_task_id_123', actual_zim_file.z_task_id)
     mock_request_zimfarm_task.assert_called_once_with(redis_mock,
                                                       self.wp10db,
-                                                      self.builder,
-                                                      ANY)
+                                                      self.builder)
 
     with self.wp10db.cursor() as cursor:
       cursor.execute('SELECT * FROM zim_tasks WHERE z_selection_id = 1')
