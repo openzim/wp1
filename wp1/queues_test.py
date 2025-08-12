@@ -242,7 +242,7 @@ class QueuesTest(BaseWpOneDbTest):
       self.assertEqual(b'builder-id', zim_schedule['s_builder_id'])
       self.assertEqual(b'job-id', zim_schedule['s_rq_job_id'])
       self.assertEqual(scheduled_repetitions['repetition_period_in_months'], zim_schedule['s_interval'])
-      self.assertEqual(scheduled_repetitions['number_of_repetitions'], zim_schedule['s_remaining_generations'])
+      self.assertEqual(scheduled_repetitions['number_of_repetitions'] - 1, zim_schedule['s_remaining_generations'])
   
   def test_schedule_future_zimfile_generations_missing_fields(self):
     
