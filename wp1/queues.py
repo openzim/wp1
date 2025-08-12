@@ -1,4 +1,4 @@
-from datetime import  timedelta
+from datetime import timedelta
 import logging
 
 from redis import Redis
