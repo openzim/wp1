@@ -185,6 +185,8 @@ def create_zim_file_for_builder(builder_id):
 
   title = data.get('title')
   desc = data.get('description')
+  long_desc = data.get('long_description')
+  scheduled_repetitions = data.get('scheduled_repetitions')
 
   error_messages = []
   if not title:
@@ -193,10 +195,20 @@ def create_zim_file_for_builder(builder_id):
   if not desc:
     error_messages.append('Description is required for ZIM file')
 
+  if scheduled_repetitions is not None:
+    if not (
+      isinstance(scheduled_repetitions, dict) and
+      all(k in scheduled_repetitions for k in (
+          "repetition_period_in_months",
+          "number_of_repetitions",
+          "email",
+      ))
+  ):
+      error_messages.append('Invalid or missing fields in scheduled_repetitions')
+
   if error_messages:
     return flask.jsonify({'error_messages': error_messages}), 400
 
-  long_desc = data.get('long_description')
 
   try:
     logic_builder.handle_zim_generation(s3,
@@ -206,7 +218,8 @@ def create_zim_file_for_builder(builder_id):
                                     user_id=user_id,
                                     title=title,
                                     description=desc,
-                                    long_description=long_desc)
+                                    long_description=long_desc,
+                                    scheduled_repetitions=scheduled_repetitions)
   except ObjectNotFoundError:
     return flask.jsonify(
         {'error_messages': ['No builder found with id = %s' % builder_id]}), 404
