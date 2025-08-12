@@ -57,7 +57,7 @@ def request_zimfarm_token(redis):
                get_zimfarm_url())
   r = requests.post('%s/auth/authorize' % get_zimfarm_url(),
                     headers={'User-Agent': WP1_USER_AGENT},
-                    data={
+                    json={
                         'username': user,
                         'password': password
                     })
@@ -80,13 +80,13 @@ def request_zimfarm_token(redis):
 def refresh_zimfarm_token(redis, refresh_token):
   logger.debug('Requesting access_token from %s using refresh_token',
                get_zimfarm_url())
-  r = requests.post(
-      '%s/auth/token' % get_zimfarm_url(),
-      headers={
-          'User-Agent': WP1_USER_AGENT,
-          'refresh-token': refresh_token
-      },
-  )
+  r = requests.post('%s/auth/refresh' % get_zimfarm_url(),
+                    headers={
+                        'User-Agent': WP1_USER_AGENT,
+                    },
+                    json={
+                        "refresh_token": refresh_token,
+                    })
   try:
     r.raise_for_status()
   except requests.exceptions.HTTPError as e:
@@ -175,13 +175,13 @@ def _validate_zim_metadata(title=None, description=None, long_description=None):
 
 
 def get_zimfarm_schedule_name(builder_id: str) -> str:
-    """Generate a unique schedule name for the ZIM file based on builder"""
-    if not builder_id:
-        raise ValueError('Builder ID cannot be None')
-    parts = builder_id.split('-')
-    # Use last two parts of the UUIDv4 for more uniqueness
-    short_id = ''.join(parts[-2:])
-    return f'wp1_selection_{short_id}'
+  """Generate a unique schedule name for the ZIM file based on builder"""
+  if not builder_id:
+    raise ValueError('Builder ID cannot be None')
+  parts = builder_id.split('-')
+  # Use last two parts of the UUIDv4 for more uniqueness
+  short_id = ''.join(parts[-2:])
+  return f'wp1_selection_{short_id}'
 
 
 def get_zim_filename_prefix(builder: Builder, selection: Selection) -> str:
@@ -212,7 +212,6 @@ def _get_params(builder: Builder,
   image_name, image_tag = image.split(':')
 
   config = {
-      'task_name': 'mwoffliner',
       'warehouse_path': '/wikipedia',
       'image': {
           'name': image_name,
@@ -221,7 +220,9 @@ def _get_params(builder: Builder,
       'resources': logic_selection.get_resource_profile(selection),
       'platform': 'wikimedia',
       'monitor': False,
-      'flags': {
+      'offliner': {
+          'offliner_id':
+              'mwoffliner',
           'mwUrl':
               'https://%s/' % project,
           'adminEmail':
@@ -229,7 +230,9 @@ def _get_params(builder: Builder,
           'forceRender':
               'ActionParse',
           'articleList':
-              logic_builder.latest_url_for(builder.b_id.decode('utf-8'), selection.s_content_type.decode('utf-8')),
+              logic_builder.latest_url_for(
+                  builder.b_id.decode('utf-8'),
+                  selection.s_content_type.decode('utf-8')),
           'customZimTitle':
               title,
           'customZimDescription':
@@ -243,7 +246,7 @@ def _get_params(builder: Builder,
   }
   cache_url = CREDENTIALS[ENV].get('ZIMFARM', {}).get('cache_url')
   if cache_url is not None:
-    config['flags']['optimisationCacheUrl'] = cache_url
+    config['offliner']['optimisationCacheUrl'] = cache_url
   else:
     logger.warning('No cache_url found in credentials, skipping '
                    'optimisationCacheUrl URL for zimfarm request')
@@ -271,7 +274,7 @@ def _get_params(builder: Builder,
 
 
 def _get_zimfarm_headers(token):
-  return {"Authorization": "Token %s" % token, 'User-Agent': WP1_USER_AGENT}
+  return {"Authorization": "Bearer %s" % token, 'User-Agent': WP1_USER_AGENT}
 
 
 def zimfarm_schedule_exists(redis, builder_id: str) -> bool:
@@ -282,11 +285,13 @@ def zimfarm_schedule_exists(redis, builder_id: str) -> bool:
   base_url = get_zimfarm_url()
   headers = _get_zimfarm_headers(token)
 
-  r = requests.get('%s/schedules/%s' % (base_url, get_zimfarm_schedule_name(builder_id)), headers=headers)
+  r = requests.get('%s/schedules/%s' %
+                   (base_url, get_zimfarm_schedule_name(builder_id)),
+                   headers=headers)
   # 404 means the schedule doesn't exist, which is not an error
   if r.status_code == 404:
     return False
-  
+
   try:
     r.raise_for_status()
   except requests.exceptions.HTTPError as e:
@@ -300,18 +305,19 @@ def find_existing_schedule_in_db(wp10db, builder_b_id):
   """
   Returns an existing schedule.
   """
-  schedules = logic_zim_schedules.list_zim_schedules_for_builder(wp10db, builder_b_id)
+  schedules = logic_zim_schedules.list_zim_schedules_for_builder(
+      wp10db, builder_b_id)
   for schedule in schedules:
-    if schedule.s_remaining_generations == 0 or schedule.s_remaining_generations is None: # Look for a schedule with no remaining generations
+    if schedule.s_remaining_generations == 0 or schedule.s_remaining_generations is None:  # Look for a schedule with no remaining generations
       return schedule
 
 
 def create_or_update_zimfarm_schedule(redis,
-                            wp10db,
-                            builder,
-                            title='',
-                            description='',
-                            long_description=None):
+                                      wp10db,
+                                      builder,
+                                      title='',
+                                      description='',
+                                      long_description=None):
   """
   Requests a ZIM file schedule from the Zimfarm for the given builder.
   """
@@ -342,38 +348,47 @@ def create_or_update_zimfarm_schedule(redis,
   headers = _get_zimfarm_headers(token)
 
   builder_id = builder.b_id.decode('utf-8')
-      
-      
-  logger.info('Creating or Updating zimfarm schedule for ZIM for builder id=%s', builder_id)
+
+  logger.info('Creating or Updating zimfarm schedule for ZIM for builder id=%s',
+              builder_id)
   try:
     existing_zim_schedule = find_existing_schedule_in_db(wp10db, builder.b_id)
-    if existing_zim_schedule and zimfarm_schedule_exists(redis, existing_zim_schedule.s_id.decode('utf-8')):
-      r = requests.patch('%s/schedules/' % base_url, headers=headers, json=params) 
+    if existing_zim_schedule and zimfarm_schedule_exists(
+        redis, existing_zim_schedule.s_id.decode('utf-8')):
+      r = requests.patch('%s/schedules/' % base_url,
+                         headers=headers,
+                         json=params)
       r.raise_for_status()
       zim_schedule = existing_zim_schedule
       zim_schedule.s_title = title.encode('utf-8')
       zim_schedule.s_description = description.encode('utf-8')
-      zim_schedule.s_long_description = long_description.encode('utf-8') if long_description else None
+      zim_schedule.s_long_description = long_description.encode(
+          'utf-8') if long_description else None
       zim_schedule.s_remaining_generations = None
       logic_zim_schedules.update_zim_schedule(wp10db, zim_schedule)
       zim_schedule_id_to_set = zim_schedule.s_id.decode('utf-8')
     else:
-      r = requests.post('%s/schedules/' % base_url, headers=headers, json=params) 
+      r = requests.post('%s/schedules/' % base_url,
+                        headers=headers,
+                        json=params)
       r.raise_for_status()
       zim_schedule_id = str(uuid.uuid4())
       zim_schedule = ZimSchedule(
           s_id=zim_schedule_id.encode('utf-8'),
           s_builder_id=builder.b_id,
-          s_last_updated_at=datetime.now(UTC).strftime(constants.TS_FORMAT_WP10).encode('utf-8'),
+          s_last_updated_at=datetime.now(UTC).strftime(
+              constants.TS_FORMAT_WP10).encode('utf-8'),
           s_title=title.encode('utf-8'),
           s_description=description.encode('utf-8'),
-          s_long_description=long_description.encode('utf-8') if long_description else None,
+          s_long_description=long_description.encode('utf-8')
+          if long_description else None,
       )
       logic_zim_schedules.insert_zim_schedule(wp10db, zim_schedule)
       zim_schedule_id_to_set = zim_schedule_id
   except requests.exceptions.HTTPError as e:
     logger.exception(r.text)
-    raise ZimFarmError('Error creating or updating schedule for ZIM file creation') from e
+    raise ZimFarmError(
+        'Error creating or updating schedule for ZIM file creation') from e
 
   logic_zim_schedules.set_zim_schedule_id_to_zim_task_by_selection(
       wp10db, selection.s_id, zim_schedule_id_to_set)
@@ -382,9 +397,7 @@ def create_or_update_zimfarm_schedule(redis,
   return zim_schedule
 
 
-def request_zimfarm_task(redis,
-                         wp10db,
-                         builder):
+def request_zimfarm_task(redis, wp10db, builder):
   """
   Requests a ZIM file task from the Zimfarm for the given builder.
   """
@@ -408,7 +421,8 @@ def request_zimfarm_task(redis,
   headers = _get_zimfarm_headers(token)
 
   schedule_name = get_zimfarm_schedule_name(builder.b_id.decode('utf-8'))
-  logger.info('Creating ZIM task for builder id=%s', builder.b_id.decode('utf-8'))
+  logger.info('Creating ZIM task for builder id=%s',
+              builder.b_id.decode('utf-8'))
   r = requests.post('%s/requested-tasks/' % base_url,
                     headers=headers,
                     json={'schedule_names': [schedule_name]})
@@ -417,11 +431,12 @@ def request_zimfarm_task(redis,
   except requests.exceptions.HTTPError as e:
     logger.exception(r.text)
     raise ZimFarmError('Error requesting task for ZIM file creation') from e
-  
+
   data = r.json()
   requested = data.get('requested')
   task_id = requested[0] if requested else None
-  logger.info('Found task id=%s for builder id=%s', task_id, builder.b_id.decode('utf-8'))
+  logger.info('Found task id=%s for builder id=%s', task_id,
+              builder.b_id.decode('utf-8'))
   if task_id is None:
     raise ZimFarmError('Did not get scheduled task id')
 
