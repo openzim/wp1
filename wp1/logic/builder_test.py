@@ -1502,14 +1502,13 @@ class BuilderTest(BaseWpOneDbTest):
 
     mock_request_zimfarm_task.return_value = 'test_task_id_no_selection'
 
-    try:
-      actual = logic_builder.request_zim_file_task_for_builder(redis=redis_mock,
-                                                               wp10db=self.wp10db,
-                                                               builder=self.builder.b_id,
-                                                               zim_schedule_id=b'schedule_123')
-      self.assertIsNotNone(actual)
-    except Exception:
-      pass  
+    with self.assertRaises(Exception):
+      logic_builder.request_zim_file_task_for_builder(
+        redis=redis_mock,
+        wp10db=self.wp10db,
+        builder=self.builder.b_id,
+        zim_schedule_id=b'schedule_123'
+      )
 
     mock_request_zimfarm_task.assert_called_once()
 
