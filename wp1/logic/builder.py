@@ -512,7 +512,7 @@ def handle_zim_generation(s3,
 
   # if scheduled_repetitions is not None schedule future ZIMfile generations
   if scheduled_repetitions is not None:
-    queues.schedule_future_zimfile_generations(redis, wp10db, builder, title, description, long_description, scheduled_repetitions)
+    logic_zim_schedules.schedule_future_zimfile_generations(redis, wp10db, builder, title, description, long_description, scheduled_repetitions)
 
   # In production, there is a web hook from the Zimfarm that notifies us
   # that the task is finished and we can start polling for the ZIM file
