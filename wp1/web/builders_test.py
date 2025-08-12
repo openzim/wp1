@@ -433,12 +433,12 @@ class BuildersTest(BaseWebTestcase):
       rv = client.post('/v1/builders/-1/delete')
       self.assertEqual('404 NOT FOUND', rv.status)
 
-  @patch('wp1.zimfarm.schedule_zim_file')
-  def test_create_zim_file_for_builder(self, patched_schedule_zim_file):
+  @patch('wp1.zimfarm.request_zimfarm_task')
+  def test_create_zim_file_for_builder(self, patched_request_zimfarm_task):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
 
-    patched_schedule_zim_file.return_value = '1234-a'
+    patched_request_zimfarm_task.return_value = '1234-a'
 
     self.app = create_app()
     with self.override_db(self.app), self.app.test_client() as client:
@@ -451,7 +451,7 @@ class BuildersTest(BaseWebTestcase):
                        })
       self.assertEqual('204 NO CONTENT', rv.status)
 
-    patched_schedule_zim_file.assert_called_once()
+    patched_request_zimfarm_task.assert_called_once()
     with self.wp10db.cursor() as cursor:
       cursor.execute('SELECT z_task_id, z_status FROM zim_files '
                      'WHERE z_selection_id = 3')
@@ -460,9 +460,9 @@ class BuildersTest(BaseWebTestcase):
     self.assertEqual(b'1234-a', data['z_task_id'])
     self.assertEqual(b'REQUESTED', data['z_status'])
 
-  @patch('wp1.zimfarm.schedule_zim_file')
+  @patch('wp1.zimfarm.request_zimfarm_task')
   def test_create_zim_file_for_builder_not_found(self,
-                                                 patched_schedule_zim_file):
+                                                 patched_request_zimfarm_task):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
 
@@ -477,9 +477,9 @@ class BuildersTest(BaseWebTestcase):
                        })
       self.assertEqual('404 NOT FOUND', rv.status)
 
-  @patch('wp1.zimfarm.schedule_zim_file')
+  @patch('wp1.zimfarm.request_zimfarm_task')
   def test_create_zim_file_for_builder_unauthorized(self,
-                                                    patched_schedule_zim_file):
+                                                    patched_request_zimfarm_task):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
 
@@ -494,12 +494,12 @@ class BuildersTest(BaseWebTestcase):
                        })
       self.assertEqual('403 FORBIDDEN', rv.status)
 
-  @patch('wp1.zimfarm.schedule_zim_file')
-  def test_create_zim_file_for_builder_500(self, patched_schedule_zim_file):
+  @patch('wp1.zimfarm.request_zimfarm_task')
+  def test_create_zim_file_for_builder_500(self, patched_request_zimfarm_task):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
 
-    patched_schedule_zim_file.side_effect = ZimFarmError
+    patched_request_zimfarm_task.side_effect = ZimFarmError
 
     self.app = create_app()
     with self.override_db(self.app), self.app.test_client() as client:
@@ -512,8 +512,8 @@ class BuildersTest(BaseWebTestcase):
                        })
       self.assertEqual('500 INTERNAL SERVER ERROR', rv.status)
 
-  @patch('wp1.zimfarm.schedule_zim_file')
-  def test_create_zim_file_for_builder_400(self, patched_schedule_zim_file):
+  @patch('wp1.zimfarm.request_zimfarm_task')
+  def test_create_zim_file_for_builder_400(self, patched_request_zimfarm_task):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
 
@@ -524,9 +524,9 @@ class BuildersTest(BaseWebTestcase):
       rv = client.post('/v1/builders/%s/zim' % builder_id, json={})
       self.assertEqual('400 BAD REQUEST', rv.status)
 
-  @patch('wp1.zimfarm.schedule_zim_file')
+  @patch('wp1.zimfarm.request_zimfarm_task')
   def test_create_zim_file_for_builder_no_title(self,
-                                                patched_schedule_zim_file):
+                                                patched_request_zimfarm_task):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
     
