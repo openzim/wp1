@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, patch, MagicMock
 
 import fakeredis
 
@@ -226,7 +226,8 @@ class QueuesTest(BaseWpOneDbTest):
     mock_scheduler.return_value.schedule.assert_called_once()
     _, call_kwargs = mock_scheduler.return_value.schedule.call_args
     self.assertEqual(queues.logic_builder.request_scheduled_zim_file_for_builder, call_kwargs['func'])
-    expected_args = [builder, title, description, long_description]
+
+    expected_args = [builder, title, description, long_description, ANY]
     self.assertEqual(expected_args, call_kwargs['args'])
     expected_interval = scheduled_repetitions['repetition_period_in_months'] * 30 * 24 * 3600
     self.assertEqual(expected_interval, call_kwargs['interval'])
