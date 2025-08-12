@@ -487,6 +487,10 @@ def handle_zim_generation(s3,
 
   task_id = request_zim_file_for_builder(s3, redis, wp10db, builder, title, description, long_description)
 
+  # if scheduled_repetitions is not None schedule future ZIMfile generations
+  if scheduled_repetitions is not None:
+    queues.schedule_future_zimfile_generations(redis, wp10db, builder, title, description, long_description, scheduled_repetitions)
+
   # In production, there is a web hook from the Zimfarm that notifies us
   # that the task is finished and we can start polling for the ZIM file
   # to be uploaded. The web hook obviously doesn't work in development
