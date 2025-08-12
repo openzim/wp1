@@ -780,7 +780,7 @@ class BuildersTest(BaseWebTestcase):
 
   @patch('wp1.logic.selection.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
-  @patch('wp1.web.emails.notify_user_for_scheduled_zim')
+  @patch('wp1.web.emails.respond_to_zim_task_completed')
   def test_update_zimfarm_status_file_scheduled(self, patched_utcnow, patched_notify_user):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
@@ -820,7 +820,7 @@ class BuildersTest(BaseWebTestcase):
 
   @patch('wp1.logic.selection.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
-  @patch('wp1.web.emails.notify_user_for_scheduled_zim')
+  @patch('wp1.web.emails.respond_to_zim_task_completed')
   def test_update_zimfarm_status_file_missing_schedule(self, patched_utcnow, patched_notify_user):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)

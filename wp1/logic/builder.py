@@ -576,7 +576,7 @@ def on_zim_file_status_poll(task_id):
     if ( zim_schedule is not None and
          zim_schedule.s_remaining_generations is not None and
          zim_schedule.s_remaining_generations > 0):
-      emails.notify_user_for_scheduled_zim(wp10db, zim_task, zim_schedule)
+      emails.respond_to_zim_task_completed(wp10db, zim_task, zim_schedule)
 
   elif result == 'REQUESTED':
     requested = logic_selection.zim_file_requested_at_for(wp10db, task_id)
