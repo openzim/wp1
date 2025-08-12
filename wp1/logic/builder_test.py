@@ -422,6 +422,7 @@ class BuilderTest(BaseWpOneDbTest):
                                                         redis,
                                                         self.wp10db,
                                                         self.builder.b_id,
+                                                        title=None,
                                                         description=None,
                                                         long_description=None)
     finally:
@@ -1127,6 +1128,7 @@ class BuilderTest(BaseWpOneDbTest):
                                                           redis,
                                                           self.wp10db,
                                                           builder_id,
+                                                          title=None,
                                                           description=None,
                                                           long_description=None)
 
@@ -1151,6 +1153,7 @@ class BuilderTest(BaseWpOneDbTest):
                                                       redis,
                                                       self.wp10db,
                                                       builder_id,
+                                                      title=None,
                                                       description=None,
                                                       long_description=None)
 
