@@ -164,17 +164,16 @@ class QueuesTest(BaseWpOneDbTest):
 
   @patch('wp1.queues.Queue')
   @patch('wp1.queues.logic_builder.materialize_builder')
-  def test_enqueue_materialize(self, patched_materialize_builder,
-                               patched_queue):
+  def test_enqueue_materialize(self, mock_materialize_builder,
+                               mock_queue):
     materialize_q_mock = MagicMock()
-    patched_queue.return_value = materialize_q_mock
-
-    queues.enqueue_materialize(self.redis, SimpleBuilder, 1234,
-                               'text/tab-separated-values')
+    mock_queue.return_value = materialize_q_mock
+    builder = MagicMock()
+    queues.enqueue_materialize(self.redis, SimpleBuilder, builder, 'text/tab-separated-values')
     materialize_q_mock.enqueue.assert_called_once_with(
-        patched_materialize_builder,
+        mock_materialize_builder,
         SimpleBuilder,
-        1234,
+        builder,
         'text/tab-separated-values',
         job_timeout=constants.JOB_TIMEOUT,
         failure_ttl=constants.JOB_FAILURE_TTL)

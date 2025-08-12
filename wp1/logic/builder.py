@@ -4,6 +4,7 @@ import logging
 
 import attr
 
+from typing import Type
 from kiwixstorage import KiwixStorage
 from pymysql.connections import Connection
 from redis import Redis
@@ -141,47 +142,40 @@ def get_builder(wp10db, id_):
       raise ObjectNotFoundError(f'No builder with id={id_}')
     return Builder(**db_builder)
 
-def materialize_builder_with_connections(s3: KiwixStorage,
-                                         redis: Redis,
-                                         wp10db: Connection,
-                                         materializer: AbstractBuilder,
-                                         builder: Builder,
-                                         content_type: str):
-  """
-  Materializes a builder selection using the given builder, materializer, and content type.
-  S3, Redis, and WP10DB connections must be provided.
-  """
 
-  next_version = logic_selection.get_next_version(wp10db, builder.b_id, content_type)
-  logger.info('Materializing builder id=%s, content_type=%s with class=%s',
-        builder.b_id, content_type, materializer.__class__.__name__)
-  materializer.materialize(s3, wp10db, builder, content_type, next_version)
-  update_current_version(wp10db, builder, next_version)
-  updated = maybe_update_selection_zim_version(wp10db, builder, next_version)
-  if not updated:
-    # The ZIM file was not updated, which means there's an existing ZIM
-    # that's ready that needs to be replaced. Schedule the ZIM file to
-    # be automatically created. We don't need to do this if the ZIM
-    # version was updated, because that indicates that the ZIM file
-    # was never requested or errored and should remain in that state.
-    auto_handle_zim_generation(s3, redis, wp10db, builder.b_id)
-
-def materialize_builder(builder_cls, builder_id, content_type):
+def materialize_builder(builder_cls: Type[AbstractBuilder],
+                        builder: Builder,
+                        content_type: str,
+                        s3: KiwixStorage = None,
+                        redis: Redis = None,
+                        wp10db: Connection = None):
   """
   Materializes a builder selection using the given builder class and content type.
   This is intended to be used by worker processes.
   """
-  wp10db = wp10_connect()
-  redis = redis_connect()
-  s3 = connect_storage()
+  should_close = False
+  if wp10db is None:
+    wp10db = wp10_connect()
+    should_close = True
+  if redis is None:
+    redis = redis_connect()
+  if s3 is None:
+    s3 = connect_storage()
   app_logging.configure_logging()
 
   try:
-    builder = get_builder(wp10db, builder_id)
     materializer = builder_cls()
-    materialize_builder_with_connections(s3, redis, wp10db, materializer, builder, content_type)
+    next_version = logic_selection.get_next_version(wp10db, builder.b_id, content_type)
+    logger.info('Materializing builder id=%s, content_type=%s with class=%s',
+        builder.b_id, content_type, materializer.__class__.__name__)
+    materializer.materialize(s3, wp10db, builder, content_type, next_version)
+    update_current_version(wp10db, builder, next_version)
+    updated = maybe_update_selection_zim_version(wp10db, builder, next_version)
+    if not updated:
+      auto_handle_zim_generation(s3, redis, wp10db, builder.b_id)
   finally:
-    wp10db.close()
+    if should_close:
+      wp10db.close()
 
 
 def maybe_update_selection_zim_version(wp10db, builder, selection_version):
@@ -455,9 +449,8 @@ def request_scheduled_zim_file_for_builder(builder: Builder,
   builder: Builder = get_builder(wp10db, builder.b_id)
   builder_module = importlib.import_module(builder.b_model.decode('utf-8'))
   builder_cls = getattr(builder_module, 'Builder')
-  materializer = builder_cls()
-  materialize_builder_with_connections(s3, redis, wp10db, materializer, builder,
-                                       'text/tab-separated-values')
+  # materializer = builder_cls()
+  materialize_builder(builder_cls, builder, 'text/tab-separated-values', s3, redis, wp10db)
 
   task_id = request_zim_file_for_builder(s3, redis, wp10db, builder, title, description, long_description)
   return task_id

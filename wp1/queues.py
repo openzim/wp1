@@ -167,11 +167,11 @@ def enqueue_project(project_name,
                    'not PRODUCTION')
 
 
-def enqueue_materialize(redis, builder_cls, builder_id, content_type):
+def enqueue_materialize(redis, builder_cls, builder, content_type):
   materialize_q = _get_materializer_queue(redis)
   materialize_q.enqueue(logic_builder.materialize_builder,
                         builder_cls,
-                        builder_id,
+                        builder,
                         content_type,
                         job_timeout=constants.JOB_TIMEOUT,
                         failure_ttl=constants.JOB_FAILURE_TTL)
