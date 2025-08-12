@@ -331,10 +331,6 @@ def request_zimfarm_task(s3,
   except requests.exceptions.HTTPError as e:
     logger.exception(r.text)
     raise ZimFarmError('Error requesting task for ZIM file creation') from e
-  finally:
-    logger.info('Deleting schedule for builder id=%s', builder_id)
-    requests.delete('%s/schedules/%s' % (base_url, params['name']),
-                    headers=headers)
 
   return task_id
 
