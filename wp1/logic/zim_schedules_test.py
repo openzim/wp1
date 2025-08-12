@@ -8,6 +8,7 @@ from wp1.logic.zim_schedules import (
     get_zim_schedule,
     list_zim_schedules_for_builder,
     update_zim_schedule,
+    update_zim_schedule_zim_file_id,
     decrement_remaining_generations,
     get_scheduled_zimfarm_task_from_taskid
 )
@@ -76,6 +77,14 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
     self.assertEqual(5, fetched.s_interval)
     self.assertEqual(10, fetched.s_remaining_generations)
     self.assertEqual(schedule.s_last_updated_at, fetched.s_last_updated_at)
+
+  def test_update_schedule_zim_file_id(self):
+    zim_schedule = self.new_schedule(interval=1, remaining=1)
+    insert_zim_schedule(self.wp10db, zim_schedule)
+    ok = update_zim_schedule_zim_file_id(self.wp10db, zim_schedule.s_id, 999)
+    self.assertTrue(ok)
+    fetched = get_zim_schedule(self.wp10db, zim_schedule.s_id)
+    self.assertEqual(999, fetched.s_zim_file_id)
 
   def test_decrement_remaining_generations(self):
     schedule = self.new_schedule(remaining=2)

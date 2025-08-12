@@ -217,17 +217,19 @@ def schedule_future_zimfile_generations(redis: Redis,
   # For simplicity, we assume 30 days per month and 24 hours per day to calculate the interval.
   interval_seconds = period_months * 30 * 24 * 3600
 
+  zim_schedule_id = str(uuid.uuid4())
+
   job = scheduler.schedule(
     scheduled_time=first_future_run,
     func=logic_builder.request_scheduled_zim_file_for_builder,
-    args=[builder, title, description, long_description],
+    args=[builder, title, description, long_description, zim_schedule_id],
     interval=interval_seconds,
     repeat=num_scheduled_repetitions,
     queue_name='zimfile-scheduling',
   )
 
   zim_schedule = ZimSchedule(
-      s_id=str(uuid.uuid4()).encode('utf-8'),
+      s_id=zim_schedule_id.encode('utf-8'),
       s_builder_id=builder.b_id,
       s_zim_file_id=None,
       s_rq_job_id=job.id.encode('utf-8'),

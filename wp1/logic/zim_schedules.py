@@ -37,6 +37,22 @@ def update_zim_schedule(wp10db, zim_schedule : ZimSchedule):
   return updated
 
 
+def update_zim_schedule_zim_file_id(wp10db, schedule_id, zim_file_id):
+  """Updates the s_zim_file_id of a ZimSchedule by its s_id. Returns True if updated."""
+  updated_at = utcnow().strftime(TS_FORMAT_WP10).encode('utf-8')
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+      '''UPDATE zim_schedules SET
+         s_zim_file_id = %s,
+         s_last_updated_at = %s
+         WHERE s_id = %s
+      ''', (zim_file_id, updated_at, schedule_id)
+    )
+    updated = bool(cursor.rowcount)
+  wp10db.commit()
+  return updated
+
+
 def get_zim_schedule(wp10db, schedule_id):
   """Retrieves a ZimSchedule by its s_id. Returns a ZimSchedule or None."""
   with wp10db.cursor() as cursor:
