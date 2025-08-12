@@ -140,6 +140,25 @@ class ZimFarmTest(BaseWpOneDbTest):
     self._insert_builder()
     self._insert_selection(b'abc-12345-def')
 
+  def test_get_zimfarm_schedule_name_valid(self):
+    selection_id = '123e4567-e89b-12d3-a456-abc123456789'
+    result = zimfarm.get_zimfarm_schedule_name(selection_id)
+    # Should join last two parts: 'a456-abc123456789' -> 'wp1_selection_a456abc123456789'
+    self.assertEqual(result, 'wp1_selection_a456abc123456789')
+
+  def test_get_zimfarm_schedule_name_none(self):
+    with self.assertRaises(ObjectNotFoundError):
+      zimfarm.get_zimfarm_schedule_name(None)
+
+  def test_get_zim_filename_prefix_valid(self):
+    # builder_name: 'My Builder' -> safe_name: 'MyBuilder', selection_id_frag: 'def'
+    result = zimfarm.get_zim_filename_prefix(self.builder, self.selection)
+    self.assertEqual(result, 'MyBuilder-def')
+
+  def test_get_zim_filename_prefix_none(self):
+    with self.assertRaises(ObjectNotFoundError):
+      zimfarm.get_zim_filename_prefix(None, None)
+
   def test_get_params(self):
     s3 = MagicMock()
     s3.client.head_object.return_value = {'ContentLength': 20000000}
