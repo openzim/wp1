@@ -125,7 +125,8 @@ CREATE TABLE zim_files (
   z_requested_at BINARY(14),
   z_updated_at BINARY(14),
   z_long_description blob,
-  z_description tinyblob
+  z_description tinyblob,
+  z_title tinyblob
 );
 
 CREATE TABLE zim_schedules (

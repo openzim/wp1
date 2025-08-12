@@ -14,7 +14,6 @@ from wp1.exceptions import (
     ZimFarmError,
     ZimFarmTooManyArticlesError,
 )
-from wp1.selection.abstract_builder import AbstractBuilder
 from wp1.web import authenticate
 from wp1.web.db import get_db
 from wp1.web.redis import get_redis
@@ -41,7 +40,7 @@ def _create_or_update_builder(wp10db, data, builder_id=None):
     logger.warning('Could not find model: %s', model)
     flask.abort(400)
 
-  builder_obj: AbstractBuilder = builder_cls()
+  builder_obj = builder_cls()
   valid_values, invalid_values, errors = builder_obj.validate(project=project,
                                                           wp10db=wp10db,
                                                           **params)
