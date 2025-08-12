@@ -14,13 +14,13 @@ logger = logging.getLogger(__name__)
 class ZimSchedule:
   table_name = 'zim_schedules'
 
-  s_id: str = attr.ib(default=None)
+  s_id: str = attr.ib()
   s_builder_id: str = attr.ib()
-  s_zim_file_id: int = attr.ib(default=None)
   s_rq_job_id: str = attr.ib()
+  s_last_updated_at: bytes = attr.ib()
+  s_zim_file_id: int = attr.ib(default=None)
   s_interval: int = attr.ib(default=None)  # in months
   s_remaining_generations: int = attr.ib(default=None)  # how many more ZIMs to generate
-  s_last_updated_at: bytes = attr.ib()
 
   def set_id(self):
     self.s_id = str(uuid.uuid4())
