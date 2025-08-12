@@ -113,12 +113,12 @@ def get_scheduled_zimfarm_task_from_taskid(wp10db, task_id):
     return ZimSchedule(**row)
 
 
-def set_zim_schedule_id_to_zim_file(wp10db, zim_file_id: bytes, zim_schedule_id: bytes):
-    """Sets the z_zim_schedule_id field in zim_tasks to the given zim_schedule_id."""
+def set_zim_schedule_id_to_zim_task_by_selection(wp10db, selection_id: bytes, zim_schedule_id: bytes):
+    """Sets the z_zim_schedule_id field in zim_tasks to the given the selection_id."""
     with wp10db.cursor() as cursor:
         cursor.execute(
-            'UPDATE zim_tasks SET z_zim_schedule_id = %s WHERE z_id = %s',
-            (zim_schedule_id, zim_file_id)
+            'UPDATE zim_tasks SET z_zim_schedule_id = %s WHERE z_selection_id = %s',
+            (zim_schedule_id, selection_id)
         )
         updated = bool(cursor.rowcount)
     wp10db.commit()
