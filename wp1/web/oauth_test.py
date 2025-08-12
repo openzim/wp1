@@ -35,6 +35,14 @@ class IdentifyTest(BaseWebTestcase):
           'sub': '1234'
       }
   }
+  USER_NO_EMAIL = {
+      'access_token': 'access_token',
+      'identity': {
+          'username': 'WP1_user',
+          'sub': '1234'
+      }
+  }
+  
   REQUEST_TOKEN = {'key': 'request_token', 'secret': 'request_token_secret'}
   handshaker = Mock(
       **{
@@ -44,6 +52,15 @@ class IdentifyTest(BaseWebTestcase):
               'secret': 'access_secret'
           },
           'identify.return_value': USER['identity']
+      })
+  handshaker_no_email = Mock(
+      **{
+          'initiate.return_value': (REDIRECT, REQUEST_TOKEN),
+          'complete.return_value': {
+              'key': 'access_token',
+              'secret': 'access_secret'
+          },
+          'identify.return_value': USER_NO_EMAIL['identity']
       })
 
   @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
@@ -97,6 +114,35 @@ class IdentifyTest(BaseWebTestcase):
   @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
   @patch('wp1.web.oauth.homepage_url',
          TEST_OAUTH_CREDS[ENV]['CLIENT_URL']['homepage'])
+  @patch('wp1.web.oauth.handshaker', handshaker_no_email)
+  def test_complete_authorized_user_doesnt_overwrite_email(self):
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with self.app.app_context():
+        wp10db = get_db('wp10db')
+        with wp10db.cursor() as cursor:
+          cursor.execute('INSERT INTO users (u_id, u_username, u_email) VALUES (%s, %s, %s)', (self.USER_NO_EMAIL['identity']['sub'], 'overwrite', 'test@test.it'))
+          wp10db.commit()
+      with client.session_transaction() as sess:
+        sess['request_token'] = self.REQUEST_TOKEN
+        sess['next_path'] = ''
+      rv = client.get('/v1/oauth/complete?query_string')
+      self.assertEqual(
+          self.TEST_OAUTH_CREDS[self.ENV]['CLIENT_URL']['homepage'],
+          rv.location)
+      wp10db = get_db('wp10db')
+      with wp10db.cursor() as cursor:
+        cursor.execute('SELECT * FROM users WHERE u_id = %s', (self.USER_NO_EMAIL['identity']['sub'],))
+        row = cursor.fetchone()
+        self.assertIsNotNone(row)
+        # should only overwrite username, not email
+        self.assertEqual(row['u_email'].decode('utf-8'), 'test@test.it')
+        self.assertEqual(row['u_username'].decode('utf-8'), self.USER_NO_EMAIL['identity']['username'])
+
+  @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
+  @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
+  @patch('wp1.web.oauth.homepage_url',
+         TEST_OAUTH_CREDS[ENV]['CLIENT_URL']['homepage'])
   @patch('wp1.web.oauth.handshaker', handshaker)
   def test_complete_authorized_user(self):
     self.app = create_app()
@@ -110,8 +156,10 @@ class IdentifyTest(BaseWebTestcase):
           rv.location)
       wp10db = get_db('wp10db')
       with wp10db.cursor() as cursor:
-        cursor.execute('SELECT * FROM users WHERE u_id = 1234')
-        self.assertNotEqual(None, cursor.fetchone())
+        cursor.execute('SELECT * FROM users WHERE u_id = %s', (self.USER['identity']['sub']))
+        row = cursor.fetchone()
+        self.assertIsNotNone(row)
+        self.assertEqual(row['u_email'].decode('utf-8'), self.USER['identity']['email'])
 
   @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
   @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
@@ -169,21 +217,3 @@ class IdentifyTest(BaseWebTestcase):
     with self.app.test_client() as client:
       rv = client.get('/v1/oauth/logout')
       self.assertEqual('404 NOT FOUND', rv.status)
-
-  @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
-  @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
-  @patch('wp1.web.oauth.homepage_url',
-         TEST_OAUTH_CREDS[ENV]['CLIENT_URL']['homepage'])
-  @patch('wp1.web.oauth.handshaker', handshaker)
-  def test_complete_sets_email_in_session(self):
-    self.app = create_app()
-    with self.override_db(self.app), self.app.test_client() as client:
-      with client.session_transaction() as sess:
-        sess['request_token'] = self.REQUEST_TOKEN
-        sess['next_path'] = ''
-      rv = client.get('/v1/oauth/complete?query_string')
-      with client.session_transaction() as sess:
-        user = sess.get('user')
-        self.assertIsNotNone(user)
-        self.assertIn('email', user['identity'])
-        self.assertEqual(user['identity']['email'], self.USER['identity']['email'])
