@@ -35,13 +35,6 @@ class IdentifyTest(BaseWebTestcase):
           'sub': '1234'
       }
   }
-  USER_NO_EMAIL = {
-      'access_token': 'access_token',
-      'identity': {
-          'username': 'WP1_user_noemail',
-          'sub': '1234'
-      }
-  }
   
   REQUEST_TOKEN = {'key': 'request_token', 'secret': 'request_token_secret'}
   handshaker = Mock(
@@ -52,15 +45,6 @@ class IdentifyTest(BaseWebTestcase):
               'secret': 'access_secret'
           },
           'identify.return_value': USER['identity']
-      })
-  handshaker_no_email = Mock(
-      **{
-          'initiate.return_value': (REDIRECT, REQUEST_TOKEN),
-          'complete.return_value': {
-              'key': 'access_token',
-              'secret': 'access_secret'
-          },
-          'identify.return_value': USER_NO_EMAIL['identity']
       })
 
   @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
@@ -114,33 +98,8 @@ class IdentifyTest(BaseWebTestcase):
   @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
   @patch('wp1.web.oauth.homepage_url',
          TEST_OAUTH_CREDS[ENV]['CLIENT_URL']['homepage'])
-  @patch('wp1.web.oauth.handshaker', handshaker_no_email)
-  def test_complete_authorized_user_doesnt_remove_email(self):
-    self.app = create_app()
-    user_id = self.USER_NO_EMAIL['identity']['sub']
-    with self.override_db(self.app), self.app.test_client() as client:
-      with self.app.app_context():
-        with self.wp10db.cursor() as cursor:
-          cursor.execute('INSERT INTO users (u_id, u_username, u_email) VALUES (%s, %s, %s)', (user_id, 'overwrite', 'test@test.it'))
-          self.wp10db.commit()
-      with client.session_transaction() as sess:
-        sess['request_token'] = self.REQUEST_TOKEN
-      client.get('/v1/oauth/complete?query_string')
-
-      with self.wp10db.cursor() as cursor:
-        cursor.execute('SELECT * FROM users WHERE u_id = %s', (user_id))
-        row = cursor.fetchone()
-        self.assertIsNotNone(row)
-        # should only overwrite username, not email
-        self.assertEqual('test@test.it', row['u_email'].decode('utf-8'))
-        self.assertEqual('WP1_user_noemail', row['u_username'].decode('utf-8'))
-
-  @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
-  @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
-  @patch('wp1.web.oauth.homepage_url',
-         TEST_OAUTH_CREDS[ENV]['CLIENT_URL']['homepage'])
   @patch('wp1.web.oauth.handshaker', handshaker)
-  def test_complete_authorized_user_doesnt_overwrite_email(self):
+  def test_complete_authorized_user_email(self):
     self.app = create_app()
     user_id = self.USER['identity']['sub']
     with self.override_db(self.app), self.app.test_client() as client:
@@ -156,9 +115,9 @@ class IdentifyTest(BaseWebTestcase):
         cursor.execute('SELECT * FROM users WHERE u_id = %s', (user_id))
         row = cursor.fetchone()
         self.assertIsNotNone(row)
-        # should only overwrite username, not email
-        self.assertEqual('test@test.it', row['u_email'].decode('utf-8'))
+        # should overwrite username and email
         self.assertEqual('WP1_user', row['u_username'].decode('utf-8'))
+        self.assertEqual('wp1user@email.ch', row['u_email'].decode('utf-8'))
 
   @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
   @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
