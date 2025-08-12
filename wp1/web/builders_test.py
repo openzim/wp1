@@ -557,6 +557,122 @@ class BuildersTest(BaseWebTestcase):
                        json={'description': 'Test description'})
       self.assertEqual('400 BAD REQUEST', rv.status)
 
+  @patch('wp1.zimfarm.request_zimfarm_task')
+  def test_create_zim_file_for_builder_scheduled_repetitions_valid(self,
+                                                                   patched_request_zimfarm_task):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    patched_request_zimfarm_task.return_value = '1234-a'
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/%s/zim' % builder_id,
+                       json={
+                           'title': 'Test title',
+                           'description': 'Test description',
+                           'scheduled_repetitions': {
+                               'repetition_period_in_months': 6,
+                               'number_of_repetitions': 3,
+                               'email': 'test@example.com'
+                           }
+                       })
+      self.assertEqual('204 NO CONTENT', rv.status)
+
+  @patch('wp1.zimfarm.request_zimfarm_task')
+  def test_create_zim_file_for_builder_scheduled_repetitions_missing_fields(self,
+                                                                            patched_request_zimfarm_task):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/%s/zim' % builder_id,
+                       json={
+                           'title': 'Test title',
+                           'description': 'Test description',
+                           'scheduled_repetitions': {
+                               'repetition_period_in_months': 6,
+                               'number_of_repetitions': 3
+                               # missing 'email' field
+                           }
+                       })
+      self.assertEqual('400 BAD REQUEST', rv.status)
+      response_data = rv.get_json()
+      self.assertIn('error_messages', response_data)
+      self.assertIn('Invalid or missing fields in scheduled_repetitions', response_data['error_messages'])
+
+  @patch('wp1.zimfarm.request_zimfarm_task')
+  def test_create_zim_file_for_builder_scheduled_repetitions_not_dict(self,
+                                                                      patched_request_zimfarm_task):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/%s/zim' % builder_id,
+                       json={
+                           'title': 'Test title',
+                           'description': 'Test description',
+                           'scheduled_repetitions': 'not a dict'
+                       })
+      self.assertEqual('400 BAD REQUEST', rv.status)
+      response_data = rv.get_json()
+      self.assertIn('error_messages', response_data)
+      self.assertIn('Invalid or missing fields in scheduled_repetitions', response_data['error_messages'])
+
+  @patch('wp1.zimfarm.request_zimfarm_task')
+  def test_create_zim_file_for_builder_scheduled_repetitions_empty_dict(self,
+                                                                        patched_request_zimfarm_task):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/%s/zim' % builder_id,
+                       json={
+                           'title': 'Test title',
+                           'description': 'Test description',
+                           'scheduled_repetitions': {}
+                       })
+      self.assertEqual('400 BAD REQUEST', rv.status)
+      response_data = rv.get_json()
+      self.assertIn('error_messages', response_data)
+      self.assertIn('Invalid or missing fields in scheduled_repetitions', response_data['error_messages'])
+
+  @patch('wp1.zimfarm.request_zimfarm_task')
+  def test_create_zim_file_for_builder_scheduled_repetitions_extra_fields(self,
+                                                                          patched_request_zimfarm_task):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+
+    patched_request_zimfarm_task.return_value = '1234-a'
+
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/%s/zim' % builder_id,
+                       json={
+                           'title': 'Test title',
+                           'description': 'Test description',
+                           'scheduled_repetitions': {
+                               'repetition_period_in_months': 6,
+                               'number_of_repetitions': 3,
+                               'email': 'test@example.com',
+                               'extra_field': 'should be ignored'
+                           }
+                       })
+      self.assertEqual('204 NO CONTENT', rv.status)
+
   @patch('wp1.web.builders.queues.poll_for_zim_file_status')
   def test_update_zimfarm_status(self, patched_poll):
     builder_id = self._insert_builder()
