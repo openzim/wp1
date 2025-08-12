@@ -5,7 +5,8 @@ import logging
 from wp1 import zimfarm
 from wp1.credentials import CREDENTIALS, ENV
 from wp1.logic import zim_schedules
-from wp1.logic import zim_files
+from wp1.models.wp10.zim_file import ZimTask
+from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.templates import env as jinja_env
 
 
@@ -66,15 +67,14 @@ def send_zim_ready_email(recipient_username,
         return False
 
 
-def notify_user_for_scheduled_zim(wp10db, zim_schedule):
+def notify_user_for_scheduled_zim(wp10db, zim_file: ZimTask, zim_schedule: ZimSchedule):
     """Checks if a ZIM file is scheduled in zim_schedules. Returns True if found, else False."""
 
     zim_schedules.decrement_remaining_generations(wp10db, zim_schedule.s_id)
-    zim_file = zim_files.get_zim_file(wp10db, zim_schedule.s_zim_file_id)
     zimfile_url = zimfarm.zim_file_url_for_task_id(zim_file.z_task_id)
     recipient_email = zim_schedule.s_email.decode('utf-8')
     recipient_username = zim_schedules.get_username_by_zim_schedule_id(wp10db, zim_schedule.s_id)
-    zim_title = zim_file.z_title.decode('utf-8') if zim_file.z_title else 'Your ZIM File'
+    zim_title = zim_schedule.s_title.decode('utf-8') if zim_schedule.s_title else 'Your ZIM File'
 
     next_generation_months = None
     if zim_schedule.s_remaining_generations and zim_schedule.s_remaining_generations > 0:
