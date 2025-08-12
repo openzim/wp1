@@ -11,10 +11,10 @@ def insert_zim_schedule(wp10db, zim_schedule : ZimSchedule):
     cursor.execute(
       '''INSERT INTO zim_schedules
          (s_id, s_builder_id, s_zim_file_id, s_rq_job_id, s_last_updated_at,
-          s_interval_between_zim_generations, s_remaining_generations)
+          s_interval, s_remaining_generations)
          VALUES
          (%(s_id)s, %(s_builder_id)s, %(s_zim_file_id)s, %(s_rq_job_id)s,
-          %(s_last_updated_at)s, %(s_interval_between_zim_generations)s, %(s_remaining_generations)s)
+          %(s_last_updated_at)s, %(s_interval)s, %(s_remaining_generations)s)
       ''', attr.asdict(zim_schedule)
     )
   wp10db.commit()
@@ -27,7 +27,7 @@ def update_zim_schedule(wp10db, zim_schedule : ZimSchedule):
       '''UPDATE zim_schedules SET
          s_zim_file_id = %(s_zim_file_id)s,
          s_last_updated_at = %(s_last_updated_at)s,
-         s_interval_between_zim_generations = %(s_interval_between_zim_generations)s,
+         s_interval = %(s_interval)s,
          s_remaining_generations = %(s_remaining_generations)s
          WHERE s_id = %(s_id)s
       ''', attr.asdict(zim_schedule)
