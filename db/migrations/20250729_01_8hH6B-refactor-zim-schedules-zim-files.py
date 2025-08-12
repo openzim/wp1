@@ -95,15 +95,21 @@ steps = [
     DROP COLUMN s_zim_file_id
     ''',
     '''
-    ALTER TABLE zim_schedules
-    ADD COLUMN s_zim_file_id INTEGER NULL;
-    
     UPDATE zim_schedules zs
     JOIN zim_files zf ON zs.s_id = zf.z_zim_schedule_id
     SET zs.s_zim_file_id = zf.z_id
     '''
   ),
-  
+  step(
+    '''
+    -- no forward migration needed
+    ''',
+    '''
+    ALTER TABLE zim_schedules
+    ADD COLUMN s_zim_file_id INTEGER NULL;
+    '''
+  ),
+
   # Step 6: Drop title/description columns from zim_files
   step(
     '''
@@ -113,16 +119,22 @@ steps = [
     DROP COLUMN z_long_description
     ''',
     '''
-    ALTER TABLE zim_files
-    ADD COLUMN z_title tinyblob,
-    ADD COLUMN z_description tinyblob,
-    ADD COLUMN z_long_description blob;
-    
     UPDATE zim_files zf
     JOIN zim_schedules zs ON zf.z_zim_schedule_id = zs.s_id
     SET zf.z_title = zs.s_title,
         zf.z_description = zs.s_description,
         zf.z_long_description = zs.s_long_description
+    '''
+  ),
+  step(
+    '''
+    -- no forward migration needed
+    ''',
+    '''
+    ALTER TABLE zim_files
+    ADD COLUMN z_title tinyblob,
+    ADD COLUMN z_description tinyblob,
+    ADD COLUMN z_long_description blob;
     '''
   ),
   
