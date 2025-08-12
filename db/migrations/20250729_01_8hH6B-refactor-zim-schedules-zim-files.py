@@ -62,7 +62,7 @@ steps = [
         NULL,
         NULL,
         NULL,
-        NOW(),
+        DATE_FORMAT(UTC_TIMESTAMP(), '%Y%m%d%H%i%s'),
         zf.z_long_description,
         zf.z_description,
         zf.z_title,
