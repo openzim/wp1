@@ -109,7 +109,7 @@ def get_zimfarm_token(redis):
     return request_zimfarm_token(redis)
 
   access_expired = datetime.strptime(
-      data.get('expires_in', '1970-01-01T00:00:00Z'),
+      data.get('expires_time', '1970-01-01T00:00:00Z'),
       '%Y-%m-%dT%H:%M:%SZ') < get_current_datetime()
 
   if access_expired:
