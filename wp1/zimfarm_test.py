@@ -339,7 +339,7 @@ class ZimFarmTest(BaseWpOneDbTest):
   def test_get_zimfarm_token_no_refresh_token(self, request_token_mock):
     redis = MagicMock()
     redis.hgetall.return_value = {
-        'expires_in': '2023-01-01T00:00:01Z',
+        'expires_time': '2023-01-01T00:00:01Z',
         'access_token': 'abcdef',
     }
 
@@ -355,7 +355,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     redis = MagicMock()
     redis.hgetall.return_value = {
-        'expires_in': '2023-01-01T00:00:01Z',
+        'expires_time': '2023-01-01T00:00:01Z',
         'refresh_token': '12345',
         'access_token': 'abcdef',
     }
@@ -374,7 +374,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     redis = MagicMock()
     redis.hgetall.return_value = {
-        'expires_in': '2022-12-01T00:00:01Z',
+        'expires_time': '2022-12-01T00:00:01Z',
         'refresh_token': '12345',
         'access_token': 'abcdef',
     }
