@@ -210,4 +210,37 @@ class QueuesTest(BaseWpOneDbTest):
       repeat=3,
       queue_name='zimfile-scheduling',
     )
+
+  @patch('wp1.queues.Scheduler')
+  def test_cancel_scheduled_job_success(self, mock_scheduler):
+    mock_scheduler_instance = MagicMock()
+    mock_scheduler_instance.cancel.return_value = None
+    mock_scheduler.return_value = mock_scheduler_instance
+
+    result = queues.cancel_scheduled_job(self.redis, 'test-job-id')
+    
+    self.assertTrue(result)
+    mock_scheduler_instance.cancel.assert_called_once_with('test-job-id')
+
+  @patch('wp1.queues.Scheduler')
+  def test_cancel_scheduled_job_with_bytes_id(self, mock_scheduler):
+    mock_scheduler_instance = MagicMock()
+    mock_scheduler_instance.cancel.return_value = None
+    mock_scheduler.return_value = mock_scheduler_instance
+
+    result = queues.cancel_scheduled_job(self.redis, b'test-job-id')
+    
+    self.assertTrue(result)
+    mock_scheduler_instance.cancel.assert_called_once_with('test-job-id')
+
+  @patch('wp1.queues.Scheduler')
+  def test_cancel_scheduled_job_failure(self, mock_scheduler):
+    mock_scheduler_instance = MagicMock()
+    mock_scheduler_instance.cancel.side_effect = Exception('Job not found')
+    mock_scheduler.return_value = mock_scheduler_instance
+
+    result = queues.cancel_scheduled_job(self.redis, 'test-job-id')
+    
+    self.assertFalse(result)
+    mock_scheduler_instance.cancel.assert_called_once_with('test-job-id')
       
