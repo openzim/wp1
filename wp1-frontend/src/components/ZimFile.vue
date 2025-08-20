@@ -434,7 +434,7 @@ export default {
           number_of_repetitions: this.numberOfRepetitions,
         };
         const email = (this.scheduleEmail || '').trim();
-        if (email.length > 0 && this.isValidEmail(email)) {
+        if (email.length > 0){
           scheduled.email = email;
         }
         payload.scheduled_repetitions = scheduled;
