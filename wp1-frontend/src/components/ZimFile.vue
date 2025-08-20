@@ -192,7 +192,7 @@
                   class="form-control"
                   v-model.number="repetitionPeriodInMonths"
                 >
-                  <option v-for="m in [1,2,3,4,5]" :key="m" :value="m">
+                  <option v-for="m in [1,3,6]" :key="m" :value="m">
                     {{ m }}
                   </option>
                 </select>
