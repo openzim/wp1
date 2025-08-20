@@ -205,3 +205,21 @@ def schedule_recurring_zimfarm_task(redis: Redis, args, scheduled_time, interval
   )
 
   return job
+
+
+def cancel_scheduled_job(redis: Redis, job_id: str):
+  """
+  Cancel a scheduled RQ job by its job ID.
+  """
+  if isinstance(job_id, bytes):
+    job_id = job_id.decode('utf-8')
+  
+  try:
+    queue = _get_zimfile_scheduling_queue(redis)
+    scheduler = Scheduler(connection=queue.connection, queue=queue)
+    scheduler.cancel(job_id)
+    logger.info('Successfully cancelled scheduled job: %s', job_id)
+    return True
+  except Exception as e:
+    logger.warning('Failed to cancel scheduled job %s: %s', job_id, str(e))
+    return False
