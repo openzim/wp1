@@ -212,13 +212,12 @@
               </div>
 
               <div class="form-group">
-                <label for="scheduleEmail">Notification email</label>
+                <label for="scheduleEmail">Notification email (optional)</label>
                 <input
                   id="scheduleEmail"
                   type="email"
                   class="form-control"
                   v-model.trim="scheduleEmail"
-                  :required="schedulingEnabled"
                   placeholder="you@example.org"
                 />
                 <small class="form-text text-muted"
@@ -430,11 +429,15 @@ export default {
         long_description: this.longDescription,
       };
       if (this.schedulingEnabled) {
-        payload.scheduled_repetitions = {
+        const scheduled = {
           repetition_period_in_months: this.repetitionPeriodInMonths,
           number_of_repetitions: this.numberOfRepetitions,
-          email: this.scheduleEmail || undefined,
         };
+        const email = (this.scheduleEmail || '').trim();
+        if (email.length > 0 && this.isValidEmail(email)) {
+          scheduled.email = email;
+        }
+        payload.scheduled_repetitions = scheduled;
       }
 
       const response = await fetch(postUrl, {
@@ -534,9 +537,11 @@ export default {
       // Prevent empty required fields and invalid long description
       const baseInvalid =
         !this.zimTitle || !this.description || !this.isLongDescriptionValid;
-      const scheduleInvalid = this.schedulingEnabled
-        ? !this.isValidEmail(this.scheduleEmail)
-        : false;
+      // Email is optional — only validate when the user actually provided one
+      const scheduleInvalid =
+        this.schedulingEnabled && this.scheduleEmail
+          ? !this.isValidEmail(this.scheduleEmail)
+          : false;
       return baseInvalid || scheduleInvalid;
     },
   },

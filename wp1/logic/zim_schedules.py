@@ -144,7 +144,7 @@ def schedule_future_zimfile_generations(redis, wp10db, builder, zim_schedule_id:
   Calculate timing and schedule future ZIM file creations using rq-scheduler, then save the schedule to the database.
   """
 
-  required_keys = {'repetition_period_in_months', 'number_of_repetitions', 'email'}
+  required_keys = {'repetition_period_in_months', 'number_of_repetitions'}
   has_min_required_keys = required_keys <= scheduled_repetitions.keys()
   if not isinstance(scheduled_repetitions, dict) or not has_min_required_keys:
     raise ValueError(f'scheduled_repetitions must be a dict containing {required_keys}')
@@ -153,6 +153,7 @@ def schedule_future_zimfile_generations(redis, wp10db, builder, zim_schedule_id:
   interval_seconds = period_months * SECONDS_PER_MONTH
   first_future_run = utcnow() + relativedelta(seconds=interval_seconds)
   total_repetitions = scheduled_repetitions['number_of_repetitions']
+  email = scheduled_repetitions['email'].encode('utf-8') if 'email' in scheduled_repetitions and scheduled_repetitions['email'] is not None else None
 
   job = queues.schedule_recurring_zimfarm_task(
     redis=redis,
@@ -166,7 +167,7 @@ def schedule_future_zimfile_generations(redis, wp10db, builder, zim_schedule_id:
   zim_schedule.s_remaining_generations = total_repetitions
   zim_schedule.s_interval = period_months
   zim_schedule.s_rq_job_id = job.id.encode('utf-8')
-  zim_schedule.s_email = scheduled_repetitions['email'].encode('utf-8')
+  zim_schedule.s_email = email
   zim_schedule.set_last_updated_at_now()
   update_zim_schedule(wp10db, zim_schedule)
 
