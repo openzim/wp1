@@ -70,7 +70,8 @@ def send_zim_ready_email(recipient_username,
 def respond_to_zim_task_completed(wp10db, zim_file: ZimTask, zim_schedule: ZimSchedule):
     """Handles a completed ZIM task by decrementing generations and notifying the user."""
     zim_schedules.decrement_remaining_generations(wp10db, zim_schedule.s_id)
-    notify_user_for_scheduled_zim(wp10db, zim_file, zim_schedule)
+    if zim_schedule.s_email is not None:
+        notify_user_for_scheduled_zim(wp10db, zim_file, zim_schedule)
 
 
 def notify_user_for_scheduled_zim(wp10db, zim_file: ZimTask, zim_schedule: ZimSchedule):

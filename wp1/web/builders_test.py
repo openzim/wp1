@@ -104,15 +104,17 @@ class BuildersTest(BaseWebTestcase):
                            builder_id=b'1a-2b-3c-4d',
                            rq_job_id=b'rq_job_id_123',
                            last_updated_at='20191225044444',
+                           email=None,
                            title=None,
                            description=None,
                            long_description=None,
                            remaining_generations=3):
     with self.wp10db.cursor() as cursor:
       cursor.execute(
-          '''INSERT INTO zim_schedules (s_id, s_builder_id, s_rq_job_id, s_remaining_generations, s_last_updated_at, s_title, s_description, s_long_description)
-             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-          ''', (schedule_id, builder_id, rq_job_id, remaining_generations, last_updated_at, title, description, long_description))
+          '''INSERT INTO zim_schedules (s_id, s_builder_id, s_rq_job_id, s_remaining_generations,
+                                        s_last_updated_at, s_title, s_description, s_long_description, s_email)
+             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+          ''', (schedule_id, builder_id, rq_job_id, remaining_generations, last_updated_at, title, description, long_description, email))
     self.wp10db.commit()
     return schedule_id
 
@@ -687,8 +689,8 @@ class BuildersTest(BaseWebTestcase):
               'description': 'Test description',
               'scheduled_repetitions': {
                   'repetition_period_in_months': 6,
-                  'number_of_repetitions': 3
-                  # missing 'email' field
+                  # Missing 'number_of_repetitions' field
+                  'email': 'user@example.com'
               }
           })
       self.assertEqual('400 BAD REQUEST', rv.status)
@@ -780,8 +782,49 @@ class BuildersTest(BaseWebTestcase):
 
   @patch('wp1.logic.selection.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
-  @patch('wp1.web.emails.respond_to_zim_task_completed')
-  def test_update_zimfarm_status_file_scheduled(self, patched_utcnow, patched_notify_user):
+  @patch('wp1.web.emails.notify_user_for_scheduled_zim')
+  def test_update_zimfarm_status_file_scheduled(self, patched_notify_user, patched_utcnow):
+    builder_id = self._insert_builder()
+    self._insert_selections(builder_id)
+    self._insert_zim_schedule(
+        schedule_id=b'schedule_123',
+        builder_id=builder_id.encode('utf-8'),
+        rq_job_id=b'task-id-1234',
+        last_updated_at='20221225000102',
+        remaining_generations=2,
+        email='test@example.com'
+    )
+    self.app = create_app()
+    with self.override_db(self.app), self.app.test_client() as client:
+      with client.session_transaction() as sess:
+        sess['user'] = self.USER
+      rv = client.post('/v1/builders/zim/status?token=hook-token-abc',
+                      json={
+                          '_id': 'task-id-1234',
+                          'foo': 'bar',
+                          'status': 'succeeded',
+                          'files': {
+                              'zimfile.1234': {
+                                  'status': 'uploaded'
+                              }
+                          }
+                      })
+      self.assertEqual('204 NO CONTENT', rv.status)
+
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT z_status, z_updated_at '
+                    'FROM zim_tasks WHERE z_task_id = "task-id-1234"')
+      status = cursor.fetchone()
+
+    self.assertIsNotNone(status)
+    self.assertEqual(b'FILE_READY', status['z_status'])
+    self.assertEqual(b'20221225000102', status['z_updated_at'])
+    patched_notify_user.assert_called_once()
+
+  @patch('wp1.logic.selection.utcnow',
+         return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
+  @patch('wp1.web.emails.notify_user_for_scheduled_zim')
+  def test_update_zimfarm_status_file_scheduled_no_email(self, patched_notify_user, patched_utcnow):
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
     self._insert_zim_schedule(
@@ -816,7 +859,7 @@ class BuildersTest(BaseWebTestcase):
     self.assertIsNotNone(status)
     self.assertEqual(b'FILE_READY', status['z_status'])
     self.assertEqual(b'20221225000102', status['z_updated_at'])
-    patched_notify_user.assert_called_once()
+    patched_notify_user.assert_not_called()
 
   @patch('wp1.logic.selection.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))

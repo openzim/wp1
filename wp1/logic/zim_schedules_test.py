@@ -204,8 +204,8 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
     )
     scheduled_repetitions = {
         'repetition_period_in_months': 2,
-        'number_of_repetitions': 3,
-        # Missing 'email' field
+        # Missing 'number_of_repetitions' field
+        'email': 'user@example.com'
     }
     zim_schedule = self.new_schedule()
     insert_zim_schedule(self.wp10db, zim_schedule)
