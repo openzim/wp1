@@ -153,7 +153,8 @@ def schedule_future_zimfile_generations(redis, wp10db, builder, zim_schedule_id:
   interval_seconds = period_months * SECONDS_PER_MONTH
   first_future_run = utcnow() + relativedelta(seconds=interval_seconds)
   total_repetitions = scheduled_repetitions['number_of_repetitions']
-  email = scheduled_repetitions['email'].encode('utf-8') if 'email' in scheduled_repetitions and scheduled_repetitions['email'] is not None else None
+  email = scheduled_repetitions.get('email')
+  email = email.encode('utf-8') if email is not None else None
 
   job = queues.schedule_recurring_zimfarm_task(
     redis=redis,
