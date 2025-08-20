@@ -203,7 +203,6 @@ def create_zim_file_for_builder(builder_id):
             all(k in scheduled_repetitions for k in (
                 "repetition_period_in_months",
                 "number_of_repetitions",
-                "email",
             ))):
       return 'Invalid or missing fields in scheduled_repetitions', 400
 
