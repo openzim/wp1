@@ -24,6 +24,7 @@ class ZimSchedule:
   s_title: bytes = attr.ib(default=None)  # Title of the ZIM selection, if any
   s_description: bytes = attr.ib(default=None)  # Description of the ZIM selection, if any
   s_long_description: bytes = attr.ib(default=None)  # Long description of the ZIM selection, if any
+  s_email_confirmation_token: bytes = attr.ib(default=None)  # Token for email confirmation, removed after confirmation
 
   def set_id(self):
     self.s_id = str(uuid.uuid4()).encode('utf-8')
