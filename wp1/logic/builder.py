@@ -26,7 +26,6 @@ from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.redis_db import connect as redis_connect
 from wp1.storage import connect_storage
 from wp1.timestamp import utcnow
-from wp1.web import emails
 from wp1.wp10_db import connect as wp10_connect
 
 logger = logging.getLogger(__name__)
@@ -145,10 +144,8 @@ def delete_builder(wp10db, user_id, builder_id):
                     builder_id.decode('utf-8'), str(e))
     zimfarm_delete_success = False
 
-  # Cancel any scheduled RQ jobs before deleting from database
   rq_cancel_success = True
   with wp10db.cursor() as cursor:
-    # Get RQ job ID for the scheduled zim generation (only one per builder)
     cursor.execute(
         '''SELECT s_rq_job_id, s_id FROM zim_schedules 
          WHERE s_builder_id = %s AND s_rq_job_id IS NOT NULL''', (builder_id,))
@@ -161,7 +158,7 @@ def delete_builder(wp10db, user_id, builder_id):
       cursor.execute('''DELETE FROM zim_schedules WHERE s_id = %s''',
                      (schedule_id,))
 
-    # Cancel the scheduled job if it exists
+    # Cancel the scheduled rq job if it exists
     if job_id:
       try:
         success = queues.cancel_scheduled_job(redis, job_id)
