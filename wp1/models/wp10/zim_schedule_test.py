@@ -13,7 +13,8 @@ class ModelsZimScheduleTest(BaseWpOneDbTest):
     self.zim_schedule = ZimSchedule(s_id=str(uuid.uuid4()),
                    s_builder_id=str(uuid.uuid4()),
                    s_rq_job_id=str(uuid.uuid4()),
-                   s_last_updated_at=b'20190830112844')
+                   s_last_updated_at=b'20190830112844',
+                   s_email_confirmation_token=None)  # Confirmed email
 
   def test_last_updated_at_dt(self):
     dt = self.zim_schedule.last_updated_at_dt

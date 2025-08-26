@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, patch, ANY
 import uuid
 
 from wp1.base_db_test import BaseWpOneDbTest
@@ -31,7 +31,8 @@ class EmailsTest(BaseWpOneDbTest):
             s_remaining_generations=2,
             s_title=b'Test ZIM File',
             s_description=b'Test description',
-            s_long_description=b'Test long description'
+            s_long_description=b'Test long description',
+            s_email_confirmation_token=None  # Confirmed email
         )
 
         with self.wp10db.cursor() as cursor:
@@ -297,6 +298,7 @@ class EmailsTest(BaseWpOneDbTest):
             recipient_email='test@example.com',
             zim_title='Test ZIM File',
             download_url='https://fake.wasabisys.com/org-kiwix-zimit/wikipedia/foo.zim',
+            unsubscribe_url=ANY,
             next_generation_months=3
         )
 
@@ -334,6 +336,7 @@ class EmailsTest(BaseWpOneDbTest):
             recipient_email='test@example.com',
             zim_title='Test ZIM File',
             download_url='https://download.example.com/test.zim',
+            unsubscribe_url=ANY,
             next_generation_months=None  # Should be None when no remaining generations
         )
 
@@ -365,5 +368,40 @@ class EmailsTest(BaseWpOneDbTest):
             recipient_email='test@example.com',
             zim_title='Your ZIM File',  # Should use default title
             download_url='https://download.example.com/test.zim',
+            unsubscribe_url='https://wp1.openzim.org/api/v1/zim/unsubscribe-notification?schedule_id=test-schedule-id',
             next_generation_months=3
         )
+
+    @patch('wp1.web.emails.send_zim_ready_email')
+    @patch('wp1.web.emails.zim_schedules.get_username_by_zim_schedule_id')
+    @patch('wp1.zimfarm.requests.get')
+    def test_respond_to_zim_task_completed_includes_unsubscribe_url(self,
+                                                                    patched_get,
+                                                                    mock_get_username,
+                                                                    mock_send_email):
+        """Test that notification emails include unsubscribe URL."""
+        resp = MagicMock()
+        resp.json.return_value = {
+            'config': {
+                'warehouse_path': '/wikipedia'
+            },
+            'files': {
+                'foo.zim': {
+                    'name': 'foo.zim'
+                }
+            }
+        }
+        patched_get.return_value = resp
+        mock_get_username.return_value = 'testuser'
+        mock_send_email.return_value = True
+
+        respond_to_zim_task_completed(self.wp10db, self.zim_task, self.zim_schedule)
+
+        call_args = mock_send_email.call_args
+        call_kwargs = call_args.kwargs
+        
+        self.assertIn('unsubscribe_url', call_kwargs)
+        unsubscribe_url = call_kwargs['unsubscribe_url']
+        self.assertIsNotNone(unsubscribe_url)
+        self.assertIn('unsubscribe-notification', unsubscribe_url)
+        self.assertIn(f"schedule_id={self.zim_schedule.s_id.decode('utf-8')}", unsubscribe_url)

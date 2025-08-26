@@ -1,5 +1,9 @@
 import datetime
+<<<<<<< HEAD
 from unittest.mock import ANY, patch
+=======
+from unittest.mock import MagicMock, patch
+>>>>>>> d67c9a1 (feat(email): Add email confirmation feature for ZIM file notifications)
 
 import attr
 
@@ -414,9 +418,15 @@ class BuildersTest(BaseWebTestcase):
       rv = client.get('/v1/builders/%s/selection/latest.tsv' % builder_id)
     self.assertEqual('404 NOT FOUND', rv.status)
 
+  @patch('wp1.logic.builder.redis_connect')
   @patch('wp1.logic.selection.connect_storage')
+<<<<<<< HEAD
   @patch('wp1.logic.builder.zimfarm')
   def test_delete_successful(self, mock_zimfarm, mock_connect_storage):
+=======
+  def test_delete_successful(self, patched_connect_storage, patched_redis_connect):
+    patched_redis_connect.return_value = MagicMock()
+>>>>>>> d67c9a1 (feat(email): Add email confirmation feature for ZIM file notifications)
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
     self.app = create_app()
@@ -427,9 +437,15 @@ class BuildersTest(BaseWebTestcase):
       self.assertEqual('200 OK', rv.status)
       self.assertEqual({'status': '204'}, rv.get_json())
 
+  @patch('wp1.logic.builder.redis_connect')
   @patch('wp1.logic.selection.connect_storage')
+<<<<<<< HEAD
   @patch('wp1.logic.builder.zimfarm')
   def test_delete_no_selections(self, mock_zimfarm, mock_connect_storage):
+=======
+  def test_delete_no_selections(self, patched_connect_storage, patched_redis_connect):
+    patched_redis_connect.return_value = MagicMock()
+>>>>>>> d67c9a1 (feat(email): Add email confirmation feature for ZIM file notifications)
     builder_id = self._insert_builder()
 
     self.app = create_app()
@@ -440,8 +456,10 @@ class BuildersTest(BaseWebTestcase):
       self.assertEqual('200 OK', rv.status)
       self.assertEqual({'status': '204'}, rv.get_json())
 
+  @patch('wp1.logic.builder.redis_connect')
   @patch('wp1.logic.selection.connect_storage')
-  def test_delete_not_owner(self, patched_connect_storage):
+  def test_delete_not_owner(self, patched_connect_storage, patched_redis_connect):
+    patched_redis_connect.return_value = MagicMock()
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
     different_user = {
@@ -459,7 +477,9 @@ class BuildersTest(BaseWebTestcase):
       self.assertEqual('403 FORBIDDEN', rv.status)
 
   @patch('wp1.logic.selection.connect_storage')
-  def test_delete_no_builder(self, patched_connect_storage):
+  @patch('wp1.logic.builder.redis_connect')
+  def test_delete_no_builder(self, patched_redis_connect, patched_connect_storage):
+    patched_redis_connect.return_value = MagicMock()
     builder_id = self._insert_builder()
     self._insert_selections(builder_id)
 
@@ -482,7 +502,8 @@ class BuildersTest(BaseWebTestcase):
         s_id=b'schedule_123',
         s_builder_id=b'1a-2b-3c-4d',
         s_rq_job_id=b'rq_job_id_123',
-        s_last_updated_at=b'20240101000000')
+        s_last_updated_at=b'20240101000000',
+        s_email_confirmation_token=None)
 
     self.app = create_app()
     with self.override_db(self.app), self.app.test_client() as client:
@@ -618,11 +639,21 @@ class BuildersTest(BaseWebTestcase):
 
     patched_request_zimfarm_task.return_value = '1234-a'
     patched_create_zimfarm_schedule.return_value = ZimSchedule(
+<<<<<<< HEAD
         s_id=b'schedule_123',
         s_builder_id=b'1a-2b-3c-4d',
         s_rq_job_id=b'rq_job_id_123',
         s_last_updated_at=b'20240101000000',
         s_remaining_generations=3)
+=======
+      s_id=b'schedule_123',
+      s_builder_id=b'1a-2b-3c-4d',
+      s_rq_job_id=b'rq_job_id_123',
+      s_last_updated_at=b'20240101000000',
+      s_remaining_generations=3,
+      s_email_confirmation_token=None
+    )
+>>>>>>> d67c9a1 (feat(email): Add email confirmation feature for ZIM file notifications)
 
     self.app = create_app()
     with self.override_db(self.app), self.app.test_client() as client:
@@ -650,11 +681,21 @@ class BuildersTest(BaseWebTestcase):
 
     patched_request_zimfarm_task.return_value = '1234-a'
     patched_create_zimfarm_schedule.return_value = ZimSchedule(
+<<<<<<< HEAD
         s_id=b'schedule_123',
         s_builder_id=b'1a-2b-3c-4d',
         s_rq_job_id=b'rq_job_id_123',
         s_last_updated_at=b'20240101000000',
         s_remaining_generations=3)
+=======
+      s_id=b'schedule_123',
+      s_builder_id=b'1a-2b-3c-4d',
+      s_rq_job_id=b'rq_job_id_123',
+      s_last_updated_at=b'20240101000000',
+      s_remaining_generations=3,
+      s_email_confirmation_token=None
+    )
+>>>>>>> d67c9a1 (feat(email): Add email confirmation feature for ZIM file notifications)
 
     self.app = create_app()
     with self.override_db(self.app), self.app.test_client() as client:
@@ -729,7 +770,8 @@ class BuildersTest(BaseWebTestcase):
         s_id=b'schedule_123',
         s_builder_id=b'1a-2b-3c-4d',
         s_rq_job_id=b'rq_job_id_123',
-        s_last_updated_at=b'20240101000000')
+        s_last_updated_at=b'20240101000000',
+        s_email_confirmation_token=None)
 
     self.app = create_app()
     with self.override_db(self.app), self.app.test_client() as client:
@@ -759,7 +801,13 @@ class BuildersTest(BaseWebTestcase):
         s_id=b'schedule_123',
         s_builder_id=b'1a-2b-3c-4d',
         s_rq_job_id=b'rq_job_id_123',
+<<<<<<< HEAD
         s_last_updated_at=b'20240101000000')
+=======
+        s_last_updated_at=b'20240101000000',
+        s_email_confirmation_token=None
+    )
+>>>>>>> d67c9a1 (feat(email): Add email confirmation feature for ZIM file notifications)
 
     self.app = create_app()
     with self.override_db(self.app), self.app.test_client() as client:

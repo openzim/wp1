@@ -14,6 +14,7 @@ from wp1.web.articles import articles
 from wp1.web.builders import builders
 from wp1.web.projects import projects
 from wp1.web.selection import selection
+from wp1.web.zim_emails import zim_emails
 from wp1.credentials import ENV, CREDENTIALS
 from wp1.web.sites import sites
 from wp1.web.dev.projects import dev_projects
@@ -105,6 +106,7 @@ def create_app():
   app.register_blueprint(sites, url_prefix='/v1/sites')
   app.register_blueprint(selection, url_prefix='/v1/selection')
   app.register_blueprint(builders, url_prefix='/v1/builders')
+  app.register_blueprint(zim_emails, url_prefix='/v1/zim')
 
   if not missing_credentials:
     mwoauth = CREDENTIALS.get(ENV, {}).get('MWOAUTH', {})

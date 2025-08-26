@@ -20,6 +20,7 @@ LOG_DATE_FORMAT = '%B %-d, %Y'
 GLOBAL_TIMESTAMP = time.strftime(TS_FORMAT_WP10, time.gmtime()).encode('utf-8')
 GLOBAL_TIMESTAMP_WIKI = time.strftime(TS_FORMAT, time.gmtime()).encode('utf-8')
 
+EMAIL_CONFIRMATION_URL = "https://wp1.openzim.org"
 LIST_URL = 'https://tools.wmflabs.org/enwp10/cgi-bin/list2.fcgi'
 LIST_V2_URL = 'https://wp1.openzim.org/#/project'
 
