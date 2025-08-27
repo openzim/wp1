@@ -1,17 +1,15 @@
 import importlib
 import logging
-import unittest
 import sys
+import unittest
 
 import pymysql
 
 from wp1.credentials import CREDENTIALS, ENV
 from wp1.environment import Environment
-from wp1.models.wp10.selection import Selection
-
-from wp1.redis_db import connect as redis_connect
-
 from wp1.models.wp10.rating import Rating
+from wp1.models.wp10.selection import Selection
+from wp1.redis_db import connect as redis_connect
 
 logger = logging.getLogger(__name__)
 
@@ -169,3 +167,12 @@ def get_first_selection(wp10db):
     cursor.execute('SELECT * from selections LIMIT 1')
     db_selection = cursor.fetchone()
     return Selection(**db_selection)
+
+
+class TestCleanupDb(BaseCombinedDbTest):
+
+  def test_no_op(self):
+    # A no-op test to allow for the setup and cleanup to run. Used
+    # when a previous test run was interrupted and left the test
+    # databases in a dirty state.
+    pass
