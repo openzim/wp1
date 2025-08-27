@@ -1,12 +1,11 @@
 import datetime
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import attr
 import requests
 
 from wp1 import zimfarm
 from wp1.base_db_test import BaseWpOneDbTest
-from wp1.credentials import CREDENTIALS
 from wp1.environment import Environment
 from wp1.exceptions import (
     InvalidZimDescriptionError,
@@ -18,7 +17,6 @@ from wp1.exceptions import (
 )
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
-from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.zimfarm import (
     ZIM_DESCRIPTION_MAX_LENGTH,
     ZIM_LONG_DESCRIPTION_MAX_LENGTH,
@@ -29,11 +27,7 @@ from wp1.zimfarm import (
 class ZimFarmTest(BaseWpOneDbTest):
   expected_params = {
       'name': 'wp1_selection_3c4d',
-      'language': {
-          'code': 'eng',
-          'name_en': 'English',
-          'name_native': 'English'
-      },
+      'language': 'eng',
       'category': 'wikipedia',
       'periodicity': 'manually',
       'tags': [],
@@ -818,7 +812,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     }
     patched_get.return_value = resp
     with self.assertRaises(ZimFarmError):
-      actual = zimfarm.zim_file_url_for_task_id('foo-bar')
+      zimfarm.zim_file_url_for_task_id('foo-bar')
 
   @patch('wp1.zimfarm.requests.get')
   def test_zim_file_url_for_task_id_missing_warehouse_path(self, patched_get):
@@ -833,7 +827,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     }
     patched_get.return_value = resp
     with self.assertRaises(ZimFarmError):
-      actual = zimfarm.zim_file_url_for_task_id('foo-bar')
+      zimfarm.zim_file_url_for_task_id('foo-bar')
 
   @patch('wp1.zimfarm.requests.get')
   @patch('wp1.zimfarm.CREDENTIALS', {Environment.TEST: {}})
@@ -851,7 +845,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     }
     patched_get.return_value = resp
     with self.assertRaises(ZimFarmError):
-      actual = zimfarm.zim_file_url_for_task_id('foo-bar')
+      zimfarm.zim_file_url_for_task_id('foo-bar')
 
   @patch('wp1.zimfarm.get_zimfarm_token')
   @patch('wp1.zimfarm.requests.delete')
