@@ -167,11 +167,11 @@ def _validate_zim_metadata(title=None, description=None, long_description=None):
   if long_description is not None and nb_grapheme_for(
       long_description) < nb_grapheme_for(description):
     raise InvalidZimLongDescriptionError(
-        f"Long description must be longer than the description.")
+        "Long description must be longer than the description.")
 
   if long_description is not None and long_description == description:
     raise InvalidZimLongDescriptionError(
-        f"Long description must be different from the description.")
+        "Long description must be different from the description.")
 
 
 def get_zimfarm_schedule_name(builder_id: str) -> str:
@@ -187,7 +187,7 @@ def get_zimfarm_schedule_name(builder_id: str) -> str:
 def get_zim_filename_prefix(builder: Builder, selection: Selection) -> str:
   """Generate a filename prefix for the ZIM file based on builder and selection."""
   if builder is None or selection is None:
-    raise ValueError(f"Given builder or selection was None")
+    raise ValueError("Given builder or selection was None")
 
   selection_id_frag = selection.s_id.decode('utf-8').split('-')[-1]
   builder_name = builder.b_name.decode('utf-8')
@@ -255,11 +255,7 @@ def _get_params(builder: Builder,
 
   return {
       'name': get_zimfarm_schedule_name(builder.b_id.decode('utf-8')),
-      'language': {
-          'code': 'eng',
-          'name_en': 'English',
-          'name_native': 'English'
-      },
+      'language': 'eng',
       'category': 'wikipedia',
       'periodicity': 'manually',
       'tags': [],
