@@ -4,7 +4,6 @@ import logging
 
 from wp1 import zimfarm
 from wp1.credentials import CREDENTIALS, ENV
-from wp1.constants import EMAIL_CONFIRMATION_URL
 from wp1.logic import zim_schedules
 from wp1.models.wp10.zim_file import ZimTask
 from wp1.models.wp10.zim_schedule import ZimSchedule
@@ -85,8 +84,9 @@ def notify_user_for_scheduled_zim(wp10db, zim_file: ZimTask, zim_schedule: ZimSc
     next_generation_months = None
     if zim_schedule.s_remaining_generations and zim_schedule.s_remaining_generations > 0:
         next_generation_months = zim_schedule.s_interval
-    
-    unsubscribe_url = f"{EMAIL_CONFIRMATION_URL}/api/v1/zim/unsubscribe-notification?schedule_id={zim_schedule.s_id.decode('utf-8')}"
+
+    email_confirm_url = CREDENTIALS.get(ENV, {}).get('CLIENT_URL', {}).get('api')
+    unsubscribe_url = f"{email_confirm_url}/api/v1/zim/unsubscribe-notification?schedule_id={zim_schedule.s_id.decode('utf-8')}"
     
     send_zim_ready_email(
         recipient_username=recipient_username,

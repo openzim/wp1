@@ -3,7 +3,8 @@ import secrets
 from dateutil.relativedelta import relativedelta
 import wp1.queues as queues
 
-from wp1.constants import TS_FORMAT_WP10, SECONDS_PER_MONTH, EMAIL_CONFIRMATION_URL
+from wp1.constants import TS_FORMAT_WP10, SECONDS_PER_MONTH
+from wp1.credentials import CREDENTIALS, ENV
 from wp1.timestamp import utcnow
 from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.web.emails_confirmation import send_zim_email_confirmation
@@ -170,60 +171,6 @@ def set_zim_schedule_id_to_zim_task_by_selection(wp10db, selection_id: bytes, zi
     return updated
 
 
-# def schedule_future_zimfile_generations(redis, wp10db, builder, zim_schedule_id: bytes, scheduled_repetitions):
-#   """
-#   Calculate timing and schedule future ZIM file creations using rq-scheduler, then save the schedule to the database.
-#   """
-
-#   required_keys = {'repetition_period_in_months', 'number_of_repetitions'}
-#   has_min_required_keys = required_keys <= scheduled_repetitions.keys()
-#   if not isinstance(scheduled_repetitions, dict) or not has_min_required_keys:
-#     raise ValueError(f'scheduled_repetitions must be a dict containing {required_keys}')
-
-#   period_months = scheduled_repetitions['repetition_period_in_months']
-#   interval_seconds = period_months * SECONDS_PER_MONTH
-#   first_future_run = utcnow() + relativedelta(seconds=interval_seconds)
-#   total_repetitions = scheduled_repetitions['number_of_repetitions']
-#   email = scheduled_repetitions.get('email')
-#   email = email.encode('utf-8') if email is not None else None
-
-#   job = queues.schedule_recurring_zimfarm_task(
-#     redis=redis,
-#     args=[builder, zim_schedule_id],
-#     scheduled_time=first_future_run,
-#     interval_seconds=interval_seconds,
-#     repeat_count=total_repetitions - 1, # -1 because the first run is not counted as a repetition
-#   )
-
-#   zim_schedule: ZimSchedule = get_zim_schedule(wp10db, zim_schedule_id)
-#   zim_schedule.s_remaining_generations = total_repetitions
-#   zim_schedule.s_interval = period_months
-#   zim_schedule.s_rq_job_id = job.id.encode('utf-8')
-#   zim_schedule.s_email = email
-#   zim_schedule.set_last_updated_at_now()
-#   if email is not None:
-#     zim_schedule.s_email_confirmation_token = generate_email_confirmation_token()
-#     username = get_username_by_zim_schedule_id(wp10db, zim_schedule_id)
-#     zim_title = zim_schedule.s_title.decode('utf-8') if zim_schedule.s_title else 'Your ZIM File'
-    
-#     token = zim_schedule.s_email_confirmation_token.decode('utf-8')
-#     confirm_url = f"{EMAIL_CONFIRMATION_URL}/api/v1/zim/confirm-email?token={token}"
-#     unsubscribe_url = f"{EMAIL_CONFIRMATION_URL}/api/v1/zim/unsubscribe-email?token={token}"
-#     send_zim_email_confirmation(
-#         recipient_username=username,
-#         recipient_email=email.decode('utf-8'),
-#         zim_title=zim_title,
-#         confirm_url=confirm_url,
-#         unsubscribe_url=unsubscribe_url,
-#         repetition_period_months=period_months,
-#         number_of_repetitions=total_repetitions
-#     )
-
-#   update_zim_schedule(wp10db, zim_schedule)
-
-#   return job.id
-
-
 def confirm_email_subscription(wp10db, token):
   """Confirms email subscription by removing the token. Returns True if found and confirmed."""
   with wp10db.cursor() as cursor:
@@ -313,8 +260,9 @@ def schedule_future_zimfile_generations(redis, wp10db, builder, zim_schedule_id:
     zim_title = zim_schedule.s_title.decode('utf-8') if zim_schedule.s_title else 'Your ZIM File'
     
     token = zim_schedule.s_email_confirmation_token.decode('utf-8')
-    confirm_url = f"{EMAIL_CONFIRMATION_URL}/api/v1/zim/confirm-email?token={token}"
-    unsubscribe_url = f"{EMAIL_CONFIRMATION_URL}/api/v1/zim/unsubscribe-email?token={token}"
+    email_confirm_url = CREDENTIALS.get(ENV, {}).get('CLIENT_URL', {}).get('api')
+    confirm_url = f"{email_confirm_url}/api/v1/zim/confirm-email?token={token}"
+    unsubscribe_url = f"{email_confirm_url}/api/v1/zim/unsubscribe-email?token={token}"
     send_zim_email_confirmation(
         recipient_username=username,
         recipient_email=email.decode('utf-8'),
