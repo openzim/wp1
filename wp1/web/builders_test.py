@@ -1,5 +1,5 @@
 import datetime
-from unittest.mock import patch
+from unittest.mock import patch, ANY
 
 import attr
 
@@ -993,6 +993,7 @@ class BuildersTest(BaseWebTestcase):
             'description': None,
             'long_description': None,
             'is_deleted': None,
+            'active_schedule': ANY 
         }, rv.get_json())
 
   @patch('wp1.logic.builder.zimfarm.zim_file_url_for_task_id',
