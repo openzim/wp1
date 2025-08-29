@@ -120,7 +120,38 @@ def delete_builder(wp10db, user_id, builder_id):
   if not isinstance(builder_id, bytes):
     builder_id = str(builder_id).encode('utf-8')
 
+  # Connect to Redis for zimfarm operations
+  redis = redis_connect()
+  
+  # Try to delete the zimfarm schedule first (before deleting from DB)
+  zimfarm_delete_success = True
+  try:
+    zimfarm.delete_zimfarm_schedule_by_builder_id(redis, builder_id)
+  except Exception as e:
+    logging.warning('Failed to delete zimfarm schedule for builder_id=%s: %s', 
+                   builder_id.decode('utf-8'), str(e))
+    zimfarm_delete_success = False
+
+  # Cancel any scheduled RQ jobs before deleting from database
+  rq_cancel_success = True
   with wp10db.cursor() as cursor:
+    # Get RQ job ID for the scheduled zim generation (only one per builder)
+    cursor.execute(
+      '''SELECT s_rq_job_id FROM zim_schedules 
+         WHERE s_builder_id = %s AND s_rq_job_id IS NOT NULL''', (builder_id,))
+    row = cursor.fetchone()
+    job_id = row['s_rq_job_id'] if row else None
+
+    # Cancel the scheduled job if it exists
+    if job_id:
+      try:
+        success = queues.cancel_scheduled_job(redis, job_id)
+        if not success:
+          rq_cancel_success = False
+      except Exception as e:
+        logging.warning('Failed to cancel RQ job %s: %s', job_id.decode('utf-8'), str(e))
+        rq_cancel_success = False
+
     cursor.execute(
         '''SELECT s.s_object_key as object_key FROM selections AS s
            JOIN builders AS b ON b.b_id = s.s_builder_id
@@ -142,6 +173,8 @@ def delete_builder(wp10db, user_id, builder_id):
   return {
       'db_delete_success': rowcount > 0,
       's3_delete_success': s3_success,
+      'zimfarm_delete_success': zimfarm_delete_success,
+      'rq_cancel_success': rq_cancel_success,
   }
 
 
