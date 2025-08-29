@@ -7,6 +7,7 @@ import attr
 from kiwixstorage import KiwixStorage
 from pymysql.connections import Connection
 from redis import Redis
+from dateutil.relativedelta import relativedelta
 
 import wp1.logic.selection as logic_selection
 import wp1.logic.zim_schedules as logic_zim_schedules
@@ -567,9 +568,14 @@ def zim_file_status_for(wp10db, builder_id):
       'is_deleted': None,
       'description': None,
       'long_description': None,
+      'active_schedule': None,
   }
   zim_file = zim_file_for_latest_selection(wp10db, builder_id)
   if not zim_file:
+    # Check for active recurring schedule even if no ZIM file exists
+    active_schedule = logic_zim_schedules.find_active_recurring_schedule_for_builder(wp10db, builder_id)
+    if active_schedule:
+      data['active_schedule'] = _format_active_schedule_data(active_schedule)
     return data
 
   base_url = zimfarm.get_zimfarm_url()
@@ -587,7 +593,35 @@ def zim_file_status_for(wp10db, builder_id):
       'utf-8') if zim_schedule and zim_schedule.s_description else None
   data['long_description'] = zim_schedule.s_long_description.decode(
       'utf-8') if zim_schedule and zim_schedule.s_long_description else None
+  active_schedule = logic_zim_schedules.find_active_recurring_schedule_for_builder(wp10db, builder_id)
+  if active_schedule:
+    data['active_schedule'] = _format_active_schedule_data(active_schedule)
 
+  return data
+
+
+def _format_active_schedule_data(schedule):
+  """Format active schedule data for API response."""
+  
+  data = {
+    'schedule_id': schedule.s_id.decode('utf-8'),
+    'interval_months': schedule.s_interval,
+    'remaining_generations': schedule.s_remaining_generations,
+    'last_updated_at': schedule.s_last_updated_at.decode('utf-8'),
+    'email': schedule.s_email.decode('utf-8') if schedule.s_email else None,
+  }
+  
+  # Calculate next generation date
+  if schedule.s_last_updated_at and schedule.s_interval:
+    try:
+      last_updated = schedule.last_updated_at_dt
+      next_generation = last_updated + relativedelta(months=schedule.s_interval)
+      data['next_generation_date'] = next_generation.strftime('%Y-%m-%d')
+    except:
+      data['next_generation_date'] = None
+  else:
+    data['next_generation_date'] = None
+    
   return data
 
 

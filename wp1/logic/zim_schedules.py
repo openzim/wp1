@@ -83,6 +83,34 @@ def list_zim_schedules_for_builder(wp10db, builder_id):
   ]
 
 
+def find_active_recurring_schedule_for_builder(wp10db, builder_id):
+  """Returns an active recurring schedule for a builder (remaining_generations > 0)."""
+  schedules = list_zim_schedules_for_builder(wp10db, builder_id)
+  for schedule in schedules:
+    if schedule.s_remaining_generations is not None and schedule.s_remaining_generations > 0:
+      return schedule
+  return None
+
+
+def delete_zim_schedule(redis, wp10db, schedule_id):
+  """Deletes a ZIM schedule by canceling the RQ job and removing the database record."""
+  schedule = get_zim_schedule(wp10db, schedule_id)
+  if not schedule:
+    return False
+  
+  # Cancel the scheduled RQ job if it exists
+  if schedule.s_rq_job_id:
+    queues.cancel_scheduled_job(redis, schedule.s_rq_job_id)
+  
+  # Delete the schedule from the database
+  with wp10db.cursor() as cursor:
+    cursor.execute('DELETE FROM zim_schedules WHERE s_id = %s', (schedule_id,))
+    deleted = bool(cursor.rowcount)
+  wp10db.commit()
+  
+  return deleted
+
+
 def decrement_remaining_generations(wp10db, schedule_id: bytes):
     """Decrements s_remaining_generations by 1 for the given schedule, not going below 0. Also updates s_last_updated_at. Returns True if updated."""
     updated_at = utcnow().strftime(TS_FORMAT_WP10).encode('utf-8')
