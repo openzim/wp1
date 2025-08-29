@@ -520,7 +520,34 @@ def cancel_zim_by_task_id(redis, task_id):
   except requests.exceptions.HTTPError as e:
     raise ZimFarmError('Task could not be deleted/canceled (task_id=%s)' %
                        task_id)
+
+
+def delete_zimfarm_schedule_by_builder_id(redis, builder_id):
+  """
+  Deletes a ZIM schedule from the Zimfarm for the given builder_id.
+  """
+  if isinstance(builder_id, bytes):
+    builder_id = builder_id.decode('utf-8')
+
+  token = get_zimfarm_token(redis)
+  if token is None:
+    raise ZimFarmError('Error retrieving auth token for request')
+  
+  base_url = get_zimfarm_url()
+  headers = _get_zimfarm_headers(token)
+  schedule_name = get_zimfarm_schedule_name(builder_id)
+
+  logger.info('Deleting zimfarm schedule=%s for builder_id=%s', schedule_name, builder_id)
+  r = requests.delete('%s/schedules/%s' % (base_url, schedule_name), headers=headers)
+
+  try:
     r.raise_for_status()
+    logger.info('Successfully deleted zimfarm schedule=%s', schedule_name)
   except requests.exceptions.HTTPError as e:
-    raise ZimFarmError('Task could not be deleted/canceled (task_id=%s)' %
-                       task_id)
+    if r.status_code == 404:
+      # Schedule doesn't exist, which is not an error for deletion
+      logger.info('Zimfarm schedule=%s not found (already deleted or never existed)', schedule_name)
+      return
+    else:
+      logger.exception(r.text)
+      raise ZimFarmError('Error deleting zimfarm schedule=%s' % schedule_name) from e
