@@ -18,6 +18,30 @@
       <div class="row">
         <div class="col-lg-6 col-md-9 mx-4">
           <h3>Create ZIM file</h3>
+          
+          <!-- Active Schedule Warning -->
+          <div v-if="activeSchedule" class="alert alert-warning" role="alert">
+            <h5 class="alert-heading">📅 Active Schedule Found</h5>
+            <p>
+              You already have a ZIM scheduled for every 
+              <strong>{{ activeSchedule.interval_months }} month{{ activeSchedule.interval_months > 1 ? 's' : '' }}</strong>.
+              <span v-if="activeSchedule.next_generation_date">
+                The next ZIM will be generated on <strong>{{ formatDate(activeSchedule.next_generation_date) }}</strong>.
+              </span>
+            </p>
+            <p class="mb-2">
+              You can delete that schedule and request a new ZIM immediately or create a new schedule.
+            </p>
+            <button 
+              @click="deleteSchedule" 
+              class="btn btn-outline-danger btn-sm"
+              :disabled="deletingSchedule"
+            >
+              <span v-if="deletingSchedule">Deleting...</span>
+              <span v-else>Delete Schedule</span>
+            </button>
+          </div>
+          
           <div v-if="status === 'NOT_REQUESTED'">
             <p>
               Use this form to create a ZIM file from your selection, so that
@@ -314,6 +338,8 @@ export default {
       serverError: false,
       status: null,
       success: true,
+      activeSchedule: null,
+      deletingSchedule: false,
       maxTitleLength: 30,
       maxDescriptionLength: 80,
       maxLongDescriptionLength: 4000,
@@ -383,6 +409,7 @@ export default {
       const data = await response.json();
       this.status = data.status;
       this.isDeleted = data.is_deleted;
+      this.activeSchedule = data.active_schedule;
       if (this.status === 'FILE_READY') {
         this.stopProgressPolling();
       } else if (this.status === 'FAILED') {
@@ -509,6 +536,49 @@ export default {
     isValidEmail: function (email) {
       if (!email) return false;
       return /.+@.+\..+/.test(email);
+    },
+    deleteSchedule: async function () {
+      if (!this.activeSchedule) return;
+      
+      this.deletingSchedule = true;
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_API_URL}/builders/${this.builderId}/schedule`,
+          {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+          }
+        );
+        
+        if (response.ok) {
+          this.activeSchedule = null;
+          // Refresh the status to ensure UI is up to date
+          await this.getStatus();
+        } else {
+          const errorData = await response.json();
+          this.errors = errorData.error_messages || ['Failed to delete schedule'];
+          this.success = false;
+        }
+      } catch (error) {
+        this.errors = ['Failed to delete schedule: ' + error.message];
+        this.success = false;
+      } finally {
+        this.deletingSchedule = false;
+      }
+    },
+    formatDate: function (dateString) {
+      if (!dateString) return 'Unknown';
+      try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        });
+      } catch {
+        return dateString;
+      }
     },
   },
   computed: {
