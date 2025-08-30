@@ -577,12 +577,13 @@ def zim_file_status_for(wp10db, builder_id):
       'active_schedule': None,
   }
   zim_file = zim_file_for_latest_selection(wp10db, builder_id)
+  
+  active_schedule = logic_zim_schedules.find_active_recurring_schedule_for_builder(wp10db, builder_id)
+  if active_schedule:
+    data['active_schedule'] = _format_active_schedule_data(active_schedule)
+    
   if not zim_file:
-    # Check for active recurring schedule even if no ZIM file exists
-    active_schedule = logic_zim_schedules.find_active_recurring_schedule_for_builder(wp10db, builder_id)
-    if active_schedule:
-      data['active_schedule'] = _format_active_schedule_data(active_schedule)
-    return data
+   return data
 
   base_url = zimfarm.get_zimfarm_url()
   data['status'] = zim_file.z_status.decode('utf-8')
@@ -599,9 +600,6 @@ def zim_file_status_for(wp10db, builder_id):
       'utf-8') if zim_schedule and zim_schedule.s_description else None
   data['long_description'] = zim_schedule.s_long_description.decode(
       'utf-8') if zim_schedule and zim_schedule.s_long_description else None
-  active_schedule = logic_zim_schedules.find_active_recurring_schedule_for_builder(wp10db, builder_id)
-  if active_schedule:
-    data['active_schedule'] = _format_active_schedule_data(active_schedule)
 
   return data
 
