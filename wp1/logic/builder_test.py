@@ -805,9 +805,11 @@ class BuilderTest(BaseWpOneDbTest):
     self.assertTrue(actual['db_delete_success'])
 
   @patch('wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id')
+  @patch('wp1.queues.cancel_scheduled_job')
   @patch('wp1.logic.builder.logic_selection')
-  def test_delete_builder_deletes_zimfarm_schedule(self, mock_selection, mock_delete_zimfarm):
+  def test_delete_builder_deletes_zimfarm_schedule(self, mock_selection, mock_cancel_job, mock_delete_zimfarm):
     builder_id = self._insert_builder()
+    self._insert_zim_schedule(builder_id=builder_id)
     mock_delete_zimfarm.return_value = None
 
     actual = logic_builder.delete_builder(self.wp10db, 1234, builder_id)
@@ -815,6 +817,13 @@ class BuilderTest(BaseWpOneDbTest):
     self.assertTrue(actual['db_delete_success'])
     self.assertTrue(actual['zimfarm_delete_success'])
     mock_delete_zimfarm.assert_called_once()
+    mock_cancel_job.assert_called_once()
+
+    # Check that the schedule is deleted from the DB
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT * FROM zim_schedules WHERE s_builder_id = %s', (builder_id,))
+      schedule = cursor.fetchone()
+    self.assertIsNone(schedule)
 
   @patch('wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id')
   @patch('wp1.logic.builder.logic_selection')
