@@ -87,7 +87,7 @@
     </div>
     <footer class="footer bg-light border-top">
       <div class="container-fluid py-3">
-        <div class="text-center">
+        <div class="text-right">
           <a href="https://kiwix.org/privacy-policy/" target="_blank" rel="noopener noreferrer">
             Privacy Policy
           </a>
