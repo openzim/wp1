@@ -137,10 +137,16 @@ def delete_builder(wp10db, user_id, builder_id):
   with wp10db.cursor() as cursor:
     # Get RQ job ID for the scheduled zim generation (only one per builder)
     cursor.execute(
-      '''SELECT s_rq_job_id FROM zim_schedules 
+      '''SELECT s_rq_job_id, s_id FROM zim_schedules 
          WHERE s_builder_id = %s AND s_rq_job_id IS NOT NULL''', (builder_id,))
     row = cursor.fetchone()
     job_id = row['s_rq_job_id'] if row else None
+    schedule_id = row['s_id'] if row else None
+
+    # Delete the zim_schedules row for this builder
+    if schedule_id:
+      cursor.execute(
+      '''DELETE FROM zim_schedules WHERE s_id = %s''', (schedule_id,))
 
     # Cancel the scheduled job if it exists
     if job_id:
