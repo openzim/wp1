@@ -42,7 +42,7 @@
             </button>
           </div>
           
-          <div v-if="status === 'NOT_REQUESTED'">
+          <div v-else-if="status === 'NOT_REQUESTED'">
             <p>
               Use this form to create a ZIM file from your selection, so that
               you can browse the articles it contains offline. The
@@ -94,9 +94,11 @@
       </div>
       <div
         v-if="
-          status === 'NOT_REQUESTED' ||
-          status === 'FAILED' ||
-          (status != 'REQUESTED' && isDeleted)
+          !activeSchedule && (
+            status === 'NOT_REQUESTED' ||
+            status === 'FAILED' ||
+            (status != 'REQUESTED' && isDeleted)
+          )
         "
         class="row"
       >
@@ -279,7 +281,7 @@
           </div>
         </div>
       </div>
-      <div v-else class="row">
+      <div v-else-if="!activeSchedule" class="row">
         <div class="col-lg-6 col-md-9 mx-4">
           <a :href="zimPathFor()"
             ><button
