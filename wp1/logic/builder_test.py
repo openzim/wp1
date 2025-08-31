@@ -786,9 +786,8 @@ class BuilderTest(BaseWpOneDbTest):
                                             mock_cancel_job):
     builder_id = self._insert_builder_with_multiple_version_selections()
 
-    actual = logic_builder.delete_builder(self.wp10db, 4321, builder_id)
-
-    self.assertFalse(actual['db_delete_success'])
+    with self.assertRaises(UserNotAuthorizedError):
+      logic_builder.delete_builder(self.wp10db, 4321, builder_id)
 
   @patch('wp1.logic.builder.queues.cancel_scheduled_job')
   @patch('wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id')
