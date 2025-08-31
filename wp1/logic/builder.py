@@ -3,16 +3,15 @@ import json
 import logging
 
 import attr
-
+from dateutil.relativedelta import relativedelta
 from kiwixstorage import KiwixStorage
 from pymysql.connections import Connection
 from redis import Redis
-from dateutil.relativedelta import relativedelta
 
 import wp1.logic.selection as logic_selection
-import wp1.logic.zim_schedules as logic_zim_schedules
-import wp1.logic.zim_files as logic_zim_tasks
 import wp1.logic.util as logic_util
+import wp1.logic.zim_files as logic_zim_tasks
+import wp1.logic.zim_schedules as logic_zim_schedules
 from wp1 import app_logging, queues, zimfarm
 from wp1.constants import (CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE,
                            MAX_ZIM_FILE_POLL_TIME, TS_FORMAT_WP10)
@@ -41,6 +40,7 @@ def get_builder_module_class(model: str):
     logger.warning('Could not find model: %s', model)
     raise ImportError(f'Builder class not found in module {model}')
   return builder_cls
+
 
 def create_or_update_builder(wp10db,
                              name,
@@ -121,16 +121,28 @@ def delete_builder(wp10db, user_id, builder_id):
   if not isinstance(builder_id, bytes):
     builder_id = str(builder_id).encode('utf-8')
 
+  # Fail fast if the Builder doesn't even exist
+  try:
+    builder = get_builder(wp10db, builder_id)
+  except ObjectNotFoundError:
+    raise
+
+  if builder.b_user_id.decode('utf-8') != str(user_id):
+    msg = 'User %s is not authorized to delete builder %s' % (
+        user_id, builder_id.decode('utf-8'))
+    logging.warning(msg)
+    raise UserNotAuthorizedError(msg)
+
   # Connect to Redis for zimfarm operations
   redis = redis_connect()
-  
+
   # Try to delete the zimfarm schedule first (before deleting from DB)
   zimfarm_delete_success = True
   try:
     zimfarm.delete_zimfarm_schedule_by_builder_id(redis, builder_id)
   except Exception as e:
-    logging.warning('Failed to delete zimfarm schedule for builder_id=%s: %s', 
-                   builder_id.decode('utf-8'), str(e))
+    logging.warning('Failed to delete zimfarm schedule for builder_id=%s: %s',
+                    builder_id.decode('utf-8'), str(e))
     zimfarm_delete_success = False
 
   # Cancel any scheduled RQ jobs before deleting from database
@@ -138,7 +150,7 @@ def delete_builder(wp10db, user_id, builder_id):
   with wp10db.cursor() as cursor:
     # Get RQ job ID for the scheduled zim generation (only one per builder)
     cursor.execute(
-      '''SELECT s_rq_job_id, s_id FROM zim_schedules 
+        '''SELECT s_rq_job_id, s_id FROM zim_schedules 
          WHERE s_builder_id = %s AND s_rq_job_id IS NOT NULL''', (builder_id,))
     row = cursor.fetchone()
     job_id = row['s_rq_job_id'] if row else None
@@ -146,8 +158,8 @@ def delete_builder(wp10db, user_id, builder_id):
 
     # Delete the zim_schedules row for this builder
     if schedule_id:
-      cursor.execute(
-      '''DELETE FROM zim_schedules WHERE s_id = %s''', (schedule_id,))
+      cursor.execute('''DELETE FROM zim_schedules WHERE s_id = %s''',
+                     (schedule_id,))
 
     # Cancel the scheduled job if it exists
     if job_id:
@@ -156,7 +168,8 @@ def delete_builder(wp10db, user_id, builder_id):
         if not success:
           rq_cancel_success = False
       except Exception as e:
-        logging.warning('Failed to cancel RQ job %s: %s', job_id.decode('utf-8'), str(e))
+        logging.warning('Failed to cancel RQ job %s: %s',
+                        job_id.decode('utf-8'), str(e))
         rq_cancel_success = False
 
     cursor.execute(
@@ -216,9 +229,10 @@ def materialize_builder(builder_cls,
 
   try:
     materializer = builder_cls()
-    next_version = logic_selection.get_next_version(wp10db, builder.b_id, content_type)
+    next_version = logic_selection.get_next_version(wp10db, builder.b_id,
+                                                    content_type)
     logger.info('Materializing builder id=%s, content_type=%s with class=%s',
-        builder.b_id, content_type, materializer.__class__.__name__)
+                builder.b_id, content_type, materializer.__class__.__name__)
     materializer.materialize(s3, wp10db, builder, content_type, next_version)
     update_current_version(wp10db, builder, next_version)
     updated = maybe_update_selection_zim_version(wp10db, builder, next_version)
@@ -259,7 +273,8 @@ def auto_handle_zim_generation(redis, wp10db, builder_id):
       logging.exception('Could not cancel task_id=%s', task_id)
 
   zim_file = latest_zim_file_for(wp10db, builder_id)
-  zim_schedule: ZimSchedule = logic_zim_schedules.get_zim_schedule_by_zim_file_id(wp10db, zim_file.z_id)
+  zim_schedule: ZimSchedule = logic_zim_schedules.get_zim_schedule_by_zim_file_id(
+      wp10db, zim_file.z_id)
   title = zim_schedule.s_title.decode(
       'utf-8') if zim_schedule.s_title is not None else None
   description = zim_schedule.s_description.decode(
@@ -457,8 +472,8 @@ def latest_selections_with_errors(wp10db, builder_id):
 
   return res
 
-def request_zim_file_task_for_builder(redis: Redis,
-                                      wp10db: Connection,
+
+def request_zim_file_task_for_builder(redis: Redis, wp10db: Connection,
                                       builder: Builder,
                                       zim_schedule_id: bytes) -> ZimTask:
   """
@@ -467,23 +482,25 @@ def request_zim_file_task_for_builder(redis: Redis,
   """
   task_id = zimfarm.request_zimfarm_task(redis, wp10db, builder)
   selection = latest_selection_for(wp10db, builder.b_id,
-           'text/tab-separated-values')
+                                   'text/tab-separated-values')
 
   with wp10db.cursor() as cursor:
     cursor.execute(
-      '''UPDATE zim_tasks SET
+        '''UPDATE zim_tasks SET
       z_status = 'REQUESTED', z_task_id = %s, z_zim_schedule_id = %s, z_requested_at = %s
       WHERE z_selection_id = %s
-      ''', (task_id, zim_schedule_id, utcnow().strftime(TS_FORMAT_WP10), selection.s_id))
-    cursor.execute(
-      '''SELECT * FROM zim_tasks WHERE z_selection_id = %s''',
-      (selection.s_id,))
+      ''', (task_id, zim_schedule_id, utcnow().strftime(TS_FORMAT_WP10),
+            selection.s_id))
+    cursor.execute('''SELECT * FROM zim_tasks WHERE z_selection_id = %s''',
+                   (selection.s_id,))
     row = cursor.fetchone()
     zim_file = ZimTask(**row) if row else None
   wp10db.commit()
   return zim_file
 
-def request_scheduled_zim_file_for_builder(builder: Builder, zim_schedule_id: bytes):
+
+def request_scheduled_zim_file_for_builder(builder: Builder,
+                                           zim_schedule_id: bytes):
   """
   Requests a scheduled ZIM file generation from the Zimfarm for the given builder.
   It will reopen connections and rebuild the selection for the builder.
@@ -498,16 +515,20 @@ def request_scheduled_zim_file_for_builder(builder: Builder, zim_schedule_id: by
   # Rebuild the selection for the builder
   builder: Builder = get_builder(wp10db, builder.b_id)
   try:
-      builder_cls = get_builder_module_class(builder.b_model.decode('utf-8'))
+    builder_cls = get_builder_module_class(builder.b_model.decode('utf-8'))
   except ImportError as e:
-      logger.error(f"Failed to load builder module class: {e}")
-      raise
-  materialize_builder(builder_cls, builder, 'text/tab-separated-values', s3, redis, wp10db)
+    logger.error(f"Failed to load builder module class: {e}")
+    raise
+  materialize_builder(builder_cls, builder, 'text/tab-separated-values', s3,
+                      redis, wp10db)
 
   if zim_schedule_id is None:
-    return None 
+    return None
 
-  task_id = request_zim_file_task_for_builder(redis, wp10db, builder, zim_schedule_id=zim_schedule_id)
+  task_id = request_zim_file_task_for_builder(redis,
+                                              wp10db,
+                                              builder,
+                                              zim_schedule_id=zim_schedule_id)
 
   return task_id
 
@@ -523,7 +544,7 @@ def handle_zim_generation(redis,
   """
   Handles the ZIM file generation and scheduling for a builder.
   """
-  
+
   if isinstance(builder_id, str):
     builder_id = builder_id.encode('utf-8')
 
@@ -541,18 +562,19 @@ def handle_zim_generation(redis,
           (builder_id, user_id))
 
   zim_schedule = zimfarm.create_or_update_zimfarm_schedule(
-    redis, wp10db, builder,
-    title=title,
-    description=description,
-    long_description=long_description
-  )
-  zim_file: ZimTask = request_zim_file_task_for_builder(redis, wp10db, builder, zim_schedule.s_id)
+      redis,
+      wp10db,
+      builder,
+      title=title,
+      description=description,
+      long_description=long_description)
+  zim_file: ZimTask = request_zim_file_task_for_builder(redis, wp10db, builder,
+                                                        zim_schedule.s_id)
 
   # If scheduled_repetitions is set, schedule future ZIM file generations
   if scheduled_repetitions is not None:
     logic_zim_schedules.schedule_future_zimfile_generations(
-      redis, wp10db, builder, zim_schedule.s_id, scheduled_repetitions
-    )
+        redis, wp10db, builder, zim_schedule.s_id, scheduled_repetitions)
 
   # In production, there is a web hook from the Zimfarm that notifies us
   # that the task is finished and we can start polling for the ZIM file
@@ -577,13 +599,14 @@ def zim_file_status_for(wp10db, builder_id):
       'active_schedule': None,
   }
   zim_file = zim_file_for_latest_selection(wp10db, builder_id)
-  
-  active_schedule = logic_zim_schedules.find_active_recurring_schedule_for_builder(wp10db, builder_id)
+
+  active_schedule = logic_zim_schedules.find_active_recurring_schedule_for_builder(
+      wp10db, builder_id)
   if active_schedule:
     data['active_schedule'] = _format_active_schedule_data(active_schedule)
-    
+
   if not zim_file:
-   return data
+    return data
 
   base_url = zimfarm.get_zimfarm_url()
   data['status'] = zim_file.z_status.decode('utf-8')
@@ -593,7 +616,8 @@ def zim_file_status_for(wp10db, builder_id):
   if zim_file.z_updated_at:
     data['is_deleted'] = logic_selection.is_zim_file_deleted(
         logic_util.wp10_timestamp_to_unix(zim_file.z_updated_at))
-  zim_schedule: ZimSchedule = logic_zim_schedules.get_zim_schedule_by_zim_file_id(wp10db, zim_file.z_id)
+  zim_schedule: ZimSchedule = logic_zim_schedules.get_zim_schedule_by_zim_file_id(
+      wp10db, zim_file.z_id)
   data['title'] = zim_schedule.s_title.decode(
       'utf-8') if zim_schedule and zim_schedule.s_title else None
   data['description'] = zim_schedule.s_description.decode(
@@ -606,26 +630,23 @@ def zim_file_status_for(wp10db, builder_id):
 
 def _format_active_schedule_data(schedule):
   """Format active schedule data for API response."""
-  
+
   data = {
-    'schedule_id': schedule.s_id.decode('utf-8'),
-    'interval_months': schedule.s_interval,
-    'remaining_generations': schedule.s_remaining_generations,
-    'last_updated_at': schedule.s_last_updated_at.decode('utf-8'),
-    'email': schedule.s_email.decode('utf-8') if schedule.s_email else None,
+      'schedule_id': schedule.s_id.decode('utf-8'),
+      'interval_months': schedule.s_interval,
+      'remaining_generations': schedule.s_remaining_generations,
+      'last_updated_at': schedule.s_last_updated_at.decode('utf-8'),
+      'email': schedule.s_email.decode('utf-8') if schedule.s_email else None,
   }
-  
+
   # Calculate next generation date
   if schedule.s_last_updated_at and schedule.s_interval:
-    try:
-      last_updated = schedule.last_updated_at_dt
-      next_generation = last_updated + relativedelta(months=schedule.s_interval)
-      data['next_generation_date'] = next_generation.strftime('%Y-%m-%d')
-    except:
-      data['next_generation_date'] = None
+    last_updated = schedule.last_updated_at_dt
+    next_generation = last_updated + relativedelta(months=schedule.s_interval)
+    data['next_generation_date'] = next_generation.strftime('%Y-%m-%d')
   else:
     data['next_generation_date'] = None
-    
+
   return data
 
 
@@ -756,5 +777,7 @@ def get_builders_with_selections(wp10db, user_id):
     builder.update(_get_selection_data(db_builder))
     builder.update(_get_zimfile_data(db_builder))
     result.append(builder)
+
+  return result
 
   return result

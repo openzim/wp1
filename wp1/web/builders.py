@@ -4,17 +4,13 @@ import flask
 
 import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
-import wp1.logic.zim_schedules as logic_zim_schedules
 import wp1.logic.zim_files as logic_zim_tasks
+import wp1.logic.zim_schedules as logic_zim_schedules
 from wp1 import queues
 from wp1.constants import EXT_TO_CONTENT_TYPE
 from wp1.credentials import CREDENTIALS, ENV
-from wp1.exceptions import (
-    ObjectNotFoundError,
-    UserNotAuthorizedError,
-    ZimFarmError,
-    ZimFarmTooManyArticlesError,
-)
+from wp1.exceptions import (ObjectNotFoundError, UserNotAuthorizedError,
+                            ZimFarmError, ZimFarmTooManyArticlesError)
 from wp1.web import authenticate, emails
 from wp1.web.db import get_db
 from wp1.web.redis import get_redis
@@ -43,8 +39,8 @@ def _create_or_update_builder(wp10db, data, builder_id=None):
 
   builder_obj = builder_cls()
   valid_values, invalid_values, errors = builder_obj.validate(project=project,
-                                                          wp10db=wp10db,
-                                                          **params)
+                                                              wp10db=wp10db,
+                                                              **params)
   if invalid_values or errors:
     return flask.jsonify({
         'success': False,
@@ -70,7 +66,7 @@ def _create_or_update_builder(wp10db, data, builder_id=None):
   # updated, return 404.
   if builder_id is None:
     flask.abort(404)
-  
+
   builder = logic_builder.get_builder(wp10db, builder_id)
 
   # The builder has been updated. Enqueue a task to materialize selections and
@@ -128,10 +124,16 @@ def delete_builder(builder_id):
   wp10db = get_db('wp10db')
   user_id = flask.session['user']['identity']['sub']
 
-  status = logic_builder.delete_builder(wp10db, user_id, builder_id)
+  try:
+    status = logic_builder.delete_builder(wp10db, user_id, builder_id)
+  except UserNotAuthorizedError as e:
+    flask.abort(403)
+  except ObjectNotFoundError:
+    flask.abort(404)
 
   if not status['db_delete_success']:
-    flask.abort(404)
+    return flask.jsonify(
+        {'error_messages': ['Failed to delete builder from database']}), 500
 
   return {'status': '204'}
 
@@ -211,14 +213,15 @@ def create_zim_file_for_builder(builder_id):
     scheduled_repetitions = None
 
   try:
-    logic_builder.handle_zim_generation(redis,
-                    wp10db,
-                    builder_id,
-                    user_id=user_id,
-                    title=title,
-                    description=desc,
-                    long_description=long_desc,
-                    scheduled_repetitions=scheduled_repetitions)
+    logic_builder.handle_zim_generation(
+        redis,
+        wp10db,
+        builder_id,
+        user_id=user_id,
+        title=title,
+        description=desc,
+        long_description=long_desc,
+        scheduled_repetitions=scheduled_repetitions)
   except ObjectNotFoundError:
     return flask.jsonify(
         {'error_messages': ['No builder found with id = %s' % builder_id]}), 404
@@ -274,7 +277,8 @@ def update_zimfarm_status():
                                           set_updated_now=True)
 
       zim_task = logic_zim_tasks.get_zim_task_by_task_id(wp10db, task_id)
-      zim_schedule = logic_zim_schedules.get_zim_schedule(wp10db, zim_task.z_zim_schedule_id)
+      zim_schedule = logic_zim_schedules.get_zim_schedule(
+          wp10db, zim_task.z_zim_schedule_id)
       if zim_schedule is None:
         return 'Error: ZIM not found for task_id %s' % task_id, 500
 
@@ -300,26 +304,30 @@ def delete_schedule_for_builder(builder_id):
   """Delete an active recurring schedule for a builder."""
   redis = get_redis()
   wp10db = get_db('wp10db')
-  
+
   user_id = flask.session['user']['identity']['sub']
-  
+
   # Get the builder and verify ownership
   builder = logic_builder.get_builder(wp10db, builder_id.encode('utf-8'))
   if not builder:
     return flask.jsonify({'error_messages': ['Builder not found']}), 404
-    
+
   builder_user_id = builder.b_user_id.decode('utf-8')
   if str(user_id) != builder_user_id:
-    return flask.jsonify({'error_messages': ['Not authorized to modify this builder']}), 403
-    
+    return flask.jsonify(
+        {'error_messages': ['Not authorized to modify this builder']}), 403
+
   # Find the active recurring schedule
-  active_schedule = logic_zim_schedules.find_active_recurring_schedule_for_builder(wp10db, builder_id.encode('utf-8'))
+  active_schedule = logic_zim_schedules.find_active_recurring_schedule_for_builder(
+      wp10db, builder_id.encode('utf-8'))
   if not active_schedule:
-    return flask.jsonify({'error_messages': ['No active recurring schedule found']}), 404
-    
+    return flask.jsonify(
+        {'error_messages': ['No active recurring schedule found']}), 404
+
   # Delete the schedule
-  deleted = logic_zim_schedules.delete_zim_schedule(redis, wp10db, active_schedule.s_id)
+  deleted = logic_zim_schedules.delete_zim_schedule(redis, wp10db,
+                                                    active_schedule.s_id)
   if not deleted:
     return flask.jsonify({'error_messages': ['Failed to delete schedule']}), 500
-    
+
   return '', 204
