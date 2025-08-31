@@ -123,7 +123,6 @@ def get_builder(builder_id):
 def delete_builder(builder_id):
   wp10db = get_db('wp10db')
   user_id = flask.session['user']['identity']['sub']
-<<<<<<< HEAD
 
   try:
     status = logic_builder.delete_builder(wp10db, user_id, builder_id)
@@ -131,9 +130,6 @@ def delete_builder(builder_id):
     flask.abort(403)
   except ObjectNotFoundError:
     flask.abort(404)
-=======
-  status = logic_builder.delete_builder(wp10db, user_id, builder_id)
->>>>>>> d67c9a1 (feat(email): Add email confirmation feature for ZIM file notifications)
 
   if not status['db_delete_success']:
     return flask.jsonify(
