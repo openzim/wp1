@@ -244,7 +244,8 @@ class BuilderTest(BaseWpOneDbTest):
       cursor.execute(
           '''INSERT INTO zim_schedules (s_id, s_builder_id, s_rq_job_id, s_remaining_generations, s_last_updated_at, s_title, s_description, s_long_description)
              VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-          ''', (schedule_id, builder_id, rq_job_id, remaining_generations, last_updated_at, title, description, long_description))
+          ''', (schedule_id, builder_id, rq_job_id, remaining_generations,
+                last_updated_at, title, description, long_description))
     self.wp10db.commit()
     return schedule_id
 
@@ -288,7 +289,8 @@ class BuilderTest(BaseWpOneDbTest):
                   z_requested_at)
                VALUES
                  (%s, %s, %s, %s, %s, "20230101020202")
-            ''', (id_, zim_schedule_id, zim_task_id, zimfarm_status, zim_file_updated_at))
+            ''', (id_, zim_schedule_id, zim_task_id, zimfarm_status,
+                  zim_file_updated_at))
     self.wp10db.commit()
 
   def _get_builder_by_user_id(self):
@@ -442,7 +444,8 @@ class BuilderTest(BaseWpOneDbTest):
       self._insert_selection(1,
                              'text/tab-separated-values',
                              zim_file_ready=True)
-      self._insert_zim_schedule(b'schedule_123', b'1a-2b-3c-4d', b'rq_job_id_123')
+      self._insert_zim_schedule(b'schedule_123', b'1a-2b-3c-4d',
+                                b'rq_job_id_123')
 
       logic_builder.materialize_builder(TestBuilderClass, self.builder,
                                         'text/tab-separated-values')
@@ -767,7 +770,8 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.queues.cancel_scheduled_job')
   @patch('wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id')
   @patch('wp1.logic.builder.logic_selection')
-  def test_delete_builder(self, mock_selection, mock_delete_schedule, mock_cancel_job):
+  def test_delete_builder(self, mock_selection, mock_delete_schedule,
+                          mock_cancel_job):
     builder_id = self._insert_builder_with_multiple_version_selections()
 
     actual = logic_builder.delete_builder(self.wp10db, 1234, builder_id)
@@ -777,7 +781,9 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.queues.cancel_scheduled_job')
   @patch('wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id')
   @patch('wp1.logic.builder.logic_selection')
-  def test_delete_builder_user_id_unmatched(self, mock_selection, mock_delete_schedule, mock_cancel_job):
+  def test_delete_builder_user_id_unmatched(self, mock_selection,
+                                            mock_delete_schedule,
+                                            mock_cancel_job):
     builder_id = self._insert_builder_with_multiple_version_selections()
 
     actual = logic_builder.delete_builder(self.wp10db, 4321, builder_id)
@@ -787,17 +793,20 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.queues.cancel_scheduled_job')
   @patch('wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id')
   @patch('wp1.logic.builder.logic_selection')
-  def test_delete_builder_user_builder_id_unmatched(self, mock_selection, mock_delete_schedule, mock_cancel_job):
-    builder_id = self._insert_builder_with_multiple_version_selections()
+  def test_delete_builder_user_builder_id_unmatched(self, mock_selection,
+                                                    mock_delete_schedule,
+                                                    mock_cancel_job):
+    self._insert_builder_with_multiple_version_selections()
 
-    actual = logic_builder.delete_builder(self.wp10db, 1234, 'abcd')
-
-    self.assertFalse(actual['db_delete_success'])
+    with self.assertRaises(ObjectNotFoundError):
+      logic_builder.delete_builder(self.wp10db, 1234, 'abcd')
 
   @patch('wp1.logic.builder.queues.cancel_scheduled_job')
   @patch('wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id')
   @patch('wp1.logic.builder.logic_selection')
-  def test_delete_builder_user_no_selections(self, mock_selection, mock_delete_schedule, mock_cancel_job):
+  def test_delete_builder_user_no_selections(self, mock_selection,
+                                             mock_delete_schedule,
+                                             mock_cancel_job):
     builder_id = self._insert_builder()
 
     actual = logic_builder.delete_builder(self.wp10db, 1234, builder_id)
@@ -807,7 +816,9 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id')
   @patch('wp1.queues.cancel_scheduled_job')
   @patch('wp1.logic.builder.logic_selection')
-  def test_delete_builder_deletes_zimfarm_schedule(self, mock_selection, mock_cancel_job, mock_delete_zimfarm):
+  def test_delete_builder_deletes_zimfarm_schedule(self, mock_selection,
+                                                   mock_cancel_job,
+                                                   mock_delete_zimfarm):
     builder_id = self._insert_builder()
     self._insert_zim_schedule(builder_id=builder_id)
     mock_delete_zimfarm.return_value = None
@@ -821,13 +832,15 @@ class BuilderTest(BaseWpOneDbTest):
 
     # Check that the schedule is deleted from the DB
     with self.wp10db.cursor() as cursor:
-      cursor.execute('SELECT * FROM zim_schedules WHERE s_builder_id = %s', (builder_id,))
+      cursor.execute('SELECT * FROM zim_schedules WHERE s_builder_id = %s',
+                     (builder_id,))
       schedule = cursor.fetchone()
     self.assertIsNone(schedule)
 
   @patch('wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id')
   @patch('wp1.logic.builder.logic_selection')
-  def test_delete_builder_zimfarm_delete_fails(self, mock_selection, mock_delete_zimfarm):
+  def test_delete_builder_zimfarm_delete_fails(self, mock_selection,
+                                               mock_delete_zimfarm):
     builder_id = self._insert_builder()
     mock_delete_zimfarm.side_effect = Exception("Zimfarm error")
 
@@ -840,7 +853,9 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.queues.cancel_scheduled_job')
   @patch('wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id')
   @patch('wp1.logic.builder.logic_selection.delete_keys_from_storage')
-  def test_delete_builder_deletes_object_keys(self, mock_delete_keys, mock_delete_schedule, mock_cancel_job):
+  def test_delete_builder_deletes_object_keys(self, mock_delete_keys,
+                                              mock_delete_schedule,
+                                              mock_cancel_job):
     builder_id = self._insert_builder_with_multiple_version_selections()
     mock_delete_keys.return_value = True
 
@@ -856,7 +871,9 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.queues.cancel_scheduled_job')
   @patch('wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id')
   @patch('wp1.logic.builder.logic_selection.delete_keys_from_storage')
-  def test_delete_builder_object_keys_missing(self, mock_delete_keys, mock_delete_schedule, mock_cancel_job):
+  def test_delete_builder_object_keys_missing(self, mock_delete_keys,
+                                              mock_delete_schedule,
+                                              mock_cancel_job):
     builder_id = self._insert_builder_with_multiple_version_selections()
     mock_delete_keys.return_value = True
 
@@ -878,11 +895,13 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.queues.cancel_scheduled_job')
   @patch('wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id')
   @patch('wp1.logic.builder.logic_selection.delete_keys_from_storage')
-  def test_delete_builder_cancels_scheduled_jobs(self, mock_delete_keys, mock_delete_schedule, mock_cancel_job):
+  def test_delete_builder_cancels_scheduled_jobs(self, mock_delete_keys,
+                                                 mock_delete_schedule,
+                                                 mock_cancel_job):
     builder_id = self._insert_builder()
     mock_delete_keys.return_value = True
     mock_cancel_job.return_value = True
-    
+
     # Insert a zim schedule with an RQ job ID
     with self.wp10db.cursor() as cursor:
       cursor.execute(
@@ -945,15 +964,16 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.zimfarm.request_zimfarm_task')
   @patch('wp1.logic.builder.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
-  def test_handle_zim_generation(self, mock_utcnow,
-                                 mock_request_zimfarm_task,
+  def test_handle_zim_generation(self, mock_utcnow, mock_request_zimfarm_task,
                                  mock_create_zimfarm_schedule):
     redis = MagicMock()
     mock_request_zimfarm_task.return_value = '1234-a'
-    mock_create_zimfarm_schedule.return_value = ZimSchedule(s_id=b'schedule_123',
-                                                            s_builder_id=b'1a-2b-3c-4d',
-                                                            s_rq_job_id=b'rq_job_id_123',
-                                                            s_last_updated_at=b'20191225044444',)
+    mock_create_zimfarm_schedule.return_value = ZimSchedule(
+        s_id=b'schedule_123',
+        s_builder_id=b'1a-2b-3c-4d',
+        s_rq_job_id=b'rq_job_id_123',
+        s_last_updated_at=b'20191225044444',
+    )
 
     builder_id = self._insert_builder()
     self._insert_selection(1,
@@ -969,13 +989,13 @@ class BuilderTest(BaseWpOneDbTest):
                                         description='a',
                                         long_description='zz')
 
-    mock_create_zimfarm_schedule.assert_called_once_with(redis, self.wp10db,
+    mock_create_zimfarm_schedule.assert_called_once_with(redis,
+                                                         self.wp10db,
                                                          self.builder,
                                                          title='test_title',
                                                          description='a',
                                                          long_description='zz')
-    mock_request_zimfarm_task.assert_called_once_with(redis,
-                                                      self.wp10db,
+    mock_request_zimfarm_task.assert_called_once_with(redis, self.wp10db,
                                                       self.builder)
     with self.wp10db.cursor() as cursor:
       cursor.execute('SELECT z_task_id, z_status, z_requested_at'
@@ -1043,13 +1063,15 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
   def test_handle_zim_generation_with_existing_schedule_update(
-      self, mock_utcnow, mock_zimfarm_schedule_exists, 
-      mock_schedule_future, mock_request_zimfarm_task, mock_update_schedule):
+      self, mock_utcnow, mock_zimfarm_schedule_exists, mock_schedule_future,
+      mock_request_zimfarm_task, mock_update_schedule):
     """Test handle_zim_generation when existing schedule exists and needs updating."""
     redis = MagicMock()
 
     builder_id = self._insert_builder()
-    self._insert_selection(1, 'text/tab-separated-values', builder_id=builder_id)
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           builder_id=builder_id)
     self._insert_zim_schedule(schedule_id=b'schedule_123',
                               builder_id=builder_id,
                               rq_job_id=b'rq_job_id_123',
@@ -1057,28 +1079,35 @@ class BuilderTest(BaseWpOneDbTest):
                               remaining_generations=0)
 
     mock_request_zimfarm_task.return_value = '1234-a'
-    mock_update_schedule.return_value = ZimSchedule(s_id=b'schedule_123',
-                                                            s_builder_id=b'1a-2b-3c-4d',
-                                                            s_rq_job_id=b'rq_job_id_123',
-                                                            s_last_updated_at=b'20191225044444',)
-    
+    mock_update_schedule.return_value = ZimSchedule(
+        s_id=b'schedule_123',
+        s_builder_id=b'1a-2b-3c-4d',
+        s_rq_job_id=b'rq_job_id_123',
+        s_last_updated_at=b'20191225044444',
+    )
+
     result = logic_builder.handle_zim_generation(
-        redis, self.wp10db, builder_id,
+        redis,
+        self.wp10db,
+        builder_id,
         user_id=1234,
         title='Updated Title',
         description='Updated Description',
         long_description='Updated Long Description',
-        scheduled_repetitions=5
-    )
-    
+        scheduled_repetitions=5)
+
     mock_update_schedule.assert_called_once_with(
-        redis, self.wp10db, self.builder,
+        redis,
+        self.wp10db,
+        self.builder,
         title='Updated Title',
         description='Updated Description',
-        long_description='Updated Long Description'
-    )
-    mock_request_zimfarm_task.assert_called_once_with(redis, self.wp10db, self.builder)
-    mock_schedule_future.assert_called_once_with(redis, self.wp10db, self.builder, b'schedule_123', 5)
+        long_description='Updated Long Description')
+    mock_request_zimfarm_task.assert_called_once_with(redis, self.wp10db,
+                                                      self.builder)
+    mock_schedule_future.assert_called_once_with(redis, self.wp10db,
+                                                 self.builder, b'schedule_123',
+                                                 5)
 
     self.assertEqual(b'1234-a', result)
 
@@ -1088,35 +1117,42 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
   def test_handle_zim_generation_create_new_schedule(
-      self, mock_utcnow, mock_zimfarm_schedule_exists, 
+      self, mock_utcnow, mock_zimfarm_schedule_exists,
       mock_request_zimfarm_task, mock_create_schedule):
     """Test handle_zim_generation when no existing schedule exists, creates new one."""
     redis = MagicMock()
 
     builder_id = self._insert_builder()
-    self._insert_selection(1, 'text/tab-separated-values', builder_id=builder_id)
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           builder_id=builder_id)
 
     mock_request_zimfarm_task.return_value = '1234-a'
-    mock_create_schedule.return_value = ZimSchedule(s_id=b'schedule_123',
-                                                            s_builder_id=b'1a-2b-3c-4d',
-                                                            s_rq_job_id=b'rq_job_id_123',
-                                                            s_last_updated_at=b'20191225044444',)
-    
+    mock_create_schedule.return_value = ZimSchedule(
+        s_id=b'schedule_123',
+        s_builder_id=b'1a-2b-3c-4d',
+        s_rq_job_id=b'rq_job_id_123',
+        s_last_updated_at=b'20191225044444',
+    )
+
     result = logic_builder.handle_zim_generation(
-        redis, self.wp10db, builder_id,
+        redis,
+        self.wp10db,
+        builder_id,
         user_id=1234,
         title='New Title',
         description='New Description',
-        long_description='New Long Description'
-    )
-    
+        long_description='New Long Description')
+
     mock_create_schedule.assert_called_once_with(
-        redis, self.wp10db, self.builder,
+        redis,
+        self.wp10db,
+        self.builder,
         title='New Title',
         description='New Description',
-        long_description='New Long Description'
-    )
-    mock_request_zimfarm_task.assert_called_once_with(redis, self.wp10db, self.builder)
+        long_description='New Long Description')
+    mock_request_zimfarm_task.assert_called_once_with(redis, self.wp10db,
+                                                      self.builder)
 
     self.assertEqual(b'1234-a', result)
 
@@ -1326,7 +1362,12 @@ class BuilderTest(BaseWpOneDbTest):
                            has_errors=False,
                            zim_task_id='9def',
                            zim_file_ready=False)
-    self._insert_zim_schedule(b'schedule_123', builder_id, b'rq_job_id_123', title=b'Title', description=b'A desc', long_description=b'Long desc')
+    self._insert_zim_schedule(b'schedule_123',
+                              builder_id,
+                              b'rq_job_id_123',
+                              title=b'Title',
+                              description=b'A desc',
+                              long_description=b'Long desc')
 
     with self.wp10db.cursor() as cursor:
       cursor.execute('''UPDATE zim_tasks z
@@ -1398,15 +1439,18 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.connect_storage')
   @patch('wp1.logic.builder.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
-  def test_request_zim_file_task_for_builder(self, mock_utcnow, mock_connect_storage,
-                                        mock_redis_connect, mock_wp10_connect,
-                                        mock_request_zimfarm_task):
+  def test_request_zim_file_task_for_builder(self, mock_utcnow,
+                                             mock_connect_storage,
+                                             mock_redis_connect,
+                                             mock_wp10_connect,
+                                             mock_request_zimfarm_task):
     """Test basic zimfile request functionality"""
     self._insert_builder()
     self._insert_selection(1,
                            'text/tab-separated-values',
                            builder_id=self.builder.b_id)
-    self._insert_zim_schedule(b'schedule_123', self.builder.b_id, b'rq_job_id_123')
+    self._insert_zim_schedule(b'schedule_123', self.builder.b_id,
+                              b'rq_job_id_123')
 
     mock_wp10_connect.return_value = self.wp10db
     redis_mock = MagicMock()
@@ -1416,14 +1460,14 @@ class BuilderTest(BaseWpOneDbTest):
 
     mock_request_zimfarm_task.return_value = 'test_task_id_123'
 
-    actual_zim_file = logic_builder.request_zim_file_task_for_builder(redis_mock,
-                                                             self.wp10db,
-                                                             builder=self.builder,
-                                                             zim_schedule_id='schedule_123')
+    actual_zim_file = logic_builder.request_zim_file_task_for_builder(
+        redis_mock,
+        self.wp10db,
+        builder=self.builder,
+        zim_schedule_id='schedule_123')
 
     self.assertEqual(b'test_task_id_123', actual_zim_file.z_task_id)
-    mock_request_zimfarm_task.assert_called_once_with(redis_mock,
-                                                      self.wp10db,
+    mock_request_zimfarm_task.assert_called_once_with(redis_mock, self.wp10db,
                                                       self.builder)
 
     with self.wp10db.cursor() as cursor:
@@ -1448,7 +1492,8 @@ class BuilderTest(BaseWpOneDbTest):
     self._insert_selection(1,
                            'text/tab-separated-values',
                            builder_id=self.builder.b_id)
-    self._insert_zim_schedule(b'schedule_123', self.builder.b_id, b'rq_job_id_123')
+    self._insert_zim_schedule(b'schedule_123', self.builder.b_id,
+                              b'rq_job_id_123')
 
     mock_wp10_connect.return_value = self.wp10db
     redis_mock = MagicMock()
@@ -1457,16 +1502,14 @@ class BuilderTest(BaseWpOneDbTest):
     mock_connect_storage.return_value = s3_mock
 
     mock_request_zimfarm_task.return_value = 'test_task_id_456'
-    
+
     with patch('wp1.logic.builder.importlib.import_module') as mock_import:
       mock_module = MagicMock()
       mock_module.Builder = MagicMock()
       mock_import.return_value = mock_module
 
       actual_zim_file = logic_builder.request_scheduled_zim_file_for_builder(
-          builder=self.builder,
-          zim_schedule_id=b'schedule_123'
-      )
+          builder=self.builder, zim_schedule_id=b'schedule_123')
 
     self.assertEqual(b'test_task_id_456', actual_zim_file.z_task_id)
     mock_materialize_builder.assert_called_once()
@@ -1486,22 +1529,21 @@ class BuilderTest(BaseWpOneDbTest):
     self._insert_selection(1,
                            'text/tab-separated-values',
                            builder_id=self.builder.b_id)
-    self._insert_zim_schedule(b'schedule_123', self.builder.b_id, b'rq_job_id_123')
+    self._insert_zim_schedule(b'schedule_123', self.builder.b_id,
+                              b'rq_job_id_123')
 
     mock_wp10_connect.return_value = self.wp10db
     redis_mock = MagicMock()
     s3_mock = MagicMock()
     mock_redis_connect.return_value = redis_mock
     mock_connect_storage.return_value = s3_mock
-    
+
     mock_module = MagicMock()
-    mock_module.Builder = None  # Simulate missing Builder class 
+    mock_module.Builder = None  # Simulate missing Builder class
     mock_import_module.return_value = mock_module
     with self.assertRaises(ImportError) as cm:
-        actual = logic_builder.request_scheduled_zim_file_for_builder(
-            builder=self.builder,
-            zim_schedule_id=b'schedule_123'
-        )
+      actual = logic_builder.request_scheduled_zim_file_for_builder(
+          builder=self.builder, zim_schedule_id=b'schedule_123')
 
   @patch('wp1.logic.builder.importlib.import_module')
   @patch('wp1.logic.builder.materialize_builder')
@@ -1512,28 +1554,27 @@ class BuilderTest(BaseWpOneDbTest):
   @patch('wp1.logic.builder.connect_storage')
   @patch('wp1.logic.zim_schedules.utcnow',
          return_value=datetime.datetime(2022, 12, 25, 0, 1, 2))
-  def test_request_scheduled_zim_file_for_builder_with_zim_schedule(self,
-                                                  mock_utcnow,
-                                                  mock_connect_storage,
-                                                  mock_redis_connect,
-                                                  mock_wp10_connect,
-                                                  mock_zim_file_for_latest_selection,
-                                                  mock_request_zimfarm_task,
-                                                  mock_materialize_builder,
-                                                  mock_import_module):
+  def test_request_scheduled_zim_file_for_builder_with_zim_schedule(
+      self, mock_utcnow, mock_connect_storage, mock_redis_connect,
+      mock_wp10_connect, mock_zim_file_for_latest_selection,
+      mock_request_zimfarm_task, mock_materialize_builder, mock_import_module):
     """Test zimfile request with rebuild_selection=True"""
     self._insert_builder()
-    self._insert_selection(1, 'text/tab-separated-values', builder_id=self.builder.b_id)
-    self._insert_zim_schedule(b'schedule_123', self.builder.b_id, b'rq_job_id_123')
+    self._insert_selection(1,
+                           'text/tab-separated-values',
+                           builder_id=self.builder.b_id)
+    self._insert_zim_schedule(b'schedule_123', self.builder.b_id,
+                              b'rq_job_id_123')
 
     mock_wp10_connect.return_value = self.wp10db
     redis_mock = MagicMock()
     s3_mock = MagicMock()
     mock_redis_connect.return_value = redis_mock
     mock_connect_storage.return_value = s3_mock
-    
+
     mock_request_zimfarm_task.return_value = 'test_task_id_456'
-    mock_zim_file_for_latest_selection.return_value = ZimTask(z_id=123, z_selection_id=1, z_zim_schedule_id=b'schedule_123')
+    mock_zim_file_for_latest_selection.return_value = ZimTask(
+        z_id=123, z_selection_id=1, z_zim_schedule_id=b'schedule_123')
 
     mock_module = MagicMock()
     mock_builder_cls = MagicMock()
@@ -1541,9 +1582,7 @@ class BuilderTest(BaseWpOneDbTest):
     mock_import_module.return_value = mock_module
 
     actual_zim_file = logic_builder.request_scheduled_zim_file_for_builder(
-        builder=self.builder,
-        zim_schedule_id=b'schedule_123'
-    )
+        builder=self.builder, zim_schedule_id=b'schedule_123')
 
     self.assertEqual(b'test_task_id_456', actual_zim_file.z_task_id)
     mock_materialize_builder.assert_called_once()
@@ -1572,30 +1611,28 @@ class BuilderTest(BaseWpOneDbTest):
 
     with self.assertRaises(Exception):
       logic_builder.request_zim_file_task_for_builder(
-        redis=redis_mock,
-        wp10db=self.wp10db,
-        builder=self.builder.b_id,
-        zim_schedule_id=b'schedule_123'
-      )
+          redis=redis_mock,
+          wp10db=self.wp10db,
+          builder=self.builder.b_id,
+          zim_schedule_id=b'schedule_123')
 
     mock_request_zimfarm_task.assert_called_once()
 
   def test_get_builder_module_class_success(self):
-      cls = logic_builder.get_builder_module_class('wp1.selection.models.simple')
-      self.assertIs(cls, SimpleBuilder)
+    cls = logic_builder.get_builder_module_class('wp1.selection.models.simple')
+    self.assertIs(cls, SimpleBuilder)
 
   def test_get_builder_module_class_no_builder_attribute(self):
-      with self.assertRaises(ImportError) as cm:
-          logic_builder.get_builder_module_class('nonexistent.module')
-      self.assertIn('No module named', str(cm.exception))
+    with self.assertRaises(ImportError) as cm:
+      logic_builder.get_builder_module_class('nonexistent.module')
+    self.assertIn('No module named', str(cm.exception))
 
   @patch('wp1.logic.builder.importlib.import_module')
   def test_get_builder_module_class_missing_builder_class(self, mock_import):
-      mock_module = MagicMock()
-      mock_module.Builder = None  # Simulate missing Builder class 
-      mock_import.return_value = mock_module
-      with self.assertRaises(ImportError) as cm:
-          logic_builder.get_builder_module_class('wp1.selection.models.simple')
+    mock_module = MagicMock()
+    mock_module.Builder = None  # Simulate missing Builder class
+    mock_import.return_value = mock_module
+    with self.assertRaises(ImportError) as cm:
+      logic_builder.get_builder_module_class('wp1.selection.models.simple')
 
-      self.assertIn('Builder class not found in module', str(cm.exception))
-
+    self.assertIn('Builder class not found in module', str(cm.exception))
