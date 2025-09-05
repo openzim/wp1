@@ -20,7 +20,7 @@
           <h3>Create ZIM file</h3>
           
           <!-- Active Schedule Warning -->
-          <div v-if="activeSchedule" class="alert alert-warning" role="alert">
+          <div v-if="showActiveScheduleWarning" class="alert alert-warning" role="alert">
             <h5 class="alert-heading">📅 Active Schedule Found</h5>
             <p>
               You already have a ZIM scheduled for every 
@@ -604,6 +604,12 @@ export default {
       return (
         longCount >= descCount && this.longDescription !== this.description
       );
+    },
+    showActiveScheduleWarning: function () {
+      // Only show the active schedule warning when there is an active schedule
+      // and there is not currently a ZIM being created (status 'REQUESTED').
+      console.log(this.activeSchedule, this.status);
+      return this.activeSchedule && this.status !== 'REQUESTED';
     },
     hasLengthErrors: function () {
       // Prevent empty required fields and invalid long description
