@@ -279,8 +279,8 @@ def schedule_future_zimfile_generations(redis, wp10db, builder,
     token = zim_schedule.s_email_confirmation_token.decode('utf-8')
     email_confirm_url = CREDENTIALS.get(ENV, {}).get('CLIENT_URL',
                                                      {}).get('api')
-    confirm_url = f"{email_confirm_url}/api/v1/zim/confirm-email?token={token}"
-    unsubscribe_url = f"{email_confirm_url}/api/v1/zim/unsubscribe-email?token={token}"
+    confirm_url = f"{email_confirm_url}/v1/zim/confirm-email?token={token}"
+    unsubscribe_url = f"{email_confirm_url}/v1/zim/unsubscribe-email?token={token}"
     send_zim_email_confirmation(recipient_username=username,
                                 recipient_email=email.decode('utf-8'),
                                 zim_title=zim_title,
