@@ -171,6 +171,17 @@ def set_zim_schedule_id_to_zim_task_by_selection(wp10db, selection_id: bytes, zi
     return updated
 
 
+def has_email_been_confirmed(wp10db, email):
+  """Checks if an email address has been previously confirmed in any zim_schedule.
+  Returns True if the email exists with no confirmation token (confirmed), False otherwise."""
+  with wp10db.cursor() as cursor:
+    cursor.execute(
+      'SELECT 1 FROM zim_schedules WHERE s_email = %s AND s_email_confirmation_token IS NULL LIMIT 1',
+      (email,)
+    )
+    return cursor.fetchone() is not None
+
+
 def confirm_email_subscription(wp10db, token):
   """Confirms email subscription by removing the token. Returns True if found and confirmed."""
   with wp10db.cursor() as cursor:
@@ -254,7 +265,8 @@ def schedule_future_zimfile_generations(redis, wp10db, builder, zim_schedule_id:
   zim_schedule.s_rq_job_id = job.id.encode('utf-8')
   zim_schedule.s_email = email
   zim_schedule.set_last_updated_at_now()
-  if email is not None:
+  if email is not None and not has_email_been_confirmed(wp10db, email):
+    # Email not previously confirmed, generate token and send confirmation email
     zim_schedule.s_email_confirmation_token = generate_email_confirmation_token()
     username = get_username_by_zim_schedule_id(wp10db, zim_schedule_id)
     zim_title = zim_schedule.s_title.decode('utf-8') if zim_schedule.s_title else 'Your ZIM File'
