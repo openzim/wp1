@@ -392,7 +392,7 @@ def generate_global_table_data(wp10db):
           'project': None,
           'project_display': 'All articles',
           'create_link': False,  # Whether the values link to the web app.
-          'title': 'All rated articles by quality and importance',
+          'title': 'All articles by quality and importance',
           'center_table': True,
       })
 
@@ -430,9 +430,14 @@ def upload_global_table():
   try:
     logger.info('Getting table data for: global table')
     table_data = generate_global_table_data(wp10db)
-    wikicode = create_wikicode(table_data)
+    extra_note = (
+        'Articles in this table may be listed in multiple projects. '
+        'The counts, especially the total article count, is not a count of the '
+        'total number of articles in English Wikipedia.')
+    wikicode = create_wikicode({**table_data, 'extra_note': extra_note})
     page_name = 'User:WP 1.0 bot/Tables/OverallArticles'
     logger.info('Uploading wikicode to Wikipedia: global table')
+    print(wikicode)
     page = api.get_page(page_name)
     api.save_page(page, wikicode, 'Copying assessment table to wiki.')
   finally:
