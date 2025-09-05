@@ -1,14 +1,18 @@
-from datetime import timedelta
 import pickle
 import unittest
-from unittest.mock import patch, MagicMock
+from datetime import timedelta
+from unittest.mock import MagicMock, patch
 
 import attr
 
-from wp1 import tables
-from wp1 import templates
+from wp1 import tables, templates
 from wp1.base_db_test import BaseWpOneDbTest
-from wp1.constants import AssessmentKind, CATEGORY_NS_INT, GLOBAL_TIMESTAMP_WIKI, TS_FORMAT
+from wp1.constants import (
+    CATEGORY_NS_INT,
+    GLOBAL_TIMESTAMP_WIKI,
+    TS_FORMAT,
+    AssessmentKind,
+)
 from wp1.models.wp10.category import Category
 from wp1.models.wp10.rating import Rating
 
@@ -739,8 +743,7 @@ class TablesDbTest(BaseWpOneDbTest):
 
   def test_generate_global_table_data(self):
     actual = tables.generate_global_table_data(self.wp10db)
-    self.assertEqual('All rated articles by quality and importance',
-                     actual['title'])
+    self.assertEqual('All articles by quality and importance', actual['title'])
 
   @patch('wp1.tables.api')
   @patch('wp1.tables.wp10_connect')
