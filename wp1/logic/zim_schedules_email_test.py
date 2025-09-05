@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock, ANY
 import uuid
+import attr
 
 from wp1.base_db_test import BaseWpOneDbTest
 from wp1.logic import zim_schedules
@@ -30,6 +31,20 @@ class ZimSchedulesEmailConfirmationTest(BaseWpOneDbTest):
             s_long_description=b'Test long description',
             s_email_confirmation_token=self.token
         )
+    
+    def _insert_zim_schedule_directly(self, zim_schedule):
+        """Helper method to insert a ZimSchedule directly into the database without using library functions."""
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                '''INSERT INTO zim_schedules
+                   (s_id, s_builder_id, s_rq_job_id, s_last_updated_at,
+                    s_interval, s_remaining_generations, s_email, s_title, s_description, s_long_description, s_email_confirmation_token)
+                   VALUES
+                   (%(s_id)s, %(s_builder_id)s, %(s_rq_job_id)s, %(s_last_updated_at)s,
+                    %(s_interval)s, %(s_remaining_generations)s, %(s_email)s, %(s_title)s, %(s_description)s, %(s_long_description)s, %(s_email_confirmation_token)s)
+                ''', attr.asdict(zim_schedule)
+            )
+        self.wp10db.commit()
 
     def test_generate_email_confirmation_token(self):
         """Test that a token is generated and is valid."""
@@ -39,7 +54,7 @@ class ZimSchedulesEmailConfirmationTest(BaseWpOneDbTest):
 
     def test_insert_zim_schedule_with_token(self):
         """Test inserting a schedule with email confirmation token."""
-        zim_schedules.insert_zim_schedule(self.wp10db, self.zim_schedule)
+        self._insert_zim_schedule_directly(self.zim_schedule)
         
         fetched = zim_schedules.get_zim_schedule(self.wp10db, self.schedule_id)
         self.assertIsNotNone(fetched)
@@ -48,7 +63,7 @@ class ZimSchedulesEmailConfirmationTest(BaseWpOneDbTest):
 
     def test_get_zim_schedule_by_token(self):
         """Test retrieving a schedule by its confirmation token."""
-        zim_schedules.insert_zim_schedule(self.wp10db, self.zim_schedule)
+        self._insert_zim_schedule_directly(self.zim_schedule)
         
         fetched = zim_schedules.get_zim_schedule_by_token(self.wp10db, self.token)
         self.assertIsNotNone(fetched)
@@ -63,7 +78,7 @@ class ZimSchedulesEmailConfirmationTest(BaseWpOneDbTest):
 
     def test_confirm_email_subscription(self):
         """Test confirming email subscription by removing token."""
-        zim_schedules.insert_zim_schedule(self.wp10db, self.zim_schedule)
+        self._insert_zim_schedule_directly(self.zim_schedule)
         
         success = zim_schedules.confirm_email_subscription(self.wp10db, self.token)
         self.assertTrue(success)
@@ -81,7 +96,7 @@ class ZimSchedulesEmailConfirmationTest(BaseWpOneDbTest):
 
     def test_unsubscribe_email(self):
         """Test unsubscribing from email notifications."""
-        zim_schedules.insert_zim_schedule(self.wp10db, self.zim_schedule)
+        self._insert_zim_schedule_directly(self.zim_schedule)
         
         success = zim_schedules.unsubscribe_email(self.wp10db, self.token)
         self.assertTrue(success)
@@ -118,7 +133,7 @@ class ZimSchedulesEmailConfirmationTest(BaseWpOneDbTest):
             s_last_updated_at=utcnow().strftime(TS_FORMAT_WP10).encode('utf-8'),
             s_title=b'Test ZIM Schedule'
         )
-        zim_schedules.insert_zim_schedule(self.wp10db, schedule_without_email)
+        self._insert_zim_schedule_directly(schedule_without_email)
         
         scheduled_repetitions = {
             'repetition_period_in_months': 2,
@@ -165,7 +180,7 @@ class ZimSchedulesEmailConfirmationTest(BaseWpOneDbTest):
             s_last_updated_at=utcnow().strftime(TS_FORMAT_WP10).encode('utf-8'),
             s_title=b'Test ZIM Schedule'
         )
-        zim_schedules.insert_zim_schedule(self.wp10db, schedule_without_email)
+        self._insert_zim_schedule_directly(schedule_without_email)
         
         scheduled_repetitions = {
             'repetition_period_in_months': 2,
@@ -185,3 +200,96 @@ class ZimSchedulesEmailConfirmationTest(BaseWpOneDbTest):
         fetched = zim_schedules.get_zim_schedule(self.wp10db, self.schedule_id)
         self.assertIsNone(fetched.s_email_confirmation_token)
         self.assertIsNone(fetched.s_email)
+
+    def test_has_email_been_confirmed_false_no_email(self):
+        """Test has_email_been_confirmed returns False when email doesn't exist."""
+        result = zim_schedules.has_email_been_confirmed(self.wp10db, b'nonexistent@example.com')
+        self.assertFalse(result)
+
+    def test_has_email_been_confirmed_false_unconfirmed_email(self):
+        """Test has_email_been_confirmed returns False when email has token."""
+        self._insert_zim_schedule_directly(self.zim_schedule)
+        result = zim_schedules.has_email_been_confirmed(self.wp10db, b'test@example.com')
+        self.assertFalse(result)
+
+    def test_has_email_been_confirmed_true_confirmed_email(self):
+        """Test has_email_been_confirmed returns True when email is confirmed."""
+        # Create schedule with confirmed email (no token)
+        confirmed_schedule = ZimSchedule(
+            s_id=self.schedule_id,
+            s_builder_id=self.builder_id,
+            s_rq_job_id=b'test-job-id',
+            s_last_updated_at=utcnow().strftime(TS_FORMAT_WP10).encode('utf-8'),
+            s_interval=3,
+            s_remaining_generations=5,
+            s_email=b'test@example.com',
+            s_title=b'Test ZIM Schedule',
+            s_description=b'Test description',
+            s_long_description=b'Test long description',
+            s_email_confirmation_token=None  # Already confirmed
+        )
+        self._insert_zim_schedule_directly(confirmed_schedule)
+        
+        result = zim_schedules.has_email_been_confirmed(self.wp10db, b'test@example.com')
+        self.assertTrue(result)
+
+    @patch('wp1.logic.zim_schedules.send_zim_email_confirmation')
+    @patch('wp1.logic.zim_schedules.get_username_by_zim_schedule_id')
+    @patch('wp1.queues.schedule_recurring_zimfarm_task')
+    def test_schedule_with_previously_confirmed_email_skips_confirmation(self,
+                                                                         mock_schedule_task,
+                                                                         mock_get_username,
+                                                                         mock_send_confirmation):
+        """Test that scheduling with previously confirmed email skips confirmation process."""
+        job_mock = MagicMock()
+        job_mock.id = 'test-job-id'
+        mock_schedule_task.return_value = job_mock
+        mock_get_username.return_value = 'testuser'
+        
+        # Create first schedule with confirmed email (no token)
+        first_schedule_id = str(uuid.uuid4()).encode('utf-8')
+        first_schedule = ZimSchedule(
+            s_id=first_schedule_id,
+            s_builder_id=self.builder_id,
+            s_rq_job_id=b'first-job-id',
+            s_last_updated_at=utcnow().strftime(TS_FORMAT_WP10).encode('utf-8'),
+            s_title=b'First ZIM Schedule',
+            s_email=b'test@example.com',
+            s_email_confirmation_token=None  # Already confirmed
+        )
+        self._insert_zim_schedule_directly(first_schedule)
+        
+        # Create second schedule without email initially
+        second_schedule_id = str(uuid.uuid4()).encode('utf-8')
+        second_schedule = ZimSchedule(
+            s_id=second_schedule_id,
+            s_builder_id=self.builder_id,
+            s_rq_job_id=None,
+            s_last_updated_at=utcnow().strftime(TS_FORMAT_WP10).encode('utf-8'),
+            s_title=b'Second ZIM Schedule'
+        )
+        self._insert_zim_schedule_directly(second_schedule)
+        
+        # Schedule with the same confirmed email
+        scheduled_repetitions = {
+            'repetition_period_in_months': 2,
+            'number_of_repetitions': 3,
+            'email': 'test@example.com'
+        }
+        
+        builder = MagicMock()
+        zim_schedules.schedule_future_zimfile_generations(
+            redis=MagicMock(),
+            wp10db=self.wp10db,
+            builder=builder,
+            zim_schedule_id=second_schedule_id,
+            scheduled_repetitions=scheduled_repetitions
+        )
+        
+        # Verify confirmation email was NOT sent (because email was previously confirmed)
+        mock_send_confirmation.assert_not_called()
+        
+        # Verify second schedule has email but no token (automatically confirmed)
+        fetched = zim_schedules.get_zim_schedule(self.wp10db, second_schedule_id)
+        self.assertEqual(b'test@example.com', fetched.s_email)
+        self.assertIsNone(fetched.s_email_confirmation_token)
