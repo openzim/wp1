@@ -219,7 +219,7 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
       )
 
   def test_get_username_by_zim_schedule_id_found(self):
-    # Insert user and schedule
+    # Insert user and builder, then schedule
     user_id = b'user-123'
     username = 'testuser'
     with self.wp10db.cursor() as cursor:
@@ -227,7 +227,12 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
         'INSERT INTO users (u_id, u_username) VALUES (%s, %s)',
         (user_id, username.encode('utf-8'))
       )
-    schedule = self.new_schedule(builder_id=user_id)
+      builder_id = b'builder-123'
+      cursor.execute(
+        'INSERT INTO builders (b_id, b_name, b_user_id, b_project, b_model, b_params) VALUES (%s, %s, %s, %s, %s, %s)',
+        (builder_id, b'Test Builder', user_id, b'en.wikipedia.fake', b'wp1.selection.models.simple', b'{}')
+      )
+    schedule = self.new_schedule(builder_id=builder_id)
     insert_zim_schedule(self.wp10db, schedule)
     result = get_username_by_zim_schedule_id(self.wp10db, schedule.s_id)
     self.assertEqual(username, result)
@@ -240,7 +245,12 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
         'INSERT INTO users (u_id, u_username) VALUES (%s, %s)',
         (user_id, None)
       )
-    schedule = self.new_schedule(builder_id=user_id)
+      builder_id = b'builder-123'
+      cursor.execute(
+        'INSERT INTO builders (b_id, b_name, b_user_id, b_project, b_model, b_params) VALUES (%s, %s, %s, %s, %s, %s)',
+        (builder_id, b'Test Builder', user_id, b'en.wikipedia.fake', b'wp1.selection.models.simple', b'{}')
+      )
+    schedule = self.new_schedule(builder_id=builder_id)
     insert_zim_schedule(self.wp10db, schedule)
     result = get_username_by_zim_schedule_id(self.wp10db, schedule.s_id)
     self.assertIsNone(result)
