@@ -116,8 +116,8 @@ def decrement_remaining_generations(wp10db, schedule_id: bytes):
         'SELECT s_remaining_generations FROM zim_schedules WHERE s_id = %s',
         (schedule_id,))
     row = cursor.fetchone()
-    if not row or not row[
-        's_remaining_generations'] or row['s_remaining_generations'] <= 0:
+    if not row or not row['s_remaining_generations'] or row[
+        's_remaining_generations'] <= 0:
       return False
     new_value = row['s_remaining_generations'] - 1
     cursor.execute(
@@ -144,8 +144,10 @@ def get_username_by_zim_schedule_id(wp10db, schedule_id):
   """Retrieves the username associated with a ZimSchedule by its ID. Returns the username or None."""
   with wp10db.cursor() as cursor:
     cursor.execute(
-        'SELECT u.u_username FROM zim_schedules zs JOIN users u ON zs.s_builder_id = u.u_id WHERE zs.s_id = %s',
-        (schedule_id,))
+        'SELECT u.u_username FROM zim_schedules zs '
+        'JOIN builders b ON zs.s_builder_id = b.b_id '
+        'JOIN users u ON b.b_user_id = u.u_id '
+        'WHERE zs.s_id = %s', (schedule_id,))
     row = cursor.fetchone()
   if not row:
     return None
