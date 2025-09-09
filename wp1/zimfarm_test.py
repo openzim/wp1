@@ -1053,7 +1053,8 @@ class ZimFarmTest(BaseWpOneDbTest):
 
   @patch('wp1.zimfarm.get_zimfarm_token')
   @patch('wp1.zimfarm.requests.delete')
-  def test_delete_zimfarm_schedule_by_builder_id_success(self, patched_delete, patched_get_zimfarm_token):
+  def test_delete_zimfarm_schedule_by_builder_id_success(
+      self, patched_delete, patched_get_zimfarm_token):
     patched_get_zimfarm_token.return_value = 'foo-token'
     redis = MagicMock()
     response = MagicMock()
@@ -1067,13 +1068,14 @@ class ZimFarmTest(BaseWpOneDbTest):
     patched_delete.assert_called_once_with(
         'https://fake.farm/v2/schedules/wp1_selection_3c4d',
         headers={
-            'Authorization': 'Token foo-token',
+            'Authorization': 'Bearer foo-token',
             'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
         })
 
   @patch('wp1.zimfarm.get_zimfarm_token')
   @patch('wp1.zimfarm.requests.delete')
-  def test_delete_zimfarm_schedule_by_builder_id_not_found(self, patched_delete, patched_get_zimfarm_token):
+  def test_delete_zimfarm_schedule_by_builder_id_not_found(
+      self, patched_delete, patched_get_zimfarm_token):
     patched_get_zimfarm_token.return_value = 'foo-token'
     redis = MagicMock()
     response = MagicMock()
@@ -1087,13 +1089,14 @@ class ZimFarmTest(BaseWpOneDbTest):
     patched_delete.assert_called_once_with(
         'https://fake.farm/v2/schedules/wp1_selection_3c4d',
         headers={
-            'Authorization': 'Token foo-token',
+            'Authorization': 'Bearer foo-token',
             'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
         })
 
   @patch('wp1.zimfarm.get_zimfarm_token')
   @patch('wp1.zimfarm.requests.delete')
-  def test_delete_zimfarm_schedule_by_builder_id_error(self, patched_delete, patched_get_zimfarm_token):
+  def test_delete_zimfarm_schedule_by_builder_id_error(
+      self, patched_delete, patched_get_zimfarm_token):
     patched_get_zimfarm_token.return_value = 'foo-token'
     redis = MagicMock()
     response = MagicMock()
@@ -1105,7 +1108,8 @@ class ZimFarmTest(BaseWpOneDbTest):
       zimfarm.delete_zimfarm_schedule_by_builder_id(redis, '1a-2b-3c-4d')
 
   @patch('wp1.zimfarm.get_zimfarm_token')
-  def test_delete_zimfarm_schedule_by_builder_id_no_token(self, patched_get_zimfarm_token):
+  def test_delete_zimfarm_schedule_by_builder_id_no_token(
+      self, patched_get_zimfarm_token):
     patched_get_zimfarm_token.return_value = None
     redis = MagicMock()
 
