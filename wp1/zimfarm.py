@@ -262,7 +262,7 @@ def _get_params(builder: Builder,
       'enabled': True,
       'notification': {
           'ended': {
-              'webhook': [webhook_url],
+              'webhook': [webhook_url] if webhook_url else None,
           },
       },
       'config': config,
@@ -351,7 +351,7 @@ def create_or_update_zimfarm_schedule(redis,
     existing_zim_schedule = find_existing_schedule_in_db(wp10db, builder.b_id)
     if existing_zim_schedule and zimfarm_schedule_exists(
         redis, existing_zim_schedule.s_id.decode('utf-8')):
-      r = requests.patch('%s/schedules/' % base_url,
+      r = requests.patch('%s/schedules' % base_url,
                          headers=headers,
                          json=params)
       r.raise_for_status()
@@ -364,9 +364,7 @@ def create_or_update_zimfarm_schedule(redis,
       logic_zim_schedules.update_zim_schedule(wp10db, zim_schedule)
       zim_schedule_id_to_set = zim_schedule.s_id.decode('utf-8')
     else:
-      r = requests.post('%s/schedules/' % base_url,
-                        headers=headers,
-                        json=params)
+      r = requests.post('%s/schedules' % base_url, headers=headers, json=params)
       r.raise_for_status()
       zim_schedule_id = str(uuid.uuid4())
       zim_schedule = ZimSchedule(
@@ -419,7 +417,7 @@ def request_zimfarm_task(redis, wp10db, builder):
   schedule_name = get_zimfarm_schedule_name(builder.b_id.decode('utf-8'))
   logger.info('Creating ZIM task for builder id=%s',
               builder.b_id.decode('utf-8'))
-  r = requests.post('%s/requested-tasks/' % base_url,
+  r = requests.post('%s/requested-tasks' % base_url,
                     headers=headers,
                     json={'schedule_names': [schedule_name]})
   try:
@@ -543,13 +541,15 @@ def delete_zimfarm_schedule_by_builder_id(redis, builder_id):
   token = get_zimfarm_token(redis)
   if token is None:
     raise ZimFarmError('Error retrieving auth token for request')
-  
+
   base_url = get_zimfarm_url()
   headers = _get_zimfarm_headers(token)
   schedule_name = get_zimfarm_schedule_name(builder_id)
 
-  logger.info('Deleting zimfarm schedule=%s for builder_id=%s', schedule_name, builder_id)
-  r = requests.delete('%s/schedules/%s' % (base_url, schedule_name), headers=headers)
+  logger.info('Deleting zimfarm schedule=%s for builder_id=%s', schedule_name,
+              builder_id)
+  r = requests.delete('%s/schedules/%s' % (base_url, schedule_name),
+                      headers=headers)
 
   try:
     r.raise_for_status()
@@ -557,8 +557,11 @@ def delete_zimfarm_schedule_by_builder_id(redis, builder_id):
   except requests.exceptions.HTTPError as e:
     if r.status_code == 404:
       # Schedule doesn't exist, which is not an error for deletion
-      logger.info('Zimfarm schedule=%s not found (already deleted or never existed)', schedule_name)
+      logger.info(
+          'Zimfarm schedule=%s not found (already deleted or never existed)',
+          schedule_name)
       return
     else:
       logger.exception(r.text)
-      raise ZimFarmError('Error deleting zimfarm schedule=%s' % schedule_name) from e
+      raise ZimFarmError('Error deleting zimfarm schedule=%s' %
+                         schedule_name) from e

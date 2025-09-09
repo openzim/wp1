@@ -419,7 +419,7 @@ class ZimFarmTest(BaseWpOneDbTest):
                                               long_description=long_desc)
 
     mock_requests.post.assert_called_once_with(
-        'https://fake.farm/v2/schedules/',
+        'https://fake.farm/v2/schedules',
         headers={
             'Authorization': 'Bearer abcdef',
             'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
@@ -679,7 +679,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
 
     mock_requests.post.assert_called_once_with(
-        'https://fake.farm/v2/requested-tasks/',
+        'https://fake.farm/v2/requested-tasks',
         headers={
             'Authorization': 'Bearer abcdef',
             'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
