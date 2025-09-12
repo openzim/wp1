@@ -812,7 +812,7 @@ class BuildersTest(BaseWebTestcase):
         sess['user'] = self.USER
       rv = client.post('/v1/builders/zim/status?token=hook-token-abc',
                        json={
-                           '_id': 'task-id-1234',
+                           'id': 'task-id-1234',
                            'foo': 'bar',
                            'status': 'succeeded',
                            'files': {
@@ -851,7 +851,7 @@ class BuildersTest(BaseWebTestcase):
         sess['user'] = self.USER
       rv = client.post('/v1/builders/zim/status?token=hook-token-abc',
                        json={
-                           '_id': 'task-id-1234',
+                           'id': 'task-id-1234',
                            'foo': 'bar',
                            'status': 'succeeded',
                            'files': {
@@ -885,7 +885,7 @@ class BuildersTest(BaseWebTestcase):
         sess['user'] = self.USER
       rv = client.post('/v1/builders/zim/status?token=hook-token-abc',
                        json={
-                           '_id': 'task-id-1234',
+                           'id': 'task-id-1234',
                            'foo': 'bar',
                            'status': 'succeeded',
                            'files': {
@@ -912,7 +912,7 @@ class BuildersTest(BaseWebTestcase):
         sess['user'] = self.USER
       rv = client.post('/v1/builders/zim/status?token=hook-token-abc',
                        json={
-                           '_id': 'task-id-1234',
+                           'id': 'task-id-1234',
                            'foo': 'bar',
                            'status': 'succeeded',
                            'files': {
@@ -946,7 +946,7 @@ class BuildersTest(BaseWebTestcase):
         sess['user'] = self.USER
       rv = client.post('/v1/builders/zim/status?token=foo-bad-token',
                        json={
-                           '_id': 'task-id-1234',
+                           'id': 'task-id-1234',
                            'foo': 'bar'
                        })
       self.assertEqual('403 FORBIDDEN', rv.status)
@@ -976,7 +976,7 @@ class BuildersTest(BaseWebTestcase):
         sess['user'] = self.USER
       rv = client.post('/v1/builders/zim/status?token=hook-token-abc',
                        json={
-                           '_id': 'task-id-not-found',
+                           'id': 'task-id-not-found',
                            'foo': 'bar'
                        })
       self.assertEqual('204 NO CONTENT', rv.status)

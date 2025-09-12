@@ -256,7 +256,7 @@ def update_zimfarm_status():
     flask.abort(403)
 
   data = flask.request.get_json()
-  task_id = data.get('_id')
+  task_id = data.get('id')
   if task_id is None:
     flask.abort(400)
 
