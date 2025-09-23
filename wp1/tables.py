@@ -437,7 +437,6 @@ def upload_global_table():
     wikicode = create_wikicode({**table_data, 'extra_note': extra_note})
     page_name = 'User:WP 1.0 bot/Tables/OverallArticles'
     logger.info('Uploading wikicode to Wikipedia: global table')
-    print(wikicode)
     page = api.get_page(page_name)
     api.save_page(page, wikicode, 'Copying assessment table to wiki.')
   finally:
