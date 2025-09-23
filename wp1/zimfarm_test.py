@@ -1,12 +1,11 @@
 import datetime
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 import attr
 import requests
 
 from wp1 import zimfarm
 from wp1.base_db_test import BaseWpOneDbTest
-from wp1.credentials import CREDENTIALS
 from wp1.environment import Environment
 from wp1.exceptions import (
     InvalidZimDescriptionError,
@@ -18,7 +17,6 @@ from wp1.exceptions import (
 )
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
-from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.zimfarm import (
     ZIM_DESCRIPTION_MAX_LENGTH,
     ZIM_LONG_DESCRIPTION_MAX_LENGTH,
@@ -28,58 +26,55 @@ from wp1.zimfarm import (
 
 class ZimFarmTest(BaseWpOneDbTest):
   expected_params = {
-      "name": "wp1_selection_3c4d",
-      "language": {
-          "code": "eng",
-          "name_en": "English",
-          "name_native": "English"
-      },
-      "category": "wikipedia",
-      "periodicity": "manually",
-      "tags": [],
-      "enabled": True,
-      "notification": {
-          "ended": {
-              "webhook": [
-                  "http://test.server.fake/v1/builders/zim/status?token=hook-token-abc"
+      'name': 'wp1_selection_3c4d',
+      'language': 'eng',
+      'category': 'wikipedia',
+      'periodicity': 'manually',
+      'tags': [],
+      'enabled': True,
+      'notification': {
+          'ended': {
+              'webhook': [
+                  'http://test.server.fake/v1/builders/zim/status?token=hook-token-abc'
               ],
           },
       },
-      "config": {
-          "task_name": "mwoffliner",
-          "warehouse_path": "/wikipedia",
-          "image": {
-              "name": "ghcr.io/openzim/mwoffliner",
-              "tag": "latest"
+      'config': {
+          'warehouse_path': '/wikipedia',
+          'image': {
+              'name': 'ghcr.io/openzim/mwoffliner',
+              'tag': 'latest'
           },
           "resources": {
               "cpu": 3,
               "memory": 2242586827,
               "disk": 21474836480,
           },
-          "platform": "wikimedia",
-          "monitor": False,
-          "flags": {
-              "customZimDescription":
-                  "This is the short description",
-              "customZimLongDescription":
-                  "This is the long description",
-              "mwUrl":
-                  "https://en.wikipedia.fake/",
-              "adminEmail":
-                  "contact+wp1@kiwix.org",
-              "articleList":
-                  "http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv",
-              "customZimTitle":
-                  "My Builder",
-              "filenamePrefix":
-                  "MyBuilder-def",
-              "optimisationCacheUrl":
-                  "https://wasabi.fake/bucket",
-              "forceRender":
-                  "ActionParse",
-          },
-      },
+      'platform': 'wikimedia',
+          'monitor': False,
+          'offliner': {
+              'offliner_id':
+                  'mwoffliner',
+              'customZimDescription':
+                  'This is the short description',
+              'customZimLongDescription':
+                  'This is the long description',
+              'mwUrl':
+                  'https://en.wikipedia.fake/',
+              'adminEmail':
+                  'contact+wp1@kiwix.org',
+              'articleList':
+                  'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv',
+              'customZimTitle':
+                  'My Builder',
+              'filenamePrefix':
+                  'MyBuilder-def',
+              'optimisationCacheUrl':
+                  'https://wasabi.fake/bucket',
+              'forceRender':
+                  'ActionParse',
+          }
+      }
   }
 
   def _insert_builder(self):
@@ -271,15 +266,14 @@ class ZimFarmTest(BaseWpOneDbTest):
     zimfarm.request_zimfarm_token(redis)
 
     mock_requests.post.assert_called_once_with(
-        "https://fake.farm/v1/auth/authorize",
+        'https://fake.farm/v2/auth/authorize',
         headers={
             "User-Agent": "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>"
         },
-        data={
-            "username": "farmuser",
-            "password": "farmpass"
-        },
-    )
+        json={
+            'username': 'farmuser',
+            'password': 'farmpass'
+        })
 
   @patch("wp1.zimfarm.requests")
   def test_request_zimfarm_token_raises_for_status(self, mock_requests):
@@ -322,12 +316,11 @@ class ZimFarmTest(BaseWpOneDbTest):
     zimfarm.refresh_zimfarm_token(redis, refresh_token)
 
     mock_requests.post.assert_called_once_with(
-        "https://fake.farm/v1/auth/token",
+        'https://fake.farm/v2/auth/refresh',
         headers={
-            "User-Agent": "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>",
-            "refresh-token": "12345",
+            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>',
         },
-    )
+        json={'refresh_token': '12345'})
 
   @patch("wp1.zimfarm.requests")
   def test_refresh_zimfarm_token_raises_for_status(self, mock_requests):
@@ -360,8 +353,8 @@ class ZimFarmTest(BaseWpOneDbTest):
   def test_get_zimfarm_token_no_refresh_token(self, request_token_mock):
     redis = MagicMock()
     redis.hgetall.return_value = {
-        "expires_in": "2023-01-01T00:00:01Z",
-        "access_token": "abcdef",
+        'expires_time': '2023-01-01T00:00:01Z',
+        'access_token': 'abcdef',
     }
 
     request_token_mock.return_value = "bcdefg"
@@ -376,9 +369,9 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     redis = MagicMock()
     redis.hgetall.return_value = {
-        "expires_in": "2023-01-01T00:00:01Z",
-        "refresh_token": "12345",
-        "access_token": "abcdef",
+        'expires_time': '2023-01-01T00:00:01Z',
+        'refresh_token': '12345',
+        'access_token': 'abcdef',
     }
 
     actual = zimfarm.get_zimfarm_token(redis)
@@ -395,16 +388,16 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     redis = MagicMock()
     redis.hgetall.return_value = {
-        "expires_in": "2022-12-01T00:00:01Z",
-        "refresh_token": "12345",
-        "access_token": "abcdef",
+        'expires_time': '2022-12-01T00:00:01Z',
+        'refresh_token': '12345',
+        'access_token': 'abcdef',
     }
 
     actual = zimfarm.get_zimfarm_token(redis)
 
     self.assertEqual(actual, "bcdefg")
 
-  @patch("wp1.zimfarm.get_zimfarm_token")
+  @patch('wp1.zimfarm.get_zimfarm_token')
   def test_create_or_update_zimfarm_schedule_missing_token(
       self, get_token_mock):
     redis = MagicMock()
@@ -457,27 +450,26 @@ class ZimFarmTest(BaseWpOneDbTest):
     )
 
     mock_requests.post.assert_called_once_with(
-        "https://fake.farm/v1/schedules/",
+        'https://fake.farm/v2/schedules',
         headers={
-            "Authorization": "Token abcdef",
-            "User-Agent": "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>",
+            'Authorization': 'Bearer abcdef',
+            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
         },
-        json={"name": "bar"},
-    )
+        json={'name': 'bar'})
     # Actually check that the schedule was created in the DB
     with self.wp10db.cursor() as cursor:
-      cursor.execute("SELECT * FROM zim_schedules WHERE s_title = %s",
-                     (b"Test Title",))
+      cursor.execute('SELECT * FROM zim_schedules WHERE s_title = %s',
+                     (b'Test Title',))
       result = cursor.fetchone()
       self.assertIsNotNone(result)
-      self.assertEqual(b"Test Title", result["s_title"])
-      self.assertEqual(b"Test Description", result["s_description"])
-      self.assertEqual(long_desc.encode("utf-8"), result["s_long_description"])
+      self.assertEqual(b'Test Title', result['s_title'])
+      self.assertEqual(b'Test Description', result['s_description'])
+      self.assertEqual(long_desc.encode('utf-8'), result['s_long_description'])
 
-  @patch("wp1.zimfarm.requests")
-  @patch("wp1.zimfarm.get_zimfarm_token")
-  @patch("wp1.zimfarm._get_params")
-  @patch("wp1.zimfarm.zimfarm_schedule_exists", return_value=True)
+  @patch('wp1.zimfarm.requests')
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm._get_params')
+  @patch('wp1.zimfarm.zimfarm_schedule_exists', return_value=True)
   def test_create_or_update_zimfarm_schedule_updates(self, get_params_mock,
                                                      get_token_mock,
                                                      mock_requests,
@@ -558,7 +550,7 @@ class ZimFarmTest(BaseWpOneDbTest):
                                                 self.builder, wrong_title,
                                                 "Test Description", None)
 
-  @patch("wp1.zimfarm.get_zimfarm_token")
+  @patch('wp1.zimfarm.get_zimfarm_token')
   def test_create_or_update_zimfarm_schedule_too_long_description(
       self, get_token_mock):
     redis = MagicMock()
@@ -703,6 +695,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     redis = MagicMock()
     get_token_mock.return_value = "test-token"
 
+
     mock_selection = MagicMock()
     mock_selection.s_article_count = None
     mock_latest_selection.return_value = mock_selection
@@ -748,9 +741,9 @@ class ZimFarmTest(BaseWpOneDbTest):
     with self.assertRaises(ZimFarmError):
       zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
 
-  @patch("wp1.zimfarm.requests")
-  @patch("wp1.zimfarm.get_zimfarm_token")
-  @patch("wp1.zimfarm.get_zimfarm_schedule_name")
+  @patch('wp1.zimfarm.requests')
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm.get_zimfarm_schedule_name')
   def test_request_zimfarm_task(self, get_zimfarm_schedule_name_mock,
                                 get_token_mock, mock_requests):
     redis = MagicMock()
@@ -789,17 +782,16 @@ class ZimFarmTest(BaseWpOneDbTest):
     zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
 
     mock_requests.post.assert_called_once_with(
-        "https://fake.farm/v1/requested-tasks/",
+        'https://fake.farm/v2/requested-tasks',
         headers={
-            "Authorization": "Token abcdef",
-            "User-Agent": "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>",
+            'Authorization': 'Bearer abcdef',
+            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
         },
-        json={"schedule_names": ["bar"]},
-    )
+        json={'schedule_names': ['bar']})
 
-  @patch("wp1.zimfarm.requests")
-  @patch("wp1.zimfarm.get_zimfarm_token")
-  @patch("wp1.zimfarm.get_zimfarm_schedule_name")
+  @patch('wp1.zimfarm.requests')
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm.get_zimfarm_schedule_name')
   def test_request_zimfarm_task_missing_task_id(self,
                                                 get_zimfarm_schedule_name_mock,
                                                 get_token_mock, mock_requests):
@@ -813,9 +805,9 @@ class ZimFarmTest(BaseWpOneDbTest):
     with self.assertRaises(ZimFarmError):
       zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
 
-  @patch("wp1.zimfarm.requests")
-  @patch("wp1.zimfarm.get_zimfarm_token")
-  @patch("wp1.zimfarm.get_zimfarm_schedule_name")
+  @patch('wp1.zimfarm.requests')
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm.get_zimfarm_schedule_name')
   def test_request_zimfarm_task_missing_article_count(
       self, get_zimfarm_schedule_name_mock, get_token_mock, mock_requests):
     redis = MagicMock()
@@ -828,9 +820,9 @@ class ZimFarmTest(BaseWpOneDbTest):
     with self.assertRaises(ZimFarmTooManyArticlesError):
       zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
 
-  @patch("wp1.zimfarm.requests")
-  @patch("wp1.zimfarm.get_zimfarm_token")
-  @patch("wp1.zimfarm.get_zimfarm_schedule_name")
+  @patch('wp1.zimfarm.requests')
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm.get_zimfarm_schedule_name')
   def test_request_zimfarm_task_too_many_articles(
       self, get_zimfarm_schedule_name_mock, get_zimfarm_token_mock,
       mock_requests):
@@ -925,7 +917,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     }
     patched_get.return_value = resp
     with self.assertRaises(ZimFarmError):
-      actual = zimfarm.zim_file_url_for_task_id("foo-bar")
+      zimfarm.zim_file_url_for_task_id('foo-bar')
 
   @patch("wp1.zimfarm.requests.get")
   def test_zim_file_url_for_task_id_missing_warehouse_path(self, patched_get):
@@ -940,7 +932,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     }
     patched_get.return_value = resp
     with self.assertRaises(ZimFarmError):
-      actual = zimfarm.zim_file_url_for_task_id("foo-bar")
+      zimfarm.zim_file_url_for_task_id('foo-bar')
 
   @patch("wp1.zimfarm.requests.get")
   @patch("wp1.zimfarm.CREDENTIALS", {Environment.TEST: {}})
@@ -958,7 +950,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     }
     patched_get.return_value = resp
     with self.assertRaises(ZimFarmError):
-      actual = zimfarm.zim_file_url_for_task_id("foo-bar")
+      zimfarm.zim_file_url_for_task_id('foo-bar')
 
   @patch("wp1.zimfarm.get_zimfarm_token")
   @patch("wp1.zimfarm.requests.delete")
@@ -969,12 +961,11 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     zimfarm.cancel_zim_by_task_id(redis, "task-abc-123")
     patched_delete.assert_called_once_with(
-        "https://fake.farm/v1/requested-tasks/task-abc-123",
+        'https://fake.farm/v2/requested-tasks/task-abc-123',
         headers={
-            "Authorization": "Token foo-token",
-            "User-Agent": "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>",
-        },
-    )
+            'Authorization': 'Bearer foo-token',
+            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
+        })
 
   @patch("wp1.zimfarm.get_zimfarm_token")
   @patch("wp1.zimfarm.requests.delete")
@@ -991,19 +982,17 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     zimfarm.cancel_zim_by_task_id(redis, "task-abc-123")
     patched_delete.assert_any_call(
-        "https://fake.farm/v1/requested-tasks/task-abc-123",
+        'https://fake.farm/v2/requested-tasks/task-abc-123',
         headers={
-            "Authorization": "Token foo-token",
-            "User-Agent": "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>",
-        },
-    )
+            'Authorization': 'Bearer foo-token',
+            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
+        })
     patched_post.assert_any_call(
-        "https://fake.farm/v1/tasks/task-abc-123/cancel",
+        'https://fake.farm/v2/tasks/task-abc-123/cancel',
         headers={
-            "Authorization": "Token foo-token",
-            "User-Agent": "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>",
-        },
-    )
+            'Authorization': 'Bearer foo-token',
+            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
+        })
 
   @patch("wp1.zimfarm.get_zimfarm_token")
   @patch("wp1.zimfarm.requests.delete")
@@ -1054,18 +1043,18 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_requests.get.return_value = mock_response
 
     redis = MagicMock()
-    builder_id = "1a-2b-3c-4d"
+    builder_id = '1a-2b-3c-4d'
 
     result = zimfarm.zimfarm_schedule_exists(redis, builder_id)
 
     self.assertTrue(result)
     mock_requests.get.assert_called_once_with(
-        "https://fake.farm/v1/schedules/wp1_selection_3c4d",
+
+        'https://fake.farm/v2/schedules/wp1_selection_3c4d',
         headers={
-            "Authorization": "Token test-token",
-            "User-Agent": "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>",
-        },
-    )
+            'Authorization': 'Bearer test-token',
+            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
+        })
 
   @patch("wp1.zimfarm.get_zimfarm_token")
   @patch("wp1.zimfarm.requests")
@@ -1077,7 +1066,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_requests.get.return_value = mock_response
 
     redis = MagicMock()
-    builder_id = "1a-2b-3c-4d"
+    builder_id = '1a-2b-3c-4d'
 
     result = zimfarm.zimfarm_schedule_exists(redis, builder_id)
 
@@ -1089,16 +1078,16 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_get_token.return_value = None
 
     redis = MagicMock()
-    builder_id = "1a-2b-3c-4d"
+    builder_id = '1a-2b-3c-4d'
 
     with self.assertRaises(ZimFarmError) as cm:
       zimfarm.zimfarm_schedule_exists(redis, builder_id)
 
     self.assertEqual(str(cm.exception),
-                     "Error retrieving auth token for request")
+                     'Error retrieving auth token for request')
 
-  @patch("wp1.zimfarm.get_zimfarm_token")
-  @patch("wp1.zimfarm.requests")
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm.requests')
   def test_zimfarm_schedule_exists_http_error(self, mock_requests,
                                               mock_get_token):
     """Test zimfarm_schedule_exists raises error when HTTP request fails"""
@@ -1109,7 +1098,7 @@ class ZimFarmTest(BaseWpOneDbTest):
     mock_requests.exceptions.HTTPError = requests.exceptions.HTTPError
 
     redis = MagicMock()
-    builder_id = "1a-2b-3c-4d"
+    builder_id = '1a-2b-3c-4d'
 
     with self.assertRaises(ZimFarmError):
       zimfarm.zimfarm_schedule_exists(redis, builder_id)
@@ -1120,13 +1109,11 @@ class ZimFarmTest(BaseWpOneDbTest):
     manual_schedule_id = self._insert_zim_schedule(
         schedule_id=b"manual_schedule_123",
         builder_id=self.builder.b_id,
-        remaining_generations=None,
-    )
-    self._insert_zim_schedule(
-        schedule_id=b"auto_schedule_456",
-        builder_id=self.builder.b_id,
-        remaining_generations=5,
-    )
+
+        remaining_generations=None)
+    self._insert_zim_schedule(schedule_id=b'auto_schedule_456',
+                              builder_id=self.builder.b_id,
+                              remaining_generations=5)
 
     result = zimfarm.find_existing_schedule_in_db(self.wp10db,
                                                   self.builder.b_id)
@@ -1141,13 +1128,11 @@ class ZimFarmTest(BaseWpOneDbTest):
     zero_schedule_id = self._insert_zim_schedule(
         schedule_id=b"zero_schedule_123",
         builder_id=self.builder.b_id,
-        remaining_generations=0,
-    )
-    self._insert_zim_schedule(
-        schedule_id=b"active_schedule_456",
-        builder_id=self.builder.b_id,
-        remaining_generations=5,
-    )
+
+        remaining_generations=0)
+    self._insert_zim_schedule(schedule_id=b'active_schedule_456',
+                              builder_id=self.builder.b_id,
+                              remaining_generations=5)
 
     result = zimfarm.find_existing_schedule_in_db(self.wp10db,
                                                   self.builder.b_id)
@@ -1159,11 +1144,10 @@ class ZimFarmTest(BaseWpOneDbTest):
   def test_find_existing_schedule_in_db_no_matching_schedule(self):
     """Test when no matching schedule exists."""
 
-    self._insert_zim_schedule(
-        schedule_id=b"active_schedule_456",
-        builder_id=self.builder.b_id,
-        remaining_generations=5,
-    )
+
+    self._insert_zim_schedule(schedule_id=b'active_schedule_456',
+                              builder_id=self.builder.b_id,
+                              remaining_generations=5)
 
     result = zimfarm.find_existing_schedule_in_db(self.wp10db,
                                                   self.builder.b_id)
@@ -1175,3 +1159,68 @@ class ZimFarmTest(BaseWpOneDbTest):
     result = zimfarm.find_existing_schedule_in_db(self.wp10db,
                                                   self.builder.b_id)
     self.assertIsNone(result)
+
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm.requests.delete')
+  def test_delete_zimfarm_schedule_by_builder_id_success(
+      self, patched_delete, patched_get_zimfarm_token):
+    patched_get_zimfarm_token.return_value = 'foo-token'
+    redis = MagicMock()
+    response = MagicMock()
+    response.status_code = 204
+    response.raise_for_status.return_value = None
+    patched_delete.return_value = response
+
+    # Should not raise any exception
+    zimfarm.delete_zimfarm_schedule_by_builder_id(redis, '1a-2b-3c-4d')
+
+    patched_delete.assert_called_once_with(
+        'https://fake.farm/v2/schedules/wp1_selection_3c4d',
+        headers={
+            'Authorization': 'Bearer foo-token',
+            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
+        })
+
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm.requests.delete')
+  def test_delete_zimfarm_schedule_by_builder_id_not_found(
+      self, patched_delete, patched_get_zimfarm_token):
+    patched_get_zimfarm_token.return_value = 'foo-token'
+    redis = MagicMock()
+    response = MagicMock()
+    response.status_code = 404
+    response.raise_for_status.side_effect = requests.exceptions.HTTPError
+    patched_delete.return_value = response
+
+    # Should not raise any exception for 404 (already deleted)
+    zimfarm.delete_zimfarm_schedule_by_builder_id(redis, '1a-2b-3c-4d')
+
+    patched_delete.assert_called_once_with(
+        'https://fake.farm/v2/schedules/wp1_selection_3c4d',
+        headers={
+            'Authorization': 'Bearer foo-token',
+            'User-Agent': 'WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>'
+        })
+
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  @patch('wp1.zimfarm.requests.delete')
+  def test_delete_zimfarm_schedule_by_builder_id_error(
+      self, patched_delete, patched_get_zimfarm_token):
+    patched_get_zimfarm_token.return_value = 'foo-token'
+    redis = MagicMock()
+    response = MagicMock()
+    response.status_code = 500
+    response.raise_for_status.side_effect = requests.exceptions.HTTPError
+    patched_delete.return_value = response
+
+    with self.assertRaises(ZimFarmError):
+      zimfarm.delete_zimfarm_schedule_by_builder_id(redis, '1a-2b-3c-4d')
+
+  @patch('wp1.zimfarm.get_zimfarm_token')
+  def test_delete_zimfarm_schedule_by_builder_id_no_token(
+      self, patched_get_zimfarm_token):
+    patched_get_zimfarm_token.return_value = None
+    redis = MagicMock()
+
+    with self.assertRaises(ZimFarmError):
+      zimfarm.delete_zimfarm_schedule_by_builder_id(redis, '1a-2b-3c-4d')

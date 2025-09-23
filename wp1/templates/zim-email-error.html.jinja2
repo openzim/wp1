@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ title }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+            background-color: #f8f9fa;
+            margin: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .error {
+            color: #dc3545;
+        }
+        .success {
+            color: #28a745;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        p {
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        .footer {
+            color: #666;
+            margin-top: 30px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="{{ 'success' if is_success else 'error' }}">
+            {{ '✅' if is_success else '❌' }} {{ heading }}
+        </h1>
+        <p>{{ message|safe }}</p>
+        {% if is_success and zim_title %}
+        <p><strong>ZIM File:</strong> {{ zim_title }}</p>
+        {% endif %}
+        <p class="footer">You can close this page now.</p>
+    </div>
+</body>
+</html>

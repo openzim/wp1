@@ -3,6 +3,7 @@ import json
 import logging
 
 import attr
+from dateutil.relativedelta import relativedelta
 from kiwixstorage import KiwixStorage
 from pymysql.connections import Connection
 from redis import Redis
@@ -28,7 +29,6 @@ from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.redis_db import connect as redis_connect
 from wp1.storage import connect_storage
 from wp1.timestamp import utcnow
-from wp1.web import emails
 from wp1.wp10_db import connect as wp10_connect
 
 logger = logging.getLogger(__name__)
@@ -123,7 +123,55 @@ def delete_builder(wp10db, user_id, builder_id):
   if not isinstance(builder_id, bytes):
     builder_id = str(builder_id).encode('utf-8')
 
+  # Fail fast if the Builder doesn't even exist
+  try:
+    builder = get_builder(wp10db, builder_id)
+  except ObjectNotFoundError:
+    raise
+
+  if builder.b_user_id.decode('utf-8') != str(user_id):
+    msg = 'User %s is not authorized to delete builder %s' % (
+        user_id, builder_id.decode('utf-8'))
+    logging.warning(msg)
+    raise UserNotAuthorizedError(msg)
+
+  # Connect to Redis for zimfarm operations
+  redis = redis_connect()
+
+  # Try to delete the zimfarm schedule first (before deleting from DB)
+  zimfarm_delete_success = True
+  try:
+    zimfarm.delete_zimfarm_schedule_by_builder_id(redis, builder_id)
+  except Exception as e:
+    logging.warning('Failed to delete zimfarm schedule for builder_id=%s: %s',
+                    builder_id.decode('utf-8'), str(e))
+    zimfarm_delete_success = False
+
+  rq_cancel_success = True
   with wp10db.cursor() as cursor:
+    cursor.execute(
+        '''SELECT s_rq_job_id, s_id FROM zim_schedules 
+         WHERE s_builder_id = %s AND s_rq_job_id IS NOT NULL''', (builder_id,))
+    row = cursor.fetchone()
+    job_id = row['s_rq_job_id'] if row else None
+    schedule_id = row['s_id'] if row else None
+
+    # Delete the zim_schedules row for this builder
+    if schedule_id:
+      cursor.execute('''DELETE FROM zim_schedules WHERE s_id = %s''',
+                     (schedule_id,))
+
+    # Cancel the scheduled rq job if it exists
+    if job_id:
+      try:
+        success = queues.cancel_scheduled_job(redis, job_id)
+        if not success:
+          rq_cancel_success = False
+      except Exception as e:
+        logging.warning('Failed to cancel RQ job %s: %s',
+                        job_id.decode('utf-8'), str(e))
+        rq_cancel_success = False
+
     cursor.execute(
         '''SELECT s.s_object_key as object_key FROM selections AS s
            JOIN builders AS b ON b.b_id = s.s_builder_id
@@ -145,6 +193,8 @@ def delete_builder(wp10db, user_id, builder_id):
   return {
       'db_delete_success': rowcount > 0,
       's3_delete_success': s3_success,
+      'zimfarm_delete_success': zimfarm_delete_success,
+      'rq_cancel_success': rq_cancel_success,
   }
 
 
@@ -541,8 +591,15 @@ def zim_file_status_for(wp10db, builder_id):
       'is_deleted': None,
       'description': None,
       'long_description': None,
+      'active_schedule': None,
   }
   zim_file = zim_file_for_latest_selection(wp10db, builder_id)
+
+  active_schedule = logic_zim_schedules.find_active_recurring_schedule_for_builder(
+      wp10db, builder_id)
+  if active_schedule:
+    data['active_schedule'] = _format_active_schedule_data(active_schedule)
+
   if not zim_file:
     return data
 
@@ -562,6 +619,28 @@ def zim_file_status_for(wp10db, builder_id):
       'utf-8') if zim_schedule and zim_schedule.s_description else None
   data['long_description'] = zim_schedule.s_long_description.decode(
       'utf-8') if zim_schedule and zim_schedule.s_long_description else None
+
+  return data
+
+
+def _format_active_schedule_data(schedule):
+  """Format active schedule data for API response."""
+
+  data = {
+      'schedule_id': schedule.s_id.decode('utf-8'),
+      'interval_months': schedule.s_interval,
+      'remaining_generations': schedule.s_remaining_generations,
+      'last_updated_at': schedule.s_last_updated_at.decode('utf-8'),
+      'email': schedule.s_email.decode('utf-8') if schedule.s_email else None,
+  }
+
+  # Calculate next generation date
+  if schedule.s_last_updated_at and schedule.s_interval:
+    last_updated = schedule.last_updated_at_dt
+    next_generation = last_updated + relativedelta(months=schedule.s_interval)
+    data['next_generation_date'] = next_generation.strftime('%Y-%m-%d')
+  else:
+    data['next_generation_date'] = None
 
   return data
 
@@ -693,5 +772,7 @@ def get_builders_with_selections(wp10db, user_id):
     builder.update(_get_selection_data(db_builder))
     builder.update(_get_zimfile_data(db_builder))
     result.append(builder)
+
+  return result
 
   return result

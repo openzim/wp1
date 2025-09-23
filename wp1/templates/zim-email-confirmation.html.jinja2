@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Your ZIM File Email Notifications</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+    <div style="background-color: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <div style="background-color: #0066cc; color: white; text-align: center; padding: 30px 20px; border-radius: 8px 8px 0 0;">
+            <h1 style="margin: 0; font-size: 24px;">📧 Confirm Your Email Notifications</h1>
+            <div>Wikipedia WP 1.0 Selection - {{ title }}</div>
+        </div>
+        <div style="padding: 30px;">
+            <p>Hello {{ user }},</p>
+            <p>You've requested email notifications for your scheduled ZIM file generation: <strong>{{ title }}</strong></p>
+            
+            <div style="background-color: #e7f3ff; border-left: 4px solid #0066cc; padding: 15px; margin: 20px 0;">
+                <p style="margin: 0;"><strong>📅 Schedule Details:</strong></p>
+                <ul style="margin: 10px 0;">
+                    <li>Repetition period: {{ repetition_period_months }} month(s)</li>
+                    <li>Number of repetitions: {{ number_of_repetitions }}</li>
+                    <li>Email: {{ user_email }}</li>
+                </ul>
+            </div>
+
+            <p>To receive email notifications when your ZIM files are ready for download, please confirm your email address by clicking the button below:</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ confirm_url }}" style="display: inline-block; background-color: #28a745; color: white; padding: 15px 30px; text-decoration: none; border-radius: 4px; font-size: 16px; font-weight: bold;">✅ Yes, I want to receive email notifications</a>
+            </div>
+
+            <p>If you don't want to receive these email notifications, you can decline by clicking the link below:</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ unsubscribe_url }}" style="display: inline-block; background-color: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">❌ No, I don't want to receive these emails</a>
+            </div>
+
+            <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
+                <p style="margin: 0; font-size: 14px;"><strong>⚠️ Important:</strong> You must confirm your email address to receive notifications. If you don't confirm, email notifications will be automatically disabled for this schedule.</p>
+            </div>
+
+            <p style="color: #666; font-size: 14px;">If you didn't request these notifications or this email was sent to you by mistake, you can safely ignore it.</p>
+        </div>
+        <div style="background-color: #f8f9fa; padding: 20px 30px; font-size: 14px; color: #666; border-radius: 0 0 8px 8px;">
+            <div><strong>Wikipedia WP 1.0 Project</strong></div>
+            <div style="margin-top: 15px; font-size: 12px; color: #888;">
+                This email was sent to confirm your subscription to ZIM file generation notifications.
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -131,10 +131,16 @@ def delete_builder(builder_id):
   wp10db = get_db('wp10db')
   user_id = flask.session['user']['identity']['sub']
 
-  status = logic_builder.delete_builder(wp10db, user_id, builder_id)
+  try:
+    status = logic_builder.delete_builder(wp10db, user_id, builder_id)
+  except UserNotAuthorizedError as e:
+    flask.abort(403)
+  except ObjectNotFoundError:
+    flask.abort(404)
 
   if not status['db_delete_success']:
-    flask.abort(404)
+    return flask.jsonify(
+        {'error_messages': ['Failed to delete builder from database']}), 500
 
   return {'status': '204'}
 
@@ -260,7 +266,7 @@ def update_zimfarm_status():
     flask.abort(403)
 
   data = flask.request.get_json()
-  task_id = data.get('_id')
+  task_id = data.get('id')
   if task_id is None:
     flask.abort(400)
 
@@ -300,3 +306,38 @@ def latest_zim_file_for_builder(builder_id):
     flask.abort(404)
 
   return flask.redirect(url, code=302)
+
+
+@builders.route('/<builder_id>/schedule', methods=['DELETE'])
+@authenticate
+def delete_schedule_for_builder(builder_id):
+  """Delete an active recurring schedule for a builder."""
+  redis = get_redis()
+  wp10db = get_db('wp10db')
+
+  user_id = flask.session['user']['identity']['sub']
+
+  # Get the builder and verify ownership
+  builder = logic_builder.get_builder(wp10db, builder_id.encode('utf-8'))
+  if not builder:
+    return flask.jsonify({'error_messages': ['Builder not found']}), 404
+
+  builder_user_id = builder.b_user_id.decode('utf-8')
+  if str(user_id) != builder_user_id:
+    return flask.jsonify(
+        {'error_messages': ['Not authorized to modify this builder']}), 403
+
+  # Find the active recurring schedule
+  active_schedule = logic_zim_schedules.find_active_recurring_schedule_for_builder(
+      wp10db, builder_id.encode('utf-8'))
+  if not active_schedule:
+    return flask.jsonify(
+        {'error_messages': ['No active recurring schedule found']}), 404
+
+  # Delete the schedule
+  deleted = logic_zim_schedules.delete_zim_schedule(redis, wp10db,
+                                                    active_schedule.s_id)
+  if not deleted:
+    return flask.jsonify({'error_messages': ['Failed to delete schedule']}), 500
+
+  return '', 204
