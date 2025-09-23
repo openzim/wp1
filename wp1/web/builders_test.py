@@ -16,7 +16,6 @@ from wp1.zimfarm import (
 )
 
 
-
 class BuildersTest(BaseWebTestcase):
   USER = {
       'access_token': 'access_token',
@@ -727,7 +726,7 @@ class BuildersTest(BaseWebTestcase):
         s_builder_id=b'1a-2b-3c-4d',
         s_rq_job_id=b'rq_job_id_123',
         s_last_updated_at=b'20240101000000',
-        s_remaining_generations=3)
+        s_remaining_generations=3,
         s_email_confirmation_token=None)
 
     self.app = create_app()
