@@ -1,7 +1,6 @@
 import unittest
-from unittest.mock import Mock, patch
-
 from wp1.environment import Environment
+from unittest.mock import patch, Mock
 from wp1.web.app import create_app
 from wp1.web.base_web_testcase import BaseWebTestcase
 from wp1.web.db import get_db
@@ -23,11 +22,7 @@ class IdentifyTest(BaseWebTestcase):
           'CLIENT_URL': {
               'domain': 'localhost:5173',
               'homepage': 'http://localhost:5173/#/'
-          },
-          'REDIS': {
-              'host': 'localhost',
-              'port': 9777,
-          },
+          }
       },
       Environment.PRODUCTION: {}
   }
@@ -40,7 +35,7 @@ class IdentifyTest(BaseWebTestcase):
           'sub': '1234'
       }
   }
-
+  
   REQUEST_TOKEN = {'key': 'request_token', 'secret': 'request_token_secret'}
   handshaker = Mock(
       **{
@@ -110,9 +105,7 @@ class IdentifyTest(BaseWebTestcase):
     with self.override_db(self.app), self.app.test_client() as client:
       with self.app.app_context():
         with self.wp10db.cursor() as cursor:
-          cursor.execute(
-              'INSERT INTO users (u_id, u_username, u_email) VALUES (%s, %s, %s)',
-              (user_id, 'overwrite', 'test@test.it'))
+          cursor.execute('INSERT INTO users (u_id, u_username, u_email) VALUES (%s, %s, %s)', (user_id, 'overwrite', 'test@test.it'))
           self.wp10db.commit()
       with client.session_transaction() as sess:
         sess['request_token'] = self.REQUEST_TOKEN
@@ -143,7 +136,7 @@ class IdentifyTest(BaseWebTestcase):
         cursor.execute('SELECT * FROM users WHERE u_id = %s', (user_id))
         row = cursor.fetchone()
         self.assertIsNotNone(row)
-        self.assertEqual('wp1user@email.ch', row['u_email'].decode('utf-8'))
+        self.assertEqual('wp1user@email.ch', row['u_email'].decode('utf-8')) 
 
   @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
   @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
@@ -205,60 +198,62 @@ class IdentifyTest(BaseWebTestcase):
   @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
   @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
   def test_email_unauthorized_user(self):
-    self.app = create_app()
-    with self.app.test_client() as client:
-      rv = client.get('/v1/oauth/email')
-      self.assertEqual('401 UNAUTHORIZED', rv.status)
+      self.app = create_app()
+      with self.app.test_client() as client:
+          rv = client.get('/v1/oauth/email')
+          self.assertEqual('401 UNAUTHORIZED', rv.status)
 
   @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
   @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
   def test_email_authorized_user_with_email_in_session(self):
-    self.app = create_app()
-    with self.app.test_client() as client:
-      with client.session_transaction() as sess:
-        sess['user'] = self.USER
-      rv = client.get('/v1/oauth/email')
-      self.assertEqual({'email': self.USER['identity']['email']}, rv.get_json())
+      self.app = create_app()
+      with self.app.test_client() as client:
+          with client.session_transaction() as sess:
+              sess['user'] = self.USER
+          rv = client.get('/v1/oauth/email')
+          self.assertEqual({'email': self.USER['identity']['email']},
+                            rv.get_json())
 
   @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
   @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
   def test_email_authorized_user_without_session_exists_in_db(self):
-    self.app = create_app()
-    user_id = self.USER['identity']['sub']
-    with self.override_db(self.app), self.app.test_client() as client:
-      # seed database with an email
-      with self.app.app_context():
-        with self.wp10db.cursor() as cursor:
-          cursor.execute(
-              'INSERT INTO users (u_id, u_username, u_email) VALUES (%s, %s, %s)',
-              (user_id, 'someuser', 'dbemail@domain.com'))
-          self.wp10db.commit()
-      with client.session_transaction() as sess:
-        sess['user'] = {
-            'access_token': self.USER['access_token'],
-            'identity': {
-                'username': self.USER['identity']['username'],
-                'sub': user_id
-            }
-        }
-      rv = client.get('/v1/oauth/email')
-      self.assertEqual({'email': 'dbemail@domain.com'}, rv.get_json())
+      self.app = create_app()
+      user_id = self.USER['identity']['sub']
+      with self.override_db(self.app), self.app.test_client() as client:
+          # seed database with an email
+          with self.app.app_context():
+              with self.wp10db.cursor() as cursor:
+                  cursor.execute(
+                    'INSERT INTO users (u_id, u_username, u_email) VALUES (%s, %s, %s)',
+                    (user_id, 'someuser', 'dbemail@domain.com')
+                  )
+                  self.wp10db.commit()
+          with client.session_transaction() as sess:
+              sess['user'] = {
+                  'access_token': self.USER['access_token'],
+                  'identity': {
+                      'username': self.USER['identity']['username'],
+                      'sub': user_id
+                  }
+              }
+          rv = client.get('/v1/oauth/email')
+          self.assertEqual({'email': 'dbemail@domain.com'},
+                            rv.get_json())
 
   @patch('wp1.web.app.CREDENTIALS', TEST_OAUTH_CREDS)
   @patch('wp1.web.app.ENV', Environment.DEVELOPMENT)
   def test_email_authorized_user_without_session_not_in_db(self):
-    self.app = create_app()
-    user_id = self.USER['identity']['sub']
-    with self.override_db(self.app), self.app.test_client() as client:
-      # do not insert any user row
-      with client.session_transaction() as sess:
-        sess['user'] = {
-            'access_token': self.USER['access_token'],
-            'identity': {
-                'username': self.USER['identity']['username'],
-                'sub': user_id
-            }
-        }
-      rv = client.get('/v1/oauth/email')
-      self.assertEqual({'email': None}, rv.get_json())
-      self.assertEqual({'email': None}, rv.get_json())
+      self.app = create_app()
+      user_id = self.USER['identity']['sub']
+      with self.override_db(self.app), self.app.test_client() as client:
+          # do not insert any user row
+          with client.session_transaction() as sess:
+              sess['user'] = {
+                  'access_token': self.USER['access_token'],
+                  'identity': {
+                      'username': self.USER['identity']['username'],
+                      'sub': user_id
+                  }
+              }
+          rv = client.get('/v1/oauth/email')
+          self.assertEqual({'email': None}, rv.get_json())
