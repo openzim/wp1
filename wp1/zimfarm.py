@@ -57,7 +57,7 @@ def request_zimfarm_token(redis):
                get_zimfarm_url())
   r = requests.post('%s/auth/authorize' % get_zimfarm_url(),
                     headers={'User-Agent': WP1_USER_AGENT},
-                    data={
+                    json={
                         'username': user,
                         'password': password
                     })
@@ -80,13 +80,13 @@ def request_zimfarm_token(redis):
 def refresh_zimfarm_token(redis, refresh_token):
   logger.debug('Requesting access_token from %s using refresh_token',
                get_zimfarm_url())
-  r = requests.post(
-      '%s/auth/token' % get_zimfarm_url(),
-      headers={
-          'User-Agent': WP1_USER_AGENT,
-          'refresh-token': refresh_token
-      },
-  )
+  r = requests.post('%s/auth/refresh' % get_zimfarm_url(),
+                    headers={
+                        'User-Agent': WP1_USER_AGENT,
+                    },
+                    json={
+                        "refresh_token": refresh_token,
+                    })
   try:
     r.raise_for_status()
   except requests.exceptions.HTTPError as e:
@@ -109,7 +109,7 @@ def get_zimfarm_token(redis):
     return request_zimfarm_token(redis)
 
   access_expired = datetime.strptime(
-      data.get('expires_in', '1970-01-01T00:00:00Z'),
+      data.get('expires_time', '1970-01-01T00:00:00Z'),
       '%Y-%m-%dT%H:%M:%SZ') < get_current_datetime()
 
   if access_expired:
@@ -192,7 +192,7 @@ def get_zimfarm_schedule_name(builder_id: str) -> str:
 def get_zim_filename_prefix(builder: Builder, selection: Selection) -> str:
   """Generate a filename prefix for the ZIM file based on builder and selection."""
   if builder is None or selection is None:
-    raise ValueError(f"Given builder or selection was None")
+    raise ValueError("Given builder or selection was None")
 
   selection_id_frag = selection.s_id.decode('utf-8').split('-')[-1]
   builder_name = builder.b_name.decode('utf-8')
@@ -214,7 +214,6 @@ def _get_params(builder: Builder, selection: Selection, title: str,
   image_name, image_tag = image.split(':')
 
   config = {
-      'task_name': 'mwoffliner',
       'warehouse_path': '/wikipedia',
       'image': {
           'name': image_name,
@@ -223,7 +222,9 @@ def _get_params(builder: Builder, selection: Selection, title: str,
       'resources': logic_selection.get_resource_profile(selection),
       'platform': 'wikimedia',
       'monitor': False,
-      'flags': {
+      'offliner': {
+          'offliner_id':
+              'mwoffliner',
           'mwUrl':
               'https://%s/' % project,
           'adminEmail':
@@ -247,7 +248,7 @@ def _get_params(builder: Builder, selection: Selection, title: str,
   }
   cache_url = CREDENTIALS[ENV].get('ZIMFARM', {}).get('cache_url')
   if cache_url is not None:
-    config['flags']['optimisationCacheUrl'] = cache_url
+    config['offliner']['optimisationCacheUrl'] = cache_url
   else:
     logger.warning('No cache_url found in credentials, skipping '
                    'optimisationCacheUrl URL for zimfarm request')
@@ -256,18 +257,14 @@ def _get_params(builder: Builder, selection: Selection, title: str,
 
   return {
       'name': get_zimfarm_schedule_name(builder.b_id.decode('utf-8')),
-      'language': {
-          'code': 'eng',
-          'name_en': 'English',
-          'name_native': 'English'
-      },
+      'language': 'eng',
       'category': 'wikipedia',
       'periodicity': 'manually',
       'tags': [],
       'enabled': True,
       'notification': {
           'ended': {
-              'webhook': [webhook_url],
+              'webhook': [webhook_url] if webhook_url else None,
           },
       },
       'config': config,
@@ -275,7 +272,7 @@ def _get_params(builder: Builder, selection: Selection, title: str,
 
 
 def _get_zimfarm_headers(token):
-  return {"Authorization": "Token %s" % token, 'User-Agent': WP1_USER_AGENT}
+  return {"Authorization": "Bearer %s" % token, 'User-Agent': WP1_USER_AGENT}
 
 
 def zimfarm_schedule_exists(redis, builder_id: str) -> bool:
@@ -348,7 +345,7 @@ def create_or_update_zimfarm_schedule(redis, wp10db, builder, title,
     existing_zim_schedule = find_existing_schedule_in_db(wp10db, builder.b_id)
     if existing_zim_schedule and zimfarm_schedule_exists(
         redis, existing_zim_schedule.s_id.decode('utf-8')):
-      r = requests.patch('%s/schedules/' % base_url,
+      r = requests.patch('%s/schedules' % base_url,
                          headers=headers,
                          json=params)
       r.raise_for_status()
@@ -361,9 +358,7 @@ def create_or_update_zimfarm_schedule(redis, wp10db, builder, title,
       logic_zim_schedules.update_zim_schedule(wp10db, zim_schedule)
       zim_schedule_id_to_set = zim_schedule.s_id.decode('utf-8')
     else:
-      r = requests.post('%s/schedules/' % base_url,
-                        headers=headers,
-                        json=params)
+      r = requests.post('%s/schedules' % base_url, headers=headers, json=params)
       r.raise_for_status()
       zim_schedule_id = str(uuid.uuid4())
       zim_schedule = ZimSchedule(
@@ -416,7 +411,7 @@ def request_zimfarm_task(redis, wp10db, builder):
   schedule_name = get_zimfarm_schedule_name(builder.b_id.decode('utf-8'))
   logger.info('Creating ZIM task for builder id=%s',
               builder.b_id.decode('utf-8'))
-  r = requests.post('%s/requested-tasks/' % base_url,
+  r = requests.post('%s/requested-tasks' % base_url,
                     headers=headers,
                     json={'schedule_names': [schedule_name]})
   try:
@@ -528,7 +523,39 @@ def cancel_zim_by_task_id(redis, task_id):
   except requests.exceptions.HTTPError as e:
     raise ZimFarmError('Task could not be deleted/canceled (task_id=%s)' %
                        task_id)
+
+
+def delete_zimfarm_schedule_by_builder_id(redis, builder_id):
+  """
+  Deletes a ZIM schedule from the Zimfarm for the given builder_id.
+  """
+  if isinstance(builder_id, bytes):
+    builder_id = builder_id.decode('utf-8')
+
+  token = get_zimfarm_token(redis)
+  if token is None:
+    raise ZimFarmError('Error retrieving auth token for request')
+
+  base_url = get_zimfarm_url()
+  headers = _get_zimfarm_headers(token)
+  schedule_name = get_zimfarm_schedule_name(builder_id)
+
+  logger.info('Deleting zimfarm schedule=%s for builder_id=%s', schedule_name,
+              builder_id)
+  r = requests.delete('%s/schedules/%s' % (base_url, schedule_name),
+                      headers=headers)
+
+  try:
     r.raise_for_status()
+    logger.info('Successfully deleted zimfarm schedule=%s', schedule_name)
   except requests.exceptions.HTTPError as e:
-    raise ZimFarmError('Task could not be deleted/canceled (task_id=%s)' %
-                       task_id)
+    if r.status_code == 404:
+      # Schedule doesn't exist, which is not an error for deletion
+      logger.info(
+          'Zimfarm schedule=%s not found (already deleted or never existed)',
+          schedule_name)
+      return
+    else:
+      logger.exception(r.text)
+      raise ZimFarmError('Error deleting zimfarm schedule=%s' %
+                         schedule_name) from e

@@ -771,40 +771,94 @@ class BuilderTest(BaseWpOneDbTest):
 
     self.assertIsNone(actual)
 
+  @patch('wp1.logic.builder.queues.cancel_scheduled_job')
+  @patch('wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id')
   @patch('wp1.logic.builder.logic_selection')
-  def test_delete_builder(self, mock_selection):
+  def test_delete_builder(self, mock_selection, mock_delete_schedule,
+                          mock_cancel_job):
     builder_id = self._insert_builder_with_multiple_version_selections()
 
     actual = logic_builder.delete_builder(self.wp10db, 1234, builder_id)
 
     self.assertTrue(actual['db_delete_success'])
 
+  @patch('wp1.logic.builder.queues.cancel_scheduled_job')
+  @patch('wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id')
   @patch('wp1.logic.builder.logic_selection')
-  def test_delete_builder_user_id_unmatched(self, mock_selection):
+  def test_delete_builder_user_id_unmatched(self, mock_selection,
+                                            mock_delete_schedule,
+                                            mock_cancel_job):
     builder_id = self._insert_builder_with_multiple_version_selections()
 
-    actual = logic_builder.delete_builder(self.wp10db, 4321, builder_id)
+    with self.assertRaises(UserNotAuthorizedError):
+      logic_builder.delete_builder(self.wp10db, 4321, builder_id)
 
-    self.assertFalse(actual['db_delete_success'])
-
+  @patch('wp1.logic.builder.queues.cancel_scheduled_job')
+  @patch('wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id')
   @patch('wp1.logic.builder.logic_selection')
-  def test_delete_builder_user_builder_id_unmatched(self, mock_selection):
-    builder_id = self._insert_builder_with_multiple_version_selections()
+  def test_delete_builder_user_builder_id_unmatched(self, mock_selection,
+                                                    mock_delete_schedule,
+                                                    mock_cancel_job):
+    self._insert_builder_with_multiple_version_selections()
 
-    actual = logic_builder.delete_builder(self.wp10db, 1234, 'abcd')
+    with self.assertRaises(ObjectNotFoundError):
+      logic_builder.delete_builder(self.wp10db, 1234, 'abcd')
 
-    self.assertFalse(actual['db_delete_success'])
-
+  @patch('wp1.logic.builder.queues.cancel_scheduled_job')
+  @patch('wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id')
   @patch('wp1.logic.builder.logic_selection')
-  def test_delete_builder_user_no_selections(self, mock_selection):
+  def test_delete_builder_user_no_selections(self, mock_selection,
+                                             mock_delete_schedule,
+                                             mock_cancel_job):
     builder_id = self._insert_builder()
 
     actual = logic_builder.delete_builder(self.wp10db, 1234, builder_id)
 
     self.assertTrue(actual['db_delete_success'])
 
+  @patch('wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id')
+  @patch('wp1.queues.cancel_scheduled_job')
+  @patch('wp1.logic.builder.logic_selection')
+  def test_delete_builder_deletes_zimfarm_schedule(self, mock_selection,
+                                                   mock_cancel_job,
+                                                   mock_delete_zimfarm):
+    builder_id = self._insert_builder()
+    self._insert_zim_schedule(builder_id=builder_id)
+    mock_delete_zimfarm.return_value = None
+
+    actual = logic_builder.delete_builder(self.wp10db, 1234, builder_id)
+
+    self.assertTrue(actual['db_delete_success'])
+    self.assertTrue(actual['zimfarm_delete_success'])
+    mock_delete_zimfarm.assert_called_once()
+    mock_cancel_job.assert_called_once()
+
+    # Check that the schedule is deleted from the DB
+    with self.wp10db.cursor() as cursor:
+      cursor.execute('SELECT * FROM zim_schedules WHERE s_builder_id = %s',
+                     (builder_id,))
+      schedule = cursor.fetchone()
+    self.assertIsNone(schedule)
+
+  @patch('wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id')
+  @patch('wp1.logic.builder.logic_selection')
+  def test_delete_builder_zimfarm_delete_fails(self, mock_selection,
+                                               mock_delete_zimfarm):
+    builder_id = self._insert_builder()
+    mock_delete_zimfarm.side_effect = Exception("Zimfarm error")
+
+    actual = logic_builder.delete_builder(self.wp10db, 1234, builder_id)
+
+    self.assertTrue(actual['db_delete_success'])
+    self.assertFalse(actual['zimfarm_delete_success'])
+    mock_delete_zimfarm.assert_called_once()
+
+  @patch('wp1.logic.builder.queues.cancel_scheduled_job')
+  @patch('wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id')
   @patch('wp1.logic.builder.logic_selection.delete_keys_from_storage')
-  def test_delete_builder_deletes_object_keys(self, mock_delete_keys):
+  def test_delete_builder_deletes_object_keys(self, mock_delete_keys,
+                                              mock_delete_schedule,
+                                              mock_cancel_job):
     builder_id = self._insert_builder_with_multiple_version_selections()
     mock_delete_keys.return_value = True
 
@@ -817,8 +871,12 @@ class BuilderTest(BaseWpOneDbTest):
         b'proper/selection/4321/name.tsv'
     ])
 
+  @patch('wp1.logic.builder.queues.cancel_scheduled_job')
+  @patch('wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id')
   @patch('wp1.logic.builder.logic_selection.delete_keys_from_storage')
-  def test_delete_builder_object_keys_missing(self, mock_delete_keys):
+  def test_delete_builder_object_keys_missing(self, mock_delete_keys,
+                                              mock_delete_schedule,
+                                              mock_cancel_job):
     builder_id = self._insert_builder_with_multiple_version_selections()
     mock_delete_keys.return_value = True
 
@@ -836,6 +894,31 @@ class BuilderTest(BaseWpOneDbTest):
         b'object_key_1', b'object_key_2', b'object_key_3',
         b'proper/selection/4321/name.tsv'
     ])
+
+  @patch('wp1.logic.builder.queues.cancel_scheduled_job')
+  @patch('wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id')
+  @patch('wp1.logic.builder.logic_selection.delete_keys_from_storage')
+  def test_delete_builder_cancels_scheduled_jobs(self, mock_delete_keys,
+                                                 mock_delete_schedule,
+                                                 mock_cancel_job):
+    builder_id = self._insert_builder()
+    mock_delete_keys.return_value = True
+    mock_cancel_job.return_value = True
+
+    # Insert a zim schedule with an RQ job ID
+    with self.wp10db.cursor() as cursor:
+      cursor.execute(
+          '''INSERT INTO zim_schedules (s_id, s_builder_id, s_rq_job_id, s_last_updated_at)
+             VALUES (%s, %s, %s, %s)
+          ''', (b'schedule_123', builder_id, b'rq_job_456', b'20191225044444'))
+    self.wp10db.commit()
+
+    actual = logic_builder.delete_builder(self.wp10db, 1234, builder_id)
+
+    self.assertTrue(actual['db_delete_success'])
+    self.assertTrue(actual['rq_cancel_success'])
+    mock_cancel_job.assert_called_once_with(ANY, b'rq_job_456')
+    mock_delete_schedule.assert_called_once_with(ANY, builder_id)
 
   def test_latest_selections_with_errors(self):
     builder_id = self._insert_builder(current_version=2)

@@ -70,7 +70,7 @@ def send_zim_ready_email(recipient_username,
 def respond_to_zim_task_completed(wp10db, zim_file: ZimTask, zim_schedule: ZimSchedule):
     """Handles a completed ZIM task by decrementing generations and notifying the user."""
     zim_schedules.decrement_remaining_generations(wp10db, zim_schedule.s_id)
-    if zim_schedule.s_email is not None:
+    if zim_schedule.s_email is not None and zim_schedule.s_email_confirmation_token is None:
         notify_user_for_scheduled_zim(wp10db, zim_file, zim_schedule)
 
 
@@ -84,11 +84,16 @@ def notify_user_for_scheduled_zim(wp10db, zim_file: ZimTask, zim_schedule: ZimSc
     next_generation_months = None
     if zim_schedule.s_remaining_generations and zim_schedule.s_remaining_generations > 0:
         next_generation_months = zim_schedule.s_interval
+
+    email_confirm_url = CREDENTIALS.get(ENV, {}).get('CLIENT_URL', {}).get('api')
+    unsubscribe_url = f"{email_confirm_url}/api/v1/zim/unsubscribe-notification?schedule_id={zim_schedule.s_id.decode('utf-8')}"
     
     send_zim_ready_email(
         recipient_username=recipient_username,
         recipient_email=recipient_email,
         zim_title=zim_title,
         download_url=zimfile_url,
+        unsubscribe_url=unsubscribe_url,
         next_generation_months=next_generation_months
     )
+

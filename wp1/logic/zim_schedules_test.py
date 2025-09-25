@@ -20,7 +20,8 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
       s_remaining_generations=remaining,
       s_long_description=b'Test long description',
       s_description=b'Test description',
-      s_title=b'Test title'
+      s_title=b'Test title',
+      s_email_confirmation_token=None
     )
 
   def test_insert_and_get(self):
@@ -218,7 +219,7 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
       )
 
   def test_get_username_by_zim_schedule_id_found(self):
-    # Insert user and schedule
+    # Insert user and builder, then schedule
     user_id = b'user-123'
     username = 'testuser'
     with self.wp10db.cursor() as cursor:
@@ -226,7 +227,12 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
         'INSERT INTO users (u_id, u_username) VALUES (%s, %s)',
         (user_id, username.encode('utf-8'))
       )
-    schedule = self.new_schedule(builder_id=user_id)
+      builder_id = b'builder-123'
+      cursor.execute(
+        'INSERT INTO builders (b_id, b_name, b_user_id, b_project, b_model, b_params) VALUES (%s, %s, %s, %s, %s, %s)',
+        (builder_id, b'Test Builder', user_id, b'en.wikipedia.fake', b'wp1.selection.models.simple', b'{}')
+      )
+    schedule = self.new_schedule(builder_id=builder_id)
     insert_zim_schedule(self.wp10db, schedule)
     result = get_username_by_zim_schedule_id(self.wp10db, schedule.s_id)
     self.assertEqual(username, result)
@@ -239,7 +245,12 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
         'INSERT INTO users (u_id, u_username) VALUES (%s, %s)',
         (user_id, None)
       )
-    schedule = self.new_schedule(builder_id=user_id)
+      builder_id = b'builder-123'
+      cursor.execute(
+        'INSERT INTO builders (b_id, b_name, b_user_id, b_project, b_model, b_params) VALUES (%s, %s, %s, %s, %s, %s)',
+        (builder_id, b'Test Builder', user_id, b'en.wikipedia.fake', b'wp1.selection.models.simple', b'{}')
+      )
+    schedule = self.new_schedule(builder_id=builder_id)
     insert_zim_schedule(self.wp10db, schedule)
     result = get_username_by_zim_schedule_id(self.wp10db, schedule.s_id)
     self.assertIsNone(result)
@@ -279,3 +290,35 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
           cursor.execute('SELECT * FROM zim_tasks WHERE z_selection_id = %s', (z_selection_id,))
           row = cursor.fetchone()
           self.assertIsNone(row)
+
+  def test_unsubscribe_email_by_schedule_id_success(self):
+      """Test unsubscribing email by schedule ID."""
+      schedule = self.new_schedule()
+      schedule.s_email = b'test@example.com'
+      insert_zim_schedule(self.wp10db, schedule)
+      
+      # Unsubscribe should remove email
+      result = unsubscribe_email_by_schedule_id(self.wp10db, schedule.s_id)
+      self.assertTrue(result)
+      
+      # Verify email was removed
+      updated_schedule = get_zim_schedule(self.wp10db, schedule.s_id)
+      self.assertIsNone(updated_schedule.s_email)
+
+  def test_unsubscribe_email_by_schedule_id_no_email(self):
+      """Test unsubscribing by schedule ID when no email exists."""
+      schedule = self.new_schedule()
+      schedule.s_email = None  # No email
+      insert_zim_schedule(self.wp10db, schedule)
+      
+      # Should return False since no email to remove
+      result = unsubscribe_email_by_schedule_id(self.wp10db, schedule.s_id)
+      self.assertFalse(result)
+
+  def test_unsubscribe_email_by_schedule_id_invalid_schedule(self):
+      """Test unsubscribing by invalid schedule ID."""
+      invalid_id = str(uuid.uuid4()).encode('utf-8')
+      
+      # Should return False for non-existent schedule
+      result = unsubscribe_email_by_schedule_id(self.wp10db, invalid_id)
+      self.assertFalse(result)
