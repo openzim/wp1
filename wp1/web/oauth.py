@@ -9,27 +9,29 @@ from wp1.web.db import get_db
 
 oauth = flask.Blueprint('oauth', __name__)
 
-try:
-  # The credentials module isn't checked in and may be missing
+
+def get_handshaker():
   consumer_token = ConsumerToken(CREDENTIALS[ENV]['MWOAUTH']['consumer_key'],
                                  CREDENTIALS[ENV]['MWOAUTH']['consumer_secret'])
   handshaker = Handshaker("https://en.wikipedia.org/w/index.php",
                           consumer_token)
-  homepage_url = CREDENTIALS[ENV]['CLIENT_URL']['homepage']
-except KeyError:
-  print('Credentials malformed, Please add your '
-        'mwoauth credentials in credentials.py')
-  handshaker = None
-  homepage_url = None
+  return handshaker
+
+
+def get_homepage_url():
+  return CREDENTIALS[ENV]['CLIENT_URL']['homepage']
 
 
 @oauth.route('/initiate')
 def initiate():
   session['next_path'] = flask.request.args.get('next')
   if session.get('user'):
+    homepage_url = get_homepage_url()
     if session.get('next_path'):
       return flask.redirect(f"{homepage_url}{str(session['next_path'])}")
     return flask.redirect(homepage_url)
+
+  handshaker = get_handshaker()
   redirect, request_token = handshaker.initiate()
   session['request_token'] = request_token
   return flask.redirect(redirect)
@@ -40,6 +42,7 @@ def complete():
   if 'request_token' not in session:
     flask.abort(404, 'User does not exist')
 
+  handshaker = get_handshaker()
   query_string = str(flask.request.query_string.decode('utf-8'))
   access_token = handshaker.complete(session['request_token'], query_string)
   session.pop('request_token')
@@ -70,6 +73,7 @@ def complete():
         })
     wp10db.commit()
   next_path = session.pop('next_path')
+  homepage_url = get_homepage_url()
   if next_path:
     return flask.redirect(f"{homepage_url}{str(next_path)}")
   return flask.redirect(homepage_url)
