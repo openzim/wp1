@@ -1,29 +1,31 @@
-from datetime import datetime
-from functools import wraps, update_wrapper
-from flask_session import Session
 import os
+from datetime import datetime
+from functools import update_wrapper, wraps
+
 import flask
 import flask_cors
 import flask_gzip
 import redis
+from flask_session import Session
 
 import wp1.logic.project as logic_project
 from wp1 import environment
-from wp1.web.db import get_db, has_db
+from wp1.credentials import CREDENTIALS, ENV
 from wp1.web.articles import articles
 from wp1.web.builders import builders
+from wp1.web.db import get_db, has_db
+from wp1.web.dev.projects import dev_projects
 from wp1.web.projects import projects
 from wp1.web.selection import selection
-from wp1.web.zim_emails import zim_emails
-from wp1.credentials import ENV, CREDENTIALS
 from wp1.web.sites import sites
-from wp1.web.dev.projects import dev_projects
+from wp1.web.zim_emails import zim_emails
 
 
 def get_redis_creds():
   try:
     return CREDENTIALS[ENV]['REDIS']
   except KeyError:
+    raise
     print('No REDIS_CREDS found, using defaults.')
     return None
 
@@ -115,4 +117,5 @@ def create_app():
     from wp1.web.oauth import oauth
     app.register_blueprint(oauth, url_prefix='/v1/oauth')
 
+  return app
   return app
