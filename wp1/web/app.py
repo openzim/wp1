@@ -1,23 +1,25 @@
-from datetime import datetime
-from functools import wraps, update_wrapper
-from flask_session import Session
 import os
+from datetime import datetime
+from functools import update_wrapper, wraps
+
 import flask
 import flask_cors
 import flask_gzip
 import redis
 
 import wp1.logic.project as logic_project
+from flask_session import Session
 from wp1 import environment
-from wp1.web.db import get_db, has_db
+from wp1.credentials import CREDENTIALS, ENV
 from wp1.web.articles import articles
 from wp1.web.builders import builders
+from wp1.web.db import get_db, has_db
+from wp1.web.dev.projects import dev_projects
+from wp1.web.oauth import oauth
 from wp1.web.projects import projects
 from wp1.web.selection import selection
-from wp1.web.zim_emails import zim_emails
-from wp1.credentials import ENV, CREDENTIALS
 from wp1.web.sites import sites
-from wp1.web.dev.projects import dev_projects
+from wp1.web.zim_emails import zim_emails
 
 
 def get_redis_creds():
@@ -53,13 +55,11 @@ def nocache(view):
   return update_wrapper(no_cache, view)
 
 
-def create_app():
+def create_app(session_type='redis'):
   app = flask.Flask(__name__)
-  missing_credentials = CREDENTIALS is None or ENV is None
 
   cors_origins = None
-  if not missing_credentials:
-    cors_origins = CREDENTIALS[ENV].get('CLIENT_URL', {}).get('domains')
+  cors_origins = CREDENTIALS[ENV].get('CLIENT_URL', {}).get('domains')
   if cors_origins is None:
     cors_origins = '*'
 
@@ -76,7 +76,7 @@ def create_app():
         redis_creds['host'], redis_creds['port']))
 
   app.config['SECRET_KEY'] = get_secret_key()
-  app.config['SESSION_TYPE'] = 'redis'
+  app.config['SESSION_TYPE'] = session_type
   Session(app)
 
   @app.teardown_request
@@ -107,12 +107,7 @@ def create_app():
   app.register_blueprint(selection, url_prefix='/v1/selection')
   app.register_blueprint(builders, url_prefix='/v1/builders')
   app.register_blueprint(zim_emails, url_prefix='/v1/zim')
+  app.register_blueprint(oauth, url_prefix='/v1/oauth')
 
-  if not missing_credentials:
-    mwoauth = CREDENTIALS.get(ENV, {}).get('MWOAUTH', {})
-  if not (missing_credentials or mwoauth.get('consumer_key') is None or
-          mwoauth.get('consumer_secret') is None):
-    from wp1.web.oauth import oauth
-    app.register_blueprint(oauth, url_prefix='/v1/oauth')
-
+  return app
   return app
