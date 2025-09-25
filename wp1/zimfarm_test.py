@@ -462,9 +462,9 @@ class ZimFarmTest(BaseWpOneDbTest):
                      (b'Test Title',))
       result = cursor.fetchone()
       self.assertIsNotNone(result)
-      self.assertEqual(b"Test Title", result["s_title"])
-      self.assertEqual(b"Test Description", result["s_description"])
-      self.assertEqual(long_desc.encode("utf-8"), result["s_long_description"])
+      self.assertEqual(b'Test Title', result['s_title'])
+      self.assertEqual(b'Test Description', result['s_description'])
+      self.assertEqual(long_desc.encode('utf-8'), result['s_long_description'])
 
   @patch('wp1.zimfarm.requests')
   @patch('wp1.zimfarm.get_zimfarm_token')
