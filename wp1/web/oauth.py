@@ -2,9 +2,10 @@ import attr
 import flask
 from flask import jsonify, session
 from mwoauth import ConsumerToken, Handshaker
-from wp1.web.db import get_db
-from wp1.credentials import ENV, CREDENTIALS
+
+from wp1.credentials import CREDENTIALS, ENV
 from wp1.models.wp10.user import User
+from wp1.web.db import get_db
 
 oauth = flask.Blueprint('oauth', __name__)
 
@@ -56,19 +57,17 @@ def complete():
 
   with wp10db.cursor() as cursor:
     cursor.execute(
-      '''
+        '''
       INSERT INTO users (u_id, u_username, u_email)
       VALUES (%(u_id)s, %(u_username)s, %(u_email)s)
       ON DUPLICATE KEY UPDATE
         u_username = VALUES(u_username),
         u_email = VALUES(u_email)
-      ''',
-      {
-        'u_id': identity['sub'],
-        'u_username': identity['username'],
-        'u_email': identity.get('email', None)
-      }
-    )
+      ''', {
+            'u_id': identity['sub'],
+            'u_username': identity['username'],
+            'u_email': identity.get('email', None)
+        })
     wp10db.commit()
   next_path = session.pop('next_path')
   if next_path:
@@ -83,6 +82,7 @@ def identify():
     flask.abort(401, 'Unauthorized')
   return jsonify({'username': user['identity']['username']})
 
+
 @oauth.route('/email')
 def email():
   user = session.get('user')
@@ -92,15 +92,13 @@ def email():
   if email is None:
     wp10db = get_db('wp10db')
     with wp10db.cursor() as cursor:
-      cursor.execute(
-        'SELECT u_email FROM users WHERE u_id = %s',
-        (user['identity']['sub'],)
-      )
+      cursor.execute('SELECT u_email FROM users WHERE u_id = %s',
+                     (user['identity']['sub'],))
       result = cursor.fetchone()
       if result:
-        email = result['u_email'].decode('utf-8') if isinstance(result, dict) and 'u_email' in result else result[0]
-      else:
-        email = None
+        raw_email = result['u_email']
+        if raw_email is not None:
+          email = raw_email.decode('utf-8')
       user['identity']['email'] = email
       session['user'] = user
   return jsonify({'email': email})
