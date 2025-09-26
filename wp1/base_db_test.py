@@ -173,6 +173,6 @@ class TestCleanupDb(BaseCombinedDbTest):
 
   def test_no_op(self):
     # A no-op test to allow for the setup and cleanup to run. Used
-    # when a previous test run was interrupted and left the test
+    # when a previous test run was interrupted and the test left the
     # databases in a dirty state.
     pass

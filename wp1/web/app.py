@@ -9,7 +9,6 @@ import redis
 from flask_session import Session
 
 import wp1.logic.project as logic_project
-from flask_session import Session
 from wp1 import environment
 from wp1.credentials import CREDENTIALS, ENV
 from wp1.web.articles import articles
@@ -27,7 +26,6 @@ def get_redis_creds():
   try:
     return CREDENTIALS[ENV]['REDIS']
   except KeyError:
-    raise
     print('No REDIS_CREDS found, using defaults.')
     return None
 
