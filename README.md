@@ -46,11 +46,53 @@ library code.
 graph of required docker images that represent the production environment.
 
 `docker-compose-dev.yml` is a similar file which sets up a dev environment,
-with Redis and a MariaDB server for the `enwp10` database. Use it like so
+with Redis and a MariaDB server for the `enwp10` database. Through profiles like `zimfarm` and `zimfarm-worker`, you can start the Zimfarm containers required to execute a task.
 
-```bash
-docker compose -f docker-compose-dev.yml up -d
-```
+### Setting up the development services
+
+The dev stack has various containers which can be activated via various profiles. The `zimfarm` profile sets up a local zimfarm DB, API and UI.
+The `zimfarm-worker` profile sets up a local zimfarm worker manager and receiver that stores the results/files of tasks.
+
+If it is your first execution of the dev stack, you need to create offliners and a "virtual" worker in Zimfarm DB. Thus, you need to start the services without the worker
+profile till you register a worker.
+
+#### Registering a worker
+
+- Start the dev stack (with only the Zimfarm API):
+
+  ```sh
+  docker compose -f docker-compose-dev.yml --profile zimfarm up --build
+  ```
+
+  This starts the API, creates an admin user with username: `admin` and password `admin`
+
+- Register offliners in the database
+
+  ```sh
+  docker/zimfarm/create_offliners.sh
+  ```
+
+  This pulls the latest offliner definitions from the respective offliner repositories
+  and registers them with the Zimfarm API. The versions of the offliner definitions
+  are hardcoded to "dev".
+
+- To register a worker
+
+  ```sh
+  docker/zimfarm/create_worker.sh
+  ```
+
+  This registers a worker with username `test_worker` and generates SSH keys for it to authenticat with the Zimfarm API
+
+- If you are running with worker profile, you will need to create warehouse paths to upload the logs and files for each task.
+  ```sh
+  docker exec -it zimfarm-receiver bash
+  /contrib/create-warehouse-paths.sh
+  ```
+- To start the dev stack (with worker)
+  ```sh
+  docker compose -f docker-compose-dev.yml --profile zimfarm --profile zimfarm-worker up --build
+  ```
 
 `docker-compose-test.yml` is a another docker file which sets up the test db
 for python "nosetests" (unit tests). Run it similarly:
@@ -244,7 +286,7 @@ developing the frontend.
 
 ## Running a ZIM Farm
 
-If you wish to run a ZIM Farm instance for testing purposes, the easiest way is to 
+If you wish to run a ZIM Farm instance for testing purposes, the easiest way is to
 clone the zimfarm repository and then setup a development instance of it:
 
 ```bash
