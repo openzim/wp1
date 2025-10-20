@@ -253,6 +253,9 @@ def _get_params(builder: Builder, selection: Selection, title: str,
     logger.warning('No cache_url found in credentials, skipping '
                    'optimisationCacheUrl URL for zimfarm request')
 
+  version = CREDENTIALS[ENV].get('ZIMFARM', {}).get('definition_version',
+                                                    image_tag)
+
   webhook_url = get_webhook_url()
 
   return {
@@ -268,6 +271,7 @@ def _get_params(builder: Builder, selection: Selection, title: str,
           },
       },
       'config': config,
+      'version': version,
   }
 
 
