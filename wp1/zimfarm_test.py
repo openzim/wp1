@@ -74,7 +74,8 @@ class ZimFarmTest(BaseWpOneDbTest):
               'forceRender':
                   'ActionParse',
           }
-      }
+      },
+      'version': 'latest'
   }
 
   def _insert_builder(self):
@@ -229,6 +230,7 @@ class ZimFarmTest(BaseWpOneDbTest):
         "name": "ghcr.io/openzim/mwoffliner-advanced",
         "tag": "1.23.45",
     }
+    expected["version"] = "1.23.45"
 
     actual = zimfarm._get_params(
         self.builder,
