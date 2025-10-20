@@ -4,7 +4,7 @@ services:
     image: redis
     container_name: wp1bot-redis-dev
     ports:
-      - '9736:6379'
+      - 9736:6379
     networks:
       - wp1bot-dev
     restart: always
@@ -19,10 +19,33 @@ services:
     build: docker/dev-db/
     container_name: wp1bot-db-dev
     ports:
-      - '6300:3306'
+      - 6300:3306
     networks:
       - wp1bot-dev
     restart: always
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    container_name: wp1bot-web
+    ports:
+      - 5000:6555
+    volumes:
+      - ./wp1/credentials.py.dev:/usr/src/app/wp1/credentials.py
+    links:
+      - redis
+    logging:
+      driver: 'json-file'
+      options:
+        max-file: '2'
+        max-size: '10m'
+    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - wp1bot-dev
 
   minio:
     image: minio/minio
@@ -40,7 +63,7 @@ services:
       - wp1bot-dev
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
       start_period: 30s
       interval: 30s
       timeout: 10s
@@ -77,9 +100,117 @@ services:
         condition: service_started
       minio:
         condition: service_started
+  zimfarm-db:
+    image: postgres:17.3-bookworm
+    container_name: zimarm-postgresdb
+    ports:
+      - 127.0.0.1:2345:5432
+    volumes:
+      - zimfarm-data:/var/lib/postgresql/data
+      - ./docker/zimfarm/postgres-initdb:/docker-entrypoint-initdb.d
+    environment:
+      - POSTGRES_DB=zimfarm
+      - POSTGRES_USER=zimfarm
+      - POSTGRES_PASSWORD=zimpass
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-q', '-d', 'dbname=zimfarm user=zimfarm']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - wp1bot-dev
+    profiles:
+      - zimfarm
+  zimfarm-api:
+    image: ghcr.io/openzim/zimfarm-backend:latest
+    container_name: zimfarm-api
+    ports:
+      - 127.0.0.1:8004:80
+    environment:
+      BINDING_HOST: 0.0.0.0
+      JWT_SECRET: DH8kSxcflUVfNRdkEiJJCn2dOOKI3qfw
+      POSTGRES_URI: postgresql+psycopg://zimfarm:zimpass@zimfarm-db:5432/zimfarm
+      INIT_USERNAME: admin
+      INIT_PASSWORD: admin
+      ALLOWED_ORIGINS: http://localhost:8003
+      # upload artifacts, logs and zim to receiver for simplicity
+      ARTIFACTS_UPLOAD_URI: sftp://uploader@zimfarm-receiver:22/logs/ # reusing logs dir, kind of a hack
+      LOGS_UPLOAD_URI: sftp://uploader@zimfarm-receiver:22/logs/
+      ZIM_UPLOAD_URI: sftp://uploader@zimfarm-receiver:22/zim/
+      ZIMCHECK_OPTION: --all
+    networks:
+      - wp1bot-dev
+    depends_on:
+      zimfarm-db:
+        condition: service_healthy
+    command:
+      - uvicorn
+      - zimfarm_backend.main:app
+      - --host
+      - '0.0.0.0'
+      - --port
+      - '80'
+      - --proxy-headers
+      - --forwarded-allow-ips
+      - '*'
+    profiles:
+      - zimfarm
+  zimfarm-ui:
+    image: ghcr.io/openzim/zimfarm-ui:latest
+    container_name: zimfarm-ui
+    ports:
+      - 127.0.0.1:8003:80
+    volumes:
+      - ./docker/zimfarm/zimfarm_ui_dev/config.json:/usr/share/nginx/html/config.json:ro
+    depends_on:
+      zimfarm-api:
+        condition: service_healthy
+    networks:
+      - wp1bot-dev
+    profiles:
+      - zimfarm
+  zimfarm-worker-manager:
+    image: ghcr.io/openzim/zimfarm-worker-manager:latest
+    container_name: zimfarm-worker-manager
+    depends_on:
+      zimfarm-api:
+        condition: service_healthy
+    command: worker-manager --webapi-uri 'http://zimfarm-api:80/v2' --username test_worker --name test_worker
+    environment:
+      - DEBUG=true
+      - TASK_WORKER_IMAGE=ghcr.io/openzim/zimfarm-task-worker:latest
+      - ENVIRONMENT=development
+      - ZIMFARM_DISK=4Gb
+      - ZIMFARM_MEMORY=2Gb
+      - ZIMFARM_CPU=1
+      - POLL_INTERVAL=10
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./docker/zimfarm/id_ed25519:/etc/ssh/keys/zimfarm
+    networks:
+      - wp1bot-dev
+    profiles:
+      - zimfarm-worker
+  zimfarm-receiver:
+    image: ghcr.io/openzim/zimfarm-receiver:latest
+    container_name: zimfarm-receiver
+    ports:
+      - 127.0.0.1:8222:22
+    volumes:
+      - ./create-warehouse-paths.sh:/contrib/create-warehouse-paths.sh
+    environment:
+      - ZIMFARM_WEBAPI=http://zimfarm-api:80/v2
+    depends_on:
+      zimfarm-api:
+        condition: service_healthy
+    networks:
+      - wp1bot-dev
+    profiles:
+      - zimfarm-worker
 
 networks:
   wp1bot-dev:
 
 volumes:
   minio-data:
+  zimfarm-data:
