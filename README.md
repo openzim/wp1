@@ -61,7 +61,7 @@ profile till you register a worker.
 - Start the dev stack (with only the Zimfarm API):
 
   ```sh
-  docker compose -f docker-compose-dev.yml --profile zimfarm up --build
+  docker compose -f docker-compose-dev.yml --profile zimfarm up --pull always --build
   ```
 
   This starts the API, creates an admin user with username: `admin` and password `admin`
@@ -84,14 +84,10 @@ profile till you register a worker.
 
   This registers a worker with username `test_worker` and generates SSH keys for it to authenticat with the Zimfarm API
 
-- If you are running with worker profile, you will need to create warehouse paths to upload the logs and files for each task.
-  ```sh
-  docker exec -it zimfarm-receiver bash
-  /contrib/create-warehouse-paths.sh
-  ```
 - To start the dev stack (with worker)
   ```sh
-  docker compose -f docker-compose-dev.yml --profile zimfarm --profile zimfarm-worker up --build
+  docker compose -f docker-compose-dev.yml --profile zimfarm --profile zimfarm-worker \
+  up --pull always --build
   ```
 
 `docker-compose-test.yml` is a another docker file which sets up the test db
@@ -283,22 +279,6 @@ be able to simply copy it to credentials.py.
 If you wish to connect to a wiki replica database on toolforge, you will need
 to fill out your credentials in WIKIDB section. This is not required for
 developing the frontend.
-
-## Running a ZIM Farm
-
-If you wish to run a ZIM Farm instance for testing purposes, the easiest way is to
-clone the zimfarm repository and then setup a development instance of it:
-
-```bash
-git clone https://github.com/openzim/zimfarm.git
-cd zimfarm/dev
-docker compose -p zimfarm up -d
-```
-
-For detailed setup instructions, refer to `dev/README.md` in the zimfarm repository.
-The `ZIMFARM` section in your `credentials.py` file contains pre-configured default
-values for the development instance. If you encounter connection issues, verify
-these credentials match your local setup.
 
 ## Development overlay
 
