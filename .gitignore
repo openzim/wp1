@@ -16,3 +16,9 @@ cookies.txt
 
 # Don't commit logs
 log/**
+
+
+# Don't commit SSH keys
+id_ed25519
+id_rsa
+*.pub
