@@ -80,7 +80,7 @@ services:
 
   zimfarm-db:
     image: postgres:17.3-bookworm
-    container_name: zimarm-postgresdb
+    container_name: zimfarm-postgresdb
     ports:
       - 127.0.0.1:2345:5432
     volumes:

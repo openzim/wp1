@@ -200,8 +200,7 @@ backend selections.
 The dev stack has various containers which can be activated via various profiles. The `zimfarm` profile sets up a local zimfarm DB, API and UI.
 The `zimfarm-worker` profile sets up a local zimfarm worker manager and receiver that stores the results/files of tasks.
 
-If it is your first execution of the dev stack, you need to create offliners and a "virtual" worker in Zimfarm DB. Thus, you need to start the services without the worker
-profile till you register a worker.
+If it is your first execution of the dev stack, you need to create offliners and a "virtual" worker in Zimfarm DB. Thus, you need to start the services without the worker profile until you register a worker.
 
 #### Registering a worker
 
@@ -234,7 +233,7 @@ profile till you register a worker.
 - Restart the dev stack with a Zimfarm worker
   ```sh
   docker compose -f docker-compose-dev.yml --profile zimfarm --profile zimfarm-worker \
-  up --pull always --build
+  up -d
   ```
 
 ## Migrating and updating the dev database.
