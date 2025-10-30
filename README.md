@@ -48,48 +48,6 @@ graph of required docker images that represent the production environment.
 `docker-compose-dev.yml` is a similar file which sets up a dev environment,
 with Redis and a MariaDB server for the `enwp10` database. Through profiles like `zimfarm` and `zimfarm-worker`, you can start the Zimfarm containers required to execute a task.
 
-### Setting up the development services
-
-The dev stack has various containers which can be activated via various profiles. The `zimfarm` profile sets up a local zimfarm DB, API and UI.
-The `zimfarm-worker` profile sets up a local zimfarm worker manager and receiver that stores the results/files of tasks.
-
-If it is your first execution of the dev stack, you need to create offliners and a "virtual" worker in Zimfarm DB. Thus, you need to start the services without the worker
-profile till you register a worker.
-
-#### Registering a worker
-
-- Start the dev stack (with only the Zimfarm API):
-
-  ```sh
-  docker compose -f docker-compose-dev.yml --profile zimfarm up --pull always --build
-  ```
-
-  This starts the API, creates an admin user with username: `admin` and password `admin`
-
-- Register offliners in the database
-
-  ```sh
-  docker/zimfarm/create_offliners.sh
-  ```
-
-  This pulls the latest offliner definitions from the respective offliner repositories
-  and registers them with the Zimfarm API. The versions of the offliner definitions
-  are hardcoded to "dev".
-
-- To register a worker
-
-  ```sh
-  docker/zimfarm/create_worker.sh
-  ```
-
-  This registers a worker with username `test_worker` and generates SSH keys for it to authenticat with the Zimfarm API
-
-- To start the dev stack (with worker)
-  ```sh
-  docker compose -f docker-compose-dev.yml --profile zimfarm --profile zimfarm-worker \
-  up --pull always --build
-  ```
-
 `docker-compose-test.yml` is a another docker file which sets up the test db
 for python "nosetests" (unit tests). Run it similarly:
 
@@ -237,11 +195,47 @@ Before you run the docker-compose command below, you must copy the file
 section for `STORAGE`, if you wish to properly materialize builder lists into
 backend selections.
 
-After that is done, use the following command to run the dev environment:
+### Setting up the development services
 
-```bash
-docker compose -f docker-compose-dev.yml up -d
-```
+The dev stack has various containers which can be activated via various profiles. The `zimfarm` profile sets up a local zimfarm DB, API and UI.
+The `zimfarm-worker` profile sets up a local zimfarm worker manager and receiver that stores the results/files of tasks.
+
+If it is your first execution of the dev stack, you need to create offliners and a "virtual" worker in Zimfarm DB. Thus, you need to start the services without the worker
+profile till you register a worker.
+
+#### Registering a worker
+
+- Start the dev stack without a Zimfarm worker for now
+
+  ```sh
+  docker compose -f docker-compose-dev.yml --profile zimfarm up --pull always --build
+  ```
+
+  This starts the API, creates an admin user with username: `admin` and password `admin`
+
+- Register offliners in the database
+
+  ```sh
+  docker/zimfarm/create_offliners.sh
+  ```
+
+  This pulls the [latest definition of the mwoffliner](https://github.com/openzim/mwoffliner/blob/main/offliner-definition.json) scraper from Github
+  and registers the definition with the Zimfarm API. The version of the offliner definitions
+  is hardcoded to "dev". This definition is necessary as it contains the latest parameters needed to run the `mwoffliner` scraper.
+
+- Register a test Zimfarm worker
+
+  ```sh
+  docker/zimfarm/create_worker.sh
+  ```
+
+  This registers a worker with username `test_worker` and generates SSH keys for it to authenticate with the Zimfarm API. The worker is configured with 3 CPU, 20GB RAM and 20GB disk.
+
+- Restart the dev stack with a Zimfarm worker
+  ```sh
+  docker compose -f docker-compose-dev.yml --profile zimfarm --profile zimfarm-worker \
+  up --pull always --build
+  ```
 
 ## Migrating and updating the dev database.
 

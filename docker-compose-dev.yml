@@ -112,10 +112,9 @@ services:
       INIT_USERNAME: admin
       INIT_PASSWORD: admin
       ALLOWED_ORIGINS: http://localhost:8003
-      ARTIFACTS_UPLOAD_URI: s3+http://minio:9000/?keyId=minio_key&secretAccessKey=minio_secret&bucketName=org-kiwix-dev-wp1
-      LOGS_UPLOAD_URI: s3+http://minio:9000/?keyId=minio_key&secretAccessKey=minio_secret&bucketName=org-kiwix-dev-wp1
-      ZIM_UPLOAD_URI: s3+http://minio:9000/?keyId=minio_key&secretAccessKey=minio_secret&bucketName=org-kiwix-dev-wp1
-      ZIMCHECK_OPTION: --all
+      ARTIFACTS_UPLOAD_URI: s3+http://minio:9000/?keyId=minio_key&secretAccessKey=minio_secret&bucketName=org-kiwix-dev-artifacts
+      LOGS_UPLOAD_URI: s3+http://minio:9000/?keyId=minio_key&secretAccessKey=minio_secret&bucketName=org-kiwix-dev-logs
+      ZIM_UPLOAD_URI: s3+http://minio:9000/?keyId=minio_key&secretAccessKey=minio_secret&bucketName=org-kiwix-dev-zims
     networks:
       - wp1bot-dev
     depends_on:
