@@ -159,9 +159,9 @@ services:
       - DEBUG=true
       - TASK_WORKER_IMAGE=ghcr.io/openzim/zimfarm-task-worker:latest
       - ENVIRONMENT=development
-      - ZIMFARM_DISK=4Gb
-      - ZIMFARM_MEMORY=2Gb
-      - ZIMFARM_CPU=1
+      - ZIMFARM_DISK=20Gb
+      - ZIMFARM_MEMORY=20Gb
+      - ZIMFARM_CPU=3
       - POLL_INTERVAL=10
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
