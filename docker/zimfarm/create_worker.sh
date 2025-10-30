@@ -77,9 +77,9 @@ response=$(curl -s -w "\n%{http_code}" -X 'PUT' \
   -H "Authorization: Bearer $ZF_USER_TOKEN" \
   -d '{
   "username": "test_worker",
-  "cpu": 1,
-  "memory": 2147483648,
-  "disk": 4294967296,
+  "cpu": 3,
+  "memory": 21474836480,
+  "disk": 21474836480,
   "offliners": [
     "mwoffliner"
   ]

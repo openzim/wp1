@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/bin/bash
 
 MINIO_ALIAS="dev_minio"
 MINIO_URL="http://minio:9000"
 MINIO_USER="minio_key"
 MINIO_PASSWORD="minio_secret"
-BUCKET_NAME="org-kiwix-dev-wp1"
+BUCKETS=("org-kiwix-dev-wp1" "org-kiwix-dev-artifacts" "org-kiwix-dev-logs" "org-kiwix-dev-zims")
 
 # Wait for MinIO
 echo "Waiting for MinIO to be ready..."
@@ -15,7 +15,10 @@ for i in $(seq 1 30); do
     [ $i -eq 30 ] && { echo "ERROR: MinIO timeout"; exit 1; }
 done
 
-# Setup bucket
-/usr/bin/mc mb $MINIO_ALIAS/$BUCKET_NAME --ignore-existing # Create bucket if it doesn't exist
-/usr/bin/mc anonymous set public $MINIO_ALIAS/$BUCKET_NAME # Set bucket to public
+# Setup buckets
+for bucket in "${BUCKETS[@]}"; do
+    echo "Setting up bucket: $bucket"
+    /usr/bin/mc mb "$MINIO_ALIAS/$bucket" --ignore-existing # Create bucket if it doesn't exist
+    /usr/bin/mc anonymous set public "$MINIO_ALIAS/$bucket" # Set bucket to public
+done
 echo "MinIO setup complete"
