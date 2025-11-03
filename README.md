@@ -202,6 +202,8 @@ The `zimfarm-worker` profile sets up a local zimfarm worker manager and receiver
 
 If it is your first execution of the dev stack, you need to create offliners and a "virtual" worker in Zimfarm DB. Thus, you need to start the services without the worker profile until you register a worker.
 
+You may need to install the `jq` tool with [these instructions](https://github.com/jqlang/jq/wiki/Installation).
+
 #### Registering a worker
 
 - Start the dev stack without a Zimfarm worker for now
