@@ -69,7 +69,7 @@ register_offliner_via_api() {
     # Extract HTTP status code (last line)
     http_code=$(echo "$response" | tail -n1)
     # Extract response body (all lines except last)
-    response=$(echo "$response" | head -n -1)
+    response=$(echo "$response" | head -n1)
 
     case "$http_code" in
         201)
@@ -119,7 +119,7 @@ create_offliner_definition() {
     # Extract HTTP status code (last line)
     http_code=$(echo "$response" | tail -n1)
     # Extract response body (all lines except last)
-    response=$(echo "$response" | head -n -1)
+    response=$(echo "$response" | head -n1)
 
     case "$http_code" in
         201)
