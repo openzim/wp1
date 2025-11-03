@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Script to register offliners in Zimfarm
 # - retrieve an admin token

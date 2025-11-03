@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Call it once to create a `test_worker`:
 # - retrieve an admin token
