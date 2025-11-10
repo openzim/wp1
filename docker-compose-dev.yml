@@ -78,6 +78,28 @@ services:
       minio:
         condition: service_started
 
+  dev-web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    container_name: wp1bot-web-dev
+    environment:
+      - FLASK_DEBUG=1
+      - FLASK_RUN_HOST=0.0.0.0
+    command: flask --app wp1.web.app run
+    networks:
+      - wp1bot-dev
+    ports:
+      - 5000:5000
+    volumes:
+      - .:/usr/src/app/
+    links:
+      - redis
+    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+
   zimfarm-db:
     image: postgres:17.3-bookworm
     container_name: zimfarm-postgresdb

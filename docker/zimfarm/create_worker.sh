@@ -105,7 +105,7 @@ response=$(curl -s -w "\n%{http_code}" -X POST "${ZIMFARM_BASE_API_URL}/users/te
 echo "Move/Copy the worker keys to where the worker manager can access it (typically a docker volume mount if you are running in a container)"
 
 http_code=$(echo "$response" | tail -n1)
-response=$(echo "$response" | head -n -1)
+response=$(echo "$response" | head -n1)
 
 check_http_code "$http_code" "$response"
 

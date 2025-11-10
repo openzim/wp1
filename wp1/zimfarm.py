@@ -55,12 +55,14 @@ def request_zimfarm_token(redis):
 
   logger.debug('Requesting auth token from %s with username/password',
                get_zimfarm_url())
-  r = requests.post('%s/auth/authorize' % get_zimfarm_url(),
-                    headers={'User-Agent': WP1_USER_AGENT},
-                    json={
-                        'username': user,
-                        'password': password
-                    })
+  r = requests.post(
+      '%s/auth/authorize' % get_zimfarm_url(),
+      headers={'User-Agent': WP1_USER_AGENT},
+      json={
+          'username': user,
+          'password': password
+      },
+  )
   try:
     r.raise_for_status()
   except requests.exceptions.HTTPError as e:
@@ -80,13 +82,15 @@ def request_zimfarm_token(redis):
 def refresh_zimfarm_token(redis, refresh_token):
   logger.debug('Requesting access_token from %s using refresh_token',
                get_zimfarm_url())
-  r = requests.post('%s/auth/refresh' % get_zimfarm_url(),
-                    headers={
-                        'User-Agent': WP1_USER_AGENT,
-                    },
-                    json={
-                        "refresh_token": refresh_token,
-                    })
+  r = requests.post(
+      '%s/auth/refresh' % get_zimfarm_url(),
+      headers={
+          'User-Agent': WP1_USER_AGENT,
+      },
+      json={
+          'refresh_token': refresh_token,
+      },
+  )
   try:
     r.raise_for_status()
   except requests.exceptions.HTTPError as e:
@@ -108,9 +112,9 @@ def get_zimfarm_token(redis):
     logger.debug('No saved zimfarm refresh_token, requesting')
     return request_zimfarm_token(redis)
 
-  access_expired = datetime.strptime(
-      data.get('expires_time', '1970-01-01T00:00:00Z'),
-      '%Y-%m-%dT%H:%M:%SZ') < get_current_datetime()
+  access_expired = (datetime.strptime(
+      data.get('expires_time', '1970-01-01T00:00:00Z'), '%Y-%m-%dT%H:%M:%SZ')
+                    < get_current_datetime())
 
   if access_expired:
     logger.debug('Zimfarm access_token is expired, refreshing')
@@ -123,7 +127,7 @@ def get_zimfarm_url():
   url = CREDENTIALS[ENV].get('ZIMFARM', {}).get('url')
   if url is None:
     raise ZimFarmError(
-        'CREDENTIALS did not contain ["ZIMFARM"]["url"], environment = %s' %
+        'CREDENTIALS did not contain ['ZIMFARM']['url'], environment = %s' %
         ENV)
   return url
 
@@ -133,7 +137,7 @@ def get_webhook_url():
   if token is None:
     return None
 
-  base_url = CREDENTIALS[ENV].get('CLIENT_URL', {}).get('api')
+  base_url = CREDENTIALS[ENV].get('CLIENT_URL', {}).get('backend')
   if base_url is None:
     return None
 
@@ -142,45 +146,45 @@ def get_webhook_url():
 
 
 def nb_grapheme_for(value: str) -> int:
-  """Number of graphemes (visually perceived characters) in a given string"""
-  return len(regex.findall(r"\X", value))
+  '''Number of graphemes (visually perceived characters) in a given string'''
+  return len(regex.findall(r'\X', value))
 
 
 def _validate_zim_metadata(title, description, long_description):
-  """Validate ZIM metadata fields against length limits."""
+  '''Validate ZIM metadata fields against length limits.'''
   if title is None or title.strip() == '':
-    raise InvalidZimTitleError("Title is required.")
+    raise InvalidZimTitleError('Title is required.')
 
   if description is None or description.strip() == '':
-    raise InvalidZimDescriptionError("Description is required.")
+    raise InvalidZimDescriptionError('Description is required.')
 
   if title and nb_grapheme_for(title) > ZIM_TITLE_MAX_LENGTH:
     raise InvalidZimTitleError(
-        f"Title exceeds maximum length: {ZIM_TITLE_MAX_LENGTH} graphemes.")
+        f'Title exceeds maximum length: {ZIM_TITLE_MAX_LENGTH} graphemes.')
 
   if description and nb_grapheme_for(description) > ZIM_DESCRIPTION_MAX_LENGTH:
     raise InvalidZimDescriptionError(
-        f"Description exceeds maximum length: {ZIM_DESCRIPTION_MAX_LENGTH} graphemes."
+        f'Description exceeds maximum length: {ZIM_DESCRIPTION_MAX_LENGTH} graphemes.'
     )
 
-  if long_description and nb_grapheme_for(
-      long_description) > ZIM_LONG_DESCRIPTION_MAX_LENGTH:
+  if (long_description and
+      nb_grapheme_for(long_description) > ZIM_LONG_DESCRIPTION_MAX_LENGTH):
     raise InvalidZimLongDescriptionError(
-        f"Long description exceeds maximum length: {ZIM_LONG_DESCRIPTION_MAX_LENGTH} graphemes."
+        f'Long description exceeds maximum length: {ZIM_LONG_DESCRIPTION_MAX_LENGTH} graphemes.'
     )
 
   if long_description and nb_grapheme_for(long_description) < nb_grapheme_for(
       description):
     raise InvalidZimLongDescriptionError(
-        "Long description must be longer than the description.")
+        'Long description must be longer than the description.')
 
   if long_description and long_description == description:
     raise InvalidZimLongDescriptionError(
-        "Long description must be different from the description.")
+        'Long description must be different from the description.')
 
 
 def get_zimfarm_schedule_name(builder_id: str) -> str:
-  """Generate a unique schedule name for the ZIM file based on builder"""
+  '''Generate a unique schedule name for the ZIM file based on builder'''
   if not builder_id:
     raise ValueError('Builder ID cannot be None')
   parts = builder_id.split('-')
@@ -190,17 +194,22 @@ def get_zimfarm_schedule_name(builder_id: str) -> str:
 
 
 def get_zim_filename_prefix(builder: Builder, selection: Selection) -> str:
-  """Generate a filename prefix for the ZIM file based on builder and selection."""
+  '''Generate a filename prefix for the ZIM file based on builder and selection.'''
   if builder is None or selection is None:
-    raise ValueError("Given builder or selection was None")
+    raise ValueError('Given builder or selection was None')
 
   selection_id_frag = selection.s_id.decode('utf-8').split('-')[-1]
   builder_name = builder.b_name.decode('utf-8')
-  return f"{util.safe_name(builder_name)}-{selection_id_frag}"
+  return f'{util.safe_name(builder_name)}-{selection_id_frag}'
 
 
-def _get_params(builder: Builder, selection: Selection, title: str,
-                description: str, long_description: str) -> dict:
+def _get_params(
+    builder: Builder,
+    selection: Selection,
+    title: str,
+    description: str,
+    long_description: str,
+) -> dict:
   if builder is None:
     raise ValueError('Given builder was None: %r' % builder)
 
@@ -210,7 +219,7 @@ def _get_params(builder: Builder, selection: Selection, title: str,
   if image is None:
     image = 'ghcr.io/openzim/mwoffliner:latest'
     logger.warning(
-        'No ZIMFARM["image"] found in credentials, using latest (%s)', image)
+        'No ZIMFARM['image'] found in credentials, using latest (%s)', image)
   image_name, image_tag = image.split(':')
 
   config = {
@@ -240,11 +249,11 @@ def _get_params(builder: Builder, selection: Selection, title: str,
           'customZimDescription':
               description,
           'customZimLongDescription':
-              long_description if long_description else
-              f"ZIM file created from a WP1 Selection. {description}",
+              (long_description if long_description else
+               f'ZIM file created from a WP1 Selection. {description}'),
           'filenamePrefix':
               get_zim_filename_prefix(builder, selection),
-      }
+      },
   }
   cache_url = CREDENTIALS[ENV].get('ZIMFARM', {}).get('cache_url')
   if cache_url is not None:
@@ -276,20 +285,21 @@ def _get_params(builder: Builder, selection: Selection, title: str,
 
 
 def _get_zimfarm_headers(token):
-  return {"Authorization": "Bearer %s" % token, 'User-Agent': WP1_USER_AGENT}
+  return {'Authorization': 'Bearer %s' % token, 'User-Agent': WP1_USER_AGENT}
 
 
 def zimfarm_schedule_exists(redis, builder_id: str) -> bool:
-  """Checks if a ZimSchedule exists in the zimfarm"""
+  '''Checks if a ZimSchedule exists in the zimfarm'''
   token = get_zimfarm_token(redis)
   if token is None:
     raise ZimFarmError('Error retrieving auth token for request')
   base_url = get_zimfarm_url()
   headers = _get_zimfarm_headers(token)
 
-  r = requests.get('%s/schedules/%s' %
-                   (base_url, get_zimfarm_schedule_name(builder_id)),
-                   headers=headers)
+  r = requests.get(
+      '%s/schedules/%s' % (base_url, get_zimfarm_schedule_name(builder_id)),
+      headers=headers,
+  )
   # 404 means the schedule doesn't exist, which is not an error
   if r.status_code == 404:
     return False
@@ -304,21 +314,23 @@ def zimfarm_schedule_exists(redis, builder_id: str) -> bool:
 
 
 def find_existing_schedule_in_db(wp10db, builder_b_id):
-  """
-  Returns an existing schedule.
-  """
+  '''
+    Returns an existing schedule.
+    '''
   schedules = logic_zim_schedules.list_zim_schedules_for_builder(
       wp10db, builder_b_id)
   for schedule in schedules:
-    if schedule.s_remaining_generations == 0 or schedule.s_remaining_generations is None:  # Look for a schedule with no remaining generations
+    if (schedule.s_remaining_generations == 0 or
+        schedule.s_remaining_generations
+        is None):  # Look for a schedule with no remaining generations
       return schedule
 
 
 def create_or_update_zimfarm_schedule(redis, wp10db, builder, title,
                                       description, long_description):
-  """
-  Requests a ZIM file schedule from the Zimfarm for the given builder.
-  """
+  '''
+    Requests a ZIM file schedule from the Zimfarm for the given builder.
+    '''
   token = get_zimfarm_token(redis)
   if token is None:
     raise ZimFarmError('Error retrieving auth token for request')
@@ -333,9 +345,10 @@ def create_or_update_zimfarm_schedule(redis, wp10db, builder, title,
   article_count = selection.s_article_count
   if article_count is None or article_count > MAX_ZIMFARM_ARTICLE_COUNT:
     raise ZimFarmTooManyArticlesError(
-        'Cannot create ZIM file for selection with %s articles, max is %s' %
-        (article_count if article_count is not None else 'UNKNOWN number of',
-         MAX_ZIMFARM_ARTICLE_COUNT))
+        'Cannot create ZIM file for selection with %s articles, max is %s' % (
+            article_count if article_count is not None else 'UNKNOWN number of',
+            MAX_ZIMFARM_ARTICLE_COUNT,
+        ))
 
   params = _get_params(builder, selection, title, description, long_description)
   base_url = get_zimfarm_url()
@@ -356,8 +369,8 @@ def create_or_update_zimfarm_schedule(redis, wp10db, builder, title,
       zim_schedule = existing_zim_schedule
       zim_schedule.s_title = title.encode('utf-8')
       zim_schedule.s_description = description.encode('utf-8')
-      zim_schedule.s_long_description = long_description.encode(
-          'utf-8') if long_description else None
+      zim_schedule.s_long_description = (long_description.encode('utf-8')
+                                         if long_description else None)
       zim_schedule.s_remaining_generations = None
       logic_zim_schedules.update_zim_schedule(wp10db, zim_schedule)
       zim_schedule_id_to_set = zim_schedule.s_id.decode('utf-8')
@@ -372,8 +385,8 @@ def create_or_update_zimfarm_schedule(redis, wp10db, builder, title,
               constants.TS_FORMAT_WP10).encode('utf-8'),
           s_title=title.encode('utf-8'),
           s_description=description.encode('utf-8'),
-          s_long_description=long_description.encode('utf-8')
-          if long_description else None,
+          s_long_description=(long_description.encode('utf-8')
+                              if long_description else None),
       )
       logic_zim_schedules.insert_zim_schedule(wp10db, zim_schedule)
       zim_schedule_id_to_set = zim_schedule_id
@@ -390,9 +403,9 @@ def create_or_update_zimfarm_schedule(redis, wp10db, builder, title,
 
 
 def request_zimfarm_task(redis, wp10db, builder):
-  """
-  Requests a ZIM file task from the Zimfarm for the given builder.
-  """
+  '''
+    Requests a ZIM file task from the Zimfarm for the given builder.
+    '''
   token = get_zimfarm_token(redis)
   if token is None:
     raise ZimFarmError('Error retrieving auth token for request')
@@ -405,9 +418,10 @@ def request_zimfarm_task(redis, wp10db, builder):
   article_count = selection.s_article_count
   if article_count is None or article_count > MAX_ZIMFARM_ARTICLE_COUNT:
     raise ZimFarmTooManyArticlesError(
-        'Cannot create ZIM file for selection with %s articles, max is %s' %
-        (article_count if article_count is not None else 'UNKNOWN number of',
-         MAX_ZIMFARM_ARTICLE_COUNT))
+        'Cannot create ZIM file for selection with %s articles, max is %s' % (
+            article_count if article_count is not None else 'UNKNOWN number of',
+            MAX_ZIMFARM_ARTICLE_COUNT,
+        ))
 
   base_url = get_zimfarm_url()
   headers = _get_zimfarm_headers(token)
@@ -415,9 +429,11 @@ def request_zimfarm_task(redis, wp10db, builder):
   schedule_name = get_zimfarm_schedule_name(builder.b_id.decode('utf-8'))
   logger.info('Creating ZIM task for builder id=%s',
               builder.b_id.decode('utf-8'))
-  r = requests.post('%s/requested-tasks' % base_url,
-                    headers=headers,
-                    json={'schedule_names': [schedule_name]})
+  r = requests.post(
+      '%s/requested-tasks' % base_url,
+      headers=headers,
+      json={'schedule_names': [schedule_name]},
+  )
   try:
     r.raise_for_status()
   except requests.exceptions.HTTPError as e:
@@ -492,7 +508,7 @@ def zim_file_url_for_task_id(task_id):
   base_url = CREDENTIALS[ENV].get('ZIMFARM', {}).get('s3_url')
   if base_url is None:
     raise ZimFarmError(
-        'Configuration error, could not find ZIMFARM["s3_url"] in credentials')
+        'Configuration error, could not find ZIMFARM['s3_url'] in credentials')
 
   return f'{base_url}{warehouse_path}/{name}'
 
@@ -530,9 +546,9 @@ def cancel_zim_by_task_id(redis, task_id):
 
 
 def delete_zimfarm_schedule_by_builder_id(redis, builder_id):
-  """
-  Deletes a ZIM schedule from the Zimfarm for the given builder_id.
-  """
+  '''
+    Deletes a ZIM schedule from the Zimfarm for the given builder_id.
+    '''
   if isinstance(builder_id, bytes):
     builder_id = builder_id.decode('utf-8')
 
@@ -557,7 +573,8 @@ def delete_zimfarm_schedule_by_builder_id(redis, builder_id):
       # Schedule doesn't exist, which is not an error for deletion
       logger.info(
           'Zimfarm schedule=%s not found (already deleted or never existed)',
-          schedule_name)
+          schedule_name,
+      )
       return
     else:
       logger.exception(r.text)
