@@ -4,7 +4,7 @@ MINIO_ALIAS="dev_minio"
 MINIO_URL="http://minio:9000"
 MINIO_USER="minio_key"
 MINIO_PASSWORD="minio_secret"
-BUCKETS=("org-kiwix-dev-wp1" "org-kiwix-dev-artifacts" "org-kiwix-dev-logs" "org-kiwix-dev-zims")
+BUCKETS=("org-kiwix-dev-wp1" "org-kiwix-dev-artifacts" "org-kiwix-dev-logs" "org-kiwix-dev-zims", "org-kiwix-dev-cache")
 
 # Wait for MinIO
 echo "Waiting for MinIO to be ready..."
