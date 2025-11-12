@@ -92,7 +92,7 @@ services:
     ports:
       - 5000:5000
     volumes:
-      - .:/usr/src/app/
+      - ./wp1/credentials.py.dev:/usr/src/app/wp1/credentials.py
     links:
       - redis
     restart: always
@@ -131,6 +131,7 @@ services:
       BINDING_HOST: 0.0.0.0
       JWT_SECRET: DH8kSxcflUVfNRdkEiJJCn2dOOKI3qfw
       POSTGRES_URI: postgresql+psycopg://zimfarm:zimpass@zimfarm-db:5432/zimfarm
+      ALEMBIC_UPGRADE_HEAD_ON_START: true
       INIT_USERNAME: admin
       INIT_PASSWORD: admin
       ALLOWED_ORIGINS: http://localhost:8003
@@ -142,16 +143,6 @@ services:
     depends_on:
       zimfarm-db:
         condition: service_healthy
-    command:
-      - uvicorn
-      - zimfarm_backend.main:app
-      - --host
-      - '0.0.0.0'
-      - --port
-      - '80'
-      - --proxy-headers
-      - --forwarded-allow-ips
-      - '*'
     profiles:
       - zimfarm
 

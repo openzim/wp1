@@ -113,8 +113,8 @@ def get_zimfarm_token(redis):
     return request_zimfarm_token(redis)
 
   access_expired = (datetime.strptime(
-      data.get('expires_time', '1970-01-01T00:00:00Z'), '%Y-%m-%dT%H:%M:%SZ')
-                    < get_current_datetime())
+      data.get('expires_time', '1970-01-01T00:00:00Z'), '%Y-%m-%dT%H:%M:%SZ') <
+                    get_current_datetime())
 
   if access_expired:
     logger.debug('Zimfarm access_token is expired, refreshing')
@@ -127,7 +127,7 @@ def get_zimfarm_url():
   url = CREDENTIALS[ENV].get('ZIMFARM', {}).get('url')
   if url is None:
     raise ZimFarmError(
-        'CREDENTIALS did not contain ['ZIMFARM']['url'], environment = %s' %
+        'CREDENTIALS did not contain ["ZIMFARM"]["url"], environment = %s' %
         ENV)
   return url
 
@@ -219,7 +219,7 @@ def _get_params(
   if image is None:
     image = 'ghcr.io/openzim/mwoffliner:latest'
     logger.warning(
-        'No ZIMFARM['image'] found in credentials, using latest (%s)', image)
+        'No ZIMFARM["image"] found in credentials, using latest (%s)', image)
   image_name, image_tag = image.split(':')
 
   config = {
@@ -321,8 +321,8 @@ def find_existing_schedule_in_db(wp10db, builder_b_id):
       wp10db, builder_b_id)
   for schedule in schedules:
     if (schedule.s_remaining_generations == 0 or
-        schedule.s_remaining_generations
-        is None):  # Look for a schedule with no remaining generations
+        schedule.s_remaining_generations is
+        None):  # Look for a schedule with no remaining generations
       return schedule
 
 
@@ -508,7 +508,8 @@ def zim_file_url_for_task_id(task_id):
   base_url = CREDENTIALS[ENV].get('ZIMFARM', {}).get('s3_url')
   if base_url is None:
     raise ZimFarmError(
-        'Configuration error, could not find ZIMFARM['s3_url'] in credentials')
+        'Configuration error, could not find ZIMFARM[\'s3_url\'] in credentials'
+    )
 
   return f'{base_url}{warehouse_path}/{name}'
 
