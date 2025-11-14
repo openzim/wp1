@@ -217,22 +217,36 @@ You may need to install the `jq` tool with [these instructions](https://github.c
 - Register offliners in the database
 
   ```sh
-  docker/zimfarm/create_offliners.sh
+  cd docker/zimfarm
+  ./create_offliners.sh
   ```
 
-  This pulls the [latest definition of the mwoffliner](https://github.com/openzim/mwoffliner/blob/main/offliner-definition.json) scraper from Github
-  and registers the definition with the Zimfarm API. The version of the offliner definitions
-  is hardcoded to "dev". This definition is necessary as it contains the latest parameters needed to run the `mwoffliner` scraper.
+  This pulls the various versions of the mwoffliner definition schema from the Zimfarm API
+  and registers the definition within your docker Zimfarm API. These definitions are
+  necessary as they contain the latest parameters needed to run the `mwoffliner`
+  scraper.
+
+  In your `credentials.py`, set the defintion version to any of the versions pulled from the API. For example, if `1.17.2` was one of the downloaded definitions of the mwoffliner scraper, you want to set `definition_version` under the `ZIMFARM` section:
+
+  ```py
+    "ZIMFARM": {
+        "definition_version": "1.17.2",
+        "image": "ghcr.io/openzim/mwoffliner:1.17.2"
+        # other configurations for zimfarm follow...
+    }
+
+  ```
 
 - Register a test Zimfarm worker
 
   ```sh
-  docker/zimfarm/create_worker.sh
+  cd docker/zimfarm
+  ./create_worker.sh
   ```
 
   This registers a worker with username `test_worker` and generates SSH keys for it to authenticate with the Zimfarm API. The worker is configured with 3 CPU, 20GB RAM and 20GB disk.
 
-- Restart the dev stack with a Zimfarm worker
+- Restart the dev stack with a Zimfarm worker now
   ```sh
   docker compose -f docker-compose-dev.yml --profile zimfarm --profile zimfarm-worker \
   up -d

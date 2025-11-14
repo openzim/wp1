@@ -91,6 +91,7 @@ response=$(echo "$response" | head -n -1)
 check_http_code "$http_code" "$response"
 
 echo "Generating SSH key pair (Ed25519)"
+rm -f id_ed25519 id_ed25519.pub
 ssh-keygen -t ed25519 -f id_ed25519 -N ""
 payload="$(jq -n --arg key "$(< id_ed25519.pub)" '{key: $key}')"
 
@@ -101,8 +102,6 @@ response=$(curl -s -w "\n%{http_code}" -X POST "${ZIMFARM_BASE_API_URL}/users/te
   -H "Authorization: Bearer $ZF_USER_TOKEN" \
   -H 'Content-Type: application/json; charset=utf-8' \
   -d "$payload")
-
-echo "Move/Copy the worker keys to where the worker manager can access it (typically a docker volume mount if you are running in a container)"
 
 http_code=$(echo "$response" | tail -n1)
 response=$(echo "$response" | head -n1)
