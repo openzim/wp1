@@ -32,13 +32,14 @@
     "**/**/ssri": "^8.0.1"
   },
   "dependencies": {
+    "@popperjs/core": "^2.9.2",
     "@rollup/plugin-inject": "^5.0.2",
     "@vitejs/plugin-vue2": "^2.3.1",
     "acorn": "^6.4.1",
     "autoprefixer": "^10.4.13",
     "axios": "^1.12.0",
     "babel-preset-vue": "^2.0.2",
-    "bootstrap": "^4.4.1",
+    "bootstrap": "^5.0.0",
     "bootstrap-icons": "^1.10.2",
     "cli-highlight": "^2.1.5",
     "cypress": "13",
