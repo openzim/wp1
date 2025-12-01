@@ -455,6 +455,7 @@ def latest_selection_url(wp10db, builder_id, ext, zimfarm_s3=False):
   # This is only necessary in development, where the Zimfarm and the
   # S3 server (Minio) are both running in a docker compose graph.
   # In production, the keys 's3' and 'backend_s3' should be the same.
+  s3_public_url = None
   if zimfarm_s3:
     s3_public_url = CREDENTIALS.get(ENV, {}).get('CLIENT_URL',
                                                  {}).get('backend_s3')
