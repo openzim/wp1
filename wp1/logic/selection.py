@@ -57,7 +57,9 @@ def url_for_selection(selection):
   return url_for(selection.s_object_key)
 
 
-def url_for(object_key, s3_public_url=S3_PUBLIC_URL):
+def url_for(object_key, s3_public_url=None):
+  if s3_public_url is None:
+    s3_public_url = S3_PUBLIC_URL
   if not object_key:
     raise ValueError('Cannot get url for empty object_key')
   path = urllib.parse.quote(
