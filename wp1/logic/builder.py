@@ -13,15 +13,12 @@ import wp1.logic.util as logic_util
 import wp1.logic.zim_files as logic_zim_tasks
 import wp1.logic.zim_schedules as logic_zim_schedules
 from wp1 import app_logging, queues, zimfarm
-from wp1.constants import (
-    CONTENT_TYPE_TO_EXT,
-    EXT_TO_CONTENT_TYPE,
-    MAX_ZIM_FILE_POLL_TIME,
-    TS_FORMAT_WP10,
-)
+from wp1.constants import (CONTENT_TYPE_TO_EXT, EXT_TO_CONTENT_TYPE,
+                           MAX_ZIM_FILE_POLL_TIME, TS_FORMAT_WP10)
 from wp1.credentials import CREDENTIALS, ENV
 from wp1.environment import Environment
-from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError
+from wp1.exceptions import (ObjectNotFoundError, UserNotAuthorizedError,
+                            ZimFarmError)
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
 from wp1.models.wp10.zim_file import ZimTask
@@ -352,11 +349,12 @@ def update_version_for_finished_zim(wp10db, task_id):
   wp10db.commit()
 
 
-def _latest_url_for(builder_id, content_type, server_url):
+def latest_url_for(builder_id, content_type):
   '''Returns the redirect URL for the latest selection for a builder.
 
-    This is the URL on this API server that redirects to S3-storage.
-    '''
+     This is the URL on this API server that redirects to S3-storage.
+     This is used for URLs that are returned to the client.
+  '''
   ext = CONTENT_TYPE_TO_EXT.get(content_type)
   if ext is None:
     logger.warning(
@@ -364,25 +362,35 @@ def _latest_url_for(builder_id, content_type, server_url):
         content_type,
     )
     return None
-  return '%s/v1/builders/%s/selection/latest.%s' % (server_url, builder_id, ext)
-
-
-def latest_url_for(builder_id, content_type):
   server_url = CREDENTIALS.get(ENV, {}).get('CLIENT_URL', {}).get('api')
   if server_url is None:
     logger.warning('Could not determine server API URL. Check credentials.py')
     return None
-  return _latest_url_for(builder_id, content_type, server_url)
+  return '%s/v1/builders/%s/selection/latest.%s' % (server_url, builder_id, ext)
 
 
 def latest_zimfarm_url_for(builder_id, content_type):
+  '''The redirect URL for the latest selection for a builder.
+  
+     This differs from latest_url_for in that it provides URLs that can be
+     used by Zimfarm, primarily in Development, where the Zimfarm is running in
+     a docker compose graph.
+  '''
+  ext = CONTENT_TYPE_TO_EXT.get(content_type)
+  if ext is None:
+    logger.warning(
+        'Attempt to get latest selection URL with unrecognized content type: %r',
+        content_type,
+    )
+    return None
   server_url = CREDENTIALS.get(ENV, {}).get('CLIENT_URL', {}).get('backend')
   if server_url is None:
     logger.warning(
         'Could not determine server backend URL for Zimfarm. Check credentials.py'
     )
     return None
-  return _latest_url_for(builder_id, content_type, server_url)
+  return '%s/v1/builders/%s/selection/zimfarm/latest.%s' % (server_url,
+                                                            builder_id, ext)
 
 
 def local_url_for_latest_zim(builder_id):
@@ -421,7 +429,7 @@ def latest_selection_for(wp10db, builder_id, content_type):
   return Selection(**db_selection)
 
 
-def latest_selection_url(wp10db, builder_id, ext):
+def latest_selection_url(wp10db, builder_id, ext, zimfarm_s3=False):
   '''Returns the raw S3-like storage URL for the latest selection for the given builder.
 
     This is in contrast with latest_url_for, which returns the redirect URL on this API
@@ -443,7 +451,15 @@ def latest_selection_url(wp10db, builder_id, ext):
                    builder_id)
     return None
 
-  return logic_selection.url_for(selection.s_object_key.decode('utf-8'))
+  # If the request is coming from the Zimfarm, use a different S3 URL.
+  # This is only necessary in development, where the Zimfarm and the
+  # S3 server (Minio) are both running in a docker compose graph.
+  # In production, the keys 's3' and 'backend_s3' should be the same.
+  if zimfarm_s3:
+    s3_public_url = CREDENTIALS.get(ENV, {}).get('CLIENT_URL',
+                                                 {}).get('backend_s3')
+  return logic_selection.url_for(selection.s_object_key.decode('utf-8'),
+                                 s3_public_url=s3_public_url)
 
 
 def latest_zim_file_for(wp10db, builder_id) -> ZimTask:
@@ -636,18 +652,6 @@ def handle_zim_generation(
   if scheduled_repetitions is not None:
     logic_zim_schedules.schedule_future_zimfile_generations(
         redis, wp10db, builder, zim_schedule.s_id, scheduled_repetitions)
-
-  # In production, there is a web hook from the Zimfarm that notifies us
-  # that the task is finished and we can start polling for the ZIM file
-  # to be uploaded. The web hook obviously doesn't work in development
-  # because the localhost server is not routable. To make ZIM file
-  # creation work end to end, start polling immediately in Development.
-  if ENV == Environment.DEVELOPMENT:
-    logger.info(
-        'DEVELOPMENT: Polling for zim file status for task_id=%s',
-        zim_file.z_task_id,
-    )
-    queues.poll_for_zim_file_status(redis, zim_file.z_task_id)
 
   return zim_file.z_task_id
 
