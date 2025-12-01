@@ -33,7 +33,7 @@ def insert_selection(wp10db, selection):
     ''', attr.asdict(selection))
     cursor.execute(
         'INSERT INTO zim_tasks (z_selection_id, z_status)'
-        ' VALUES (%s, "NOT_REQUESTED")', (selection.s_id, ))
+        ' VALUES (%s, "NOT_REQUESTED")', (selection.s_id,))
   wp10db.commit()
 
 
@@ -57,12 +57,12 @@ def url_for_selection(selection):
   return url_for(selection.s_object_key)
 
 
-def url_for(object_key):
+def url_for(object_key, s3_public_url=S3_PUBLIC_URL):
   if not object_key:
     raise ValueError('Cannot get url for empty object_key')
   path = urllib.parse.quote(
       object_key if isinstance(object_key, str) else object_key.decode('utf-8'))
-  s3_public_url = S3_PUBLIC_URL.rstrip("/")  #strip any trailing slashes
+  s3_public_url = s3_public_url.rstrip("/")  #strip any trailing slashes
   return f"{s3_public_url}/{path}"
 
 
@@ -170,6 +170,7 @@ def update_zimfarm_task(wp10db, task_id, status, set_updated_now=False):
       found = bool(cursor.rowcount)
   wp10db.commit()
   return found
+
 
 def is_zim_file_deleted(update_at_timestamp):
   return utcnow().timestamp() - update_at_timestamp > ZIM_FILE_TTL

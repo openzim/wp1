@@ -9,15 +9,11 @@ import wp1.logic.zim_schedules as logic_zim_schedules
 from wp1 import queues
 from wp1.constants import EXT_TO_CONTENT_TYPE
 from wp1.credentials import CREDENTIALS, ENV
-from wp1.exceptions import (
-    InvalidZimDescriptionError,
-    InvalidZimLongDescriptionError,
-    InvalidZimTitleError,
-    ObjectNotFoundError,
-    UserNotAuthorizedError,
-    ZimFarmError,
-    ZimFarmTooManyArticlesError,
-)
+from wp1.exceptions import (InvalidZimDescriptionError,
+                            InvalidZimLongDescriptionError,
+                            InvalidZimTitleError, ObjectNotFoundError,
+                            UserNotAuthorizedError, ZimFarmError,
+                            ZimFarmTooManyArticlesError)
 from wp1.web import authenticate, emails
 from wp1.web.db import get_db
 from wp1.web.redis import get_redis
@@ -150,6 +146,20 @@ def latest_selection_for_builder(builder_id, ext):
   wp10db = get_db('wp10db')
 
   url = logic_builder.latest_selection_url(wp10db, builder_id, ext)
+  if not url:
+    flask.abort(404)
+
+  return flask.redirect(url, code=302)
+
+
+@builders.route('/<builder_id>/selection/zimfarm/latest.<ext>')
+def latest_zimfarm_selection_for_builder(builder_id, ext):
+  wp10db = get_db('wp10db')
+
+  url = logic_builder.latest_selection_url(wp10db,
+                                           builder_id,
+                                           ext,
+                                           zimfarm_s3=True)
   if not url:
     flask.abort(404)
 

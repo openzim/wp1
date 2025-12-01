@@ -92,8 +92,8 @@ services:
     ports:
       - 5000:5000
     volumes:
-      - ./wp1/credentials.py.dev:/usr/src/app/wp1/credentials.py
       - .:/usr/src/app
+      - ./wp1/credentials.py.dev:/usr/src/app/wp1/credentials.py
     links:
       - redis
     restart: always
