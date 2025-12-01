@@ -7,21 +7,14 @@ import requests
 from wp1 import zimfarm
 from wp1.base_db_test import BaseWpOneDbTest
 from wp1.environment import Environment
-from wp1.exceptions import (
-    InvalidZimDescriptionError,
-    InvalidZimLongDescriptionError,
-    InvalidZimTitleError,
-    ObjectNotFoundError,
-    ZimFarmError,
-    ZimFarmTooManyArticlesError,
-)
+from wp1.exceptions import (InvalidZimDescriptionError,
+                            InvalidZimLongDescriptionError,
+                            InvalidZimTitleError, ObjectNotFoundError,
+                            ZimFarmError, ZimFarmTooManyArticlesError)
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
-from wp1.zimfarm import (
-    ZIM_DESCRIPTION_MAX_LENGTH,
-    ZIM_LONG_DESCRIPTION_MAX_LENGTH,
-    ZIM_TITLE_MAX_LENGTH,
-)
+from wp1.zimfarm import (ZIM_DESCRIPTION_MAX_LENGTH,
+                         ZIM_LONG_DESCRIPTION_MAX_LENGTH, ZIM_TITLE_MAX_LENGTH)
 
 
 class ZimFarmTest(BaseWpOneDbTest):
@@ -64,7 +57,7 @@ class ZimFarmTest(BaseWpOneDbTest):
               'adminEmail':
                   'contact+wp1@kiwix.org',
               'articleList':
-                  'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/latest.tsv',
+                  'http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/zimfarm/latest.tsv',
               'customZimTitle':
                   'My Builder',
               'filenamePrefix':
