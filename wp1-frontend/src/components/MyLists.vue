@@ -22,7 +22,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in list" :key="item.s_id">
+            <tr v-for="item in list" :key="item.id">
               <td>{{ item.name }}</td>
               <td :data-order="item.created_at">
                 {{ localDate(item.created_at) }}
