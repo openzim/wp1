@@ -3,6 +3,7 @@ import flask
 from flask import jsonify, session
 from mwoauth import ConsumerToken, Handshaker
 
+from wp1 import environment
 from wp1.credentials import CREDENTIALS, ENV
 from wp1.models.wp10.user import User
 from wp1.web.db import get_db
@@ -29,6 +30,48 @@ def initiate():
     homepage_url = get_homepage_url()
     if session.get('next_path'):
       return flask.redirect(f"{homepage_url}{str(session['next_path'])}")
+    return flask.redirect(homepage_url)
+
+  if ENV == environment.Environment.DEVELOPMENT:
+    fake_identity = {
+        'username': 'dev_user',
+        'sub': 'dev_user_12345',
+        'email': 'dev_user@example.com'
+    }
+    fake_access_token = {
+        'key': 'dev_access_token',
+        'secret': 'dev_access_secret'
+    }
+
+    wp10db = get_db('wp10db')
+
+    session['user'] = {
+        'access_token': fake_access_token,
+        'identity': {
+            'username': fake_identity['username'],
+            'sub': fake_identity['sub']
+        }
+    }
+
+    with wp10db.cursor() as cursor:
+      cursor.execute(
+          '''
+        INSERT INTO users (u_id, u_username, u_email)
+        VALUES (%(u_id)s, %(u_username)s, %(u_email)s)
+        ON DUPLICATE KEY UPDATE
+          u_username = VALUES(u_username),
+          u_email = VALUES(u_email)
+        ''', {
+              'u_id': fake_identity['sub'],
+              'u_username': fake_identity['username'],
+              'u_email': fake_identity.get('email', None)
+          })
+      wp10db.commit()
+
+    next_path = session.pop('next_path', None)
+    homepage_url = get_homepage_url()
+    if next_path:
+      return flask.redirect(f"{homepage_url}{str(next_path)}")
     return flask.redirect(homepage_url)
 
   handshaker = get_handshaker()
