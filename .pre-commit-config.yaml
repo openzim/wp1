@@ -7,11 +7,6 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
 
-  - repo: https://github.com/pre-commit/mirrors-yapf
-    rev: v0.28.0
-    hooks:
-      - id: yapf
-
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v2.7.1
     hooks:
@@ -19,3 +14,8 @@ repos:
         args:
           - --single-quote=true
             --trailing-comma all
+
+  - repo: https://github.com/psf/black
+    rev: 25.12.0
+    hooks:
+      - id: black
