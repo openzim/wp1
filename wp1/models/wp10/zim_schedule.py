@@ -12,36 +12,49 @@ logger = logging.getLogger(__name__)
 
 @attr.s
 class ZimSchedule:
-  table_name = 'zim_schedules'
+    table_name = "zim_schedules"
 
-  s_id: bytes = attr.ib()
-  s_builder_id: bytes = attr.ib()
-  s_last_updated_at: bytes = attr.ib()
-  s_rq_job_id: bytes = attr.ib(default=None) 
-  s_interval: int = attr.ib(default=None)  # in months
-  s_email: bytes = attr.ib(default=None)  # Email to notify when the zim generation is done
-  s_remaining_generations: int = attr.ib(default=None)  # how many more ZIMs to generate
-  s_title: bytes = attr.ib(default=None)  # Title of the ZIM selection, if any
-  s_description: bytes = attr.ib(default=None)  # Description of the ZIM selection, if any
-  s_long_description: bytes = attr.ib(default=None)  # Long description of the ZIM selection, if any
-  s_email_confirmation_token: bytes = attr.ib(default=None)  # Token for email confirmation, removed after confirmation
+    s_id: bytes = attr.ib()
+    s_builder_id: bytes = attr.ib()
+    s_last_updated_at: bytes = attr.ib()
+    s_rq_job_id: bytes = attr.ib(default=None)
+    s_interval: int = attr.ib(default=None)  # in months
+    s_email: bytes = attr.ib(
+        default=None
+    )  # Email to notify when the zim generation is done
+    s_remaining_generations: int = attr.ib(
+        default=None
+    )  # how many more ZIMs to generate
+    s_title: bytes = attr.ib(default=None)  # Title of the ZIM selection, if any
+    s_description: bytes = attr.ib(
+        default=None
+    )  # Description of the ZIM selection, if any
+    s_long_description: bytes = attr.ib(
+        default=None
+    )  # Long description of the ZIM selection, if any
+    s_email_confirmation_token: bytes = attr.ib(
+        default=None
+    )  # Token for email confirmation, removed after confirmation
 
-  def set_id(self):
-    self.s_id = str(uuid.uuid4()).encode('utf-8')
+    def set_id(self):
+        self.s_id = str(uuid.uuid4()).encode("utf-8")
 
-  @property
-  def last_updated_at_dt(self):
-    """The timestamp parsed into a datetime.datetime object."""
-    return datetime.datetime.strptime(self.s_last_updated_at.decode('utf-8'),
-                                      TS_FORMAT_WP10)
+    @property
+    def last_updated_at_dt(self):
+        """The timestamp parsed into a datetime.datetime object."""
+        return datetime.datetime.strptime(
+            self.s_last_updated_at.decode("utf-8"), TS_FORMAT_WP10
+        )
 
-  def set_last_updated_at_dt(self, dt):
-    """Sets the last_updated_at field using a datetime.datetime object"""
-    if dt is None:
-      logger.warning('Attempt to set zim schedule last_updated_at to None ignored')
-      return
-    self.s_last_updated_at = dt.strftime(TS_FORMAT_WP10).encode('utf-8')
+    def set_last_updated_at_dt(self, dt):
+        """Sets the last_updated_at field using a datetime.datetime object"""
+        if dt is None:
+            logger.warning(
+                "Attempt to set zim schedule last_updated_at to None ignored"
+            )
+            return
+        self.s_last_updated_at = dt.strftime(TS_FORMAT_WP10).encode("utf-8")
 
-  def set_last_updated_at_now(self):
-    """Sets the last_updated_at field to a timestamp that is equal to now"""
-    self.set_last_updated_at_dt(utcnow())
+    def set_last_updated_at_now(self):
+        """Sets the last_updated_at field to a timestamp that is equal to now"""
+        self.set_last_updated_at_dt(utcnow())

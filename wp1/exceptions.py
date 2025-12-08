@@ -1,48 +1,48 @@
 class Wp1Error(Exception):
-  pass
+    pass
 
 
 class Wp1SelectionError(Wp1Error):
-  pass
+    pass
 
 
 class Wp1RetryableSelectionError(Wp1SelectionError):
-  pass
+    pass
 
 
 class Wp1FatalSelectionError(Wp1SelectionError):
-  pass
+    pass
 
 
 class ZimFarmError(Wp1Error):
-  pass
+    pass
 
 
 class InvalidZimTitleError(ZimFarmError):
-  pass
+    pass
 
 
 class InvalidZimDescriptionError(ZimFarmError):
-  pass
+    pass
 
 
 class InvalidZimLongDescriptionError(ZimFarmError):
-  pass
+    pass
 
 
 class ZimFarmTooManyArticlesError(ZimFarmError):
 
-  def user_message(self):
-    return str(self)
+    def user_message(self):
+        return str(self)
 
 
 class ObjectNotFoundError(Wp1Error):
-  pass
+    pass
 
 
 class UserNotAuthorizedError(Wp1Error):
-  pass
+    pass
 
 
 class Wp1ScoreProcessingError(Wp1Error):
-  pass
+    pass

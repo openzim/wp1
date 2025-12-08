@@ -12,21 +12,21 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-  app_logging.configure_logging()
+    app_logging.configure_logging()
 
-  creds = CREDENTIALS[ENV]['REDIS']
+    creds = CREDENTIALS[ENV]["REDIS"]
 
-  upload_q = Queue('upload', connection=Redis(**creds))
+    upload_q = Queue("upload", connection=Redis(**creds))
 
-  if ENV == Environment.PRODUCTION:
-    logger.info('Enqueuing global table upload')
-    upload_q.enqueue(tables.upload_global_table,
-                     job_timeout=constants.JOB_TIMEOUT)
+    if ENV == Environment.PRODUCTION:
+        logger.info("Enqueuing global table upload")
+        upload_q.enqueue(tables.upload_global_table, job_timeout=constants.JOB_TIMEOUT)
 
-  logger.info('Enqueuing global project count')
-  upload_q.enqueue(logic_project.update_global_project_count,
-                   job_timeout=constants.JOB_TIMEOUT)
+    logger.info("Enqueuing global project count")
+    upload_q.enqueue(
+        logic_project.update_global_project_count, job_timeout=constants.JOB_TIMEOUT
+    )
 
 
-if __name__ == '__main__':
-  main()
+if __name__ == "__main__":
+    main()
