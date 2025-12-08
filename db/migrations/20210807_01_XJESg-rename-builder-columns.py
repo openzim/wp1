@@ -4,7 +4,7 @@ RENAME builders columns
 
 from yoyo import step
 
-__depends__ = {'20210728_01_eJYGE-add-model-to-builders'}
+__depends__ = {"20210728_01_eJYGE-add-model-to-builders"}
 
 steps = [
     step(
@@ -23,5 +23,6 @@ steps = [
         "CHANGE COLUMN b_project s_project VARBINARY(255), "
         "CHANGE COLUMN b_params s_params BLOB, "
         "CHANGE COLUMN b_created_at s_created_at BINARY(20), "
-        "CHANGE COLUMN b_updated_at s_updated_at BINARY(20)")
+        "CHANGE COLUMN b_updated_at s_updated_at BINARY(20)",
+    )
 ]
