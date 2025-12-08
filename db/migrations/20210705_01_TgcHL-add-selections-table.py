@@ -4,7 +4,7 @@ Add selections table
 
 from yoyo import step
 
-__depends__ = {'20210528_01_xt830-add-users-table'}
+__depends__ = {"20210528_01_xt830-add-users-table"}
 
 steps = [
     step(
@@ -19,5 +19,7 @@ steps = [
         "s_bucket VARBINARY(255), "
         "s_object_key VARBINARY(255), "
         "s_last_generated BINARY(20)"
-        ")", "DROP TABLE selections")
+        ")",
+        "DROP TABLE selections",
+    )
 ]

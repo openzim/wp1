@@ -4,7 +4,7 @@ Remove DEFAULT for s_zimfarm_status
 
 from yoyo import step
 
-__depends__ = {'20230326_01_hOgak-add-zim-file-updated-at-to-selections'}
+__depends__ = {"20230326_01_hOgak-add-zim-file-updated-at-to-selections"}
 
 steps = [
     step(

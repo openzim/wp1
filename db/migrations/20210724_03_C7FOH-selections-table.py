@@ -4,7 +4,7 @@ Selections table
 
 from yoyo import step
 
-__depends__ = {'20210724_02_PR3Js-list-builders-table'}
+__depends__ = {"20210724_02_PR3Js-list-builders-table"}
 
 steps = [
     step(
@@ -13,5 +13,7 @@ steps = [
         "s_builder_id INTEGER NOT NULL, "
         "s_content_type VARBINARY(255) NOT NULL, "
         "s_updated_at BINARY(20) NOT NULL"
-        ")", "DROP TABLE selections")
+        ")",
+        "DROP TABLE selections",
+    )
 ]

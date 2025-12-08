@@ -4,7 +4,7 @@ List builders table
 
 from yoyo import step
 
-__depends__ = {'20210724_01_p2yUM-remove-deprecated-selections-table'}
+__depends__ = {"20210724_01_p2yUM-remove-deprecated-selections-table"}
 
 steps = [
     step(
@@ -16,5 +16,7 @@ steps = [
         "s_params BLOB, "
         "s_created_at BINARY(20), "
         "s_updated_at BINARY(20)"
-        ")", "DROP TABLE builders")
+        ")",
+        "DROP TABLE builders",
+    )
 ]
