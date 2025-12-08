@@ -367,7 +367,7 @@ The `serve` command should print out the port to view the docs at, likely localh
 This project is configured to use git pre-commit hooks managed by the
 Python program `pre-commit` ([website](https://pre-commit.com/)). Pre-
 commit checks let us ensure that the code is properly formatted with
-[yapf](https://github.com/google/yapf) amongst other things.
+[Black](https://github.com/psf/black) amongst other things.
 
 If you've installed the requirements for this repository, the pre-commit
 binary should be available to you. To install the hooks, use:
@@ -382,8 +382,8 @@ Then, when you try to commit a change that would fail pre-commit, you get:
 (venv) host:wikimedia_wp1_bot audiodude$ git commit -am 'Test commit'
 Trim Trailing Whitespace.................................................Passed
 Fix End of Files.........................................................Passed
-yapf.....................................................................Failed
-hookid: yapf
+black....................................................................Failed
+hookid: black
 ```
 
 From there, the pre-commit hook will have modified and thus unstaged some or all
