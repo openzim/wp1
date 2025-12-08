@@ -24,7 +24,7 @@ class Builder(AbstractBuilder):
     # Set the result data format to json
     parsed_url = urllib.parse.urlparse(params['url'])
     parsed_query = urllib.parse.parse_qs(parsed_url.query)
-    parsed_query['format'] = ['json']
+    parsed_query['format'] = ['plain']
     final_url = parsed_url._replace(
         query=urllib.parse.urlencode(parsed_query, doseq=True)).geturl()
 
@@ -35,9 +35,7 @@ class Builder(AbstractBuilder):
       logger.exception('Error status received from Petscan server')
       raise Wp1FatalSelectionError('Error status from Petscan server') from e
 
-    data = resp.json()
-    titles = [item['title'] for item in data['*'][0]['a']['*']]
-    return '\n'.join(titles).encode('utf-8')
+    return resp.text.encode('utf-8')
 
   def validate(self, **params):
     if 'url' not in params:
