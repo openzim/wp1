@@ -125,3 +125,21 @@ class PetscanBuilderTest(BaseWpOneDbTest):
             ),
             actual,
         )
+
+    def test_validate_url_with_whitespace(self):
+        """Test that URLs with leading/trailing whitespace are trimmed and validated."""
+        actual = self.builder.validate(
+            url="  https://petscan.wmcloud.org.fake/?psid=42  "
+        )
+        self.assertEqual(("", "", []), actual)
+
+    @patch("wp1.selection.models.petscan.requests.get")
+    def test_build_url_with_whitespace(self, mock_requests_get):
+        """Test that URLs with whitespace are trimmed before building."""
+        mock_requests_get.return_value.text = self.mock_response
+
+        actual = self.builder.build(
+            "text/tab-separated-values",
+            url="  https://petscan.wmcloud.org.fake/?psid=42  ",
+        )
+        self.assertEqual(b"Foo\nBar", actual)

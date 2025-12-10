@@ -22,7 +22,8 @@ class Builder(AbstractBuilder):
             raise Wp1FatalSelectionError("Param `url` was not str")
 
         # Set the result data format to json
-        parsed_url = urllib.parse.urlparse(params["url"])
+        url = params["url"].strip()
+        parsed_url = urllib.parse.urlparse(url)
         parsed_query = urllib.parse.parse_qs(parsed_url.query)
         parsed_query["format"] = ["plain"]
         final_url = parsed_url._replace(
@@ -42,14 +43,16 @@ class Builder(AbstractBuilder):
         if "url" not in params:
             return ("", "", ["Missing URL parameter"])
 
-        if not validators.url(params["url"]):
-            return ("", params["url"], ["That doesn't look like a valid URL."])
+        url = params["url"].strip()
 
-        parsed_url = urllib.parse.urlparse(params["url"])
+        if not validators.url(url):
+            return ("", url, ["That doesn't look like a valid URL."])
+
+        parsed_url = urllib.parse.urlparse(url)
         if "petscan.wmcloud.org" not in parsed_url.netloc:
             return (
                 "",
-                params["url"],
+                url,
                 ["Only URLs that lead to petscan.wmcloud.org are allowed."],
             )
 
