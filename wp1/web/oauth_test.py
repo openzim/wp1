@@ -228,3 +228,146 @@ class IdentifyTest(BaseWebTestcase):
                 }
             rv = client.get("/v1/oauth/email")
             self.assertEqual({"email": None}, rv.get_json())
+
+
+class DevelopmentModeTest(BaseWebTestcase):
+    """tests for the development mode OAuth bypass functionality."""
+
+    DEV_NO_CREDS = {
+        Environment.DEVELOPMENT: {
+            "CLIENT_URL": {
+                "domain": "localhost:5173",
+                "homepage": "http://localhost:5173/#/",
+            },
+            "MWOAUTH": {},
+        },
+        Environment.TEST: CREDENTIALS[Environment.TEST],
+        Environment.PRODUCTION: {},
+    }
+
+    DEV_WITH_CREDS = {
+        Environment.DEVELOPMENT: {
+            "CLIENT_URL": {
+                "domain": "localhost:5173",
+                "homepage": "http://localhost:5173/#/",
+            },
+            "MWOAUTH": {
+                "consumer_key": "dev_consumer_key",
+                "consumer_secret": "dev_consumer_secret",
+            },
+        },
+        Environment.TEST: CREDENTIALS[Environment.TEST],
+        Environment.PRODUCTION: {},
+    }
+
+    @patch("wp1.web.oauth.ENV", Environment.DEVELOPMENT)
+    @patch("wp1.web.oauth.CREDENTIALS", DEV_NO_CREDS)
+    def test_initiate_dev_mode_no_creds_redirects_to_homepage(self):
+        """Test : dev + no Creds redirects to homepage and creates user."""
+        self.app = create_app()
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.get("/v1/oauth/initiate")
+
+            self.assertEqual("302 FOUND", rv.status)
+            self.assertEqual("http://localhost:5173/#/", rv.location)
+
+            with self.wp10db.cursor() as cursor:
+                cursor.execute(
+                    "SELECT * FROM users WHERE u_id = %s", ("dev_user_12345",)
+                )
+                row = cursor.fetchone()
+            self.assertIsNotNone(row)
+            self.assertEqual(b"dev_user", row["u_username"])
+            self.assertEqual(b"dev_user@example.com", row["u_email"])
+
+    @patch("wp1.web.oauth.ENV", Environment.DEVELOPMENT)
+    @patch("wp1.web.oauth.CREDENTIALS", DEV_NO_CREDS)
+    def test_initiate_dev_mode_no_creds_with_next_path(self):
+        """Test : dev + No Creds redirects to next_path."""
+        self.app = create_app()
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.get("/v1/oauth/initiate?next=update")
+
+            self.assertEqual("302 FOUND", rv.status)
+            self.assertEqual("http://localhost:5173/#/update", rv.location)
+
+    @patch("wp1.web.oauth.ENV", Environment.DEVELOPMENT)
+    @patch("wp1.web.oauth.CREDENTIALS", DEV_NO_CREDS)
+    def test_initiate_dev_mode_no_creds_sets_session(self):
+        """Test Case A: Verify session is set correctly by calling identify endpoint."""
+        self.app = create_app()
+        with self.override_db(self.app), self.app.test_client() as client:
+            client.get("/v1/oauth/initiate")
+
+            rv = client.get("/v1/oauth/identify")
+            self.assertEqual(200, rv.status_code)
+            self.assertEqual({"username": "dev_user"}, rv.get_json())
+
+    @patch("wp1.web.oauth.ENV", Environment.DEVELOPMENT)
+    @patch("wp1.web.oauth.CREDENTIALS", DEV_NO_CREDS)
+    def test_initiate_dev_mode_idempotency(self):
+        """Test  :  hitting initiate twice doesn't crash or duplicate rows."""
+        self.app = create_app()
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv1 = client.get("/v1/oauth/initiate")
+            self.assertEqual("302 FOUND", rv1.status)
+
+            rv2 = client.get("/v1/oauth/initiate")
+            self.assertEqual("302 FOUND", rv2.status)
+
+            with self.wp10db.cursor() as cursor:
+                cursor.execute(
+                    "SELECT COUNT(*) as cnt FROM users WHERE u_id = %s",
+                    ("dev_user_12345",),
+                )
+                count = cursor.fetchone()["cnt"]
+            self.assertEqual(1, count)
+
+    @patch("wp1.web.oauth.ENV", Environment.DEVELOPMENT)
+    @patch("wp1.web.oauth.CREDENTIALS", DEV_NO_CREDS)
+    def test_initiate_dev_mode_multiple_sessions_same_user(self):
+        """Test : different sesssions hitting initiate don't duplicate users."""
+        self.app = create_app()
+        with self.override_db(self.app):
+            with self.app.test_client() as client1:
+                rv1 = client1.get("/v1/oauth/initiate")
+                self.assertEqual("302 FOUND", rv1.status)
+
+            with self.app.test_client() as client2:
+                rv2 = client2.get("/v1/oauth/initiate")
+                self.assertEqual("302 FOUND", rv2.status)
+
+            with self.wp10db.cursor() as cursor:
+                cursor.execute(
+                    "SELECT COUNT(*) as cnt FROM users WHERE u_id = %s",
+                    ("dev_user_12345",),
+                )
+                count = cursor.fetchone()["cnt"]
+            self.assertEqual(1, count)
+
+    @patch("wp1.web.oauth.ENV", Environment.DEVELOPMENT)
+    @patch("wp1.web.oauth.CREDENTIALS", DEV_WITH_CREDS)
+    @patch("wp1.web.oauth.get_handshaker", lambda: handshaker)
+    def test_initiate_dev_mode_with_creds_redirects_to_oauth(self):
+        """Test : dev + With Creds redirects to the external OAuth provider."""
+        self.app = create_app()
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.get("/v1/oauth/initiate")
+
+            self.assertEqual(REDIRECT, rv.location)
+
+    @patch("wp1.web.oauth.ENV", Environment.DEVELOPMENT)
+    @patch("wp1.web.oauth.CREDENTIALS", DEV_WITH_CREDS)
+    @patch("wp1.web.oauth.get_handshaker", lambda: handshaker)
+    def test_initiate_dev_mode_with_creds_does_not_create_fake_user(self):
+        """Test  : dev + Creds does not create fake dev user in DB."""
+        self.app = create_app()
+        with self.override_db(self.app), self.app.test_client() as client:
+            client.get("/v1/oauth/initiate")
+
+            with self.wp10db.cursor() as cursor:
+                cursor.execute(
+                    "SELECT * FROM users WHERE u_id = %s", ("dev_user_12345",)
+                )
+                row = cursor.fetchone()
+            self.assertIsNone(row)
