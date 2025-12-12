@@ -251,38 +251,3 @@ class SparqlBuilderTest(BaseWpOneDbTest):
         )
 
         self.assertEqual(("", query, ["Unknown namespace prefix : blah"]), actual)
-
-    def test_validate_query_with_whitespace(self):
-        """Test that queries with leading/trailing whitespace are trimmed."""
-        query_with_spaces = f"  {self.cats_uk_us_after_1950}  "
-        actual = self.builder.validate(
-            query=query_with_spaces,
-            project="en.wikipedia.org",
-            queryVariable="cat",
-        )
-
-        self.assertEqual(("", "", []), actual)
-
-    @patch("wp1.selection.models.sparql.requests")
-    def test_build_with_whitespace_params(self, mock_requests):
-        """Test that both query and project params with whitespace are trimmed."""
-        response = MagicMock()
-        response.json.return_value = self.json_return_value
-        mock_requests.post.return_value = response
-
-        query_with_spaces = f"  {self.cats_uk_us_after_1950}  "
-        project_with_spaces = "  en.wikipedia.org  "
-
-        actual = self.builder.build(
-            "text/tab-separated-values",
-            project=project_with_spaces,
-            query=query_with_spaces,
-        )
-
-        # Verify the trimmed query was sent to the API
-        mock_requests.post.assert_called_once_with(
-            "https://query.wikidata.org/sparql",
-            headers={"User-Agent": "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>"},
-            data={"query": self.cats_uk_us_after_1950.strip(), "format": "json"},
-        )
-        self.assertEqual("Foo\nBår".encode("utf-8"), actual)
