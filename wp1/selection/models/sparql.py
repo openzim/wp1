@@ -76,11 +76,11 @@ class Builder(AbstractBuilder):
         if content_type != "text/tab-separated-values":
             raise Wp1FatalSelectionError("Unrecognized content type")
 
-        project = params.get("project", "").strip()
+        project = params.get("project")
         if not project:
             raise Wp1FatalSelectionError('Expected param "project", got: %r' % project)
 
-        params_query = params.get("query", "").strip()
+        params_query = params.get("query")
         if not params_query:
             raise Wp1FatalSelectionError(
                 'Expected param "query", got: %r' % params_query
@@ -132,22 +132,21 @@ class Builder(AbstractBuilder):
         )
 
     def validate(self, **params):
-        query = params.get("query", "").strip()
 
         try:
-            parse_results = parser.parseQuery(query)
+            parse_results = parser.parseQuery(params["query"])
         except ParseException as pe:
             # The query cannot be parsed as SPARQL, invalid syntax.
             return (
                 "",
-                query,
+                params["query"],
                 ["Could not parse query, are you sure it's valid SPARQL?"],
             )
         try:
-            query_obj = algebra.translateQuery(parse_results, initNs=WIKIDATA_PREFIXES)
+            query = algebra.translateQuery(parse_results, initNs=WIKIDATA_PREFIXES)
         except Exception as e:
             # In testing, this was most common when the query contained
             # an undefined prefix.
-            return ("", query, [str(e)])
+            return ("", params["query"], [str(e)])
 
         return ("", "", [])
