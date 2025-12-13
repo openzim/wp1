@@ -98,11 +98,17 @@ to run arbitrary individual shell commands within that environment. In many
 cases, it will be more convenient to use commands like `pipenv run pytest`
 then actually spawning a subshell.
 
-### Installing frontend requirements
+### Installing frontend requirements (optional)
 
-The frontend requires [Node.js](https://nodejs.org/) version 18 to build and
-run. Once node is installed, to install the requirements for the frontend
-server, cd into `wp1-frontend` and use:
+**Note:** If you are using the docker-compose development environment, you do not
+need to install Node.js or frontend dependencies locally. The frontend runs inside
+a Docker container with hot-reload support. See the "Starting the web frontend"
+section below.
+
+If you prefer to run the frontend locally without Docker, it requires
+[Node.js](https://nodejs.org/) version 18 to build and run. Once node is
+installed, to install the requirements for the frontend server, cd into
+`wp1-frontend` and use:
 
 ```bash
 yarn install
@@ -258,7 +264,10 @@ See the instructions in the associated [README file](https://github.com/openzim/
 
 ## Starting the API server
 
-Using pipenv, you can start the API server with:
+The API server is included in the docker-compose-dev.yml graph and starts
+automatically. It will be available at http://localhost:5000.
+
+If you prefer to run the API server locally instead of in Docker, you can use:
 
 ```bash
 pipenv run flask --app wp1.web.app --debug run
@@ -272,10 +281,26 @@ https://github.com/openzim/wp1/pull/859).
 
 ## Starting the web frontend
 
-Assuming you've installed the frontend deps (`yarn install`), the web frontend
-can be started with the following command in the `wp1-frontend` directory:
+The frontend is included in the docker-compose-dev.yml graph and starts
+automatically with hot-reload support. It will be available at http://localhost:5173.
+
+To start all development services including the frontend:
 
 ```bash
+docker compose -f docker-compose-dev.yml up --build
+```
+
+Changes made to files in `wp1-frontend/src/` will be automatically reflected
+in the browser without needing to restart the container.
+
+### Running the frontend locally (alternative)
+
+If you prefer to run the frontend locally instead of in Docker, you will need
+Node.js installed. Then install the dependencies and start the dev server:
+
+```bash
+cd wp1-frontend
+yarn install
 yarn dev
 ```
 
