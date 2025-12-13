@@ -6,7 +6,7 @@ RUN corepack enable
 
 COPY wp1-frontend/package.json wp1-frontend/yarn.lock ./
 
-RUN yarn install
+RUN yarn install && yarn cache clean
 
 
 EXPOSE 5173
