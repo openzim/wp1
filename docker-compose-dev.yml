@@ -101,6 +101,26 @@ services:
       redis:
         condition: service_healthy
 
+  dev-frontend:
+    build:
+      context: .
+      dockerfile: docker/dev-frontend/Dockerfile
+    container_name: wp1bot-frontend-dev
+    environment:
+      - VITE_API_URL=http://localhost:5000/v1
+    networks:
+      - wp1bot-dev
+    ports:
+      - 5173:5173
+    volumes:
+      - ./wp1-frontend/src:/app/src
+      - ./wp1-frontend/index.html:/app/index.html
+      - ./wp1-frontend/vite.config.js:/app/vite.config.js
+      - ./wp1-frontend/postcss.config.js:/app/postcss.config.js
+    restart: always
+    depends_on:
+      - dev-web
+
   zimfarm-db:
     image: postgres:17.3-bookworm
     container_name: zimfarm-postgresdb
