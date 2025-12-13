@@ -144,7 +144,7 @@ def delete_keys_from_storage(keys):
     )
 
     fully_successful = True
-
+    errors = []
     # TODO: Check for errors in the response. For now, just pretend
     # it's always successful.
     # for e in (resp if resp is not None else {}).get('Errors', []):
@@ -152,12 +152,15 @@ def delete_keys_from_storage(keys):
     #   logger.warning('Error deleting %r: [code=%r, msg=%r]',
     #                  (e['Key'], e['Code'], e['Message']))
 
-    errors=(resp or{}).get("Errors",[])
+    if isinstance(resp, dict):
+        errors = resp.get("Errors", [])
     if errors:
-        fully_successful=False
+        fully_successful = False
         for e in errors:
-            logger.warning('Error deleting %r:[code=%r, msg=%r]',
-            (e['Key'],e['Code'],e['Message']))
+            logger.warning(
+                "Error deleting %r:[code=%r, msg=%r]",
+                (e["Key"], e["Code"], e["Message"]),
+            )
 
     return fully_successful
 
