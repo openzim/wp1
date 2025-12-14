@@ -383,6 +383,33 @@ class SelectionTest(BaseWpOneDbTest):
         result = logic_selection.delete_keys_from_storage([b"key1"])
         self.assertTrue(result)
 
+    @patch("wp1.logic.selection.connect_storage")
+    def test_delete_keys_from_storage_with_errors(self, patched_connect_storage):
+        s3 = MagicMock()
+        bucket = MagicMock()
+        patched_connect_storage.return_value = s3
+        s3.bucket = bucket
+        bucket.delete_objects.return_value = {
+            "Errors": [
+                {
+                    "Key": "object/key/1",
+                    "Code": "AccessDenied",
+                    "Message": "Access Denied",
+                }
+            ]
+        }
+        actual = logic_selection.delete_keys_from_storage(
+            [b"object/key/1", b"object/key/2"]
+        )
+
+        bucket.delete_objects.assert_called_once_with(
+            Delete={
+                "Objects": [{"Key": "object/key/1"}, {"Key": "object/key/2"}],
+                "Quiet": True,
+            }
+        )
+        self.assertFalse(actual)
+
     def test_zim_file_requested_at_for(self):
         self._insert_selections()
         actual = logic_selection.zim_file_requested_at_for(self.wp10db, "xyz1")
