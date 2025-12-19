@@ -184,6 +184,34 @@ def articles(project_name):
     return flask.jsonify(output)
 
 
+@projects.route("/<project_name>/articles/random")
+def random_article(project_name):
+    wp10db = get_db("wp10db")
+    project_name_bytes = project_name.encode("utf-8")
+    project = logic_project.get_project_by_name(wp10db, project_name_bytes)
+    if project is None:
+        return flask.abort(404)
+
+    quality = flask.request.args.get("quality")
+    importance = flask.request.args.get("importance")
+
+    if quality:
+        quality = quality.encode("utf-8")
+    if importance:
+        importance = importance.encode("utf-8")
+
+    article = logic_rating.get_random_article(
+        wp10db,
+        project_name_bytes,
+        quality=quality,
+        importance=importance,
+    )
+    if article is None:
+        return "", 204
+
+    return flask.jsonify(article.to_web_dict(wp10db)["article_link"])
+
+
 @projects.route("/<project_name>/update", methods=["POST"])
 @authenticate
 def update(project_name):

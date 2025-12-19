@@ -63,6 +63,8 @@ describe('the article page', () => {
   });
 
   describe('Select Quality/Importance', () => {
+    let articleLinks = [];
+
     it('displays articles with selected quality and importance', () => {
       cy.visit('/#/project/Alien/articles');
       cy.intercept(
@@ -86,7 +88,38 @@ describe('the article page', () => {
         .each(($el) => {
           cy.wrap($el).should('contain.text', 'Top');
           cy.wrap($el).should('contain.text', 'B');
+          const link = $el.find('td').eq(1).find('a').eq(0).attr('href');
+          if (link) {
+            articleLinks.push(link);
+          }
         });
+    });
+
+    it('opens a random article with selected quality and importance', () => {
+      cy.visit('/#/project/Alien/articles');
+      cy.intercept(
+        'v1/projects/Alien/articles/random?quality=B-Class&importance=Top-Class'
+      ).as('RandomTopBArticle');
+
+      cy.window().then((win) => {
+        cy.stub(win, 'open').as('windowOpen');
+      });
+
+      cy.contains('Select Quality/Importance').click();
+
+      cy.get('.custom-select').eq(0).select('B');
+
+      cy.get('.custom-select').eq(1).select('Top');
+
+      cy.get('#randomArticle').click();
+
+      cy.wait('@RandomTopBArticle').then((interception) => {
+        const randomArticleLink = interception.response.body;
+
+        expect(articleLinks).to.include(randomArticleLink);
+
+        cy.get('@windowOpen').should('be.calledWith', randomArticleLink);
+      });
     });
   });
 });
