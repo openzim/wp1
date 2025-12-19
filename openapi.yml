@@ -186,6 +186,41 @@ paths:
         description: 'A string to match the article name against. If the article title is LIKE "%articlePattern%", the article is returned.'
         schema:
           type: number
+  /projects/{projectId}/articles/random:
+    get:
+      summary: 'Get a random article for a project, optionally filtered by quality/importance'
+      operationId: projectRandomArticle
+      responses:
+        200:
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: string
+                description: 'A URL to the random article on Wikipedia'
+        204:
+          description: 'No article could be found matching the given criteria'
+        404:
+          description: 'No project with that projectId was found'
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          description: 'The name of the project, with spaces replaced by "_"'
+          schema:
+            type: string
+        - name: quality
+          in: query
+          required: false
+          description: 'The quality class of articles, used to filter possible articles. Eg: "FA-Class"'
+          schema:
+            type: string
+        - name: importance
+          in: query
+          required: false
+          description: 'The importance class of articles, used to filter possible articles. Eg: "High-Class"'
+          schema:
+            type: string
   /projects/{projectId}/category_links:
     get:
       summary: 'Get a mapping of category names (such as "A-Class") to an href on Wikipedia to link to and the text of such a link. The mapping can also be to simply a string which means no link is possible and the string itself should be displayed.'

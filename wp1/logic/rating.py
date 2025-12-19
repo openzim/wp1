@@ -232,6 +232,32 @@ def get_project_rating_by_type(
         return results
 
 
+def get_random_article(
+    wp10db,
+    project_name,
+    quality=None,
+    importance=None,
+):
+    query = "SELECT * FROM " + Rating.table_name + " WHERE r_project = %(r_project)s"
+    params = {"r_project": project_name}
+
+    if quality is not None:
+        query += " AND r_quality = %(r_quality)s"
+        params["r_quality"] = quality
+    if importance is not None:
+        query += " AND r_importance = %(r_importance)s"
+        params["r_importance"] = importance
+
+    query += " ORDER BY RAND() LIMIT 1"
+
+    with wp10db.cursor() as cursor:
+        cursor.execute(query, params)
+        res = cursor.fetchone()
+        if res:
+            return Rating(**res)
+        return None
+
+
 def get_all_ratings_count_for_project(wp10db, project_name):
     with wp10db.cursor() as cursor:
         cursor.execute(

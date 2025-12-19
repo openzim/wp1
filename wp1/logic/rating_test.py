@@ -418,3 +418,146 @@ class GetProjectRatingByTypeTest(BaseWpOneDbTest):
             self.assertEqual(b"A-Class", r[0].r_quality)
             self.assertEqual(b"Project 0", r[0].r_project)
             self.assertEqual(b"Project 1", r[1].r_project)
+
+
+class GetRandomArticleTest(BaseWpOneDbTest):
+
+    def _add_ratings(self):
+        ratings = []
+        for i in range(25):
+            for quality in ("FA-Class", "A-Class", "B-Class"):
+                for importance in ("High-Class", "Low-Class"):
+                    ratings.append(
+                        {
+                            "r_project": "Project 0",
+                            "r_namespace": 0,
+                            "r_article": "%s_%s_%s" % (quality, importance, i),
+                            "r_score": 0,
+                            "r_quality": quality,
+                            "r_quality_timestamp": "20191225T00:00:00",
+                            "r_importance": importance,
+                            "r_importance_timestamp": "20191226T00:00:00",
+                        }
+                    )
+                    ratings.append(
+                        {
+                            "r_project": "Project 1",
+                            "r_namespace": 0,
+                            "r_article": "%s_%s_%s" % (quality, importance, i),
+                            "r_score": 0,
+                            "r_quality": quality,
+                            "r_quality_timestamp": "20191225T00:00:00",
+                            "r_importance": importance,
+                            "r_importance_timestamp": "20191226T00:00:00",
+                        }
+                    )
+
+        with self.wp10db.cursor() as cursor:
+            cursor.executemany(
+                "INSERT INTO ratings "
+                "(r_project, r_namespace, r_article, r_score, r_quality, "
+                " r_quality_timestamp, r_importance, r_importance_timestamp) "
+                "VALUES "
+                "(%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s, "
+                " %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s, "
+                " %(r_importance_timestamp)s)",
+                ratings,
+            )
+        self.wp10db.commit()
+
+    def _assert_randomness(
+        self, first_article, project_name, quality=None, importance=None
+    ):
+        # Try up to 10 times to get a different article
+        found_different = False
+        for _ in range(10):
+            article = logic_rating.get_random_article(
+                self.wp10db, project_name, quality=quality, importance=importance
+            )
+            if article.r_article != first_article.r_article:
+                found_different = True
+                break
+
+        self.assertTrue(found_different, "Expected to get different random articles")
+
+    def test_no_quality_or_importance(self):
+        self._add_ratings()
+        first_article = logic_rating.get_random_article(self.wp10db, b"Project 0")
+
+        self.assertIsNotNone(first_article)
+        self.assertIsInstance(first_article, Rating)
+        self.assertEqual(b"Project 0", first_article.r_project)
+
+        self._assert_randomness(first_article, b"Project 0")
+
+    def test_quality(self):
+        self._add_ratings()
+        first_article = logic_rating.get_random_article(
+            self.wp10db, b"Project 0", quality=b"FA-Class"
+        )
+
+        self.assertIsNotNone(first_article)
+        self.assertIsInstance(first_article, Rating)
+        self.assertEqual(b"Project 0", first_article.r_project)
+        self.assertEqual(b"FA-Class", first_article.r_quality)
+
+        self._assert_randomness(first_article, b"Project 0", quality=b"FA-Class")
+
+    def test_importance(self):
+        self._add_ratings()
+        first_article = logic_rating.get_random_article(
+            self.wp10db, b"Project 0", importance=b"High-Class"
+        )
+
+        self.assertIsNotNone(first_article)
+        self.assertIsInstance(first_article, Rating)
+        self.assertEqual(b"Project 0", first_article.r_project)
+        self.assertEqual(b"High-Class", first_article.r_importance)
+
+        self._assert_randomness(first_article, b"Project 0", importance=b"High-Class")
+
+    def test_quality_and_importance(self):
+        self._add_ratings()
+        first_article = logic_rating.get_random_article(
+            self.wp10db, b"Project 0", quality=b"B-Class", importance=b"Low-Class"
+        )
+
+        self.assertIsNotNone(first_article)
+        self.assertIsInstance(first_article, Rating)
+        self.assertEqual(b"Project 0", first_article.r_project)
+        self.assertEqual(b"B-Class", first_article.r_quality)
+        self.assertEqual(b"Low-Class", first_article.r_importance)
+
+        self._assert_randomness(
+            first_article, b"Project 0", quality=b"B-Class", importance=b"Low-Class"
+        )
+
+    def test_no_results(self):
+        self._add_ratings()
+        article = logic_rating.get_random_article(
+            self.wp10db, b"Project 0", importance=b"Foo-Class"
+        )
+        self.assertIsNone(article)
+
+        article = logic_rating.get_random_article(
+            self.wp10db, b"Project 0", quality=b"Bar-Class"
+        )
+        self.assertIsNone(article)
+
+        article = logic_rating.get_random_article(
+            self.wp10db, b"Project 0", quality=b"Foo-Class", importance=b"Bar-Class"
+        )
+        self.assertIsNone(article)
+
+    def test_nonexistent_project(self):
+        self._add_ratings()
+        article = logic_rating.get_random_article(self.wp10db, b"Nonexistent Project")
+        self.assertIsNone(article)
+
+    def test_different_project(self):
+        self._add_ratings()
+        article = logic_rating.get_random_article(self.wp10db, b"Project 1")
+
+        self.assertIsNotNone(article)
+        self.assertIsInstance(article, Rating)
+        self.assertEqual(b"Project 1", article.r_project)

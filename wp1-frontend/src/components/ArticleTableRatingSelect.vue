@@ -58,11 +58,18 @@
                 </select>
               </div>
               <button
-                v-on:click="onButtonClick()"
+                v-on:click="onUpdateClick()"
                 id="updateRating"
                 class="btn btn-primary"
               >
                 Update View
+              </button>
+              <button
+                v-on:click="onRandomClick()"
+                id="randomArticle"
+                class="btn btn-primary ml-2"
+              >
+                Random
               </button>
             </div>
           </div>
@@ -169,7 +176,7 @@ export default {
 
       this.$emit('rating-select', { quality, importance });
     },
-    onButtonClick: function () {
+    onUpdateClick: function () {
       const quality = this.$refs.qualitySelect.value;
       const importance = this.$refs.importanceSelect.value;
       if (
@@ -180,6 +187,30 @@ export default {
       }
 
       this.$emit('rating-select', { quality, importance });
+    },
+    onRandomClick: async function () {
+      const url = new URL(
+        `${import.meta.env.VITE_API_URL}/projects/${
+          this.projectId
+        }/articles/random`
+      );
+      const quality = this.$refs.qualitySelect.value;
+      const importance = this.$refs.importanceSelect.value;
+
+      if (quality) {
+        url.searchParams.set('quality', quality);
+      }
+      if (importance) {
+        url.searchParams.set('importance', importance);
+      }
+
+      const response = await fetch(url);
+      if (response.status === 204) {
+        return;
+      }
+      const data = await response.json();
+
+      window.open(data);
     },
   },
 };
