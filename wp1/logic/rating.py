@@ -248,8 +248,8 @@ def get_random_article(
         query += " AND r_importance = %(r_importance)s"
         params["r_importance"] = importance
 
-    # TODO: This is not very efficient since it will generate a random number for all rows that
-    # match the criteria and sort them all.
+    # This is not very efficient since it will generate a random number for all rows that match
+    # the criteria and sort them all.
     query += " ORDER BY RAND() LIMIT 1"
 
     with wp10db.cursor() as cursor:
