@@ -329,6 +329,59 @@ class ProjectTest(BaseWebTestcase):
             )
             self.assertEqual("200 OK", rv.status)
 
+    def test_random_article(self):
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.get("/v1/projects/Project 0/articles/random")
+            self.assertEqual("200 OK", rv.status)
+
+            data = json.loads(rv.data)
+            self.assertIsInstance(data, str)
+
+    def test_random_quality_only(self):
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.get("/v1/projects/Project 0/articles/random?quality=FA-Class")
+            self.assertEqual("200 OK", rv.status)
+
+            data = json.loads(rv.data)
+            self.assertIsInstance(data, str)
+            self.assertIn("FA-Class", data)
+
+    def test_random_importance_only(self):
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.get(
+                "/v1/projects/Project 0/articles/random?importance=High-Class"
+            )
+            self.assertEqual("200 OK", rv.status)
+
+            data = json.loads(rv.data)
+            self.assertIsInstance(data, str)
+            self.assertIn("High-Class", data)
+
+    def test_random_quality_importance(self):
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.get(
+                "/v1/projects/Project 0/articles/random?quality=A-Class&importance=Low-Class"
+            )
+            self.assertEqual("200 OK", rv.status)
+
+            data = json.loads(rv.data)
+            self.assertIsInstance(data, str)
+            self.assertIn("A-Class", data)
+            self.assertIn("Low-Class", data)
+
+    def test_random_no_results(self):
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.get(
+                "/v1/projects/Project 0/articles/random?quality=Foo-Bar&importance=Low-Class"
+            )
+            self.assertEqual("204 NO CONTENT", rv.status)
+            self.assertEqual(rv.data, b"")
+
+    def test_random_article_404(self):
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.get("/v1/projects/Foo Fake Project/articles/random")
+            self.assertEqual("404 NOT FOUND", rv.status)
+
     @patch("wp1.queues.ENV", Environment.PRODUCTION)
     @patch("wp1.queues.utcnow", return_value=datetime(2018, 12, 25, 5, 55, 55))
     def test_update(self, patched_now):
