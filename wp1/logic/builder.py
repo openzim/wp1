@@ -155,7 +155,7 @@ def delete_builder(wp10db, user_id, builder_id):
     rq_cancel_success = True
     with wp10db.cursor() as cursor:
         cursor.execute(
-            """SELECT s_rq_job_id, s_id FROM zim_schedules 
+            """SELECT s_rq_job_id, s_id FROM zim_schedules
          WHERE s_builder_id = %s AND s_rq_job_id IS NOT NULL""",
             (builder_id,),
         )
@@ -570,6 +570,7 @@ def request_zim_file_task_for_builder(
     selection = latest_selection_for(wp10db, builder.b_id, "text/tab-separated-values")
 
     with wp10db.cursor() as cursor:
+        # First, try to update the zim_task for the current selection
         cursor.execute(
             """UPDATE zim_tasks SET
       z_status = 'REQUESTED', z_task_id = %s, z_zim_schedule_id = %s, z_requested_at = %s
@@ -582,6 +583,46 @@ def request_zim_file_task_for_builder(
                 selection.s_id,
             ),
         )
+        rows_updated = cursor.rowcount
+
+        # If no rows were updated this means the selection version might have changed
+        # try to update by zim_schedule_id instead (for regenerating failed ZIMs)
+        if rows_updated == 0 and zim_schedule_id:
+            cursor.execute(
+                """UPDATE zim_tasks SET
+          z_status = 'REQUESTED', z_task_id = %s, z_selection_id = %s, z_requested_at = %s
+          WHERE z_zim_schedule_id = %s
+          """,
+                (
+                    task_id,
+                    selection.s_id,
+                    utcnow().strftime(TS_FORMAT_WP10),
+                    zim_schedule_id,
+                ),
+            )
+            rows_updated = cursor.rowcount
+
+        # If still no rows were updated then we need to insert a new zim_task
+        if rows_updated == 0:
+            cursor.execute(
+                """INSERT INTO zim_tasks (z_selection_id, z_zim_schedule_id, z_status, z_task_id, z_requested_at)
+          VALUES (%s, %s, 'REQUESTED', %s, %s)
+          """,
+                (
+                    selection.s_id,
+                    zim_schedule_id,
+                    task_id,
+                    utcnow().strftime(TS_FORMAT_WP10),
+                ),
+            )
+
+        # Update b_selection_zim_version to point to the current selection version
+        # ensures the download URL lookup finds the correct zim_task with the new task_id
+        cursor.execute(
+            """UPDATE builders SET b_selection_zim_version = %s WHERE b_id = %s""",
+            (selection.s_version, builder.b_id),
+        )
+
         cursor.execute(
             """SELECT * FROM zim_tasks WHERE z_selection_id = %s""", (selection.s_id,)
         )
