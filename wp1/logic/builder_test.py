@@ -1793,3 +1793,230 @@ class BuilderTest(BaseWpOneDbTest):
             logic_builder.get_builder_module_class("wp1.selection.models.simple")
 
         self.assertIn("Builder class not found in module", str(cm.exception))
+
+    @patch("wp1.logic.builder.zimfarm.request_zimfarm_task")
+    @patch(
+        "wp1.logic.builder.utcnow", return_value=datetime.datetime(2025, 1, 2, 0, 0, 0)
+    )
+    def test_regenerate_zim_updates_old_task_when_selection_version_changed(
+        self, mock_utcnow, mock_request_zimfarm_task
+    ):
+        """
+        Ensure the existing zim_task is updated (not dupplicated) when the selection version changes.
+        """
+        self._insert_builder()
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO selections
+                (s_id, s_builder_id, s_updated_at, s_content_type, s_version, s_object_key, s_article_count)
+                VALUES (%s, %s, '20250102000000', 'text/tab-separated-values', 1, 'old.tsv', 100)""",
+                (1, self.builder.b_id),
+            )
+        self.wp10db.commit()
+
+        zim_schedule_id = b"schedule-123"
+        self._insert_zim_schedule(zim_schedule_id, self.builder.b_id)
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO zim_tasks
+                (z_selection_id, z_zim_schedule_id, z_status, z_task_id)
+                VALUES (%s, %s, 'FAILED', 'old-task-id')""",
+                (1, zim_schedule_id),
+            )
+        self.wp10db.commit()
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO selections
+                (s_id, s_builder_id, s_updated_at, s_content_type, s_version, s_object_key, s_article_count)
+                VALUES (%s, %s, '20250103000000', 'text/tab-separated-values', 2, 'new.tsv', 100)""",
+                (2, self.builder.b_id),
+            )
+            cursor.execute(
+                "UPDATE builders SET b_current_version = 2 WHERE b_id = %s",
+                (self.builder.b_id,),
+            )
+        self.wp10db.commit()
+
+        mock_request_zimfarm_task.return_value = "new-task-id"
+
+        redis = MagicMock()
+        result = logic_builder.request_zim_file_task_for_builder(
+            redis, self.wp10db, self.builder, zim_schedule_id=zim_schedule_id
+        )
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) as count FROM zim_tasks")
+            count = cursor.fetchone()["count"]
+            self.assertEqual(1, count)
+
+            cursor.execute("SELECT z_selection_id FROM zim_tasks")
+            row = cursor.fetchone()
+            self.assertEqual(b"2", row["z_selection_id"])
+
+    @patch("wp1.logic.builder.zimfarm.request_zimfarm_task")
+    @patch(
+        "wp1.logic.builder.utcnow", return_value=datetime.datetime(2025, 1, 2, 0, 0, 0)
+    )
+    def test_regenerate_zim_saves_new_task_id(
+        self, mock_utcnow, mock_request_zimfarm_task
+    ):
+        """
+        test that new task_id from Zimfarm is saved correctly.
+        """
+        self._insert_builder()
+        self._insert_selection(
+            1, "text/tab-separated-values", builder_id=self.builder.b_id
+        )
+
+        zim_schedule_id = b"schedule-123"
+        self._insert_zim_schedule(zim_schedule_id, self.builder.b_id)
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO zim_tasks
+                (z_selection_id, z_zim_schedule_id, z_status, z_task_id)
+                VALUES (%s, %s, 'FAILED', 'task_v1')""",
+                (1, zim_schedule_id),
+            )
+        self.wp10db.commit()
+
+        mock_request_zimfarm_task.return_value = "task_v2"
+
+        redis = MagicMock()
+        result = logic_builder.request_zim_file_task_for_builder(
+            redis, self.wp10db, self.builder, zim_schedule_id=zim_schedule_id
+        )
+
+        self.assertIsNotNone(result)
+        self.assertEqual(b"task_v2", result.z_task_id)
+        self.assertEqual(b"REQUESTED", result.z_status)
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute("SELECT z_task_id FROM zim_tasks WHERE z_selection_id = 1")
+            row = cursor.fetchone()
+            self.assertEqual(b"task_v2", row["z_task_id"])
+
+    @patch("wp1.logic.builder.zimfarm.request_zimfarm_task")
+    @patch(
+        "wp1.logic.builder.utcnow", return_value=datetime.datetime(2025, 1, 2, 0, 0, 0)
+    )
+    def test_regenerate_zim_updates_b_selection_zim_version(
+        self, mock_utcnow, mock_request_zimfarm_task
+    ):
+        """
+        test that b_selection_zim_version is updated for downloads to work.
+        """
+        self._insert_builder(zim_version=1)  # startts with version 1
+
+        # selection v1
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO selections
+                (s_id, s_builder_id, s_updated_at, s_content_type, s_version, s_object_key, s_article_count)
+                VALUES (%s, %s, '20250102000000', 'text/tab-separated-values', 1, 'old.tsv', 100)""",
+                (1, self.builder.b_id),
+            )
+        self.wp10db.commit()
+
+        zim_schedule_id = b"schedule-123"
+        self._insert_zim_schedule(zim_schedule_id, self.builder.b_id)
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO zim_tasks
+                (z_selection_id, z_zim_schedule_id, z_status, z_task_id)
+                VALUES (%s, %s, 'FAILED', 'old-task')""",
+                (1, zim_schedule_id),
+            )
+        self.wp10db.commit()
+
+        # Selection v2
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO selections
+                (s_id, s_builder_id, s_updated_at, s_content_type, s_version, s_object_key, s_article_count)
+                VALUES (%s, %s, '20250103000000', 'text/tab-separated-values', 2, 'new.tsv', 100)""",
+                (2, self.builder.b_id),
+            )
+            cursor.execute(
+                "UPDATE builders SET b_current_version = 2 WHERE b_id = %s",
+                (self.builder.b_id,),
+            )
+        self.wp10db.commit()
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "SELECT b_selection_zim_version FROM builders WHERE b_id = %s",
+                (self.builder.b_id,),
+            )
+            version_before = cursor.fetchone()["b_selection_zim_version"]
+            self.assertEqual(1, version_before)
+
+        mock_request_zimfarm_task.return_value = "task_v2"
+
+        redis = MagicMock()
+        result = logic_builder.request_zim_file_task_for_builder(
+            redis, self.wp10db, self.builder, zim_schedule_id=zim_schedule_id
+        )
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "SELECT b_selection_zim_version FROM builders WHERE b_id = %s",
+                (self.builder.b_id,),
+            )
+            version_after = cursor.fetchone()["b_selection_zim_version"]
+            self.assertEqual(2, version_after)
+
+    @patch("wp1.logic.builder.zimfarm.zim_file_url_for_task_id")
+    def test_download_url_after_regeneration(self, mock_zim_file_url):
+        """
+        test that download URL works after regenerating a failed ZIM.
+        """
+        self._insert_builder()
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO selections
+                (s_id, s_builder_id, s_updated_at, s_content_type, s_version, s_object_key, s_article_count)
+                VALUES (%s, %s, '20230101000000', 'text/tab-separated-values', 1, 'old.tsv', 100)""",
+                (1, self.builder.b_id),
+            )
+            cursor.execute(
+                """INSERT INTO zim_tasks
+                (z_selection_id, z_status, z_task_id)
+                VALUES (%s, 'FAILED', 'old-failed-task')""",
+                (1,),
+            )
+        self.wp10db.commit()
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO selections
+                (s_id, s_builder_id, s_updated_at, s_content_type, s_version, s_object_key, s_article_count)
+                VALUES (%s, %s, '20230102000000', 'text/tab-separated-values', 2, 'new.tsv', 100)""",
+                (2, self.builder.b_id),
+            )
+            cursor.execute(
+                """INSERT INTO zim_tasks
+                (z_selection_id, z_status, z_task_id)
+                VALUES (%s, 'FILE_READY', 'new-successful-task')""",
+                (2,),
+            )
+            cursor.execute(
+                """UPDATE builders SET
+                b_current_version = 2,
+                b_selection_zim_version = 2
+                WHERE b_id = %s""",
+                (self.builder.b_id,),
+            )
+        self.wp10db.commit()
+
+        mock_zim_file_url.return_value = "https://download.kiwix.org/zim/new-file.zim"
+
+        url = logic_builder.latest_zim_file_url_for(self.wp10db, self.builder.b_id)
+
+        self.assertIsNotNone(url)
+        mock_zim_file_url.assert_called_once_with(b"new-successful-task")
