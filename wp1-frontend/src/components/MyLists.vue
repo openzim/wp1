@@ -75,8 +75,15 @@
                 {{ localDate(item.z_updated_at) }}
               </td>
               <td v-else>-</td>
+              <td v-if="hasActiveSchedule(item)">
+                <router-link :to="zimPathFor(item)">
+                  <button type="button" class="btn btn-primary">
+                    Manage Schedule
+                  </button>
+                </router-link>
+              </td>
               <td
-                v-if="item.z_url && !hasDeletedZim(item)"
+                v-else-if="item.z_url && !hasDeletedZim(item)"
                 :class="{ 'outdated-zim': hasOutdatedZim(item) }"
               >
                 <a :href="item.z_url">Download ZIM</a>
@@ -184,6 +191,11 @@ export default {
       // ZIMs older than 2 weeks get deleted.
       return !!item.z_is_deleted;
     },
+    hasActiveSchedule: function (item) {
+      return (
+        item.active_schedule !== null && item.active_schedule !== undefined
+      );
+    },
     getLists: async function () {
       let createDataTable = false;
       if (this.list.length === 0) {
@@ -195,7 +207,7 @@ export default {
         {
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-        },
+        }
       );
       var data = await response.json();
       this.list = data.builders;
