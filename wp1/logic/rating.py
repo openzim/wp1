@@ -1,4 +1,5 @@
 import logging
+import random
 
 import attr
 
@@ -238,22 +239,40 @@ def get_random_article(
     quality=None,
     importance=None,
 ):
-    query = "SELECT * FROM " + Rating.table_name + " WHERE r_project = %(r_project)s"
+    # 1. Build the base WHERE clause and parameters
+    where_clause = " WHERE r_project = %(r_project)s"
     params = {"r_project": project_name}
 
     if quality is not None:
-        query += " AND r_quality = %(r_quality)s"
+        where_clause += " AND r_quality = %(r_quality)s"
         params["r_quality"] = quality
     if importance is not None:
-        query += " AND r_importance = %(r_importance)s"
+        where_clause += " AND r_importance = %(r_importance)s"
         params["r_importance"] = importance
 
-    # This is not very efficient since it will generate a random number for all rows that match
-    # the criteria and sort them all.
-    query += " ORDER BY RAND() LIMIT 1"
+    # 2. Get the total count of matching rows
+    count_query = "SELECT COUNT(*) as count FROM " + Rating.table_name + where_clause
 
     with wp10db.cursor() as cursor:
-        cursor.execute(query, params)
+        cursor.execute(count_query, params)
+        res = cursor.fetchone()
+        count = res["count"]
+
+        if count == 0:
+            return None
+
+        # 3. Generate a random offset and fetch that specific row
+        random_offset = random.randint(0, count - 1)
+        params["offset"] = random_offset
+
+        select_query = (
+            "SELECT * FROM "
+            + Rating.table_name
+            + where_clause
+            + " LIMIT 1 OFFSET %(offset)s"
+        )
+
+        cursor.execute(select_query, params)
         res = cursor.fetchone()
         if res:
             return Rating(**res)
