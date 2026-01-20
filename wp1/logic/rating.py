@@ -239,43 +239,57 @@ def get_random_article(
     quality=None,
     importance=None,
 ):
-    # 1. Build the base WHERE clause and parameters
-    where_clause = " WHERE r_project = %(r_project)s"
-    params = {"r_project": project_name}
+    """
+    Get a random article matching the given criteria.
+    Uses COUNT + OFFSET to avoid ORDER BY RAND().
 
-    if quality is not None:
-        where_clause += " AND r_quality = %(r_quality)s"
-        params["r_quality"] = quality
-    if importance is not None:
-        where_clause += " AND r_importance = %(r_importance)s"
-        params["r_importance"] = importance
+    The existing PRIMARY KEY (r_project, r_namespace, r_article) ensures
+    efficient index usage without requiring additional indices.
+    """
+    import random
+    from wp1.models.wp10.rating import Rating
 
-    # 2. Get the total count of matching rows
-    count_query = "SELECT COUNT(*) as count FROM " + Rating.table_name + where_clause
+    # Build WHERE clause
+    conditions = ["r_project = %s"]
+    params = [project_name]
+
+    if quality:
+        conditions.append("r_quality = %s")
+        params.append(quality)
+    if importance:
+        conditions.append("r_importance = %s")
+        params.append(importance)
+
+    where_clause = " AND ".join(conditions)
 
     with wp10db.cursor() as cursor:
+        # 1. Count total matching rows
+        count_query = f"SELECT COUNT(*) as cnt FROM ratings WHERE {where_clause}"
         cursor.execute(count_query, params)
         res = cursor.fetchone()
-        count = res["count"]
 
-        if count == 0:
+        if not res or res["cnt"] == 0:
             return None
 
-        # 3. Generate a random offset and fetch that specific row
-        random_offset = random.randint(0, count - 1)
-        params["offset"] = random_offset
+        count = res["cnt"]
 
-        select_query = (
-            "SELECT * FROM "
-            + Rating.table_name
-            + where_clause
-            + " LIMIT 1 OFFSET %(offset)s"
-        )
+        # 2. Generate random offset
+        offset = random.randint(0, count - 1)
 
-        cursor.execute(select_query, params)
-        res = cursor.fetchone()
-        if res:
-            return Rating(**res)
+        # 3. Fetch the random article
+        select_query = f"""
+            SELECT *
+            FROM ratings
+            WHERE {where_clause}
+            LIMIT 1 OFFSET %s
+        """
+
+        cursor.execute(select_query, params + [offset])
+        row = cursor.fetchone()
+
+        if row:
+            return Rating(**row)
+
         return None
 
 
