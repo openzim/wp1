@@ -371,10 +371,13 @@ def create_or_update_zimfarm_schedule(
     )
     try:
         existing_zim_schedule = find_existing_schedule_in_db(wp10db, builder.b_id)
-        if existing_zim_schedule and zimfarm_schedule_exists(
-            redis, existing_zim_schedule.s_id.decode("utf-8")
-        ):
-            r = requests.patch("%s/schedules" % base_url, headers=headers, json=params)
+        if existing_zim_schedule and zimfarm_schedule_exists(redis, builder_id):
+            schedule_name = get_zimfarm_schedule_name(builder_id)
+            r = requests.patch(
+                "%s/schedules/%s" % (base_url, schedule_name),
+                headers=headers,
+                json=params,
+            )
             r.raise_for_status()
             zim_schedule = existing_zim_schedule
             zim_schedule.s_title = title.encode("utf-8")
