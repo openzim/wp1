@@ -18,22 +18,35 @@
       <div class="row">
         <div class="col-lg-6 col-md-9 mx-4">
           <h3>Create ZIM file</h3>
-          
+
           <!-- Active Schedule Warning -->
-          <div v-if="isScheduleWarningRequired" class="alert alert-warning" role="alert">
+          <div
+            v-if="isScheduleWarningRequired"
+            class="alert alert-warning"
+            role="alert"
+          >
             <h5 class="alert-heading">📅 Active Schedule Found</h5>
             <p>
-              You already have a ZIM scheduled for every 
-              <strong>{{ activeSchedule.interval_months }} month{{ activeSchedule.interval_months > 1 ? 's' : '' }}</strong>.
+              You already have a ZIM scheduled for every
+              <strong
+                >{{ activeSchedule.interval_months }} month{{
+                  activeSchedule.interval_months > 1 ? 's' : ''
+                }}</strong
+              >.
               <span v-if="activeSchedule.next_generation_date">
-                The next ZIM will be generated on <strong>{{ formatDate(activeSchedule.next_generation_date) }}</strong>.
+                The next ZIM will be generated on
+                <strong>{{
+                  formatDate(activeSchedule.next_generation_date)
+                }}</strong
+                >.
               </span>
             </p>
             <p class="mb-2">
-              You can delete that schedule and request a new ZIM immediately or create a new schedule.
+              You can delete that schedule and request a new ZIM immediately or
+              create a new schedule.
             </p>
-            <button 
-              @click="deleteSchedule" 
+            <button
+              @click="deleteSchedule"
               class="btn btn-outline-danger btn-sm"
               :disabled="deletingSchedule"
             >
@@ -41,7 +54,7 @@
               <span v-else>Delete Schedule</span>
             </button>
           </div>
-          
+
           <div v-else-if="status === 'NOT_REQUESTED'">
             <p>
               Use this form to create a ZIM file from your selection, so that
@@ -94,11 +107,10 @@
       </div>
       <div
         v-if="
-          !activeSchedule && (
-            status === 'NOT_REQUESTED' ||
+          !activeSchedule &&
+          (status === 'NOT_REQUESTED' ||
             status === 'FAILED' ||
-            (status != 'REQUESTED' && isDeleted)
-          )
+            (status != 'REQUESTED' && isDeleted))
         "
         class="row"
       >
@@ -189,7 +201,7 @@
                 {{
                   displayGraphemeLimitText(
                     longDescription,
-                    maxLongDescriptionLength,
+                    maxLongDescriptionLength
                   )
                 }}
               </small>
@@ -218,7 +230,7 @@
                   class="form-control"
                   v-model.number="repetitionPeriodInMonths"
                 >
-                  <option v-for="m in [1,3,6]" :key="m" :value="m">
+                  <option v-for="m in [1, 3, 6]" :key="m" :value="m">
                     {{ m }}
                   </option>
                 </select>
@@ -231,7 +243,7 @@
                   class="form-control"
                   v-model.number="numberOfRepetitions"
                 >
-                  <option v-for="n in [1,2,3]" :key="n" :value="n">
+                  <option v-for="n in [1, 2, 3]" :key="n" :value="n">
                     {{ n }}
                   </option>
                 </select>
@@ -281,7 +293,7 @@
           </div>
         </div>
       </div>
-      <div v-else-if="!activeSchedule" class="row">
+      <div v-else-if="status === 'FILE_READY'" class="row">
         <div class="col-lg-6 col-md-9 mx-4">
           <a :href="zimPathFor()"
             ><button
@@ -359,10 +371,9 @@ export default {
   },
   methods: {
     loadUserEmail: async function () {
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/oauth/email`,
-        { credentials: 'include' },
-      );
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/oauth/email`, {
+        credentials: 'include',
+      });
       if (res.ok) {
         const data = await res.json();
         if (data && data.email && !this.scheduleEmail) {
@@ -376,7 +387,7 @@ export default {
         {
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-        },
+        }
       );
       if (response.status == 404) {
         this.notFound = true;
@@ -389,7 +400,7 @@ export default {
         if (this.builder && this.builder.name) {
           this.zimTitle = this.truncateToLength(
             this.builder.name,
-            this.maxTitleLength,
+            this.maxTitleLength
           );
         }
         await this.getArticleCount();
@@ -463,7 +474,7 @@ export default {
           number_of_repetitions: this.numberOfRepetitions,
         };
         const email = (this.scheduleEmail || '').trim();
-        if (email.length > 0){
+        if (email.length > 0) {
           scheduled.email = email;
         }
         payload.scheduled_repetitions = scheduled;
@@ -541,7 +552,7 @@ export default {
     },
     deleteSchedule: async function () {
       if (!this.activeSchedule) return;
-      
+
       this.deletingSchedule = true;
       try {
         const response = await fetch(
@@ -552,14 +563,16 @@ export default {
             credentials: 'include',
           }
         );
-        
+
         if (response.ok) {
           this.activeSchedule = null;
           // Refresh the status to ensure UI is up to date
           await this.getStatus();
         } else {
           const errorData = await response.json();
-          this.errors = errorData.error_messages || ['Failed to delete schedule'];
+          this.errors = errorData.error_messages || [
+            'Failed to delete schedule',
+          ];
           this.success = false;
         }
       } catch (error) {
@@ -573,10 +586,10 @@ export default {
       if (!dateString) return 'Unknown';
       try {
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
+        return date.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
         });
       } catch {
         return dateString;
