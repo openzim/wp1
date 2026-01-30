@@ -44,7 +44,7 @@
     "cypress": "13",
     "datatables.net": "^1.13.1",
     "datatables.net-dt": "^1.13.1",
-    "eslint": "^7.32.0",
+    "eslint": "^9.26.0",
     "eslint-plugin-vue": "^9.4.0",
     "jquery": "^3.6.0",
     "minimist": "^1.2.6",
