@@ -1010,7 +1010,7 @@ class BuildersTest(BaseWebTestcase):
                     "id": "task-id-1234",
                     "foo": "bar",
                     "status": "succeeded",
-                    "files": {"zimfile.1234": {"status": "uploaded"}},
+                    "files": {"zimfile.1234.zim": {"status": "uploaded"}},
                 },
             )
             self.assertEqual("204 NO CONTENT", rv.status)
@@ -1054,7 +1054,7 @@ class BuildersTest(BaseWebTestcase):
                     "id": "task-id-1234",
                     "foo": "bar",
                     "status": "succeeded",
-                    "files": {"zimfile.1234": {"status": "uploaded"}},
+                    "files": {"zimfile.1234.zim": {"status": "uploaded"}},
                 },
             )
             self.assertEqual("204 NO CONTENT", rv.status)
@@ -1091,7 +1091,7 @@ class BuildersTest(BaseWebTestcase):
                     "id": "task-id-1234",
                     "foo": "bar",
                     "status": "succeeded",
-                    "files": {"zimfile.1234": {"status": "uploaded"}},
+                    "files": {"zimfile.1234.zim": {"status": "uploaded"}},
                 },
             )
             self.assertEqual("500 INTERNAL SERVER ERROR", rv.status)
@@ -1120,7 +1120,7 @@ class BuildersTest(BaseWebTestcase):
                     "id": "task-id-1234",
                     "foo": "bar",
                     "status": "succeeded",
-                    "files": {"zimfile.1234": {"status": "uploaded"}},
+                    "files": {"zimfile.1234.zim": {"status": "uploaded"}},
                 },
             )
             self.assertEqual("204 NO CONTENT", rv.status)
@@ -1183,6 +1183,59 @@ class BuildersTest(BaseWebTestcase):
                 json={"id": "task-id-not-found", "foo": "bar"},
             )
             self.assertEqual("204 NO CONTENT", rv.status)
+
+    @patch(
+        "wp1.logic.selection.utcnow",
+        return_value=datetime.datetime(2022, 12, 25, 0, 1, 2),
+    )
+    def test_update_zimfarm_status_non_zim_file_uploaded(self, patched_utcnow):
+        """Test that non-.zim files don't trigger FILE_READY status"""
+        builder_id = self._insert_builder()
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO selections
+                   (s_id, s_builder_id, s_content_type, s_updated_at, s_version, s_object_key)
+                 VALUES (1, %s, 'text/tab-separated-values', '20201225105544', 1, 'object_key')""",
+                (builder_id,),
+            )
+            cursor.execute(
+                """INSERT INTO zim_tasks
+                   (z_id, z_selection_id, z_task_id, z_status, z_zim_schedule_id)
+                 VALUES (1, 1, 'task-id-non-zim', 'REQUESTED', 'schedule_456')"""
+            )
+
+        self._insert_zim_schedule(
+            schedule_id=b"schedule_456",
+            builder_id=builder_id.encode("utf-8"),
+            rq_job_id=b"task-id-non-zim",
+            last_updated_at="20221225000102",
+            remaining_generations=None,
+        )
+        self.wp10db.commit()
+
+        self.app = create_app()
+        with self.override_db(self.app), self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["user"] = self.USER
+            rv = client.post(
+                "/v1/builders/zim/status?token=hook-token-abc",
+                json={
+                    "id": "task-id-non-zim",
+                    "status": "succeeded",
+                    "files": {"zimcheck-report.txt": {"status": "uploaded"}},
+                },
+            )
+            self.assertEqual("204 NO CONTENT", rv.status)
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "SELECT z_status FROM zim_tasks WHERE z_task_id = 'task-id-non-zim'"
+            )
+            status = cursor.fetchone()
+
+        self.assertIsNotNone(status)
+        self.assertEqual(b"REQUESTED", status["z_status"])
 
     def test_zimfarm_status(self):
         builder_id = self._insert_builder()
