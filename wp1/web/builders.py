@@ -319,7 +319,8 @@ def update_zimfarm_status():
 
     files = data.get("files", {})
     for key, value in files.items():
-        if value["status"] == "uploaded":
+        file_status = value.get("status")
+        if file_status == "uploaded" and key.endswith(".zim"):
             # Update the status as FILE_READY and return.
             logic_selection.update_zimfarm_task(
                 wp10db, task_id, "FILE_READY", set_updated_now=True
