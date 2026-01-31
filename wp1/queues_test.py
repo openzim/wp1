@@ -199,18 +199,6 @@ class QueuesTest(BaseWpOneDbTest):
             failure_ttl=constants.JOB_FAILURE_TTL,
         )
 
-    @patch("wp1.queues.Queue")
-    @patch("wp1.queues.Scheduler")
-    def test_poll_for_zim_file_status(self, mock_scheduler, mock_queue):
-        poll_q_mock = MagicMock()
-        mock_queue.return_value = poll_q_mock
-        scheduler_mock = MagicMock()
-        mock_scheduler.return_value = scheduler_mock
-
-        queues.poll_for_zim_file_status(self.redis, "1234")
-
-        scheduler_mock.enqueue_in.assert_called_once()
-
     @patch("wp1.queues.Scheduler")
     def test_schedule_recurring_zimfarm_task(self, mock_scheduler):
         mock_scheduler_instance = MagicMock()
