@@ -340,6 +340,8 @@ def update_zimfarm_status():
                 emails.respond_to_zim_task_completed(wp10db, zim_task, zim_schedule)
             return "", 204
 
+    return "", 204
+
 
 @builders.route("/<builder_id>/zim/latest")
 def latest_zim_file_for_builder(builder_id):
