@@ -77,6 +77,11 @@ def _create_or_update_builder(wp10db, data, builder_id=None):
     # The builder has been updated. Enqueue a task to materialize selections and
     # update the current version.
     queues.enqueue_materialize(redis, builder_cls, builder, "text/tab-separated-values")
+
+    # ensure builder_id is a string not bytes
+    if isinstance(builder_id, bytes):
+        builder_id = builder_id.decode("utf-8")
+
     return flask.jsonify({"success": True, "id": builder_id, "items": {}})
 
 
