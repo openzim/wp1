@@ -235,7 +235,13 @@ class BuildersTest(BaseWebTestcase):
                     "project": "my_project",
                 },
             )
-            self.assertEqual(self.successful_response, rv.get_json())
+            response_json = rv.get_json()
+
+            self.assertIn("id", response_json)
+            # Remove the ID to  compare against the standard successful response
+            del response_json["id"]
+
+            self.assertEqual(self.successful_response, response_json)
 
     def test_create_throws(self):
         self.app = create_app()
@@ -285,7 +291,14 @@ class BuildersTest(BaseWebTestcase):
                     "project": "my_project",
                 },
             )
-            self.assertEqual(self.successful_response, rv.get_json())
+
+            response_json = rv.get_json()
+
+            self.assertIn("id", response_json)
+            # Remove the ID to  compare against the standard successful response
+            del response_json["id"]
+
+            self.assertEqual(self.successful_response, response_json)
 
     def test_update_not_owner(self):
         builder_id = self._insert_builder()
