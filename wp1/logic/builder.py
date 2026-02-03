@@ -862,10 +862,30 @@ def _get_zimfile_data(builder):
     return data
 
 
+def _get_active_schedule_data(builder):
+    """Extract active schedule data from builder query result."""
+    data = {
+        "active_schedule": None,
+    }
+
+    if builder.get("zs_s_id") is not None:
+        data["active_schedule"] = True
+
+    return data
+
+
 def get_builders_with_selections(wp10db, user_id):
     with wp10db.cursor() as cursor:
         cursor.execute(
-            """SELECT * FROM builders b
+            """SELECT b.*, s.*,
+                      s1.s_id as s1_s_id,
+                      s1.s_version as s1_s_version,
+                      s1.s_builder_id as s1_s_builder_id,
+                      s1.s_content_type as s1_s_content_type,
+                      s1.s_updated_at as s1_s_updated_at,
+                      z.*,
+                      zs.s_id as zs_s_id
+           FROM builders b
            LEFT JOIN selections s
              ON s.s_builder_id = b.b_id
              AND s.s_version = b.b_current_version
@@ -874,6 +894,9 @@ def get_builders_with_selections(wp10db, user_id):
              AND s1.s_version = b.b_selection_zim_version
            LEFT JOIN zim_tasks z
              ON z.z_selection_id = s1.s_id
+           LEFT JOIN zim_schedules zs
+             ON zs.s_builder_id = b.b_id
+             AND zs.s_remaining_generations > 0
            WHERE b_user_id = %s
            ORDER BY b.b_updated_at DESC
       """,
@@ -887,6 +910,7 @@ def get_builders_with_selections(wp10db, user_id):
         builder.update(_get_builder_data(db_builder))
         builder.update(_get_selection_data(db_builder))
         builder.update(_get_zimfile_data(db_builder))
+        builder.update(_get_active_schedule_data(db_builder))
         result.append(builder)
 
     return result
