@@ -235,13 +235,16 @@ class BuildersTest(BaseWebTestcase):
                     "project": "my_project",
                 },
             )
-            response_json = rv.get_json()
 
-            self.assertIn("id", response_json)
-            # Remove the ID to  compare against the standard successful response
-            del response_json["id"]
+            with self.wp10db.cursor() as cursor:
+                cursor.execute("SELECT b_id FROM builders WHERE b_name = 'my_list'")
+                result = cursor.fetchone()
 
-            self.assertEqual(self.successful_response, response_json)
+            db_id = result["b_id"].decode("utf-8")
+
+            expected = {"success": True, "id": db_id, "items": {}}
+
+            self.assertEqual(expected, rv.get_json())
 
     def test_create_throws(self):
         self.app = create_app()
@@ -292,13 +295,18 @@ class BuildersTest(BaseWebTestcase):
                 },
             )
 
-            response_json = rv.get_json()
+            with self.wp10db.cursor() as cursor:
+                cursor.execute(
+                    "SELECT b_name FROM builders WHERE b_id = %s",
+                    (builder_id.encode("utf-8"),),
+                )
+                result = cursor.fetchone()
 
-            self.assertIn("id", response_json)
-            # Remove the ID to  compare against the standard successful response
-            del response_json["id"]
+            self.assertEqual(b"updated_list", result["b_name"])
 
-            self.assertEqual(self.successful_response, response_json)
+            expected = {"success": True, "id": builder_id, "items": {}}
+
+            self.assertEqual(expected, rv.get_json())
 
     def test_update_not_owner(self):
         builder_id = self._insert_builder()
