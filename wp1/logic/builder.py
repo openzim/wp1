@@ -16,7 +16,6 @@ from wp1 import app_logging, queues, zimfarm
 from wp1.constants import (
     CONTENT_TYPE_TO_EXT,
     EXT_TO_CONTENT_TYPE,
-    MAX_ZIM_FILE_POLL_TIME,
     TS_FORMAT_WP10,
 )
 from wp1.credentials import CREDENTIALS, ENV
@@ -783,34 +782,6 @@ def _format_active_schedule_data(schedule):
         data["next_generation_date"] = None
 
     return data
-
-
-def on_zim_file_status_poll(task_id):
-    wp10db = wp10_connect()
-    redis = redis_connect()
-    app_logging.configure_logging()
-
-    result = zimfarm.is_zim_file_ready(task_id)
-    logging.info("Polled for ZIM file for task_id=%s, result: %s", task_id, result)
-    if result == "FILE_READY":
-        logic_selection.update_zimfarm_task(
-            wp10db, task_id, "FILE_READY", set_updated_now=True
-        )
-        update_version_for_finished_zim(wp10db, task_id)
-    elif result == "REQUESTED":
-        requested = logic_selection.zim_file_requested_at_for(wp10db, task_id)
-        if requested is not None:
-            now = utcnow().timestamp()
-            if now - requested > MAX_ZIM_FILE_POLL_TIME:
-                logic_selection.update_zimfarm_task(wp10db, task_id, "FAILED")
-                return
-
-        # There was no requested time, or the time hasn't expired, re-request
-        queues.poll_for_zim_file_status(redis, task_id)
-    elif result == "FAILED":
-        logic_selection.update_zimfarm_task(wp10db, task_id, "FAILED")
-
-    wp10db.close()
 
 
 def _get_builder_data(builder):

@@ -77,7 +77,12 @@ def _create_or_update_builder(wp10db, data, builder_id=None):
     # The builder has been updated. Enqueue a task to materialize selections and
     # update the current version.
     queues.enqueue_materialize(redis, builder_cls, builder, "text/tab-separated-values")
-    return flask.jsonify({"success": True, "items": {}})
+
+    # ensure builder_id is a string not bytes
+    if isinstance(builder_id, bytes):
+        builder_id = builder_id.decode("utf-8")
+
+    return flask.jsonify({"success": True, "id": builder_id, "items": {}})
 
 
 @builders.route("/", methods=["POST"])
@@ -319,7 +324,8 @@ def update_zimfarm_status():
 
     files = data.get("files", {})
     for key, value in files.items():
-        if value["status"] == "uploaded":
+        file_status = value.get("status")
+        if file_status == "uploaded" and key.endswith(".zim"):
             # Update the status as FILE_READY and return.
             logic_selection.update_zimfarm_task(
                 wp10db, task_id, "FILE_READY", set_updated_now=True
@@ -338,6 +344,8 @@ def update_zimfarm_status():
             ):
                 emails.respond_to_zim_task_completed(wp10db, zim_task, zim_schedule)
             return "", 204
+
+    return "", 204
 
 
 @builders.route("/<builder_id>/zim/latest")

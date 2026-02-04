@@ -846,41 +846,6 @@ class ZimFarmTest(BaseWpOneDbTest):
             zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
 
     @patch("wp1.zimfarm.requests.get")
-    def test_is_zim_file_ready(self, patched_get):
-        resp = MagicMock()
-        resp.json.return_value = {"files": {"foo.zim": {"status": "uploaded"}}}
-        patched_get.return_value = resp
-        actual = zimfarm.is_zim_file_ready("foo-bar")
-        self.assertEqual("FILE_READY", actual)
-
-    @patch("wp1.zimfarm.requests.get")
-    def test_is_zim_file_ready_requested(self, patched_get):
-        resp = MagicMock()
-        resp.json.return_value = {"files": {"foo.zim": {"status": "success"}}}
-        patched_get.return_value = resp
-        actual = zimfarm.is_zim_file_ready("foo-bar")
-        self.assertEqual("REQUESTED", actual)
-
-    @patch("wp1.zimfarm.requests.get")
-    def test_is_zim_file_ready_failed(self, patched_get):
-        resp = MagicMock()
-        resp.json.return_value = {
-            "status": "failed",
-            "files": {"foo.zim": {"status": "failed"}},
-        }
-        patched_get.return_value = resp
-        actual = zimfarm.is_zim_file_ready("foo-bar")
-        self.assertEqual("FAILED", actual)
-
-    @patch("wp1.zimfarm.requests.get")
-    def test_is_zim_file_ready_non_200(self, patched_get):
-        resp = MagicMock()
-        resp.raise_for_status.side_effect = requests.exceptions.HTTPError
-        patched_get.return_value = resp
-        actual = zimfarm.is_zim_file_ready("foo-bar")
-        self.assertEqual("REQUESTED", actual)
-
-    @patch("wp1.zimfarm.requests.get")
     def test_zim_file_url_for_task_id(self, patched_get):
         resp = MagicMock()
         resp.json.return_value = {

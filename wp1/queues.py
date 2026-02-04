@@ -35,10 +35,6 @@ def _get_materializer_queue(redis):
     return Queue("materializer", connection=redis)
 
 
-def _get_zimfile_poll_queue(redis):
-    return Queue("zimfile-polling", connection=redis)
-
-
 def _get_zimfile_scheduling_queue(redis):
     return Queue("zimfile-scheduling", connection=redis)
 
@@ -184,14 +180,6 @@ def enqueue_materialize(redis, builder_cls, builder, content_type):
         content_type,
         job_timeout=constants.JOB_TIMEOUT,
         failure_ttl=constants.JOB_FAILURE_TTL,
-    )
-
-
-def poll_for_zim_file_status(redis, task_id):
-    poll_q = _get_zimfile_poll_queue(redis)
-    scheduler = Scheduler(queue=poll_q, connection=redis)
-    scheduler.enqueue_in(
-        timedelta(minutes=2), logic_builder.on_zim_file_status_poll, task_id
     )
 
 

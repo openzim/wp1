@@ -487,24 +487,6 @@ def _get_task_by_id(task_id):
     return r.json()
 
 
-def is_zim_file_ready(task_id):
-    data = _get_task_by_id(task_id)
-    if data is None:
-        # Some kind of HTTP error (could be 404 if the task hasn't moved
-        # from requested-tasks to tasks yet). Ignore and we'll retry.
-        return "REQUESTED"
-
-    if data.get("status") == "failed":
-        return "FAILED"
-
-    files = data.get("files", {})
-
-    for key, value in files.items():
-        if value.get("status") == "uploaded":
-            return "FILE_READY"
-    return "REQUESTED"
-
-
 def zim_file_url_for_task_id(task_id):
     data = _get_task_by_id(task_id)
 
