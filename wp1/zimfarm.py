@@ -277,6 +277,7 @@ def _get_params(
         "name": get_zimfarm_schedule_name(builder.b_id.decode("utf-8")),
         "language": "eng",
         "category": "wikipedia",
+        "context": "wikimedia",
         "periodicity": "manually",
         "tags": [],
         "enabled": True,
