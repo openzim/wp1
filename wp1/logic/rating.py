@@ -1,4 +1,5 @@
 import logging
+import random
 
 import attr
 
@@ -238,25 +239,57 @@ def get_random_article(
     quality=None,
     importance=None,
 ):
-    query = "SELECT * FROM " + Rating.table_name + " WHERE r_project = %(r_project)s"
-    params = {"r_project": project_name}
+    """
+    Get a random article matching the given criteria.
+    Uses COUNT + OFFSET to avoid ORDER BY RAND().
 
-    if quality is not None:
-        query += " AND r_quality = %(r_quality)s"
-        params["r_quality"] = quality
-    if importance is not None:
-        query += " AND r_importance = %(r_importance)s"
-        params["r_importance"] = importance
+    The existing PRIMARY KEY (r_project, r_namespace, r_article) ensures
+    efficient index usage without requiring additional indices.
+    """
+    import random
+    from wp1.models.wp10.rating import Rating
 
-    # This is not very efficient since it will generate a random number for all rows that match
-    # the criteria and sort them all.
-    query += " ORDER BY RAND() LIMIT 1"
+    # Build WHERE clause
+    conditions = ["r_project = %s"]
+    params = [project_name]
+
+    if quality:
+        conditions.append("r_quality = %s")
+        params.append(quality)
+    if importance:
+        conditions.append("r_importance = %s")
+        params.append(importance)
+
+    where_clause = " AND ".join(conditions)
 
     with wp10db.cursor() as cursor:
-        cursor.execute(query, params)
+        # 1. Count total matching rows
+        count_query = f"SELECT COUNT(*) as cnt FROM ratings WHERE {where_clause}"
+        cursor.execute(count_query, params)
         res = cursor.fetchone()
-        if res:
-            return Rating(**res)
+
+        if not res or res["cnt"] == 0:
+            return None
+
+        count = res["cnt"]
+
+        # 2. Generate random offset
+        offset = random.randint(0, count - 1)
+
+        # 3. Fetch the random article
+        select_query = f"""
+            SELECT *
+            FROM ratings
+            WHERE {where_clause}
+            LIMIT 1 OFFSET %s
+        """
+
+        cursor.execute(select_query, params + [offset])
+        row = cursor.fetchone()
+
+        if row:
+            return Rating(**row)
+
         return None
 
 
