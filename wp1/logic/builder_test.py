@@ -51,6 +51,7 @@ class BuilderTest(BaseWpOneDbTest):
             "z_url": None,
             "z_status": "NOT_REQUESTED",
             "z_is_deleted": None,
+            "active_schedule": None,
         }
     ]
 
@@ -72,6 +73,7 @@ class BuilderTest(BaseWpOneDbTest):
             "z_url": None,
             "z_status": "NOT_REQUESTED",
             "z_is_deleted": None,
+            "active_schedule": None,
         },
         {
             "id": "1a-2b-3c-4d",
@@ -90,6 +92,7 @@ class BuilderTest(BaseWpOneDbTest):
             "z_url": None,
             "z_status": "NOT_REQUESTED",
             "z_is_deleted": None,
+            "active_schedule": None,
         },
     ]
 
@@ -111,6 +114,7 @@ class BuilderTest(BaseWpOneDbTest):
             "z_url": None,
             "z_status": None,
             "z_is_deleted": None,
+            "active_schedule": None,
         }
     ]
 
@@ -132,6 +136,7 @@ class BuilderTest(BaseWpOneDbTest):
             "z_url": None,
             "z_status": "NOT_REQUESTED",
             "z_is_deleted": None,
+            "active_schedule": None,
         }
     ]
 
@@ -153,6 +158,7 @@ class BuilderTest(BaseWpOneDbTest):
             "z_url": "http://test.server.fake/v1/builders/1a-2b-3c-4d/zim/latest",
             "z_status": "FILE_READY",
             "z_is_deleted": True,
+            "active_schedule": None,
         }
     ]
 
