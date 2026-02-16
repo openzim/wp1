@@ -293,7 +293,10 @@
           </div>
         </div>
       </div>
-      <div v-else-if="status === 'FILE_READY'" class="row">
+      <div
+        v-else-if="status === 'FILE_READY' || status === 'REQUESTED'"
+        class="row"
+      >
         <div class="col-lg-6 col-md-9 mx-4">
           <a :href="zimPathFor()"
             ><button
