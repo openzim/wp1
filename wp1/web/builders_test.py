@@ -1306,6 +1306,39 @@ class BuildersTest(BaseWebTestcase):
             rv = client.get("/v1/builders/abcd-1234/zim/latest")
         self.assertEqual("404 NOT FOUND", rv.status)
 
+    @patch(
+        "wp1.logic.builder.zimfarm.zim_file_url_for_task_id",
+        return_value="http://fake-file-host.fake/1234/file.zim",
+    )
+    @patch("wp1.logic.selection.utcnow")
+    def test_latest_zim_file_for_builder_410_when_expired(
+        self, mock_utcnow, mock_zimfarm
+    ):
+        """Expired ZIM files (older than 2 weeks) should return 410 Gone."""
+        # Set z_updated_at to a timestamp that is 3 weeks in the past so that
+        # is_zim_file_deleted() returns True.
+        three_weeks_ago = datetime.datetime(2020, 12, 4, 10, 55, 44)
+        mock_utcnow.return_value = datetime.datetime(2020, 12, 25, 10, 55, 44)
+
+        builder_id = self._insert_builder()
+        self._insert_selections(builder_id)
+
+        # Update z_updated_at to a time older than the 2-week TTL.
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "UPDATE zim_tasks SET z_updated_at = %s WHERE z_id = 1",
+                (three_weeks_ago.strftime("%Y%m%d%H%M%S"),),
+            )
+        self.wp10db.commit()
+
+        self.app = create_app()
+        with self.app.test_client() as client:
+            rv = client.get("/v1/builders/%s/zim/latest" % builder_id)
+        self.assertEqual("410 GONE", rv.status)
+        data = rv.get_json()
+        self.assertIn("error_messages", data)
+        self.assertTrue(len(data["error_messages"]) > 0)
+
     def test_latest_selection_article_count_for_builder(self):
         builder_id = self._insert_builder()
         self._insert_selections(builder_id)
