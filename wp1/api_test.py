@@ -1,5 +1,7 @@
 import http.cookiejar
 import importlib
+import os
+import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -85,7 +87,9 @@ class ApiWithCredsTest(unittest.TestCase):
         site = patched_mwsite()
         site.logged_in = False
         wp1.api.login()
-        patched_remove.assert_called_once_with("/tmp/cookies.txt")
+        patched_remove.assert_called_once_with(
+            os.path.join(tempfile.gettempdir(), "cookies.txt")
+        )
 
     @patch("wp1.api.get_credentials", return_value=TEST_CREDS)
     @patch("wp1.api.mwclient.Site")

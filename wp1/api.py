@@ -1,6 +1,7 @@
 import http.cookiejar
 import logging
 import os
+import tempfile
 from http.cookiejar import MozillaCookieJar
 
 import mwclient
@@ -34,7 +35,7 @@ def login():
         logger.warning("Not creating API site object, no credentials")
         return False
 
-    cookie_path = "/tmp/cookies.txt"
+    cookie_path = os.path.join(tempfile.gettempdir(), "cookies.txt")
     cookie_jar = MozillaCookieJar(cookie_path)
     if os.path.exists(cookie_path):
         # Load cookies from file, including session cookies (expirydate=0)
