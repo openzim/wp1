@@ -512,6 +512,22 @@ def zim_file_for_latest_selection(wp10db, builder_id) -> ZimTask:
         return ZimTask(**db_zim)
 
 
+def is_zim_file_expired(wp10db, builder_id):
+    """Returns True if the ZIM file for the given builder has expired (been deleted from storage).
+
+    ZIM files are deleted from storage after ZIM_FILE_TTL seconds (2 weeks).
+    This is a time-based check; it does not verify actual S3 existence.
+    """
+    zim = latest_zim_file_for(wp10db, builder_id)
+    if zim is None or zim.z_status != b"FILE_READY":
+        return False
+    if zim.z_updated_at is None:
+        return False
+    return logic_selection.is_zim_file_deleted(
+        logic_util.wp10_timestamp_to_unix(zim.z_updated_at)
+    )
+
+
 def latest_zim_file_url_for(wp10db, builder_id):
     zim = latest_zim_file_for(wp10db, builder_id)
 

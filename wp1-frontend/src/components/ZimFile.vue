@@ -30,7 +30,7 @@
               You already have a ZIM scheduled for every
               <strong
                 >{{ activeSchedule.interval_months }} month{{
-                  activeSchedule.interval_months > 1 ? 's' : ''
+                  activeSchedule.interval_months > 1 ? "s" : ""
                 }}</strong
               >.
               <span v-if="activeSchedule.next_generation_date">
@@ -201,7 +201,7 @@
                 {{
                   displayGraphemeLimitText(
                     longDescription,
-                    maxLongDescriptionLength
+                    maxLongDescriptionLength,
                   )
                 }}
               </small>
@@ -298,16 +298,19 @@
         class="row"
       >
         <div class="col-lg-6 col-md-9 mx-4">
-          <a :href="zimPathFor()"
-            ><button
-              id="download"
-              type="button"
-              class="btn btn-primary"
-              :disabled="status !== 'FILE_READY'"
-            >
-              Download ZIM
-            </button></a
+          <p v-if="downloadError" class="errors">
+            {{ downloadError }}
+          </p>
+          <button
+            id="download"
+            type="button"
+            class="btn btn-primary"
+            :disabled="status !== 'FILE_READY' || downloading"
+            @click="downloadZim"
           >
+            <span v-if="downloading">Checking...</span>
+            <span v-else>Download ZIM</span>
+          </button>
           <pulse-loader
             id="loader"
             class="loader"
@@ -325,28 +328,30 @@
 </template>
 
 <script>
-import { byGrapheme } from 'split-by-grapheme';
-import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
+import { byGrapheme } from "split-by-grapheme";
+import PulseLoader from "vue-spinner/src/PulseLoader.vue";
 
-import LoginRequired from './LoginRequired.vue';
-import SecondaryNav from './SecondaryNav.vue';
+import LoginRequired from "./LoginRequired.vue";
+import SecondaryNav from "./SecondaryNav.vue";
 
 export default {
-  name: 'ZimFile',
+  name: "ZimFile",
   components: { SecondaryNav, LoginRequired, PulseLoader },
   data: function () {
     return {
-      zimTitle: '',
+      zimTitle: "",
       articleCount: null,
       maxArticleCount: null,
-      description: '',
+      description: "",
+      downloadError: null,
+      downloading: false,
       errors: [],
       errorMessages: [],
-      errorUrl: '',
+      errorUrl: "",
       isDeleted: false,
-      loaderColor: '#007bff',
-      loaderSize: '1rem',
-      longDescription: '',
+      loaderColor: "#007bff",
+      loaderSize: "1rem",
+      longDescription: "",
       notFound: false,
       noArticleCount: false,
       pollId: null,
@@ -363,7 +368,7 @@ export default {
       schedulingEnabled: false,
       repetitionPeriodInMonths: 1,
       numberOfRepetitions: 1,
-      scheduleEmail: '',
+      scheduleEmail: "",
     };
   },
   created: async function () {
@@ -375,7 +380,7 @@ export default {
   methods: {
     loadUserEmail: async function () {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/oauth/email`, {
-        credentials: 'include',
+        credentials: "include",
       });
       if (res.ok) {
         const data = await res.json();
@@ -388,9 +393,9 @@ export default {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/builders/${this.builderId}`,
         {
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-        }
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        },
       );
       if (response.status == 404) {
         this.notFound = true;
@@ -403,11 +408,11 @@ export default {
         if (this.builder && this.builder.name) {
           this.zimTitle = this.truncateToLength(
             this.builder.name,
-            this.maxTitleLength
+            this.maxTitleLength,
           );
         }
         await this.getArticleCount();
-        this.$emit('onBuilderLoaded', this.builder);
+        this.$emit("onBuilderLoaded", this.builder);
       }
     },
     getStatus: async function () {
@@ -418,7 +423,7 @@ export default {
 
       if (!response.ok) {
         this.success = false;
-        this.errors = 'An unknown server error has occurred.';
+        this.errors = "An unknown server error has occurred.";
         return;
       }
 
@@ -426,11 +431,11 @@ export default {
       this.status = data.status;
       this.isDeleted = data.is_deleted;
       this.activeSchedule = data.active_schedule;
-      if (this.status === 'FILE_READY') {
+      if (this.status === "FILE_READY") {
         this.stopProgressPolling();
-      } else if (this.status === 'FAILED') {
+      } else if (this.status === "FAILED") {
         this.errorUrl = data.error_url;
-      } else if (this.status !== 'NOT_REQUESTED') {
+      } else if (this.status !== "NOT_REQUESTED") {
         this.startProgressPolling();
       }
     },
@@ -439,8 +444,8 @@ export default {
         this.builderId
       }/selection/latest/article_count`;
       const response = await fetch(url, {
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -455,9 +460,9 @@ export default {
     onSubmit: async function () {
       const form = this.$refs.form;
       if (!form.checkValidity() || !this.isLongDescriptionValid) {
-        this.$refs.form_group.classList.add('was-validated');
-        this.$refs.zimtitle_form_group.classList.add('was-validated');
-        this.$refs.longdesc.classList.add('was-validated');
+        this.$refs.form_group.classList.add("was-validated");
+        this.$refs.zimtitle_form_group.classList.add("was-validated");
+        this.$refs.longdesc.classList.add("was-validated");
         return;
       }
 
@@ -476,7 +481,7 @@ export default {
           repetition_period_in_months: this.repetitionPeriodInMonths,
           number_of_repetitions: this.numberOfRepetitions,
         };
-        const email = (this.scheduleEmail || '').trim();
+        const email = (this.scheduleEmail || "").trim();
         if (email.length > 0) {
           scheduled.email = email;
         }
@@ -484,9 +489,9 @@ export default {
       }
 
       const response = await fetch(postUrl, {
-        headers: { 'Content-Type': 'application/json' },
-        method: 'post',
-        credentials: 'include',
+        headers: { "Content-Type": "application/json" },
+        method: "post",
+        credentials: "include",
         body: JSON.stringify(payload),
       });
       this.processing = false;
@@ -495,10 +500,10 @@ export default {
         this.success = false;
         try {
           const data = await response.json();
-          this.errors = data.error_messages || [data.error || 'Request failed'];
+          this.errors = data.error_messages || [data.error || "Request failed"];
         } catch (e) {
           const text = await response.text();
-          this.errors = [text || 'Request failed'];
+          this.errors = [text || "Request failed"];
         }
         return;
       }
@@ -514,7 +519,7 @@ export default {
     truncateToLength: function (text, maxLength) {
       // Split the text into graphemes and truncate to maxLength
       const graphemes = text.split(byGrapheme);
-      return graphemes.slice(0, maxLength).join('');
+      return graphemes.slice(0, maxLength).join("");
     },
     tooManyArticles: function () {
       return this.articleCount > this.maxArticleCount;
@@ -523,6 +528,44 @@ export default {
       return `${import.meta.env.VITE_API_URL}/builders/${
         this.builderId
       }/zim/latest`;
+    },
+    downloadZim: async function () {
+      // Fetch the download URL with redirect: 'manual' so we can intercept
+      // a 410 Gone response (returned when the ZIM file has expired and been
+      // deleted from storage) before the browser falls through to S3's
+      // confusing NoSuchKey error page.
+      this.downloading = true;
+      this.downloadError = null;
+      try {
+        const response = await fetch(this.zimPathFor(), {
+          redirect: "manual",
+          credentials: "include",
+        });
+        if (response.type === "opaqueredirect") {
+          // The server returned a 302 redirect — let the browser navigate.
+          window.location.href = this.zimPathFor();
+        } else if (response.status === 410) {
+          // The ZIM file has expired and been deleted from storage.
+          // Update state so the re-create form appears.
+          this.isDeleted = true;
+          this.downloadError =
+            "Your ZIM file has expired and been deleted from storage. " +
+            "ZIM download links are only valid for 2 weeks. " +
+            "Please re-create your ZIM file using the form below.";
+        } else if (!response.ok) {
+          this.downloadError =
+            "An unexpected error occurred while trying to download the ZIM file. " +
+            "Please try again later.";
+        } else {
+          // Fallback: let the browser navigate (e.g. same-origin 200 response).
+          window.location.href = this.zimPathFor();
+        }
+      } catch (e) {
+        this.downloadError =
+          "Could not reach the server. Please check your connection and try again.";
+      } finally {
+        this.downloading = false;
+      }
     },
     startProgressPolling: function () {
       if (this.pollId) {
@@ -535,9 +578,9 @@ export default {
     },
     validationOnBlur: function (event) {
       if (event.target.value) {
-        event.target.classList.remove('is-invalid');
+        event.target.classList.remove("is-invalid");
       } else {
-        event.target.classList.add('is-invalid');
+        event.target.classList.add("is-invalid");
       }
     },
     graphemeCount: function (text) {
@@ -546,7 +589,7 @@ export default {
     displayGraphemeLimitText: function (text, maxLength) {
       const count = this.graphemeCount(text);
       return `${count}/${maxLength} graphemes${
-        count === maxLength ? ' (max reached)' : ''
+        count === maxLength ? " (max reached)" : ""
       }`;
     },
     isValidEmail: function (email) {
@@ -561,10 +604,10 @@ export default {
         const response = await fetch(
           `${import.meta.env.VITE_API_URL}/builders/${this.builderId}/schedule`,
           {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-          }
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+          },
         );
 
         if (response.ok) {
@@ -574,25 +617,25 @@ export default {
         } else {
           const errorData = await response.json();
           this.errors = errorData.error_messages || [
-            'Failed to delete schedule',
+            "Failed to delete schedule",
           ];
           this.success = false;
         }
       } catch (error) {
-        this.errors = ['Failed to delete schedule: ' + error.message];
+        this.errors = ["Failed to delete schedule: " + error.message];
         this.success = false;
       } finally {
         this.deletingSchedule = false;
       }
     },
     formatDate: function (dateString) {
-      if (!dateString) return 'Unknown';
+      if (!dateString) return "Unknown";
       try {
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
+        return date.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
         });
       } catch {
         return dateString;
@@ -609,8 +652,8 @@ export default {
     showLoader: function () {
       return (
         this.processing ||
-        this.status === 'REQUESTED' ||
-        this.status === 'ENDED'
+        this.status === "REQUESTED" ||
+        this.status === "ENDED"
       );
     },
     isLongDescriptionValid: function () {
@@ -624,7 +667,7 @@ export default {
     isScheduleWarningRequired: function () {
       // Only show the active schedule warning when there is an active schedule
       // and there is not currently a ZIM being created (status 'REQUESTED').
-      return this.activeSchedule && this.status !== 'REQUESTED';
+      return this.activeSchedule && this.status !== "REQUESTED";
     },
     hasLengthErrors: function () {
       // Prevent empty required fields and invalid long description

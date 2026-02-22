@@ -352,6 +352,24 @@ def update_zimfarm_status():
 def latest_zim_file_for_builder(builder_id):
     wp10db = get_db("wp10db")
 
+    # Check if the ZIM file has expired before attempting to redirect.
+    # ZIM files are deleted from storage after 2 weeks; if the file is expired,
+    # return 410 Gone so the client can display a helpful message instead of
+    # receiving a confusing NoSuchKey error from the S3-compatible storage.
+    if logic_builder.is_zim_file_expired(wp10db, builder_id):
+        return (
+            flask.jsonify(
+                {
+                    "error_messages": [
+                        "The ZIM file has expired and been deleted from storage. "
+                        "ZIM download links are only valid for 2 weeks. "
+                        "Please re-create your ZIM file."
+                    ]
+                }
+            ),
+            410,
+        )
+
     url = logic_builder.latest_zim_file_url_for(wp10db, builder_id)
     if not url:
         flask.abort(404)
