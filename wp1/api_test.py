@@ -1,3 +1,4 @@
+import http.cookiejar
 import importlib
 import unittest
 from unittest.mock import MagicMock, patch
@@ -60,6 +61,56 @@ class ApiWithCredsTest(unittest.TestCase):
         actual = wp1.api.login()
         self.assertFalse(actual)
         self.assertEqual(1, patched_logger.exception.call_count)
+
+    @patch("wp1.api.get_credentials", return_value=TEST_CREDS)
+    @patch("wp1.api.mwclient.Site")
+    @patch("wp1.api.site")
+    @patch("wp1.api.os.remove")
+    @patch("wp1.api.os.path.exists", return_value=True)
+    @patch("http.cookiejar.MozillaCookieJar")
+    def test_login_corrupted_cookie_jar(
+        self,
+        patched_cookies,
+        patched_exists,
+        patched_remove,
+        patched_site,
+        patched_mwsite,
+        patched_credentials,
+    ):
+        patched_site.logged_in = False
+        cookie_jar = patched_cookies.return_value
+        cookie_jar.load.side_effect = http.cookiejar.LoadError(
+            "corrupted cookie file"
+        )
+        site = patched_mwsite()
+        site.logged_in = False
+        wp1.api.login()
+        patched_remove.assert_called_once_with("/tmp/cookies.txt")
+
+    @patch("wp1.api.get_credentials", return_value=TEST_CREDS)
+    @patch("wp1.api.mwclient.Site")
+    @patch("wp1.api.site")
+    @patch("wp1.api.os.remove")
+    @patch("wp1.api.os.path.exists", return_value=True)
+    @patch("http.cookiejar.MozillaCookieJar")
+    def test_login_corrupted_cookie_jar_still_logs_in(
+        self,
+        patched_cookies,
+        patched_exists,
+        patched_remove,
+        patched_site,
+        patched_mwsite,
+        patched_credentials,
+    ):
+        patched_site.logged_in = False
+        cookie_jar = patched_cookies.return_value
+        cookie_jar.load.side_effect = http.cookiejar.LoadError(
+            "corrupted cookie file"
+        )
+        site = patched_mwsite()
+        site.logged_in = False
+        wp1.api.login()
+        self.assertEqual(1, site.login.call_count)
 
 
 class ApiTest(unittest.TestCase):
