@@ -1,5 +1,5 @@
 import enum
-
+from typing import Optional
 import attr
 
 
@@ -13,8 +13,8 @@ class NsType(enum.Enum):
 class Namespace:
     table_name = "namespacename"
 
-    domain = attr.ib()
-    ns_name = attr.ib()
-    ns_type = attr.ib()
-    ns_id = attr.ib(default=None)
-    dbname = attr.ib(default=None)
+    domain: bytes = attr.ib()
+    ns_name: bytes = attr.ib()
+    ns_type: NsType = attr.ib()
+    ns_id: Optional[int] = attr.ib(default=None)
+    dbname: Optional[bytes] = attr.ib(default=None)
