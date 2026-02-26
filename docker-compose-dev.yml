@@ -145,6 +145,7 @@ services:
 
   zimfarm-api:
     image: ghcr.io/openzim/zimfarm-backend:latest
+    pull_policy: always
     container_name: zimfarm-api
     ports:
       - 127.0.0.1:8004:80
@@ -169,6 +170,7 @@ services:
 
   zimfarm-ui:
     image: ghcr.io/openzim/zimfarm-ui:latest
+    pull_policy: always
     container_name: zimfarm-ui
     ports:
       - 127.0.0.1:8003:80
@@ -184,6 +186,7 @@ services:
 
   zimfarm-worker-manager:
     image: ghcr.io/openzim/zimfarm-worker-manager:latest
+    pull_policy: always
     container_name: zimfarm-worker-manager
     depends_on:
       zimfarm-api:
