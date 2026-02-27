@@ -14,7 +14,7 @@ describe('the user selection list page', () => {
       cy.wait('@list');
     });
 
-    it('successfully loads', () => {});
+    it('successfully loads', () => { });
 
     it('displays the datatables view', () => {
       cy.get('.dataTables_info').contains('Showing 1 to 12 of 12 entries');
@@ -175,6 +175,88 @@ describe('the user selection list page', () => {
           .within(() => {
             cy.get('td').eq(6).should('contain', '6/1/23');
           });
+      });
+
+      describe('when the ZIM file is ready but no longer exists on storage', () => {
+        beforeEach(() => {
+          cy.intercept('HEAD', 'https://localhost/zim/latest', {
+            statusCode: 404,
+          }).as('zimHead');
+        });
+
+        it('shows an error message after clicking Download ZIM', () => {
+          cy.contains('td', 'zim ready')
+            .parent('tr')
+            .within(() => {
+              cy.get('td').eq(7).contains('Download ZIM').click();
+            });
+          cy.wait('@zimHead');
+          cy.contains('td', 'zim ready')
+            .parent('tr')
+            .within(() => {
+              cy.get('td').eq(7).should('contain', 'ZIM file is no longer available');
+            });
+        });
+
+        it('hides the Download ZIM link after the 404 is detected', () => {
+          cy.contains('td', 'zim ready')
+            .parent('tr')
+            .within(() => {
+              cy.get('td').eq(7).contains('Download ZIM').click();
+            });
+          cy.wait('@zimHead');
+          cy.contains('td', 'zim ready')
+            .parent('tr')
+            .within(() => {
+              cy.get('td').eq(7).should('not.contain', 'Download ZIM');
+            });
+        });
+
+        it('shows a re-request link after the 404 is detected', () => {
+          cy.contains('td', 'zim ready')
+            .parent('tr')
+            .within(() => {
+              cy.get('td').eq(7).contains('Download ZIM').click();
+            });
+          cy.wait('@zimHead');
+          cy.contains('td', 'zim ready')
+            .parent('tr')
+            .within(() => {
+              cy.get('td').eq(7).should('contain', 'Re-request');
+            });
+        });
+      });
+
+      describe('when the ZIM file is ready and exists on storage', () => {
+        beforeEach(() => {
+          cy.intercept('HEAD', 'https://localhost/zim/latest', {
+            statusCode: 200,
+          }).as('zimHead');
+        });
+
+        it('shows the Download ZIM link', () => {
+          cy.contains('td', 'zim ready')
+            .parent('tr')
+            .within(() => {
+              cy.get('td').eq(7).should('contain', 'Download ZIM');
+            });
+        });
+
+        it('does not show an error message after clicking', () => {
+          cy.contains('td', 'zim ready')
+            .parent('tr')
+            .within(() => {
+              cy.get('td').eq(7).contains('Download ZIM').click();
+            });
+          cy.wait('@zimHead');
+          cy.contains('td', 'zim ready')
+            .parent('tr')
+            .within(() => {
+              cy.get('td')
+                .eq(7)
+                .should('not.contain', 'ZIM file is no longer available');
+            });
+        });
       });
     });
 

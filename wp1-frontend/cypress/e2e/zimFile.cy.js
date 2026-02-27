@@ -177,6 +177,68 @@ describe('the zim file creation page', () => {
           it('does not show the spinner', () => {
             cy.get('#loader').should('not.be.visible');
           });
+
+          describe('when the zim file is ready but no longer exists on storage', () => {
+            beforeEach(() => {
+              cy.intercept('v1/builders/1/zim/status', {
+                fixture: 'zim_status_ready.json',
+              }).as('status');
+              cy.intercept('HEAD', 'v1/builders/1/zim/latest', {
+                statusCode: 404,
+              }).as('zimHead');
+              cy.visit('/#/selections/1/zim');
+              cy.wait('@identity');
+              cy.wait('@builder');
+              cy.wait('@status');
+            });
+
+            it('shows the Download ZIM button before it is clicked', () => {
+              cy.get('#download').should('be.visible');
+            });
+
+            it('shows an error message after clicking Download ZIM when file is 404', () => {
+              cy.get('#download').click();
+              cy.wait('@zimHead');
+              cy.contains('ZIM file is no longer available').should('be.visible');
+            });
+
+            it('hides the Download ZIM button after the 404 is detected', () => {
+              cy.get('#download').click();
+              cy.wait('@zimHead');
+              cy.get('#download').should('not.exist');
+            });
+
+            it('shows the re-request form after the 404 is detected', () => {
+              cy.get('#download').click();
+              cy.wait('@zimHead');
+              cy.get('#desc').should('be.visible');
+              cy.get('#longdesc').should('be.visible');
+            });
+          });
+
+          describe('when the zim file is ready and exists on storage', () => {
+            beforeEach(() => {
+              cy.intercept('v1/builders/1/zim/status', {
+                fixture: 'zim_status_ready.json',
+              }).as('status');
+              cy.intercept('HEAD', 'v1/builders/1/zim/latest', {
+                statusCode: 200,
+              }).as('zimHead');
+              cy.visit('/#/selections/1/zim');
+              cy.wait('@identity');
+              cy.wait('@builder');
+              cy.wait('@status');
+            });
+
+            it('shows the Download ZIM button', () => {
+              cy.get('#download').should('be.visible');
+              cy.get('#download').should('not.have.attr', 'disabled');
+            });
+
+            it('does not show an error message', () => {
+              cy.contains('ZIM file is no longer available').should('not.exist');
+            });
+          });
         });
 
         describe('when the zim file has failed', () => {

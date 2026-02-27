@@ -86,7 +86,11 @@
                 v-else-if="item.z_url && !hasDeletedZim(item)"
                 :class="{ 'outdated-zim': hasOutdatedZim(item) }"
               >
-                <a :href="item.z_url">Download ZIM</a>
+                <span v-if="zimFileErrors[item.id]" class="deleted-zim">
+                  ZIM file is no longer available.
+                  <router-link :to="zimPathFor(item)">Re-request</router-link>
+                </span>
+                <a v-else href="#" @click.prevent="downloadZim(item)">Download ZIM</a>
                 <span
                   v-if="hasOutdatedZim(item)"
                   data-toggle="tooltip"
@@ -162,6 +166,7 @@ export default {
       loaderColor: '#007bff',
       loaderSize: '.75rem',
       pollId: null,
+      zimFileErrors: {},
     };
   },
   computed: {
@@ -268,6 +273,18 @@ export default {
     },
     localDate: function (date) {
       return localDate(date);
+    },
+    downloadZim: async function (item) {
+      try {
+        const response = await fetch(item.z_url, { method: 'HEAD' });
+        if (response.ok) {
+          window.location.href = item.z_url;
+        } else {
+          this.$set(this.zimFileErrors, item.id, true);
+        }
+      } catch (e) {
+        this.$set(this.zimFileErrors, item.id, true);
+      }
     },
   },
   created: function () {

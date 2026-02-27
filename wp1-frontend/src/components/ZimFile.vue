@@ -110,7 +110,8 @@
           !activeSchedule &&
           (status === 'NOT_REQUESTED' ||
             status === 'FAILED' ||
-            (status != 'REQUESTED' && isDeleted))
+            (status != 'REQUESTED' && isDeleted) ||
+            zimFileError)
         "
         class="row"
       >
@@ -298,16 +299,19 @@
         class="row"
       >
         <div class="col-lg-6 col-md-9 mx-4">
-          <a :href="zimPathFor()"
-            ><button
-              id="download"
-              type="button"
-              class="btn btn-primary"
-              :disabled="status !== 'FILE_READY'"
-            >
-              Download ZIM
-            </button></a
+          <span v-if="zimFileError" class="errors">
+            ZIM file is no longer available. Please re-request below.
+          </span>
+          <button
+            v-else
+            id="download"
+            type="button"
+            class="btn btn-primary"
+            :disabled="status !== 'FILE_READY'"
+            @click.prevent="downloadZim"
           >
+            Download ZIM
+          </button>
           <pulse-loader
             id="loader"
             class="loader"
@@ -364,6 +368,7 @@ export default {
       repetitionPeriodInMonths: 1,
       numberOfRepetitions: 1,
       scheduleEmail: '',
+      zimFileError: false,
     };
   },
   created: async function () {
@@ -596,6 +601,21 @@ export default {
         });
       } catch {
         return dateString;
+      }
+    },
+    downloadZim: async function () {
+      try {
+        const response = await fetch(this.zimPathFor(), {
+          method: 'HEAD',
+          credentials: 'include',
+        });
+        if (response.ok) {
+          window.location.href = this.zimPathFor();
+        } else {
+          this.zimFileError = true;
+        }
+      } catch (e) {
+        this.zimFileError = true;
       }
     },
   },
