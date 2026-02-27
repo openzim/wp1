@@ -9,7 +9,6 @@ module.exports = defineConfig({
     baseUrl: 'http://localhost:5173',
     video: false,
   },
-  // new code block 
   component: {
     devServer: {
       framework: 'vue',
