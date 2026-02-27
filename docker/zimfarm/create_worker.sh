@@ -53,7 +53,6 @@ curl -s -X 'POST' \
   -d '{
   "role":"worker",
   "username": "test_worker",
-  "email":"test_worker@acme.com",
   "password":"test_worker"
 }'
 
