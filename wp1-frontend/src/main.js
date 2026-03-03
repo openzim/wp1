@@ -2,6 +2,8 @@ import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
+import './main.css'
+
 import 'jquery';
 import 'datatables.net';
 import 'datatables.net-dt/css/jquery.dataTables.min.css';
