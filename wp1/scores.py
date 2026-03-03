@@ -72,24 +72,20 @@ def download_pageviews():
     prev_filepath = get_prev_file_path()
     if os.path.exists(prev_filepath):
         os.remove(prev_filepath)
-
-    cur_filepath = get_cur_file_path()
-    if os.path.exists(cur_filepath):
-        # File already downloaded
-        return
-
-    with requests.get(get_pageview_url(), stream=True, timeout=60) as r:
-        r.raise_for_status()
         try:
-            with open(cur_filepath, "wb") as f:
-                # Read data in 8 MB chunks
-                for chunk in r.iter_content(chunk_size=8 * 1024 * 1024):
-                    f.write(chunk)
+            db = wp10_connect() 
+            with db.cursor() as cursor:
+                cursor.execute(
+                    "UPDATE zim_tasks SET z_status = 'DELETED' WHERE z_filepath = %s", 
+                    (prev_filepath,)
+                )
+            db.commit()
+            logger.info(f"Marked {prev_filepath} as DELETED in database")
         except Exception as e:
-            logger.exception("Error downloading pageviews")
-            os.remove(cur_filepath)
-            raise Wp1ScoreProcessingError("Error downloading pageviews") from e
-
+            logger.error(f"Database update failed for deleted file: {e}")
+    
+    cur_filepath = get_cur_file_path()
+    
 
 def raw_pageviews(decode=False):
 

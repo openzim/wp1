@@ -85,3 +85,9 @@ WIKIDATA_PREFIXES = {
 WP1_USER_AGENT = "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>"
 
 SECONDS_PER_MONTH = 30 * 24 * 60 * 60  # Approximate seconds in a month
+class TaskStatus(enum.Enum):
+    PENDING = "PENDING"
+    PROCESSING = "PROCESSING"
+    FILE_READY = "FILE_READY"
+    FAILED = "FAILED"
+    DELETED = "DELETED" 

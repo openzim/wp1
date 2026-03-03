@@ -83,29 +83,30 @@
             page and the My Selections page will automatically update with a URL
             to download your ZIM file once it is ready.
           </p>
-          <p v-if="isDeleted && status == 'FILE_READY'" class="errors">
-            Your ZIM file has expired and needs to be re-created. ZIM file
-            download links are only valid for 2 weeks. You can re-create your
-            ZIM file with the button below.
+
+          <p v-if="status === 'DELETED'" class="errors">
+            Your ZIM file has been deleted from the server to save space. 
+            ZIM file download links are only valid for 2 weeks. 
+            You can re-create your ZIM file with the button below.
           </p>
+
           <p v-else-if="status === 'REQUESTED'">
             Your ZIM file has been requested and is being processed. This page
             will update with the URL to download it once it is ready. It will
             also keep you updated on any errors that may occur.
           </p>
+
           <p v-else-if="status === 'FILE_READY'">
             Your ZIM file is ready! Click the button below to download it. You
             can also always download it from the My Selections page.
           </p>
+
           <p v-else-if="status === 'FAILED'" class="errors">
             There was an error creating your ZIM file. More information may be
             available <a :href="errorUrl">via the Zimfarm API</a>. If you feel
             this was a transient or external error, you can try requesting your
             ZIM file again below.
           </p>
-        </div>
-      </div>
-      <div
         v-if="
           !activeSchedule &&
           (status === 'NOT_REQUESTED' ||
