@@ -325,23 +325,23 @@
 </template>
 
 <script>
-import { byGrapheme } from 'split-by-grapheme';
-import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
+import { byGrapheme } from 'split-by-grapheme'
+import PulseLoader from 'vue-spinner/src/PulseLoader.vue'
 
-import LoginRequired from './LoginRequired.vue';
-import SecondaryNav from './SecondaryNav.vue';
+import LoginRequired from './LoginRequired.vue'
+import SecondaryNav from './SecondaryNav.vue'
 
 export default {
   name: 'ZimFile',
   components: { SecondaryNav, LoginRequired, PulseLoader },
-  data: function () {
+
+  data() {
     return {
       zimTitle: '',
       articleCount: null,
       maxArticleCount: null,
       description: '',
       errors: [],
-      errorMessages: [],
       errorUrl: '',
       isDeleted: false,
       loaderColor: '#007bff',
@@ -364,286 +364,285 @@ export default {
       repetitionPeriodInMonths: 1,
       numberOfRepetitions: 1,
       scheduleEmail: '',
-    };
+      builder: null
+    }
   },
-  created: async function () {
-    await this.getBuilder();
-    await this.getStatus();
-    await this.loadUserEmail();
-    this.ready = true;
+
+  async created() {
+    await this.getBuilder()
+    await this.getStatus()
+    await this.loadUserEmail()
+    this.ready = true
   },
+
   methods: {
-    loadUserEmail: async function () {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/oauth/email`, {
-        credentials: 'include',
-      });
+    async loadUserEmail() {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/oauth/email`,
+        { credentials: 'include' }
+      )
+
       if (res.ok) {
-        const data = await res.json();
-        if (data && data.email && !this.scheduleEmail) {
-          this.scheduleEmail = data.email;
+        const data = await res.json()
+        if (data?.email && !this.scheduleEmail) {
+          this.scheduleEmail = data.email
         }
       }
     },
-    getBuilder: async function () {
+
+    async getBuilder() {
+      if (!this.builderId) return
+
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/builders/${this.builderId}`,
         {
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          credentials: 'include'
         }
-      );
-      if (response.status == 404) {
-        this.notFound = true;
-      } else if (!response.ok) {
-        this.serverError = true;
-      } else {
-        this.notFound = false;
-        this.builder = await response.json();
-        // Set default ZIM title from builder name, truncated to maxTitleLength if necessary
-        if (this.builder && this.builder.name) {
-          this.zimTitle = this.truncateToLength(
-            this.builder.name,
-            this.maxTitleLength
-          );
-        }
-        await this.getArticleCount();
-        this.$emit('onBuilderLoaded', this.builder);
+      )
+
+      if (response.status === 404) {
+        this.notFound = true
+        return
       }
-    },
-    getStatus: async function () {
-      const url = `${import.meta.env.VITE_API_URL}/builders/${
-        this.builderId
-      }/zim/status`;
-      const response = await fetch(url);
 
       if (!response.ok) {
-        this.success = false;
-        this.errors = 'An unknown server error has occurred.';
-        return;
+        this.serverError = true
+        return
       }
 
-      const data = await response.json();
-      this.status = data.status;
-      this.isDeleted = data.is_deleted;
-      this.activeSchedule = data.active_schedule;
+      this.notFound = false
+      this.builder = await response.json()
+
+      if (this.builder?.name) {
+        this.zimTitle = this.truncateToLength(
+          this.builder.name,
+          this.maxTitleLength
+        )
+      }
+
+      await this.getArticleCount()
+      this.$emit('onBuilderLoaded', this.builder)
+    },
+
+    async getStatus() {
+      if (!this.builderId) return
+
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/builders/${this.builderId}/zim/status`,
+        { credentials: 'include' }
+      )
+
+      if (!response.ok) {
+        this.success = false
+        this.errors = ['An unknown server error has occurred.']
+        return
+      }
+
+      const data = await response.json()
+
+      this.status = data.status
+      this.isDeleted = data.is_deleted
+      this.activeSchedule = data.active_schedule
+
       if (this.status === 'FILE_READY') {
-        this.stopProgressPolling();
+        this.stopProgressPolling()
       } else if (this.status === 'FAILED') {
-        this.errorUrl = data.error_url;
+        this.errorUrl = data.error_url
+        this.stopProgressPolling()
       } else if (this.status !== 'NOT_REQUESTED') {
-        this.startProgressPolling();
+        this.startProgressPolling()
       }
     },
-    getArticleCount: async function () {
-      const url = `${import.meta.env.VITE_API_URL}/builders/${
-        this.builderId
-      }/selection/latest/article_count`;
-      const response = await fetch(url, {
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-      });
+
+    async getArticleCount() {
+      if (!this.builderId) return
+
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/builders/${this.builderId}/selection/latest/article_count`,
+        {
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include'
+        }
+      )
 
       if (!response.ok) {
-        this.noArticleCount = true;
-        return;
+        this.noArticleCount = true
+        return
       }
-      const data = await response.json();
 
-      this.articleCount = data.selection.article_count;
-      this.maxArticleCount = data.selection.max_article_count;
+      const data = await response.json()
+      this.articleCount = data.article_count
     },
-    onSubmit: async function () {
-      const form = this.$refs.form;
-      if (!form.checkValidity() || !this.isLongDescriptionValid) {
-        this.$refs.form_group.classList.add('was-validated');
-        this.$refs.zimtitle_form_group.classList.add('was-validated');
-        this.$refs.longdesc.classList.add('was-validated');
-        return;
-      }
 
-      const postUrl = `${import.meta.env.VITE_API_URL}/builders/${
-        this.builderId
-      }/zim`;
+    async onSubmit() {
+      if (this.hasLengthErrors) return
 
-      this.processing = true;
+      const postUrl =
+        `${import.meta.env.VITE_API_URL}/builders/${this.builderId}/zim`
+
+      this.processing = true
+
       const payload = {
         title: this.zimTitle,
         description: this.description,
-        long_description: this.longDescription,
-      };
+        long_description: this.longDescription
+      }
+
       if (this.schedulingEnabled) {
         const scheduled = {
           repetition_period_in_months: this.repetitionPeriodInMonths,
-          number_of_repetitions: this.numberOfRepetitions,
-        };
-        const email = (this.scheduleEmail || '').trim();
-        if (email.length > 0) {
-          scheduled.email = email;
+          number_of_repetitions: this.numberOfRepetitions
         }
-        payload.scheduled_repetitions = scheduled;
+
+        if (this.scheduleEmail?.trim()) {
+          scheduled.email = this.scheduleEmail.trim()
+        }
+
+        payload.scheduled_repetitions = scheduled
       }
 
       const response = await fetch(postUrl, {
         headers: { 'Content-Type': 'application/json' },
-        method: 'post',
+        method: 'POST',
         credentials: 'include',
-        body: JSON.stringify(payload),
-      });
-      this.processing = false;
+        body: JSON.stringify(payload)
+      })
+
+      this.processing = false
 
       if (!response.ok) {
-        this.success = false;
+        this.success = false
         try {
-          const data = await response.json();
-          this.errors = data.error_messages || [data.error || 'Request failed'];
-        } catch (e) {
-          const text = await response.text();
-          this.errors = [text || 'Request failed'];
+          const data = await response.json()
+          this.errors =
+            data.error_messages || [data.error || 'Request failed']
+        } catch {
+          this.errors = ['Request failed']
         }
-        return;
+        return
       }
 
-      await this.getStatus();
+      await this.getStatus()
     },
-    validateInput: function (field, maxLength) {
-      // If count exceeds maxLength, truncate the input to prevent further graphemes
+
+    truncateToLength(text, maxLength) {
+      return text.split(byGrapheme).slice(0, maxLength).join('')
+    },
+
+    graphemeCount(text) {
+      return text.split(byGrapheme).length
+    },
+
+    validateInput(field, maxLength) {
       if (this.graphemeCount(this[field]) > maxLength) {
-        this[field] = this.truncateToLength(this[field], maxLength);
+        this[field] = this.truncateToLength(this[field], maxLength)
       }
     },
-    truncateToLength: function (text, maxLength) {
-      // Split the text into graphemes and truncate to maxLength
-      const graphemes = text.split(byGrapheme);
-      return graphemes.slice(0, maxLength).join('');
-    },
-    tooManyArticles: function () {
-      return this.articleCount > this.maxArticleCount;
-    },
-    zimPathFor: function () {
-      return `${import.meta.env.VITE_API_URL}/builders/${
-        this.builderId
-      }/zim/latest`;
-    },
-    startProgressPolling: function () {
-      if (this.pollId) {
-        return;
-      }
-      this.pollId = setInterval(() => this.getStatus(), 30000);
-    },
-    stopProgressPolling: function () {
-      clearInterval(this.pollId);
-    },
-    validationOnBlur: function (event) {
+
+    validationOnBlur(event) {
       if (event.target.value) {
-        event.target.classList.remove('is-invalid');
+        event.target.classList.remove('is-invalid')
       } else {
-        event.target.classList.add('is-invalid');
+        event.target.classList.add('is-invalid')
       }
     },
-    graphemeCount: function (text) {
-      return text.split(byGrapheme).length;
-    },
-    displayGraphemeLimitText: function (text, maxLength) {
-      const count = this.graphemeCount(text);
+
+    displayGraphemeLimitText(text, maxLength) {
+      const count = this.graphemeCount(text)
       return `${count}/${maxLength} graphemes${
         count === maxLength ? ' (max reached)' : ''
-      }`;
+      }`
     },
-    isValidEmail: function (email) {
-      if (!email) return false;
-      return /.+@.+\..+/.test(email);
-    },
-    deleteSchedule: async function () {
-      if (!this.activeSchedule) return;
 
-      this.deletingSchedule = true;
+    formatDate(dateString) {
+      if (!dateString) return ''
+      const date = new Date(dateString)
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    },
+
+    startProgressPolling() {
+      if (this.pollId) return
+      this.pollId = setInterval(() => this.getStatus(), 30000)
+    },
+
+    stopProgressPolling() {
+      if (this.pollId) {
+        clearInterval(this.pollId)
+        this.pollId = null
+      }
+    },
+
+    async deleteSchedule() {
+      if (!this.activeSchedule) return
+
+      this.deletingSchedule = true
+
       try {
         const response = await fetch(
           `${import.meta.env.VITE_API_URL}/builders/${this.builderId}/schedule`,
           {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
+            credentials: 'include'
           }
-        );
+        )
 
         if (response.ok) {
-          this.activeSchedule = null;
-          // Refresh the status to ensure UI is up to date
-          await this.getStatus();
+          this.activeSchedule = null
+          await this.getStatus()
         } else {
-          const errorData = await response.json();
-          this.errors = errorData.error_messages || [
-            'Failed to delete schedule',
-          ];
-          this.success = false;
+          this.success = false
+          this.errors = ['Failed to delete schedule']
         }
-      } catch (error) {
-        this.errors = ['Failed to delete schedule: ' + error.message];
-        this.success = false;
       } finally {
-        this.deletingSchedule = false;
+        this.deletingSchedule = false
       }
-    },
-    formatDate: function (dateString) {
-      if (!dateString) return 'Unknown';
-      try {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
-      } catch {
-        return dateString;
-      }
-    },
+    }
   },
+
   computed: {
-    isLoggedIn: function () {
-      return this.$root.$data.isLoggedIn;
+    builderId() {
+      return this.$route.params.builder_id
     },
-    builderId: function () {
-      return this.$route.params.builder_id;
+
+    isLoggedIn() {
+      return this.$root.$data.isLoggedIn
     },
-    showLoader: function () {
+
+    showLoader() {
       return (
         this.processing ||
         this.status === 'REQUESTED' ||
         this.status === 'ENDED'
-      );
+      )
     },
-    isLongDescriptionValid: function () {
-      if (!this.longDescription || !this.description) return true;
-      const longCount = this.graphemeCount(this.longDescription);
-      const descCount = this.graphemeCount(this.description);
+
+    hasLengthErrors() {
+      return !this.zimTitle || !this.description
+    },
+
+    isLongDescriptionValid() {
+      if (!this.longDescription || !this.description) return true
+
+      const longCount = this.graphemeCount(this.longDescription)
+      const descCount = this.graphemeCount(this.description)
+
       return (
-        longCount >= descCount && this.longDescription !== this.description
-      );
+        longCount >= descCount &&
+        this.longDescription !== this.description
+      )
     },
-    isScheduleWarningRequired: function () {
-      // Only show the active schedule warning when there is an active schedule
-      // and there is not currently a ZIM being created (status 'REQUESTED').
-      return this.activeSchedule && this.status !== 'REQUESTED';
-    },
-    hasLengthErrors: function () {
-      // Prevent empty required fields and invalid long description
-      const baseInvalid =
-        !this.zimTitle || !this.description || !this.isLongDescriptionValid;
-      // Email is optional — only validate when the user actually provided one
-      const scheduleInvalid =
-        this.schedulingEnabled && this.scheduleEmail
-          ? !this.isValidEmail(this.scheduleEmail)
-          : false;
-      return baseInvalid || scheduleInvalid;
-    },
-  },
-  watch: {
-    builderId: function () {
-      this.getBuilder();
-    },
-  },
-};
+
+    isScheduleWarningRequired() {
+      return this.activeSchedule && this.status !== 'REQUESTED'
+    }
+  }
+}
 </script>
 
 <style scoped>
