@@ -99,13 +99,15 @@ def _get_redirects_from_db(wikidb, namespace, title, timestamp_dt):
         )
         row = cursor.fetchone()
         if row:
-            timestamp_dt = datetime.strptime(
+            row_timestamp_dt = datetime.strptime(
                 row["page_touched"].decode("utf-8"), "%Y%m%d%H%M%S"
             )
+            if row_timestamp_dt <= timestamp_dt:
+                return None
             return {
                 "dest_ns": row["rd_namespace"],
                 "dest_title": row["rd_title"],
-                "timestamp_dt": timestamp_dt,
+                "timestamp_dt": row_timestamp_dt,
             }
         return None
 
