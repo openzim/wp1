@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <div class="alert alert-info my-0" role="alert">
+    <div class="alert alert-info my-0 bg-blue-300" role="alert">
       Welcome to the latest version of WP 1.0! Documentation is on
       <a href="https://wp1.readthedocs.io/en/latest/">read the docs</a>. Please
       provide all feedback on
