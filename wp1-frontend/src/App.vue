@@ -155,15 +155,40 @@ export default {
 </script>
 
 <style>
+/* 1. CSS Variables for Themes */
+:root {
+  --bg-main: #ffffff;
+  --text-main: #212529;
+  --nav-bg: #f8f9fa;
+  --footer-bg: #f8f9fa;
+  --link-color: #0063cc;
+  --link-hover: #000;
+}
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-main: #121212;
+    --text-main: #e0e0e0;
+    --nav-bg: #1f1f1f;
+    --footer-bg: #1f1f1f;
+    --link-color: #66b2ff;
+    --link-hover: #ffffff;
+  }
+}
+
+/* 2. Global Styles */
 html, body {
   height: 100%;
+  background-color: var(--bg-main) !important;
+  color: var(--text-main) !important;
 }
 
 #app {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  background-color: var(--bg-main);
+  color: var(--text-main);
 }
 
 .main-content {
@@ -171,29 +196,28 @@ html, body {
   padding-bottom: 20px;
 }
 
+/* 3. Navbar & Footer Styles */
 .footer {
   margin-top: auto;
-  background-color: #f8f9fa !important;
+  background-color: var(--footer-bg) !important;
 }
 
 .footer a {
-  color: #0063cc;
+  color: var(--link-color);
   text-decoration: none;
 }
 
 .footer a:hover {
-  color: #000;
+  color: var(--link-hover);
   text-decoration: underline;
 }
 
+/* 4. Link & Component Styles */
 a {
-  color: #0063cc;
+  color: var(--link-color);
 }
-a:hover {
-  color: #000 !important;
-}
-a:visited {
-  color: #000 !important;
+a:hover, a:visited {
+  color: var(--link-hover) !important;
 }
 
 .btn-primary {
@@ -205,8 +229,26 @@ a:visited {
 }
 
 .username {
-  /* Center the username vertically */
   position: relative;
   top: 2px;
+}
+
+/* 5. Dark Mode Component Overrides */
+@media (prefers-color-scheme: dark) {
+  .navbar-light.bg-light {
+    background-color: var(--nav-bg) !important;
+    border-color: #333 !important;
+  }
+  
+  .navbar-light .navbar-nav .nav-link, 
+  .navbar-light .navbar-brand {
+    color: var(--text-main) !important;
+  }
+
+  .alert-info {
+    background-color: #0c5460 !important;
+    color: #bee5eb !important;
+    border-color: #117a8b !important;
+  }
 }
 </style>
