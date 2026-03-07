@@ -1,0 +1,17 @@
+[run]
+source = .
+omit =
+    tests/*
+    wp1-frontend/tests/*
+    setup.py
+    conftest.py
+    */__init__.py
+    venv/*
+    .venv/*
+
+[report]
+show_missing = True
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    if __name__ == .__main__.:
