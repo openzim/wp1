@@ -56,6 +56,8 @@ To be completely explicit, please do not point an LLM at one of our issues, have
 
 Basically, you should be able to understand, explain, and justify any code that an AI tool contributes to your PR.
 
+Since there has been some confusion, we will be explicit that using AI to write PR descriptions, even if the code itself was completely written manually, does nothing to demonstrate the principle stated above. It's okay if English isn't your first language, there's no need to "polish up" a PR description. We will ask for clarification if any is needed.
+
 And if you use an AI tool, please be honest about it when asked. Attempting to mask the use of AI and "pass it off as one's own" is distasteful to say the least, and will make us not want to work with you.
 
 ## Questions?
