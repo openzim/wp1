@@ -17,8 +17,8 @@ TS_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 TS_FORMAT_WP10 = "%Y%m%d%H%M%S"
 LOG_DATE_FORMAT = "%B %-d, %Y"
 
-GLOBAL_TIMESTAMP = time.strftime(TS_FORMAT_WP10, time.gmtime()).encode("utf-8")
-GLOBAL_TIMESTAMP_WIKI = time.strftime(TS_FORMAT, time.gmtime()).encode("utf-8")
+GLOBAL_TIMESTAMP: bytes = time.strftime(TS_FORMAT_WP10, time.gmtime()).encode("utf-8")
+GLOBAL_TIMESTAMP_WIKI: bytes = time.strftime(TS_FORMAT, time.gmtime()).encode("utf-8")
 
 LIST_URL = "https://tools.wmflabs.org/enwp10/cgi-bin/list2.fcgi"
 LIST_V2_URL = "https://wp1.openzim.org/#/project"
@@ -37,18 +37,18 @@ FRONTEND_WIKI_BASE = "https://en.wikipedia.org/w/"
 PAGE_SIZE = 100
 
 # Put both bytes and str as keys for convenience.
-CONTENT_TYPE_TO_EXT = {
+CONTENT_TYPE_TO_EXT: dict[str | bytes, str] = {
     "text/tab-separated-values": "tsv",
     b"text/tab-separated-values": "tsv",
     "application/vnd.ms-excel": "xls",
     b"application/vnd.ms-excel": "xls",
 }
 
-EXT_TO_CONTENT_TYPE = dict(
+EXT_TO_CONTENT_TYPE: dict[str, str] = dict(
     (ext, ct) for ct, ext in CONTENT_TYPE_TO_EXT.items() if isinstance(ct, str)
 )
 
-WIKIDATA_PREFIXES = {
+WIKIDATA_PREFIXES: dict[str, str] = {
     "bd": "http://www.bigdata.com/rdf#",
     "cc": "http://creativecommons.org/ns#",
     "dct": "http://purl.org/dc/terms/",
