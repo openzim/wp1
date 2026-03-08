@@ -1,31 +1,42 @@
-from datetime import datetime
 import logging
+from datetime import datetime
 
 import requests
 
-from wp1.constants import TS_FORMAT, GLOBAL_TIMESTAMP
-from wp1.models.wiki.page import Page
-from wp1.models.wp10.log import Log
-from wp1.models.wp10.move import Move
+import wp1.logic.util as logic_util
+from wp1.constants import GLOBAL_TIMESTAMP, TS_FORMAT
 from wp1.logic import log as logic_log
 from wp1.logic import move as logic_move
 from wp1.logic.api import page as api_page
-import wp1.logic.util as logic_util
+from wp1.models.wiki.page import Page
+from wp1.models.wp10.log import Log
+from wp1.models.wp10.move import Move
 
 logger = logging.getLogger(__name__)
 
 
 def get_pages_by_category(wikidb, category, ns=None):
     query = """
-      SELECT page_namespace, page_title, page_id, cl_sortkey, cl_timestamp
-      FROM page
-      JOIN categorylinks ON page_id = cl_from
-      WHERE cl_to = %(category)s
+      SELECT 
+          p.page_namespace, 
+          p.page_title, 
+          p.page_id, 
+          cl.cl_sortkey, 
+          cl.cl_timestamp 
+      FROM 
+          page p 
+      JOIN 
+          categorylinks cl ON p.page_id = cl.cl_from 
+      JOIN 
+          linktarget lt ON cl.cl_target_id = lt.lt_id 
+      WHERE 
+          lt.lt_namespace = 14 
+          AND lt.lt_title = %(category)s
   """
 
     params = {"category": category}
     if ns is not None:
-        query += " AND page_namespace = %(ns)s"
+        query += " AND p.page_namespace = %(ns)s"
         params["ns"] = ns
 
     with wikidb.cursor() as cursor:
