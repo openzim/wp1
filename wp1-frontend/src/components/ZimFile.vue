@@ -411,6 +411,8 @@ export default {
       }
     },
     getStatus: async function () {
+      if (!this.builderId) return;
+
       const url = `${import.meta.env.VITE_API_URL}/builders/${
         this.builderId
       }/zim/status`;
@@ -435,6 +437,7 @@ export default {
       }
     },
     getArticleCount: async function () {
+      if(!this.builderId) return;
       const url = `${import.meta.env.VITE_API_URL}/builders/${
         this.builderId
       }/selection/latest/article_count`;
@@ -525,13 +528,18 @@ export default {
       }/zim/latest`;
     },
     startProgressPolling: function () {
+      if (!this.builderId) return;
       if (this.pollId) {
         return;
       }
-      this.pollId = setInterval(() => this.getStatus(), 30000);
+      this.pollId = setInterval(() => { 
+        if (!this.builderId) return;
+        this.getStatus();
+     }, 30000);
     },
     stopProgressPolling: function () {
       clearInterval(this.pollId);
+      this.pollId = null;
     },
     validationOnBlur: function (event) {
       if (event.target.value) {
