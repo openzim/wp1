@@ -2,7 +2,7 @@ import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
-// no direct migration from bs to tailwind safely
+// no direct migration from bs to tailwind
 // import './index.css'
 
 import 'jquery';
