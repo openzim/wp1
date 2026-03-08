@@ -520,7 +520,12 @@ class ArticlesTest(BaseCombinedDbTest):
                         {"title": cl_to},
                     )
                     target_id_map[cl_to] = cursor.lastrowid
-                cl_args = {"from": p[0], "to": cl_to, "ts": ts, "target_id": target_id_map[cl_to]}
+                cl_args = {
+                    "from": p[0],
+                    "to": cl_to,
+                    "ts": ts,
+                    "target_id": target_id_map[cl_to],
+                }
                 cursor.execute("SELECT * FROM page WHERE page_id = %s", (p[0],))
                 if cursor.fetchone() is None:
                     cursor.execute(
@@ -1392,7 +1397,12 @@ class ProjectNamesTest(ArticlesTest):
             root_target_id = cursor.fetchone()["lt_id"]
             for p in pages:
                 page_args = {"id": p[0], "ns": CATEGORY_NS_INT, "title": p[1]}
-                cl_args = {"from": p[0], "to": p[2], "ts": ts, "target_id": root_target_id}
+                cl_args = {
+                    "from": p[0],
+                    "to": p[2],
+                    "ts": ts,
+                    "target_id": root_target_id,
+                }
                 cursor.execute(
                     """
             INSERT INTO page

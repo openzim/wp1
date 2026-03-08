@@ -58,10 +58,30 @@ class LogicPageCategoryTest(BaseWikiDbTest):
                 {"title": b"Articles about Superman"},
             )
             cls = [
-                {"from": 100, "to": b"Articles about Superman", "timestamp": ts, "target_id": 501},
-                {"from": 101, "to": b"Articles about Superman", "timestamp": ts, "target_id": 501},
-                {"from": 102, "to": b"Articles about Superman", "timestamp": ts, "target_id": 501},
-                {"from": 103, "to": b"Articles about Superman", "timestamp": ts, "target_id": 501},
+                {
+                    "from": 100,
+                    "to": b"Articles about Superman",
+                    "timestamp": ts,
+                    "target_id": 501,
+                },
+                {
+                    "from": 101,
+                    "to": b"Articles about Superman",
+                    "timestamp": ts,
+                    "target_id": 501,
+                },
+                {
+                    "from": 102,
+                    "to": b"Articles about Superman",
+                    "timestamp": ts,
+                    "target_id": 501,
+                },
+                {
+                    "from": 103,
+                    "to": b"Articles about Superman",
+                    "timestamp": ts,
+                    "target_id": 501,
+                },
             ]
             for cl in cls:
                 cursor.execute(
