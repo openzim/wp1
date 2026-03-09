@@ -276,10 +276,21 @@ class UpdateProjectCategoriesByKindTest(BaseCombinedDbTest):
     )
 
     def _insert_pages(self, pages):
+        target_id_map = {}
         with self.wikidb.cursor() as cursor:
             for p in pages:
                 page_args = {"id": p[0], "ns": 14, "title": p[1]}
-                cl_args = {"from": p[0], "to": p[2]}
+                cl_to = p[2]
+                if cl_to not in target_id_map:
+                    cursor.execute(
+                        """
+            INSERT INTO linktarget (lt_namespace, lt_title)
+            VALUES (14, %(title)s)
+        """,
+                        {"title": cl_to},
+                    )
+                    target_id_map[cl_to] = cursor.lastrowid
+                cl_args = {"from": p[0], "to": cl_to, "target_id": target_id_map[cl_to]}
                 cursor.execute(
                     """
             INSERT INTO page
@@ -292,9 +303,9 @@ class UpdateProjectCategoriesByKindTest(BaseCombinedDbTest):
                 cursor.execute(
                     """
             INSERT INTO categorylinks
-              (cl_from, cl_to)
+              (cl_from, cl_to, cl_target_id)
             VALUES
-              (%(from)s, %(to)s)
+              (%(from)s, %(to)s, %(target_id)s)
         """,
                     cl_args,
                 )
@@ -495,10 +506,26 @@ class ArticlesTest(BaseCombinedDbTest):
 
     def _insert_pages(self, pages):
         ts = datetime(2018, 12, 25, 11, 22, 33)
+        target_id_map = {}
         with self.wikidb.cursor() as cursor:
             for p in pages:
                 page_args = {"id": p[0], "ns": p[4], "title": p[1]}
-                cl_args = {"from": p[0], "to": p[2], "ts": ts}
+                cl_to = p[2]
+                if cl_to not in target_id_map:
+                    cursor.execute(
+                        """
+            INSERT INTO linktarget (lt_namespace, lt_title)
+            VALUES (14, %(title)s)
+        """,
+                        {"title": cl_to},
+                    )
+                    target_id_map[cl_to] = cursor.lastrowid
+                cl_args = {
+                    "from": p[0],
+                    "to": cl_to,
+                    "ts": ts,
+                    "target_id": target_id_map[cl_to],
+                }
                 cursor.execute("SELECT * FROM page WHERE page_id = %s", (p[0],))
                 if cursor.fetchone() is None:
                     cursor.execute(
@@ -514,9 +541,9 @@ class ArticlesTest(BaseCombinedDbTest):
                 cursor.execute(
                     """
             INSERT INTO categorylinks
-              (cl_from, cl_to, cl_timestamp)
+              (cl_from, cl_to, cl_timestamp, cl_target_id)
             VALUES
-              (%(from)s, %(to)s, %(ts)s)
+              (%(from)s, %(to)s, %(ts)s, %(target_id)s)
         """,
                     cl_args,
                 )
@@ -1363,9 +1390,19 @@ class ProjectNamesTest(ArticlesTest):
         root = ROOT_CATEGORY.encode("utf-8")
         pages = [(i, "Test_%s_articles_by_quality" % i, root) for i in range(30)]
         with self.wikidb.cursor() as cursor:
+            cursor.execute(
+                "SELECT lt_id FROM linktarget WHERE lt_namespace = 14 AND lt_title = %(title)s",
+                {"title": root},
+            )
+            root_target_id = cursor.fetchone()["lt_id"]
             for p in pages:
                 page_args = {"id": p[0], "ns": CATEGORY_NS_INT, "title": p[1]}
-                cl_args = {"from": p[0], "to": p[2], "ts": ts}
+                cl_args = {
+                    "from": p[0],
+                    "to": p[2],
+                    "ts": ts,
+                    "target_id": root_target_id,
+                }
                 cursor.execute(
                     """
             INSERT INTO page
@@ -1378,9 +1415,9 @@ class ProjectNamesTest(ArticlesTest):
                 cursor.execute(
                     """
             INSERT INTO categorylinks
-              (cl_from, cl_to, cl_timestamp)
+              (cl_from, cl_to, cl_timestamp, cl_target_id)
             VALUES
-              (%(from)s, %(to)s, %(ts)s)
+              (%(from)s, %(to)s, %(ts)s, %(target_id)s)
         """,
                     cl_args,
                 )
