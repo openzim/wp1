@@ -9,7 +9,11 @@ CREATE TABLE `categorylinks` (
   `cl_from` int(8) unsigned NOT NULL DEFAULT 0,
   `cl_to` varbinary(255) NOT NULL DEFAULT '',
   `cl_sortkey` varbinary(230) NOT NULL DEFAULT '',
-  `cl_timestamp` timestamp
+  `cl_timestamp` timestamp NOT NULL DEFAULT current_timestamp(),
+  `cl_sortkey_prefix` varbinary(255) NOT NULL DEFAULT '',
+  `cl_type` enum('page','subcat','file') NOT NULL DEFAULT 'page',
+  `cl_collation_id` smallint(5) unsigned NOT NULL DEFAULT 0,
+  `cl_target_id` bigint(20) unsigned      
 );
 
 CREATE TABLE `redirect` (
@@ -35,3 +39,11 @@ CREATE TABLE `revision` (
   `rev_content_model`  varbinary(32) DEFAULT NULL,
   `rev_content_format` varbinary(64) DEFAULT NULL
 );
+
+CREATE TABLE `linktarget` (
+  `lt_id` bigint(20) unsigned NOT NULL PRIMARY KEY AUTO_INCREMENT,
+  `lt_namespace` int(11) NOT NULL,
+  `lt_title` varchar(255) NOT NULL
+);
+
+INSERT INTO `linktarget` (lt_id, lt_namespace, lt_title) VALUES (500, 14, 'Wikipedia_1.0_assessments');

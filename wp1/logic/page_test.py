@@ -48,19 +48,48 @@ class LogicPageCategoryTest(BaseWikiDbTest):
         """,
                     page,
                 )
+            cursor.execute(
+                """
+            INSERT INTO linktarget
+              (lt_id, lt_namespace, lt_title)
+            VALUES
+              (501, 14, %(title)s)
+        """,
+                {"title": b"Articles about Superman"},
+            )
             cls = [
-                {"from": 100, "to": b"Articles about Superman", "timestamp": ts},
-                {"from": 101, "to": b"Articles about Superman", "timestamp": ts},
-                {"from": 102, "to": b"Articles about Superman", "timestamp": ts},
-                {"from": 103, "to": b"Articles about Superman", "timestamp": ts},
+                {
+                    "from": 100,
+                    "to": b"Articles about Superman",
+                    "timestamp": ts,
+                    "target_id": 501,
+                },
+                {
+                    "from": 101,
+                    "to": b"Articles about Superman",
+                    "timestamp": ts,
+                    "target_id": 501,
+                },
+                {
+                    "from": 102,
+                    "to": b"Articles about Superman",
+                    "timestamp": ts,
+                    "target_id": 501,
+                },
+                {
+                    "from": 103,
+                    "to": b"Articles about Superman",
+                    "timestamp": ts,
+                    "target_id": 501,
+                },
             ]
             for cl in cls:
                 cursor.execute(
                     """
             INSERT INTO categorylinks
-              (cl_from, cl_to, cl_timestamp)
+              (cl_from, cl_to, cl_timestamp, cl_target_id)
             VALUES
-              (%(from)s, %(to)s, %(timestamp)s)
+              (%(from)s, %(to)s, %(timestamp)s, %(target_id)s)
         """,
                     cl,
                 )
