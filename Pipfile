@@ -40,7 +40,7 @@ idna = "~=3.7"
 pre-commit = "==2.21.0"
 pytest = "~=7.2"
 yapf = "==0.28.0"
-black = "~=25.12"
+black = "~=26.3"
 
 [requires]
 python_version = "3.12"
