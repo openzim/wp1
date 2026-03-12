@@ -95,4 +95,3 @@ def get_moves(title_with_ns):
         logger.warning("Error contacting continuation API, returning None")
 
     return ans or None
-    return ans or None

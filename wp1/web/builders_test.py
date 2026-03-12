@@ -1287,7 +1287,9 @@ class BuildersTest(BaseWebTestcase):
         "wp1.logic.builder.zimfarm.zim_file_url_for_task_id",
         return_value="http://fake-file-host.fake/1234/file.zim",
     )
-    def test_latest_zim_file_for_builder(self, mock_zimfarm):
+    @patch("wp1.web.builders.requests.head")
+    def test_latest_zim_file_for_builder(self, mock_head, mock_zimfarm):
+        mock_head.return_value.status_code = 200
         builder_id = self._insert_builder()
         self._insert_selections(builder_id)
         self.app = create_app()
@@ -1305,6 +1307,20 @@ class BuildersTest(BaseWebTestcase):
         with self.app.test_client() as client:
             rv = client.get("/v1/builders/abcd-1234/zim/latest")
         self.assertEqual("404 NOT FOUND", rv.status)
+
+    @patch(
+        "wp1.logic.builder.zimfarm.zim_file_url_for_task_id",
+        return_value="http://fake-file-host.fake/1234/file.zim",
+    )
+    @patch("wp1.web.builders.requests.head")
+    def test_latest_zim_file_for_builder_410(self, mock_head, mock_zimfarm):
+        mock_head.return_value.status_code = 404
+        builder_id = self._insert_builder()
+        self._insert_selections(builder_id)
+        self.app = create_app()
+        with self.app.test_client() as client:
+            rv = client.get("/v1/builders/%s/zim/latest" % builder_id)
+        self.assertEqual("410 GONE", rv.status)
 
     def test_latest_selection_article_count_for_builder(self):
         builder_id = self._insert_builder()

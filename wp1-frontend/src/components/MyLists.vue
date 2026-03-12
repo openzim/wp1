@@ -86,7 +86,7 @@
                 v-else-if="item.z_url && !hasDeletedZim(item)"
                 :class="{ 'outdated-zim': hasOutdatedZim(item) }"
               >
-                <a :href="item.z_url">Download ZIM</a>
+                <a href="#" @click.prevent="downloadZim(item)">Download ZIM</a>
                 <span
                   v-if="hasOutdatedZim(item)"
                   data-toggle="tooltip"
@@ -268,6 +268,17 @@ export default {
     },
     localDate: function (date) {
       return localDate(date);
+    },
+    downloadZim: async function (item) {
+      const response = await fetch(item.z_url);
+      if (response.status === 410) {
+        this.$router.push({
+          path: `/selections/${item.id}/zim`,
+          query: { expired: true },
+        });
+      } else {
+        window.location.href = item.z_url;
+      }
     },
   },
   created: function () {

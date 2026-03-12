@@ -1,4 +1,5 @@
 import logging
+import requests
 
 import flask
 
@@ -355,6 +356,10 @@ def latest_zim_file_for_builder(builder_id):
     url = logic_builder.latest_zim_file_url_for(wp10db, builder_id)
     if not url:
         flask.abort(404)
+
+    head = requests.head(url)
+    if head.status_code == 404:
+        flask.abort(410)
 
     return flask.redirect(url, code=302)
 
