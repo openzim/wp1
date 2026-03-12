@@ -83,7 +83,10 @@
             page and the My Selections page will automatically update with a URL
             to download your ZIM file once it is ready.
           </p>
-          <p v-if="isDeleted && status == 'FILE_READY'" class="errors">
+          <p
+            v-if="forceExpiredDisplay || (isDeleted && status == 'FILE_READY')"
+            class="errors"
+          >
             Your ZIM file has expired and needs to be re-created. ZIM file
             download links are only valid for 2 weeks. You can re-create your
             ZIM file with the button below.
@@ -108,7 +111,8 @@
       <div
         v-if="
           !activeSchedule &&
-          (status === 'NOT_REQUESTED' ||
+          (forceExpiredDisplay ||
+            status === 'NOT_REQUESTED' ||
             status === 'FAILED' ||
             (status != 'REQUESTED' && isDeleted))
         "
@@ -294,7 +298,10 @@
         </div>
       </div>
       <div
-        v-else-if="status === 'FILE_READY' || status === 'REQUESTED'"
+        v-else-if="
+          !forceExpiredDisplay &&
+          (status === 'FILE_READY' || status === 'REQUESTED')
+        "
         class="row"
       >
         <div class="col-lg-6 col-md-9 mx-4">
@@ -364,11 +371,15 @@ export default {
       repetitionPeriodInMonths: 1,
       numberOfRepetitions: 1,
       scheduleEmail: '',
+      forceExpiredDisplay: false,
     };
   },
   created: async function () {
     await this.getBuilder();
     await this.getStatus();
+    if (this.$route.query.expired) {
+      this.forceExpiredDisplay = true;
+    }
     await this.loadUserEmail();
     this.ready = true;
   },
