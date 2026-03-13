@@ -709,6 +709,45 @@ def handle_zim_generation(
     return zim_file.z_task_id
 
 
+def sync_zim_task_status(wp10db, zim_file):
+    """Check the Zimfarm API for the real status of a REQUESTED task.
+
+    If the task has completed on the Zimfarm side (succeeded, failed, or
+    cancelled), update the local DB to match. This basically provides a recovery
+    path when the Zimfarm webhook fails to deliver.
+
+    Returns the (possibly updated) status string.
+    """
+    if zim_file.z_status != b"REQUESTED" or not zim_file.z_task_id:
+        return zim_file.z_status.decode("utf-8") if zim_file.z_status else None
+
+    task_data = zimfarm.get_task_status(zim_file.z_task_id)
+    if task_data is None:
+        # API call failed, keep current status
+        return zim_file.z_status.decode("utf-8")
+
+    task_status = task_data.get("status")
+    task_id = zim_file.z_task_id
+
+    # Mirror the webhook handler logic from update_zimfarm_status
+    if task_status in ("failed", "cancelled"):
+        logic_selection.update_zimfarm_task(wp10db, task_id, "FAILED")
+        return "FAILED"
+
+    if task_status == "succeeded":
+        files = task_data.get("files", {})
+        for key, value in files.items():
+            file_status = value.get("status")
+            if file_status == "uploaded" and key.endswith(".zim"):
+                logic_selection.update_zimfarm_task(
+                    wp10db, task_id, "FILE_READY", set_updated_now=True
+                )
+                return "FILE_READY"
+
+    # Task is still in progress or has an unexpected status
+    return zim_file.z_status.decode("utf-8")
+
+
 def zim_file_status_for(wp10db, builder_id):
     data = {
         "status": None,
@@ -729,8 +768,11 @@ def zim_file_status_for(wp10db, builder_id):
     if not zim_file:
         return data
 
+    # On-demand sync: if the task is stuck in REQUESTED, check the Zimfarm API
+    synced_status = sync_zim_task_status(wp10db, zim_file)
+
     base_url = zimfarm.get_zimfarm_url()
-    data["status"] = zim_file.z_status.decode("utf-8")
+    data["status"] = synced_status
     if zim_file.z_task_id:
         data["error_url"] = "%s/tasks/%s" % (
             base_url,
@@ -911,6 +953,21 @@ def get_builders_with_selections(wp10db, user_id):
         builder.update(_get_selection_data(db_builder))
         builder.update(_get_zimfile_data(db_builder))
         builder.update(_get_active_schedule_data(db_builder))
+
+        # On-demand sync: if a ZIM task is stuck in REQUESTED, check the
+        # Zimfarm API and update the status if the task has completed.
+        if builder["z_status"] == "REQUESTED" and db_builder["z_task_id"]:
+            zim_task = ZimTask(
+                z_id=db_builder["z_id"],
+                z_selection_id=db_builder["s_id"],
+                z_status=db_builder["z_status"],
+                z_task_id=db_builder["z_task_id"],
+            )
+            synced_status = sync_zim_task_status(wp10db, zim_task)
+            builder["z_status"] = synced_status
+            if synced_status == "FILE_READY":
+                builder["z_url"] = local_url_for_latest_zim(builder["id"])
+
         result.append(builder)
 
     return result

@@ -488,6 +488,22 @@ def _get_task_by_id(task_id):
     return r.json()
 
 
+def get_task_status(task_id):
+    """Query the Zimfarm API for a task's current status.
+
+    Returns a dict with 'status' and 'files' keys, or None if the
+    API call fails (graceful degradation).
+    """
+    data = _get_task_by_id(task_id)
+    if data is None:
+        return None
+
+    return {
+        "status": data.get("status"),
+        "files": data.get("files", {}),
+    }
+
+
 def zim_file_url_for_task_id(task_id):
     data = _get_task_by_id(task_id)
 
