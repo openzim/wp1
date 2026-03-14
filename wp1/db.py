@@ -3,23 +3,25 @@ import os
 import time
 
 import pymysql
+import pymysql.connections
 import pymysql.cursors
 import pymysql.err
 import socks
 
 from wp1.credentials import CREDENTIALS, ENV
+from wp1.environment import Environment
 
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
-RETRY_TIME_SECONDS = 5
+RETRY_TIME_SECONDS: int = 5
 
 
-def connect(db_name, **overrides):
+def connect(db_name: str, **overrides: object) -> pymysql.connections.Connection:
     creds = CREDENTIALS[ENV].get(db_name)
     if creds is None:
         raise ValueError("db credentials for %r in ENV=%s are None" % (db_name, ENV))
 
-    kwargs = {
+    kwargs: dict[str, object] = {
         "charset": None,
         "use_unicode": False,
         "cursorclass": pymysql.cursors.SSDictCursor,
@@ -27,16 +29,18 @@ def connect(db_name, **overrides):
         **overrides,
     }
 
-    tries = 4
+    tries: int = 4
     while True:
         try:
-            if db_name == "WIKIDB" and ENV == ENV.DEVELOPMENT:
+            if db_name == "WIKIDB" and ENV == Environment.DEVELOPMENT:
                 # In development, connect through a SOCKS5 proxy so that hosts on
                 # *.eqiad.wmflabs can be reached.
-                s = socks.socksocket()
+                s: socks.socksocket = socks.socksocket()
                 s.set_proxy(socks.SOCKS5, "localhost")
                 s.connect((kwargs["host"], kwargs.get("port", 3306)))
-                conn = pymysql.connect(**kwargs, defer_connect=True)
+                conn: pymysql.connections.Connection = pymysql.connect(
+                    **kwargs, defer_connect=True
+                )
                 conn.connect(sock=s)
             else:
                 conn = pymysql.connect(**kwargs)

@@ -8,47 +8,47 @@ class AssessmentKind(enum.Enum):
     BOTH = "both"
 
 
-MAX_ARTICLES_BEFORE_COMMIT = 200
+MAX_ARTICLES_BEFORE_COMMIT: int = 200
 
-CATEGORY_NS_INT = 14
-TALK_NS_INT = 1
+CATEGORY_NS_INT: int = 14
+TALK_NS_INT: int = 1
 
-TS_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
-TS_FORMAT_WP10 = "%Y%m%d%H%M%S"
-LOG_DATE_FORMAT = "%B %-d, %Y"
+TS_FORMAT: str = "%Y-%m-%dT%H:%M:%SZ"
+TS_FORMAT_WP10: str = "%Y%m%d%H%M%S"
+LOG_DATE_FORMAT: str = "%B %-d, %Y"
 
-GLOBAL_TIMESTAMP = time.strftime(TS_FORMAT_WP10, time.gmtime()).encode("utf-8")
-GLOBAL_TIMESTAMP_WIKI = time.strftime(TS_FORMAT, time.gmtime()).encode("utf-8")
+GLOBAL_TIMESTAMP: bytes = time.strftime(TS_FORMAT_WP10, time.gmtime()).encode("utf-8")
+GLOBAL_TIMESTAMP_WIKI: bytes = time.strftime(TS_FORMAT, time.gmtime()).encode("utf-8")
 
-LIST_URL = "https://tools.wmflabs.org/enwp10/cgi-bin/list2.fcgi"
-LIST_V2_URL = "https://wp1.openzim.org/#/project"
+LIST_URL: str = "https://tools.wmflabs.org/enwp10/cgi-bin/list2.fcgi"
+LIST_V2_URL: str = "https://wp1.openzim.org/#/project"
 
 # Timeout for the rq worker jobs, in seconds
-JOB_TIMEOUT = 60 * 60 * 2  # 2 hours
-JOB_FAILURE_TTL = 60 * 60 * 24 * 7  # 7 days
-ZIM_FILE_TTL = 2 * 7 * 24 * 60 * 60  # 2 weeks
+JOB_TIMEOUT: int = 60 * 60 * 2  # 2 hours
+JOB_FAILURE_TTL: int = 60 * 60 * 24 * 7  # 7 days
+ZIM_FILE_TTL: int = 2 * 7 * 24 * 60 * 60  # 2 weeks
 
-LOG_NS = 4
-MAX_LOGS_PER_DAY = 100000
+LOG_NS: int = 4
+MAX_LOGS_PER_DAY: int = 100000
 
-WIKI_BASE = "https://en.wikipedia.org/wiki/"
-FRONTEND_WIKI_BASE = "https://en.wikipedia.org/w/"
+WIKI_BASE: str = "https://en.wikipedia.org/wiki/"
+FRONTEND_WIKI_BASE: str = "https://en.wikipedia.org/w/"
 
-PAGE_SIZE = 100
+PAGE_SIZE: int = 100
 
 # Put both bytes and str as keys for convenience.
-CONTENT_TYPE_TO_EXT = {
+CONTENT_TYPE_TO_EXT: dict[str | bytes, str] = {
     "text/tab-separated-values": "tsv",
     b"text/tab-separated-values": "tsv",
     "application/vnd.ms-excel": "xls",
     b"application/vnd.ms-excel": "xls",
 }
 
-EXT_TO_CONTENT_TYPE = dict(
+EXT_TO_CONTENT_TYPE: dict[str, str] = dict(
     (ext, ct) for ct, ext in CONTENT_TYPE_TO_EXT.items() if isinstance(ct, str)
 )
 
-WIKIDATA_PREFIXES = {
+WIKIDATA_PREFIXES: dict[str, str] = {
     "bd": "http://www.bigdata.com/rdf#",
     "cc": "http://creativecommons.org/ns#",
     "dct": "http://purl.org/dc/terms/",
@@ -82,6 +82,6 @@ WIKIDATA_PREFIXES = {
     "xsd": "http://www.w3.org/2001/XMLSchema#",
 }
 
-WP1_USER_AGENT = "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>"
+WP1_USER_AGENT: str = "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>"
 
-SECONDS_PER_MONTH = 30 * 24 * 60 * 60  # Approximate seconds in a month
+SECONDS_PER_MONTH: int = 30 * 24 * 60 * 60  # Approximate seconds in a month
