@@ -12,6 +12,14 @@ export default defineConfig({
       jQuery: 'jquery',
     }),
   ],
+  css: {
+    postcss: {
+      plugins: [
+        require('tailwindcss'),
+        require('autoprefixer'),
+      ],
+    },
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
