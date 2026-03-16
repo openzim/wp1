@@ -87,30 +87,31 @@ def update_page_moved(
 def _get_redirects_from_db(wikidb, namespace, title, timestamp_dt):
     wiki_db_title = title.decode("utf-8").replace(" ", "_")
     wikidb.ping()
-    args_dict = {"title": wiki_db_title, "namespace": namespace}
+    args_dict = {
+        "title": wiki_db_title,
+        "namespace": namespace,
+        "timestamp": timestamp_dt.strftime("%Y%m%d%H%M%S")
+    }
     with wikidb.cursor() as cursor:
         cursor.execute(
             """
         SELECT rd_namespace, rd_title, page_touched FROM page
         JOIN redirect ON page_id = rd_from AND
              page_title = %(title)s AND page_namespace = %(namespace)s
+        WHERE page_touched > %(timestamp)s
     """,
             args_dict,
         )
         row = cursor.fetchone()
         if row:
-            row_timestamp_dt = datetime.strptime(
-                row["page_touched"].decode("utf-8"), "%Y%m%d%H%M%S"
-            )
-            if row_timestamp_dt <= timestamp_dt:
-                return None
             return {
                 "dest_ns": row["rd_namespace"],
                 "dest_title": row["rd_title"],
-                "timestamp_dt": row_timestamp_dt,
+                "timestamp_dt": datetime.strptime(
+                    row["page_touched"].decode("utf-8"), "%Y%m%d%H%M%S"
+                ),
             }
         return None
-
 
 def _get_moves_from_api(wp10db, namespace, title, timestamp_dt):
     title_with_ns = logic_util.title_for_api(wp10db, namespace, title)
