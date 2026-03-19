@@ -24,7 +24,7 @@ def update_article_counts(conn):
             buffer = BytesIO()
             s3.download_fileobj(s_object_key.decode("utf-8"), buffer)
             data = buffer.getvalue()
-            article_count = data.count(b"\n") + 1
+            article_count = data.count(b"\n") + 1 if data.strip() else 0
             cursor.execute(
                 "UPDATE selections SET s_article_count = %s WHERE s_id = %s",
                 (article_count, s_id),

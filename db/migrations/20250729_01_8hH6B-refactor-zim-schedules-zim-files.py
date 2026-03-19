@@ -6,7 +6,10 @@ Migration to update zim_files and zim_schedules tables:
 
 from yoyo import step
 
-__depends__ = set()
+__depends__ = {
+    "20250707_01_qY30l-add-title-to-zim-files-table",
+    "20250610_02_FHB8A-create-zim-schedules-table",
+}
 
 steps = [
     # Step 1: Add z_zim_schedule_id column to zim_files
