@@ -4,7 +4,7 @@ from datetime import datetime
 import requests
 
 import wp1.logic.util as logic_util
-from wp1.constants import GLOBAL_TIMESTAMP, TS_FORMAT
+from wp1.constants import GLOBAL_TIMESTAMP, TS_FORMAT, TS_FORMAT_WP10
 from wp1.logic import log as logic_log
 from wp1.logic import move as logic_move
 from wp1.logic.api import page as api_page
@@ -90,7 +90,7 @@ def _get_redirects_from_db(wikidb, namespace, title, timestamp_dt):
     args_dict = {
         "title": wiki_db_title,
         "namespace": namespace,
-        "timestamp": timestamp_dt.strftime("%Y%m%d%H%M%S")
+        "timestamp": timestamp_dt.strftime(TS_FORMAT_WP10)
     }
     with wikidb.cursor() as cursor:
         cursor.execute(
@@ -108,7 +108,7 @@ def _get_redirects_from_db(wikidb, namespace, title, timestamp_dt):
                 "dest_ns": row["rd_namespace"],
                 "dest_title": row["rd_title"],
                 "timestamp_dt": datetime.strptime(
-                    row["page_touched"].decode("utf-8"), "%Y%m%d%H%M%S"
+                    row["page_touched"].decode("utf-8"), TS_FORMAT_WP10
                 ),
             }
         return None
