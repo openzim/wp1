@@ -378,6 +378,7 @@ def update_project_assessments(
         count_initial_work(redis, wp10db, project.p_project)
 
     seen = set()
+    all_deferred_logs = []
     for kind in (AssessmentKind.QUALITY, AssessmentKind.IMPORTANCE):
         logger.debug(
             "Updating %s assessments by %s", project.p_project.decode("utf-8"), kind
@@ -393,9 +394,22 @@ def update_project_assessments(
             redis=redis,
             track_progress=track_progress,
         )
-        store_new_ratings(wp10db, redis, new_ratings, old_ratings, rating_to_category)
+        deferred = store_new_ratings(
+            wp10db, redis, new_ratings, old_ratings, rating_to_category
+        )
+        all_deferred_logs.extend(deferred)
 
-    process_unseen_articles(wikidb, wp10db, redis, project, old_ratings, seen)
+    moved_articles = process_unseen_articles(
+        wikidb, wp10db, redis, project, old_ratings, seen
+    )
+
+    # Write deferred logs for articles that were not moved.
+    for rating, kind, old_rating_value in all_deferred_logs:
+        article_ref = (
+            str(rating.r_namespace).encode("utf-8") + b":" + rating.r_article
+        )
+        if article_ref not in moved_articles:
+            logic_rating.add_log_for_rating(redis, rating, kind, old_rating_value)
 
 
 def update_project_assessments_by_kind(
@@ -493,6 +507,7 @@ def update_project_assessments_by_kind(
 
 
 def store_new_ratings(wp10db, redis, new_ratings, old_ratings, rating_to_category):
+    deferred_logs = []
 
     def sort_rating_tuples(rating_tuple):
         rating, kind, _ = rating_tuple
@@ -512,16 +527,24 @@ def store_new_ratings(wp10db, redis, new_ratings, old_ratings, rating_to_categor
 
         if article_ref not in old_ratings or rating_changed:
             logic_rating.insert_or_update(wp10db, rating, kind)
-            logic_rating.add_log_for_rating(redis, rating, kind, old_rating_value)
+            if article_ref not in old_ratings:
+                # Defer logging — this might be a renamed page. The log will
+                # be written after process_unseen_articles identifies moves.
+                deferred_logs.append((rating, kind, old_rating_value))
+            else:
+                logic_rating.add_log_for_rating(redis, rating, kind, old_rating_value)
+
+    return deferred_logs
 
 
 def process_unseen_articles(wikidb, wp10db, redis, project, old_ratings, seen):
+    moved_articles = set()
     if len(seen) == 0:
         logger.warning(
             "Did not find any articles for %s, skipping unseen processing",
             project.p_project.decode("utf-8"),
         )
-        return
+        return moved_articles
 
     denom = len(old_ratings.keys())
     ratio = len(seen) / denom if denom != 0 else "NaN"
@@ -559,6 +582,13 @@ def process_unseen_articles(wikidb, wp10db, redis, project, old_ratings, seen):
             wp10db, wikidb, ns, title, project.timestamp_dt
         )
         if move_data is not None:
+            # Track the new name so deferred logs can be skipped for it.
+            new_ref = (
+                str(move_data["dest_ns"]).encode("utf-8")
+                + b":"
+                + move_data["dest_title"]
+            )
+            moved_articles.add(new_ref)
             logic_page.update_page_moved(
                 wp10db,
                 redis,
@@ -616,6 +646,8 @@ def process_unseen_articles(wikidb, wp10db, redis, project, old_ratings, seen):
         skipped,
         processed,
     )
+
+    return moved_articles
 
 
 def cleanup_project(wp10db, project):
