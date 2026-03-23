@@ -215,6 +215,28 @@
       "z_updated_at": 1687108510,
       "z_url": "http://localhost:5000/v1/builders/dcea7035-cc69-471e-b0e6-08dfbafd5e7c/zim/latest",
       "z_is_deleted": true
+    },
+    {
+      "created_at": 1685646000,
+      "id": "sched-builder-001",
+      "model": "wp1.selection.models.simple",
+      "name": "scheduled zim",
+      "project": "en.wikipedia.org",
+      "s_content_type": "text/tab-separated-values",
+      "s_extension": "tsv",
+      "s_id": "sched-sel-001",
+      "s_status": "OK",
+      "s_updated_at": 1685646500,
+      "s_url": "https://www.example.fake/sched-sel-001",
+      "updated_at": 1685646150,
+      "z_updated_at": null,
+      "z_url": null,
+      "z_status": "NOT_REQUESTED",
+      "z_is_deleted": null,
+      "active_schedule": {
+        "interval_months": 3,
+        "next_generation_date": "2026-06-01"
+      }
     }
   ]
 }
