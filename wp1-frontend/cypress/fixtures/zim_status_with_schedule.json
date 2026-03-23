@@ -1,0 +1,11 @@
+{
+  "status": "NOT_REQUESTED",
+  "error_url": "https://error.fake/404",
+  "is_deleted": false,
+  "description": null,
+  "long_description": null,
+  "active_schedule": {
+    "interval_months": 3,
+    "next_generation_date": "2026-06-01"
+  }
+}
