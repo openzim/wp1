@@ -405,9 +405,7 @@ def update_project_assessments(
 
     # Write deferred logs for articles that were not moved.
     for rating, kind, old_rating_value in all_deferred_logs:
-        article_ref = (
-            str(rating.r_namespace).encode("utf-8") + b":" + rating.r_article
-        )
+        article_ref = str(rating.r_namespace).encode("utf-8") + b":" + rating.r_article
         if article_ref not in moved_articles:
             logic_rating.add_log_for_rating(redis, rating, kind, old_rating_value)
 
