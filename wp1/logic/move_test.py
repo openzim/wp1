@@ -15,8 +15,13 @@ class LogicMoveTest(BaseWpOneDbTest):
                    (m_timestamp, m_old_namespace, m_old_article,
                     m_new_namespace, m_new_article)
                  VALUES (%s, %s, %s, %s, %s)""",
-                (b"20200101000000\x00\x00\x00\x00\x00\x00",
-                 0, b"Old_Article_1", 0, b"New_Article_1"),
+                (
+                    b"20200101000000\x00\x00\x00\x00\x00\x00",
+                    0,
+                    b"Old_Article_1",
+                    0,
+                    b"New_Article_1",
+                ),
             )
         self.wp10db.commit()
 
