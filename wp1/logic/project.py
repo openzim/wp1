@@ -225,7 +225,7 @@ def update_category(wp10db, project, page, extra, kind, rating_to_category):
         try:
             ranking = int(ranking)
         except ValueError:
-            logging.warning(
+            logger.warning(
                 'Could not cast "ranking" field for extra category to int: %s | %s',
                 extra_category,
                 ranking,
