@@ -1,0 +1,11 @@
+{
+  "status": "REQUESTED",
+  "error_url": "https://error.fake/404",
+  "is_deleted": false,
+  "description": "Description for test",
+  "long_description": "Long Description for test",
+  "active_schedule": {
+    "interval_months": 1,
+    "next_generation_date": "2026-04-15"
+  }
+}
