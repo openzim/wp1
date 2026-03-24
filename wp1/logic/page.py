@@ -90,7 +90,7 @@ def _get_redirects_from_db(wikidb, namespace, title, timestamp_dt):
     args_dict = {
         "title": wiki_db_title,
         "namespace": namespace,
-        "timestamp": timestamp_dt.strftime(TS_FORMAT_WP10)
+        "timestamp": timestamp_dt.strftime(TS_FORMAT_WP10),
     }
     with wikidb.cursor() as cursor:
         cursor.execute(
@@ -112,6 +112,7 @@ def _get_redirects_from_db(wikidb, namespace, title, timestamp_dt):
                 ),
             }
         return None
+
 
 def _get_moves_from_api(wp10db, namespace, title, timestamp_dt):
     title_with_ns = logic_util.title_for_api(wp10db, namespace, title)
