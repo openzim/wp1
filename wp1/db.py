@@ -44,7 +44,7 @@ def connect(db_name, **overrides):
             return conn
         except pymysql.err.InternalError:
             if tries > 0:
-                logging.warning(
+                logger.warning(
                     "Could not connect to database, retrying in %s seconds",
                     RETRY_TIME_SECONDS,
                 )
