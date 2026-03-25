@@ -35,6 +35,9 @@ class ZimSchedule:
     s_email_confirmation_token: bytes = attr.ib(
         default=None
     )  # Token for email confirmation, removed after confirmation
+    s_flavour: bytes = attr.ib(
+        default=None
+    )  # mwoffliner --format value ('mini', 'nopic', 'maxi'). None = full content
 
     def set_id(self):
         self.s_id = str(uuid.uuid4()).encode("utf-8")

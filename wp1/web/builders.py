@@ -12,6 +12,7 @@ from wp1.constants import EXT_TO_CONTENT_TYPE
 from wp1.credentials import CREDENTIALS, ENV
 from wp1.exceptions import (
     InvalidZimDescriptionError,
+    InvalidZimFlavourError,
     InvalidZimLongDescriptionError,
     InvalidZimTitleError,
     ObjectNotFoundError,
@@ -223,6 +224,7 @@ def create_zim_file_for_builder(builder_id):
     title = data.get("title")
     desc = data.get("description")
     long_desc = data.get("long_description")
+    flavour = data.get("flavour")
     scheduled_repetitions = data.get("scheduled_repetitions")
 
     error_messages = []
@@ -261,6 +263,7 @@ def create_zim_file_for_builder(builder_id):
             title=title,
             description=desc,
             long_description=long_desc,
+            flavour=flavour,
             scheduled_repetitions=scheduled_repetitions,
         )
     except ObjectNotFoundError:
@@ -287,6 +290,7 @@ def create_zim_file_for_builder(builder_id):
         InvalidZimTitleError,
         InvalidZimDescriptionError,
         InvalidZimLongDescriptionError,
+        InvalidZimFlavourError,
     ) as e:
         return flask.jsonify({"error_messages": [str(e)]}), 400
     except ZimFarmError as e:
