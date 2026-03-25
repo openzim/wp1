@@ -311,6 +311,11 @@ def auto_handle_zim_generation(redis, wp10db, builder_id):
         if zim_schedule.s_long_description is not None
         else None
     )
+    flavour = (
+        zim_schedule.s_flavour.decode("utf-8")
+        if zim_schedule.s_flavour is not None
+        else None
+    )
     handle_zim_generation(
         redis,
         wp10db,
@@ -318,6 +323,7 @@ def auto_handle_zim_generation(redis, wp10db, builder_id):
         title=title,
         description=description,
         long_description=long_description,
+        flavour=flavour,
     )
 
 
@@ -670,6 +676,7 @@ def handle_zim_generation(
     builder_id,
     title,
     description,
+    flavour,
     long_description=None,
     user_id=None,
     scheduled_repetitions=None,
@@ -694,7 +701,7 @@ def handle_zim_generation(
             )
 
     zim_schedule = zimfarm.create_or_update_zimfarm_schedule(
-        redis, wp10db, builder, title, description, long_description
+        redis, wp10db, builder, title, description, long_description, flavour
     )
     zim_file: ZimTask = request_zim_file_task_for_builder(
         redis, wp10db, builder, zim_schedule.s_id
@@ -716,6 +723,7 @@ def zim_file_status_for(wp10db, builder_id):
         "is_deleted": None,
         "description": None,
         "long_description": None,
+        "flavour": None,
         "active_schedule": None,
     }
     zim_file = zim_file_for_latest_selection(wp10db, builder_id)
@@ -756,6 +764,11 @@ def zim_file_status_for(wp10db, builder_id):
     data["long_description"] = (
         zim_schedule.s_long_description.decode("utf-8")
         if zim_schedule and zim_schedule.s_long_description
+        else None
+    )
+    data["flavour"] = (
+        zim_schedule.s_flavour.decode("utf-8")
+        if zim_schedule and zim_schedule.s_flavour
         else None
     )
 

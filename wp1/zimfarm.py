@@ -14,6 +14,7 @@ from wp1.constants import WP1_USER_AGENT
 from wp1.credentials import CREDENTIALS, ENV
 from wp1.exceptions import (
     InvalidZimDescriptionError,
+    InvalidZimFlavourError,
     InvalidZimLongDescriptionError,
     InvalidZimTitleError,
     ObjectNotFoundError,
@@ -39,6 +40,22 @@ logger = logging.getLogger(__name__)
 # wishes to create a ZIM file for it. For Selections with more than this
 # number, we perform validation in the frontend, as well as the API layer.
 MAX_ZIMFARM_ARTICLE_COUNT = 50_000
+
+ALLOWED_FLAVOURS = {
+    "mini": "nodet,nopic:mini",
+    "nopic": "nopic:nopic",
+    "maxi": "novid:maxi",
+}
+
+
+def validate_flavour(flavour):
+    if not flavour:
+        return  # none or empty string means default (full content)
+    if flavour not in ALLOWED_FLAVOURS:
+        allowed = ", ".join(sorted(ALLOWED_FLAVOURS.keys()))
+        raise InvalidZimFlavourError(
+            f"Invalid ZIM flavour: '{flavour}'. Allowed values: {allowed}"
+        )
 
 
 def store_zimfarm_token(redis, data):
@@ -219,6 +236,7 @@ def _get_params(
     title: str,
     description: str,
     long_description: str,
+    flavour: str = None,
 ) -> dict:
     if builder is None:
         raise ValueError("Given builder was None: %r" % builder)
@@ -233,6 +251,28 @@ def _get_params(
         )
     image_name, image_tag = image.split(":")
 
+    offliner_config = {
+        "offliner_id": "mwoffliner",
+        "mwUrl": "https://%s/" % project,
+        "adminEmail": "contact+wp1@kiwix.org",
+        "forceRender": "ActionParse",
+        "articleList": logic_builder.latest_zimfarm_url_for(
+            builder.b_id.decode("utf-8"), selection.s_content_type.decode("utf-8")
+        ),
+        "customZimTitle": title,
+        "customZimDescription": description,
+        "customZimLongDescription": (
+            long_description
+            if long_description
+            else f"ZIM file created from a WP1 Selection. {description}"
+        ),
+        "filenamePrefix": get_zim_filename_prefix(builder, selection),
+    }
+
+    # Add the format flag for mwoffliner if a flavour is specified.
+    if flavour:
+        offliner_config["format"] = [ALLOWED_FLAVOURS[flavour]]
+
     config = {
         "warehouse_path": "/wikipedia",
         "image": {
@@ -242,23 +282,7 @@ def _get_params(
         "resources": logic_selection.get_resource_profile(selection),
         "platform": "wikimedia",
         "monitor": False,
-        "offliner": {
-            "offliner_id": "mwoffliner",
-            "mwUrl": "https://%s/" % project,
-            "adminEmail": "contact+wp1@kiwix.org",
-            "forceRender": "ActionParse",
-            "articleList": logic_builder.latest_zimfarm_url_for(
-                builder.b_id.decode("utf-8"), selection.s_content_type.decode("utf-8")
-            ),
-            "customZimTitle": title,
-            "customZimDescription": description,
-            "customZimLongDescription": (
-                long_description
-                if long_description
-                else f"ZIM file created from a WP1 Selection. {description}"
-            ),
-            "filenamePrefix": get_zim_filename_prefix(builder, selection),
-        },
+        "offliner": offliner_config,
     }
     cache_url = CREDENTIALS[ENV].get("ZIMFARM", {}).get("cache_url")
     if cache_url is not None:
@@ -334,7 +358,7 @@ def find_existing_schedule_in_db(wp10db, builder_b_id):
 
 
 def create_or_update_zimfarm_schedule(
-    redis, wp10db, builder, title, description, long_description
+    redis, wp10db, builder, title, description, long_description, flavour
 ):
     """
     Requests a ZIM file schedule from the Zimfarm for the given builder.
@@ -347,6 +371,7 @@ def create_or_update_zimfarm_schedule(
         raise ObjectNotFoundError("Cannot schedule for None builder")
 
     _validate_zim_metadata(title, description, long_description)
+    validate_flavour(flavour)
 
     selection = logic_builder.latest_selection_for(
         wp10db, builder.b_id, "text/tab-separated-values"
@@ -361,7 +386,9 @@ def create_or_update_zimfarm_schedule(
             )
         )
 
-    params = _get_params(builder, selection, title, description, long_description)
+    params = _get_params(
+        builder, selection, title, description, long_description, flavour=flavour
+    )
     base_url = get_zimfarm_url()
     headers = _get_zimfarm_headers(token)
 
@@ -387,6 +414,7 @@ def create_or_update_zimfarm_schedule(
                 long_description.encode("utf-8") if long_description else None
             )
             zim_schedule.s_remaining_generations = None
+            zim_schedule.s_flavour = flavour
             logic_zim_schedules.update_zim_schedule(wp10db, zim_schedule)
             zim_schedule_id_to_set = zim_schedule.s_id.decode("utf-8")
         else:
@@ -404,6 +432,7 @@ def create_or_update_zimfarm_schedule(
                 s_long_description=(
                     long_description.encode("utf-8") if long_description else None
                 ),
+                s_flavour=flavour,
             )
             logic_zim_schedules.insert_zim_schedule(wp10db, zim_schedule)
             zim_schedule_id_to_set = zim_schedule_id

@@ -106,6 +106,17 @@
             this was a transient or external error, you can try requesting your
             ZIM file again below.
           </p>
+          <p
+            v-if="
+              flavour &&
+              (status === 'FILE_READY' ||
+                status === 'REQUESTED' ||
+                status === 'FAILED')
+            "
+            class="text-muted"
+          >
+            <strong>Content:</strong> {{ selectedFlavourDescription }}
+          </p>
         </div>
       </div>
       <div
@@ -212,6 +223,18 @@
               <div class="invalid-feedback">
                 Long description must differ from description and not be shorter
               </div>
+            </div>
+            <div id="flavour-group" class="form-group">
+              <label for="flavour">What to include</label>
+              <select id="flavour" class="form-control" v-model="flavour">
+                <option
+                  v-for="opt in flavourOptions"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
+                  {{ opt.description }}
+                </option>
+              </select>
             </div>
             <!-- Scheduling options -->
             <div class="form-group form-check mt-3">
@@ -372,6 +395,29 @@ export default {
       numberOfRepetitions: 1,
       scheduleEmail: '',
       forceExpiredDisplay: false,
+      flavour: '',
+      flavourOptions: [
+        {
+          value: '',
+          label: 'All',
+          description: 'Everything including videos',
+        },
+        {
+          value: 'maxi',
+          label: 'Maxi',
+          description: 'All except article videos',
+        },
+        {
+          value: 'nopic',
+          label: 'Nopic',
+          description: 'No article pictures or videos',
+        },
+        {
+          value: 'mini',
+          label: 'Mini',
+          description: 'No article details or pictures or videos',
+        },
+      ],
     };
   },
   created: async function () {
@@ -437,6 +483,9 @@ export default {
       this.status = data.status;
       this.isDeleted = data.is_deleted;
       this.activeSchedule = data.active_schedule;
+      if (data.flavour) {
+        this.flavour = data.flavour;
+      }
       if (this.status === 'FILE_READY') {
         this.stopProgressPolling();
       } else if (this.status === 'FAILED') {
@@ -482,6 +531,9 @@ export default {
         description: this.description,
         long_description: this.longDescription,
       };
+      if (this.flavour) {
+        payload.flavour = this.flavour;
+      }
       if (this.schedulingEnabled) {
         const scheduled = {
           repetition_period_in_months: this.repetitionPeriodInMonths,
@@ -647,6 +699,10 @@ export default {
           ? !this.isValidEmail(this.scheduleEmail)
           : false;
       return baseInvalid || scheduleInvalid;
+    },
+    selectedFlavourDescription: function () {
+      const opt = this.flavourOptions.find((o) => o.value === this.flavour);
+      return opt ? opt.description : '';
     },
   },
   watch: {
