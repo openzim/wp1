@@ -2,6 +2,9 @@ import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
+// config for tailwind migration, not actually used in the project yet
+// import './index.css';
+
 import 'jquery';
 import 'datatables.net';
 import 'datatables.net-dt/css/jquery.dataTables.min.css';
