@@ -51,7 +51,7 @@ def request_zimfarm_token(redis):
 
     if user is None or password is None:
         raise ZimFarmError(
-            "Could not log into zimfarm, user/password not found in " "site credentials"
+            "Could not log into zimfarm, user/password not found in site credentials"
         )
 
     logger.debug(
@@ -304,7 +304,7 @@ def zimfarm_schedule_exists(redis, builder_id: str) -> bool:
     headers = _get_zimfarm_headers(token)
 
     r = requests.get(
-        "%s/schedules/%s" % (base_url, get_zimfarm_schedule_name(builder_id)),
+        "%s/recipes/%s" % (base_url, get_zimfarm_schedule_name(builder_id)),
         headers=headers,
     )
     # 404 means the schedule doesn't exist, which is not an error
@@ -375,7 +375,7 @@ def create_or_update_zimfarm_schedule(
         if existing_zim_schedule and zimfarm_schedule_exists(redis, builder_id):
             schedule_name = get_zimfarm_schedule_name(builder_id)
             r = requests.patch(
-                "%s/schedules/%s" % (base_url, schedule_name),
+                "%s/recipes/%s" % (base_url, schedule_name),
                 headers=headers,
                 json=params,
             )
@@ -390,7 +390,7 @@ def create_or_update_zimfarm_schedule(
             logic_zim_schedules.update_zim_schedule(wp10db, zim_schedule)
             zim_schedule_id_to_set = zim_schedule.s_id.decode("utf-8")
         else:
-            r = requests.post("%s/schedules" % base_url, headers=headers, json=params)
+            r = requests.post("%s/recipes" % base_url, headers=headers, json=params)
             r.raise_for_status()
             zim_schedule_id = str(uuid.uuid4())
             zim_schedule = ZimSchedule(
@@ -453,7 +453,7 @@ def request_zimfarm_task(redis, wp10db, builder):
     r = requests.post(
         "%s/requested-tasks" % base_url,
         headers=headers,
-        json={"schedule_names": [schedule_name]},
+        json={"recipe_names": [schedule_name]},
     )
     try:
         r.raise_for_status()
@@ -547,7 +547,7 @@ def cancel_zim_by_task_id(redis, task_id):
 
     try:
         r.raise_for_status()
-    except requests.exceptions.HTTPError as e:
+    except requests.exceptions.HTTPError:
         raise ZimFarmError("Task could not be deleted/canceled (task_id=%s)" % task_id)
 
 
@@ -569,7 +569,7 @@ def delete_zimfarm_schedule_by_builder_id(redis, builder_id):
     logger.info(
         "Deleting zimfarm schedule=%s for builder_id=%s", schedule_name, builder_id
     )
-    r = requests.delete("%s/schedules/%s" % (base_url, schedule_name), headers=headers)
+    r = requests.delete("%s/recipes/%s" % (base_url, schedule_name), headers=headers)
 
     try:
         r.raise_for_status()
