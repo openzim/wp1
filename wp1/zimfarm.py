@@ -109,8 +109,13 @@ def refresh_zimfarm_token(redis, refresh_token):
 
 
 def get_zimfarm_token(redis):
-    data = redis.hgetall(REDIS_AUTH_KEY)
-    if data is None or data.get("refresh_token") is None:
+    data = redis.hgetall(REDIS_AUTH_KEY) or {}
+    data = {
+        k.decode() if isinstance(k, bytes) else k:
+        v.decode() if isinstance(v, bytes) else v
+        for k, v in data.items()
+    }
+    if "refresh_token" not in data:
         logger.debug("No saved zimfarm refresh_token, requesting")
         return request_zimfarm_token(redis)
 
