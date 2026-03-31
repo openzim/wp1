@@ -440,7 +440,7 @@ class ZimFarmTest(BaseWpOneDbTest):
         )
 
         mock_requests.post.assert_called_once_with(
-            "https://fake.farm/v2/schedules",
+            "https://fake.farm/v2/recipes",
             headers={
                 "Authorization": "Bearer abcdef",
                 "User-Agent": "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>",
@@ -792,7 +792,7 @@ class ZimFarmTest(BaseWpOneDbTest):
                 "Authorization": "Bearer abcdef",
                 "User-Agent": "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>",
             },
-            json={"schedule_names": ["bar"]},
+            json={"recipe_names": ["bar"]},
         )
 
     @patch("wp1.zimfarm.requests")
@@ -1001,7 +1001,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
         self.assertTrue(result)
         mock_requests.get.assert_called_once_with(
-            "https://fake.farm/v2/schedules/wp1_selection_3c4d",
+            "https://fake.farm/v2/recipes/wp1_selection_3c4d",
             headers={
                 "Authorization": "Bearer test-token",
                 "User-Agent": "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>",
@@ -1127,7 +1127,7 @@ class ZimFarmTest(BaseWpOneDbTest):
         zimfarm.delete_zimfarm_schedule_by_builder_id(redis, "1a-2b-3c-4d")
 
         patched_delete.assert_called_once_with(
-            "https://fake.farm/v2/schedules/wp1_selection_3c4d",
+            "https://fake.farm/v2/recipes/wp1_selection_3c4d",
             headers={
                 "Authorization": "Bearer foo-token",
                 "User-Agent": "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>",
@@ -1150,7 +1150,7 @@ class ZimFarmTest(BaseWpOneDbTest):
         zimfarm.delete_zimfarm_schedule_by_builder_id(redis, "1a-2b-3c-4d")
 
         patched_delete.assert_called_once_with(
-            "https://fake.farm/v2/schedules/wp1_selection_3c4d",
+            "https://fake.farm/v2/recipes/wp1_selection_3c4d",
             headers={
                 "Authorization": "Bearer foo-token",
                 "User-Agent": "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>",
