@@ -1599,3 +1599,398 @@ class ProjectProgressTest(ArticlesTest):
         )
         actual = self.redis.hget(b"progress:%s" % self.project.p_project, "progress")
         self.assertEqual(b"36", actual)
+
+
+class StoreNewRatingsTest(BaseCombinedDbTest):
+    """Tests for store_new_ratings deferred logging behavior."""
+
+    def setUp(self):
+        super().setUp()
+        self.project = Project(p_project=b"Test", p_timestamp=b"20100101000000")
+        self.redis = fakeredis.FakeStrictRedis()
+        self.rating_to_category = {
+            "FA-Class": (b"FA-Class_Test_articles", 500),
+            "B-Class": (b"B-Class_Test_articles", 300),
+            NOT_A_CLASS: (b"", QUALITY[NOT_A_CLASS]),
+        }
+
+    def test_defers_log_for_new_article(self):
+        """Articles not in old_ratings should defer logs, not write them immediately."""
+        rating = Rating(
+            r_project=b"Test",
+            r_namespace=0,
+            r_article=b"Brand_New_Article",
+            r_score=0,
+            r_quality=b"FA-Class",
+            r_quality_timestamp=b"2018-12-25T11:22:33Z",
+        )
+        old_rating_value = NOT_A_CLASS.encode("utf-8")
+        new_ratings = {
+            b"0:Brand_New_Article": [(rating, AssessmentKind.QUALITY, old_rating_value)]
+        }
+        old_ratings = {}  # empty - article is new
+
+        deferred = logic_project.store_new_ratings(
+            self.wp10db, self.redis, new_ratings, old_ratings, self.rating_to_category
+        )
+
+        # Should have one deferred log entry
+        self.assertEqual(1, len(deferred))
+        self.assertEqual(rating, deferred[0][0])
+        self.assertEqual(AssessmentKind.QUALITY, deferred[0][1])
+        self.assertEqual(old_rating_value, deferred[0][2])
+
+        # No immediate log should have been written
+        logs = _get_all_logs(self.redis)
+        self.assertEqual(0, len(logs))
+
+        # The rating itself should still be persisted.
+        ratings = _get_all_ratings(self.wp10db)
+        self.assertEqual(1, len(ratings))
+        self.assertEqual(b"Brand_New_Article", ratings[0].r_article)
+        self.assertEqual(b"FA-Class", ratings[0].r_quality)
+
+    def test_logs_immediately_for_existing_changed_rating(self):
+        """Articles in old_ratings with a changed rating should log immediately."""
+        old_rating = Rating(
+            r_project=b"Test",
+            r_namespace=0,
+            r_article=b"Existing_Article",
+            r_score=0,
+            r_quality=b"B-Class",
+            r_quality_timestamp=b"2018-07-04T05:05:05Z",
+        )
+        new_rating = Rating(
+            r_project=b"Test",
+            r_namespace=0,
+            r_article=b"Existing_Article",
+            r_score=0,
+            r_quality=b"FA-Class",
+            r_quality_timestamp=b"2018-12-25T11:22:33Z",
+        )
+        article_ref = b"0:Existing_Article"
+        old_ratings = {article_ref: old_rating}
+        new_ratings = {article_ref: [(new_rating, AssessmentKind.QUALITY, b"B-Class")]}
+
+        deferred = logic_project.store_new_ratings(
+            self.wp10db, self.redis, new_ratings, old_ratings, self.rating_to_category
+        )
+
+        # No deferred logs - article existed in old_ratings
+        self.assertEqual(0, len(deferred))
+
+        # An immediate log should have been written
+        logs = _get_all_logs(self.redis)
+        self.assertEqual(1, len(logs))
+        self.assertEqual(b"Existing_Article", logs[0].l_article)
+        self.assertEqual(b"B-Class", logs[0].l_old)
+        self.assertEqual(b"FA-Class", logs[0].l_new)
+
+    def test_no_deferred_log_for_existing_same_rating(self):
+        """Articles in old_ratings with unchanged rating produce no log at all."""
+        old_rating = Rating(
+            r_project=b"Test",
+            r_namespace=0,
+            r_article=b"Unchanged_Article",
+            r_score=0,
+            r_quality=b"FA-Class",
+            r_quality_timestamp=b"2018-07-04T05:05:05Z",
+        )
+        new_rating = Rating(
+            r_project=b"Test",
+            r_namespace=0,
+            r_article=b"Unchanged_Article",
+            r_score=0,
+            r_quality=b"FA-Class",
+            r_quality_timestamp=b"2018-12-25T11:22:33Z",
+        )
+        article_ref = b"0:Unchanged_Article"
+        old_ratings = {article_ref: old_rating}
+        new_ratings = {article_ref: [(new_rating, AssessmentKind.QUALITY, b"FA-Class")]}
+
+        deferred = logic_project.store_new_ratings(
+            self.wp10db, self.redis, new_ratings, old_ratings, self.rating_to_category
+        )
+
+        # No deferred and no immediate logs
+        self.assertEqual(0, len(deferred))
+        logs = _get_all_logs(self.redis)
+        self.assertEqual(0, len(logs))
+
+
+class ProcessUnseenArticlesMovedTest(BaseCombinedDbTest):
+    """Tests for process_unseen_articles returning moved_articles set."""
+
+    def setUp(self):
+        super().setUp()
+        self.project = Project(p_project=b"Test", p_timestamp=b"20100101000000")
+        self.redis = fakeredis.FakeStrictRedis()
+
+        self.timestamp_str = "2011-04-28T12:30:00Z"
+        self.move_dt = datetime.strptime(self.timestamp_str, TS_FORMAT)
+
+    @patch("wp1.logic.project.logic_page.get_move_data")
+    def test_returns_moved_article_refs(self, mock_get_move_data):
+        """A detected move should return the destination ref in moved_articles."""
+        old_rating = Rating(
+            r_project=b"Test",
+            r_namespace=0,
+            r_article=b"Old_Title",
+            r_score=0,
+            r_quality=b"FA-Class",
+            r_quality_timestamp=b"2018-07-04T05:05:05Z",
+        )
+        old_ratings = {b"0:Old_Title": old_rating}
+        seen = set()  # Old_Title was NOT seen in current assessment
+        # But we need at least one article in seen for processing to happen
+        seen.add(b"0:Some_Other_Article")
+
+        mock_get_move_data.return_value = {
+            "dest_ns": 0,
+            "dest_title": b"New_Title",
+            "timestamp_dt": self.move_dt,
+        }
+
+        with patch(
+            "wp1.logic.project.logic_page.update_page_moved"
+        ) as mock_update_page_moved:
+            moved_articles = logic_project.process_unseen_articles(
+                self.wikidb, self.wp10db, self.redis, self.project, old_ratings, seen
+            )
+
+        self.assertIn(b"0:New_Title", moved_articles)
+        mock_get_move_data.assert_called_once()
+        mock_update_page_moved.assert_called_once()
+
+    @patch("wp1.logic.project.logic_page.get_move_data")
+    def test_no_move_returns_empty_set(self, mock_get_move_data):
+        """No move data means the moved_articles set should stay empty."""
+        old_rating = Rating(
+            r_project=b"Test",
+            r_namespace=0,
+            r_article=b"Deleted_Article",
+            r_score=0,
+            r_quality=b"FA-Class",
+            r_quality_timestamp=b"2018-07-04T05:05:05Z",
+        )
+        old_ratings = {b"0:Deleted_Article": old_rating}
+        seen = {b"0:Some_Other_Article"}
+
+        mock_get_move_data.return_value = None
+
+        moved_articles = logic_project.process_unseen_articles(
+            self.wikidb, self.wp10db, self.redis, self.project, old_ratings, seen
+        )
+
+        self.assertEqual(0, len(moved_articles))
+
+    def test_empty_seen_returns_empty_moved(self):
+        """When seen is empty, process_unseen_articles skips processing entirely."""
+        old_rating = Rating(
+            r_project=b"Test",
+            r_namespace=0,
+            r_article=b"Some_Article",
+            r_score=0,
+            r_quality=b"FA-Class",
+            r_quality_timestamp=b"2018-07-04T05:05:05Z",
+        )
+        old_ratings = {b"0:Some_Article": old_rating}
+        seen = set()
+
+        moved_articles = logic_project.process_unseen_articles(
+            self.wikidb, self.wp10db, self.redis, self.project, old_ratings, seen
+        )
+
+        self.assertEqual(0, len(moved_articles))
+
+
+class DeferredLogMovedArticleTest(ArticlesTest):
+    """Integration tests verifying that renamed articles don't get spurious logs."""
+
+    def setUp(self):
+        super().setUp()
+
+        self.timestamp_str = "2011-04-28T12:30:00Z"
+        self.move_dt = datetime.strptime(self.timestamp_str, TS_FORMAT)
+
+    @patch("wp1.logic.project.logic_page.get_move_data")
+    @patch("wp1.logic.project.logic_page.update_page_moved")
+    def test_renamed_article_no_spurious_log(
+        self, mock_update_page_moved, mock_get_move_data
+    ):
+        """A renamed article should not produce a new-assessment log entry.
+
+        Scenario: old_ratings has 'Old_Name' with FA-Class quality.
+        The wiki categories now list 'New_Name' with FA-Class quality
+        (same article, renamed).
+        'Old_Name' is not seen -> process_unseen_articles detects the move.
+        The deferred log for 'New_Name' should be suppressed because it's a rename.
+        """
+        # Insert quality pages - this includes all standard articles
+        self._insert_pages(self.quality_pages)
+
+        # Pre-existing rating under old name, which won't appear in current categories
+
+        # Insert old rating under a different name to simulate rename
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO ratings
+                  (r_project, r_namespace, r_article, r_score, r_quality,
+                   r_quality_timestamp, r_importance, r_importance_timestamp)
+                VALUES
+                  (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
+                   %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
+                   %(r_importance_timestamp)s)
+            """,
+                {
+                    "r_project": b"Test",
+                    "r_namespace": 0,
+                    "r_article": b"Old_Art_of_testing",
+                    "r_score": 0,
+                    "r_quality": b"FA-Class",
+                    "r_quality_timestamp": b"2018-07-04T05:05:05Z",
+                    "r_importance": None,
+                    "r_importance_timestamp": None,
+                },
+            )
+        self.wp10db.commit()
+
+        # When process_unseen_articles looks up the old name, it finds a move
+        def fake_get_move_data(wp10db, wikidb, ns, title, timestamp_dt):
+            if title == b"Old_Art_of_testing":
+                return {
+                    "dest_ns": 0,
+                    "dest_title": b"Art of testing",
+                    "timestamp_dt": self.move_dt,
+                }
+            return None
+
+        mock_get_move_data.side_effect = fake_get_move_data
+
+        logic_project.update_project_assessments(
+            self.wikidb, self.wp10db, self.redis, self.project, {}
+        )
+
+        # Only Old_Art_of_testing is unseen here; quality_pages includes Art of testing,
+        # so the old title is the one that exercises move detection.
+        # Check logs - there should be NO log with action=quality for "Art of testing"
+        # with old=NotA-Class, because that would be the spurious new-assessment log
+        logs = _get_all_logs(self.redis)
+        spurious_logs = [
+            log_entry
+            for log_entry in logs
+            if log_entry.l_article == b"Art of testing"
+            and log_entry.l_action == b"quality"
+            and log_entry.l_old == NOT_A_CLASS.encode("utf-8")
+        ]
+        self.assertEqual(
+            0,
+            len(spurious_logs),
+            "Renamed article should not get a spurious new-assessment log",
+        )
+
+    def test_genuinely_new_article_gets_logged(self):
+        """A genuinely new article (not a rename) should still get a log entry.
+
+        Scenario: No old ratings exist at all. All articles in wiki categories are new.
+        process_unseen_articles returns empty moved_articles (nothing unseen since
+        old_ratings is empty). All deferred logs should be written.
+        """
+        self._insert_pages(self.quality_pages)
+        # No pre-existing ratings at all - everything is brand new
+
+        expected_global_ts = b"20190113000000"
+        with patch("wp1.logic.rating.GLOBAL_TIMESTAMP", expected_global_ts):
+            logic_project.update_project_assessments(
+                self.wikidb, self.wp10db, self.redis, self.project, {}
+            )
+
+        q_pages = self.quality_pages[6:]
+        logs = _get_all_logs(self.redis)
+        quality_logs = [
+            log_entry for log_entry in logs if log_entry.l_action == b"quality"
+        ]
+
+        # Every genuinely new article should have a quality log
+        expected_titles = set(p[1] for p in q_pages)
+        actual_titles = set(log_entry.l_article for log_entry in quality_logs)
+        self.assertEqual(expected_titles, actual_titles)
+
+        # Each log should show old=NotA-Class
+        for log_entry in quality_logs:
+            self.assertEqual(NOT_A_CLASS.encode("utf-8"), log_entry.l_old)
+
+    @patch("wp1.logic.project.logic_page.get_move_data")
+    @patch("wp1.logic.project.logic_page.update_page_moved")
+    def test_mix_of_new_and_renamed_articles(
+        self, mock_update_page_moved, mock_get_move_data
+    ):
+        """When some articles are renamed and others are genuinely new,
+        only the genuinely new ones should get log entries.
+        """
+        self._insert_pages(self.quality_pages)
+
+        # Pre-existing rating under an old name (will be detected as rename)
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO ratings
+                  (r_project, r_namespace, r_article, r_score, r_quality,
+                   r_quality_timestamp, r_importance, r_importance_timestamp)
+                VALUES
+                  (%s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+                (
+                    b"Test",
+                    0,
+                    b"Old_Art_of_testing",
+                    0,
+                    b"FA-Class",
+                    b"2018-07-04T05:05:05Z",
+                    None,
+                    None,
+                ),
+            )
+        self.wp10db.commit()
+
+        def fake_get_move_data(wp10db, wikidb, ns, title, timestamp_dt):
+            if title == b"Old_Art_of_testing":
+                return {
+                    "dest_ns": 0,
+                    "dest_title": b"Art of testing",
+                    "timestamp_dt": self.move_dt,
+                }
+            return None
+
+        mock_get_move_data.side_effect = fake_get_move_data
+
+        logic_project.update_project_assessments(
+            self.wikidb, self.wp10db, self.redis, self.project, {}
+        )
+
+        logs = _get_all_logs(self.redis)
+        quality_logs = [
+            log_entry for log_entry in logs if log_entry.l_action == b"quality"
+        ]
+        mock_update_page_moved.assert_called_once()
+
+        # "Art of testing" should NOT have a new-assessment quality log
+        # (it was renamed from Old_Art_of_testing)
+        renamed_logs = [
+            log_entry
+            for log_entry in quality_logs
+            if log_entry.l_article == b"Art of testing"
+            and log_entry.l_old == NOT_A_CLASS.encode("utf-8")
+        ]
+        self.assertEqual(0, len(renamed_logs))
+
+        # All other new quality articles SHOULD have logs
+        q_pages = self.quality_pages[6:]
+        genuinely_new_titles = set(p[1] for p in q_pages) - {b"Art of testing"}
+        logged_new_titles = set(
+            log_entry.l_article
+            for log_entry in quality_logs
+            if log_entry.l_old == NOT_A_CLASS.encode("utf-8")
+        )
+        self.assertEqual(genuinely_new_titles, logged_new_titles)
