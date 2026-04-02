@@ -9,6 +9,7 @@ from wp1.base_db_test import BaseWpOneDbTest
 from wp1.environment import Environment
 from wp1.exceptions import (
     InvalidZimDescriptionError,
+    InvalidZimFlavourError,
     InvalidZimLongDescriptionError,
     InvalidZimTitleError,
     ObjectNotFoundError,
@@ -113,13 +114,14 @@ class ZimFarmTest(BaseWpOneDbTest):
         description=None,
         long_description=None,
         remaining_generations=3,
+        flavour=None,
     ):
         if builder_id is None:
             builder_id = b"1a-2b-3c-4d"
         with self.wp10db.cursor() as cursor:
             cursor.execute(
-                """INSERT INTO zim_schedules (s_id, s_builder_id, s_rq_job_id, s_remaining_generations, s_last_updated_at, s_title, s_description, s_long_description)
-             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """INSERT INTO zim_schedules (s_id, s_builder_id, s_rq_job_id, s_remaining_generations, s_last_updated_at, s_title, s_description, s_long_description, s_flavour)
+             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
           """,
                 (
                     schedule_id,
@@ -130,6 +132,7 @@ class ZimFarmTest(BaseWpOneDbTest):
                     title,
                     description,
                     long_description,
+                    flavour,
                 ),
             )
         self.wp10db.commit()
@@ -395,9 +398,10 @@ class ZimFarmTest(BaseWpOneDbTest):
                 redis,
                 self.wp10db,
                 self.builder,
-                title="a",
-                description="b",
-                long_description=None,
+                "a",
+                "b",
+                None,
+                None,
             )
 
     @patch("wp1.zimfarm.get_zimfarm_token")
@@ -410,9 +414,10 @@ class ZimFarmTest(BaseWpOneDbTest):
                 redis,
                 self.wp10db,
                 None,
-                title="a",
-                description="b",
-                long_description=None,
+                "a",
+                "b",
+                None,
+                None,
             )
 
     @patch("wp1.zimfarm.requests")
@@ -434,9 +439,10 @@ class ZimFarmTest(BaseWpOneDbTest):
             redis,
             self.wp10db,
             self.builder,
-            title="Test Title",
-            description="Test Description",
-            long_description=long_desc,
+            "Test Title",
+            "Test Description",
+            long_desc,
+            None,
         )
 
         mock_requests.post.assert_called_once_with(
@@ -488,9 +494,10 @@ class ZimFarmTest(BaseWpOneDbTest):
             redis,
             self.wp10db,
             self.builder,
-            title="New Title",
-            description="New Description",
-            long_description="New Long Description",
+            "New Title",
+            "New Description",
+            "New Long Description",
+            None,
         )
 
         # Actually check that the schedule was updated in the DB
@@ -529,6 +536,7 @@ class ZimFarmTest(BaseWpOneDbTest):
                 "Test Title",
                 "Test Description",
                 None,
+                None,
             )
 
     @patch("wp1.zimfarm.get_zimfarm_token")
@@ -539,7 +547,13 @@ class ZimFarmTest(BaseWpOneDbTest):
         wrong_title = "a" * (ZIM_TITLE_MAX_LENGTH + 1)
         with self.assertRaises(InvalidZimTitleError):
             zimfarm.create_or_update_zimfarm_schedule(
-                redis, self.wp10db, self.builder, wrong_title, "Test Description", None
+                redis,
+                self.wp10db,
+                self.builder,
+                wrong_title,
+                "Test Description",
+                None,
+                None,
             )
 
     @patch("wp1.zimfarm.get_zimfarm_token")
@@ -558,6 +572,7 @@ class ZimFarmTest(BaseWpOneDbTest):
                 "Test Title",
                 too_long_description,
                 None,
+                None,
             )
 
     @patch("wp1.zimfarm.get_zimfarm_token")
@@ -573,9 +588,10 @@ class ZimFarmTest(BaseWpOneDbTest):
                 redis,
                 self.wp10db,
                 self.builder,
-                title="Test Title",
-                description="Test Description",
-                long_description=too_long_long_description,
+                "Test Title",
+                "Test Description",
+                too_long_long_description,
+                None,
             )
 
     @patch("wp1.zimfarm.get_zimfarm_token")
@@ -592,7 +608,8 @@ class ZimFarmTest(BaseWpOneDbTest):
                 self.builder,
                 "Test Title",
                 "Test Description",
-                long_description="z",
+                "z",
+                None,
             )
 
     @patch("wp1.zimfarm.requests")
@@ -613,6 +630,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             "Test Title",
             "Test Description",
             "",
+            None,
         )
 
         with self.wp10db.cursor() as cursor:
@@ -643,6 +661,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             "Test Title",
             "Test Description",
             None,
+            None,
         )
 
         with self.wp10db.cursor() as cursor:
@@ -665,9 +684,10 @@ class ZimFarmTest(BaseWpOneDbTest):
                 redis,
                 self.wp10db,
                 self.builder,
-                title="Test Title",
-                description="Same description",
-                long_description="Same description",
+                "Test Title",
+                "Same description",
+                "Same description",
+                None,
             )
 
     @patch("wp1.zimfarm.get_zimfarm_token")
@@ -690,6 +710,7 @@ class ZimFarmTest(BaseWpOneDbTest):
                 "Test Title",
                 "Test Description",
                 None,
+                None,
             )
 
     @patch("wp1.zimfarm.get_zimfarm_token")
@@ -709,9 +730,10 @@ class ZimFarmTest(BaseWpOneDbTest):
                 redis,
                 self.wp10db,
                 self.builder,
-                title="Test Title",
-                description="Test Description",
-                long_description=None,
+                "Test Title",
+                "Test Description",
+                None,
+                None,
             )
 
     @patch("wp1.zimfarm.requests")
@@ -734,6 +756,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             self.builder,
             valid_title,
             "Test Description",
+            None,
             None,
         )
         mock_requests.post.assert_called_once()
@@ -1181,3 +1204,140 @@ class ZimFarmTest(BaseWpOneDbTest):
 
         with self.assertRaises(ZimFarmError):
             zimfarm.delete_zimfarm_schedule_by_builder_id(redis, "1a-2b-3c-4d")
+
+    def test_validate_flavour_none(self):
+        zimfarm.validate_flavour(None)
+
+    def test_validate_flavour_empty_string(self):
+        zimfarm.validate_flavour("")
+
+    def test_validate_flavour_valid_nopic(self):
+        zimfarm.validate_flavour("nopic")
+
+    def test_validate_flavour_valid_mini(self):
+        zimfarm.validate_flavour("mini")
+
+    def test_validate_flavour_valid_maxi(self):
+        zimfarm.validate_flavour("maxi")
+
+    def test_validate_flavour_invalid(self):
+        with self.assertRaises(InvalidZimFlavourError):
+            zimfarm.validate_flavour("innvalid_flavour")
+
+    def test_get_params_with_flavour_nopic(self):
+        from wp1.zimfarm import CREDENTIALS
+
+        CREDENTIALS[Environment.TEST]["ZIMFARM"][
+            "cache_url"
+        ] = "https://wasabi.fake/bucket"
+
+        actual = zimfarm._get_params(
+            self.builder,
+            self.selection,
+            title="My Builder",
+            description="short description",
+            long_description="longgggggggg description",
+            flavour="nopic",
+        )
+
+        self.assertEqual(["nopic:nopic"], actual["config"]["offliner"]["format"])
+
+    def test_get_params_with_flavour_mini(self):
+        from wp1.zimfarm import CREDENTIALS
+
+        CREDENTIALS[Environment.TEST]["ZIMFARM"][
+            "cache_url"
+        ] = "https://wasabi.fake/bucket"
+
+        actual = zimfarm._get_params(
+            self.builder,
+            self.selection,
+            title="My Builder",
+            description="short description",
+            long_description="longgggggggg description",
+            flavour="mini",
+        )
+
+        self.assertEqual(["nodet,nopic:mini"], actual["config"]["offliner"]["format"])
+
+    def test_get_params_with_flavour_maxi(self):
+        from wp1.zimfarm import CREDENTIALS
+
+        CREDENTIALS[Environment.TEST]["ZIMFARM"][
+            "cache_url"
+        ] = "https://wasabi.fake/bucket"
+
+        actual = zimfarm._get_params(
+            self.builder,
+            self.selection,
+            title="My Builder",
+            description="short description",
+            long_description="longgggggggg description",
+            flavour="maxi",
+        )
+
+        self.assertEqual(["novid:maxi"], actual["config"]["offliner"]["format"])
+
+    def test_get_params_without_flavour_no_format(self):
+        from wp1.zimfarm import CREDENTIALS
+
+        CREDENTIALS[Environment.TEST]["ZIMFARM"][
+            "cache_url"
+        ] = "https://wasabi.fake/bucket"
+
+        actual = zimfarm._get_params(
+            self.builder,
+            self.selection,
+            title="My Builder",
+            description="short description",
+            long_description="longgggggggg description",
+        )
+
+        self.assertNotIn("format", actual["config"]["offliner"])
+
+    @patch("wp1.zimfarm.requests")
+    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm._get_params")
+    def test_create_or_update_zimfarm_schedule_with_flavour(
+        self, get_params_mock, get_token_mock, mock_requests
+    ):
+        redis = MagicMock()
+        get_params_mock.return_value = {"name": "bar"}
+        get_token_mock.return_value = "abcdef"
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"requested": ["9876"]}
+        mock_requests.post.side_effect = (MagicMock(), mock_response)
+
+        zimfarm.create_or_update_zimfarm_schedule(
+            redis,
+            self.wp10db,
+            self.builder,
+            "Test Title",
+            "Test Description",
+            None,
+            "nopic",
+        )
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM zim_schedules WHERE s_title = %s", (b"Test Title",)
+            )
+            result = cursor.fetchone()
+            self.assertIsNotNone(result)
+            self.assertEqual(b"nopic", result["s_flavour"])
+
+    @patch("wp1.zimfarm.get_zimfarm_token")
+    def test_create_or_update_zimfarm_schedule_invalid_flavour(self, get_token_mock):
+        redis = MagicMock()
+        get_token_mock.return_value = "test-token"
+
+        with self.assertRaises(InvalidZimFlavourError):
+            zimfarm.create_or_update_zimfarm_schedule(
+                redis,
+                self.wp10db,
+                self.builder,
+                "Test Title",
+                "Test Description",
+                None,
+                "invalid_flavour",
+            )

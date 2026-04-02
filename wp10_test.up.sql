@@ -138,7 +138,8 @@ CREATE TABLE zim_schedules (
   s_long_description mediumblob,
   s_description blob,
   s_title blob,
-  s_email_confirmation_token VARBINARY(255) NULL
+  s_email_confirmation_token VARBINARY(255) NULL,
+  s_flavour VARBINARY(50) NULL
 );
 
 CREATE TABLE `temp_pageviews` (
