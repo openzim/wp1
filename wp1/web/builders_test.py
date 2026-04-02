@@ -153,12 +153,13 @@ class BuildersTest(BaseWebTestcase):
         description=None,
         long_description=None,
         remaining_generations=3,
+        flavour=None,
     ):
         with self.wp10db.cursor() as cursor:
             cursor.execute(
                 """INSERT INTO zim_schedules (s_id, s_builder_id, s_rq_job_id, s_remaining_generations,
-                                        s_last_updated_at, s_title, s_description, s_long_description, s_email)
-             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                        s_last_updated_at, s_title, s_description, s_long_description, s_email, s_flavour)
+             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
           """,
                 (
                     schedule_id,
@@ -170,6 +171,7 @@ class BuildersTest(BaseWebTestcase):
                     description,
                     long_description,
                     email,
+                    flavour,
                 ),
             )
         self.wp10db.commit()
@@ -593,6 +595,68 @@ class BuildersTest(BaseWebTestcase):
 
         self.assertEqual(b"1234-a", data["z_task_id"])
         self.assertEqual(b"REQUESTED", data["z_status"])
+
+    @patch("wp1.zimfarm.request_zimfarm_task")
+    @patch("wp1.zimfarm.create_or_update_zimfarm_schedule")
+    def test_create_zim_file_for_builder_with_flavour(
+        self, patched_create_zimfarm_schedule, patched_request_zimfarm_task
+    ):
+        builder_id = self._insert_builder()
+        self._insert_selections(builder_id)
+
+        patched_request_zimfarm_task.return_value = "1234-a"
+        patched_create_zimfarm_schedule.return_value = ZimSchedule(
+            s_id=b"schedule_123",
+            s_builder_id=b"1a-2b-3c-4d",
+            s_rq_job_id=b"rq_job_id_123",
+            s_last_updated_at=b"20240101000000",
+            s_email_confirmation_token=None,
+        )
+
+        self.app = create_app()
+        with self.override_db(self.app), self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["user"] = self.USER
+            rv = client.post(
+                "/v1/builders/%s/zim" % builder_id,
+                json={
+                    "title": "Test title",
+                    "description": "Test description",
+                    "flavour": "nopic",
+                },
+            )
+            self.assertEqual("204 NO CONTENT", rv.status)
+
+        patched_create_zimfarm_schedule.assert_called_once()
+        args, kwargs = patched_create_zimfarm_schedule.call_args
+        self.assertEqual("nopic", args[6])
+
+    @patch("wp1.zimfarm.request_zimfarm_task")
+    @patch("wp1.zimfarm.requests")
+    @patch("wp1.zimfarm.get_zimfarm_token")
+    def test_create_zim_file_for_builder_invalid_flavour(
+        self, mock_get_token, mock_requests, mock_request_zimfarm_task
+    ):
+        builder_id = self._insert_builder()
+        self._insert_selections(builder_id)
+
+        mock_get_token.return_value = "test-token"
+
+        self.app = create_app()
+        with self.override_db(self.app), self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["user"] = self.USER
+            rv = client.post(
+                "/v1/builders/%s/zim" % builder_id,
+                json={
+                    "title": "Test title",
+                    "description": "Test description",
+                    "flavour": "invalid_flavour",
+                },
+            )
+            self.assertEqual("400 BAD REQUEST", rv.status)
+            data = rv.get_json()
+            self.assertIn("error_messages", data)
 
     @patch("wp1.zimfarm.request_zimfarm_task")
     @patch("wp1.zimfarm.create_or_update_zimfarm_schedule")
@@ -1277,6 +1341,34 @@ class BuildersTest(BaseWebTestcase):
                 "title": None,
                 "description": None,
                 "long_description": None,
+                "flavour": None,
+                "is_deleted": None,
+                "active_schedule": ANY,
+            },
+            rv.get_json(),
+        )
+
+    def test_zimfarm_status_with_flavour(self):
+        builder_id = self._insert_builder()
+        self._insert_selections(builder_id)
+        self._insert_zim_schedule(
+            schedule_id=b"schedule_123",
+            builder_id=builder_id.encode("utf-8"),
+            rq_job_id=b"task-id-1234",
+            last_updated_at="20240101000000",
+            flavour=b"nopic",
+        )
+        with self.app.test_client() as client:
+            rv = client.get("/v1/builders/%s/zim/status" % builder_id)
+        self.assertEqual("200 OK", rv.status)
+        self.assertEqual(
+            {
+                "error_url": "https://fake.farm/v2/tasks/task-id-1234",
+                "status": "FILE_READY",
+                "title": None,
+                "description": None,
+                "long_description": None,
+                "flavour": "nopic",
                 "is_deleted": None,
                 "active_schedule": ANY,
             },

@@ -195,13 +195,14 @@ class BuilderTest(BaseWpOneDbTest):
         description=None,
         long_description=None,
         remaining_generations=3,
+        flavour=None,
     ):
         if builder_id is None:
             builder_id = b"1a-2b-3c-4d"
         with self.wp10db.cursor() as cursor:
             cursor.execute(
-                """INSERT INTO zim_schedules (s_id, s_builder_id, s_rq_job_id, s_remaining_generations, s_last_updated_at, s_title, s_description, s_long_description)
-             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """INSERT INTO zim_schedules (s_id, s_builder_id, s_rq_job_id, s_remaining_generations, s_last_updated_at, s_title, s_description, s_long_description, s_flavour)
+             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
           """,
                 (
                     schedule_id,
@@ -212,6 +213,7 @@ class BuilderTest(BaseWpOneDbTest):
                     title,
                     description,
                     long_description,
+                    flavour,
                 ),
             )
         self.wp10db.commit()
@@ -508,6 +510,7 @@ class BuilderTest(BaseWpOneDbTest):
                 title=None,
                 description=None,
                 long_description=None,
+                flavour=None,
             )
         finally:
             self.wp10db.close = orig_close
@@ -1091,11 +1094,18 @@ class BuilderTest(BaseWpOneDbTest):
         )
 
         logic_builder.handle_zim_generation(
-            redis, self.wp10db, builder_id, "test_title", "a", "zz", user_id=1234
+            redis,
+            self.wp10db,
+            builder_id,
+            "test_title",
+            "a",
+            None,
+            long_description="zz",
+            user_id=1234,
         )
 
         mock_create_zimfarm_schedule.assert_called_once_with(
-            redis, self.wp10db, self.builder, "test_title", "a", "zz"
+            redis, self.wp10db, self.builder, "test_title", "a", "zz", None
         )
         mock_request_zimfarm_task.assert_called_once_with(
             redis, self.wp10db, self.builder
@@ -1110,6 +1120,45 @@ class BuilderTest(BaseWpOneDbTest):
         self.assertEqual(b"1234-a", data["z_task_id"])
         self.assertEqual(b"REQUESTED", data["z_status"])
         self.assertEqual(b"20221225000102", data["z_requested_at"])
+
+    @patch("wp1.logic.builder.zimfarm.create_or_update_zimfarm_schedule")
+    @patch("wp1.logic.builder.zimfarm.request_zimfarm_task")
+    @patch(
+        "wp1.logic.builder.utcnow",
+        return_value=datetime.datetime(2022, 12, 25, 0, 1, 2),
+    )
+    def test_handle_zim_generation_with_flavour(
+        self, mock_utcnow, mock_request_zimfarm_task, mock_create_zimfarm_schedule
+    ):
+
+        redis = MagicMock()
+        mock_request_zimfarm_task.return_value = "1234-a"
+        mock_create_zimfarm_schedule.return_value = ZimSchedule(
+            s_id=b"schedule_123",
+            s_builder_id=b"1a-2b-3c-4d",
+            s_rq_job_id=b"rq_job_id_123",
+            s_last_updated_at=b"20191225044444",
+        )
+
+        builder_id = self._insert_builder()
+        self._insert_selection(
+            1, "text/tab-separated-values", builder_id=builder_id, has_errors=False
+        )
+
+        logic_builder.handle_zim_generation(
+            redis,
+            self.wp10db,
+            builder_id,
+            "test_title",
+            "a",
+            "nopic",
+            long_description="zz",
+            user_id=1234,
+        )
+
+        mock_create_zimfarm_schedule.assert_called_once_with(
+            redis, self.wp10db, self.builder, "test_title", "a", "zz", "nopic"
+        )
 
     @patch(
         "wp1.logic.builder.utcnow",
@@ -1126,7 +1175,14 @@ class BuilderTest(BaseWpOneDbTest):
 
         with self.assertRaises(InvalidZimTitleError):
             logic_builder.handle_zim_generation(
-                redis, self.wp10db, builder_id, "A" * 31, "a", "z", user_id=1234
+                redis,
+                self.wp10db,
+                builder_id,
+                "A" * 31,
+                "a",
+                None,
+                long_description="z",
+                user_id=1234,
             )
 
     @patch("wp1.logic.builder.zimfarm.request_zimfarm_task")
@@ -1137,7 +1193,13 @@ class BuilderTest(BaseWpOneDbTest):
 
         with self.assertRaises(ObjectNotFoundError):
             logic_builder.handle_zim_generation(
-                redis, self.wp10db, "404builder", "Title", "Description", user_id=1234
+                redis,
+                self.wp10db,
+                "404builder",
+                "Title",
+                "Description",
+                None,
+                user_id=1234,
             )
 
     @patch("wp1.logic.builder.zimfarm.request_zimfarm_task")
@@ -1152,7 +1214,13 @@ class BuilderTest(BaseWpOneDbTest):
 
         with self.assertRaises(UserNotAuthorizedError):
             logic_builder.handle_zim_generation(
-                redis, self.wp10db, builder_id, "Title", "Description", user_id=5678
+                redis,
+                self.wp10db,
+                builder_id,
+                "Title",
+                "Description",
+                None,
+                user_id=5678,
             )
 
     @patch("wp1.logic.builder.zimfarm.create_or_update_zimfarm_schedule")
@@ -1196,10 +1264,11 @@ class BuilderTest(BaseWpOneDbTest):
             redis,
             self.wp10db,
             builder_id,
-            user_id=1234,
-            title="Updated Title",
-            description="Updated Description",
+            "Updated Title",
+            "Updated Description",
+            None,
             long_description="Updated Long Description",
+            user_id=1234,
             scheduled_repetitions=5,
         )
 
@@ -1210,6 +1279,7 @@ class BuilderTest(BaseWpOneDbTest):
             "Updated Title",
             "Updated Description",
             "Updated Long Description",
+            None,
         )
         mock_request_zimfarm_task.assert_called_once_with(
             redis, self.wp10db, self.builder
@@ -1252,10 +1322,11 @@ class BuilderTest(BaseWpOneDbTest):
             redis,
             self.wp10db,
             builder_id,
-            user_id=1234,
-            title="New Title",
-            description="New Description",
+            "New Title",
+            "New Description",
+            None,
             long_description="New Long Description",
+            user_id=1234,
         )
 
         mock_create_schedule.assert_called_once_with(
@@ -1265,6 +1336,7 @@ class BuilderTest(BaseWpOneDbTest):
             "New Title",
             "New Description",
             "New Long Description",
+            None,
         )
         mock_request_zimfarm_task.assert_called_once_with(
             redis, self.wp10db, self.builder
@@ -1326,6 +1398,38 @@ class BuilderTest(BaseWpOneDbTest):
             title=None,
             description=None,
             long_description=None,
+            flavour=None,
+        )
+
+    @patch("wp1.logic.builder.handle_zim_generation")
+    def test_auto_handle_zim_generation_with_flavour(self, mock_handle_zim_generation):
+        redis = MagicMock()
+        builder_id = self._insert_builder(zim_version=1)
+        self._insert_selection(
+            1,
+            "text/tab-separated-values",
+            version=1,
+            builder_id=builder_id,
+            has_errors=False,
+            zim_file_ready=True,
+        )
+        self._insert_zim_schedule(
+            b"schedule_123",
+            builder_id,
+            b"rq_job_id_123",
+            flavour=b"nopic",
+        )
+
+        logic_builder.auto_handle_zim_generation(redis, self.wp10db, builder_id)
+
+        mock_handle_zim_generation.assert_called_once_with(
+            redis,
+            self.wp10db,
+            builder_id,
+            title=None,
+            description=None,
+            long_description=None,
+            flavour="nopic",
         )
 
     @patch("wp1.logic.builder.handle_zim_generation")
@@ -1355,6 +1459,7 @@ class BuilderTest(BaseWpOneDbTest):
             title=None,
             description=None,
             long_description=None,
+            flavour=None,
         )
 
     @patch("wp1.logic.builder.handle_zim_generation")
@@ -1421,6 +1526,7 @@ class BuilderTest(BaseWpOneDbTest):
             title="Title",
             description="A desc",
             long_description="Long desc",
+            flavour=None,
         )
 
         with self.wp10db.cursor() as cursor:
