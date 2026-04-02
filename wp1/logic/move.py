@@ -33,6 +33,9 @@ def insert(wp10db, move):
         VALUES
           (%(m_timestamp)s, %(m_old_namespace)s, %(m_old_article)s,
            %(m_new_namespace)s, %(m_new_article)s)
+        ON DUPLICATE KEY UPDATE
+          m_new_namespace = %(m_new_namespace)s,
+          m_new_article = %(m_new_article)s
     """,
             attr.asdict(move),
         )

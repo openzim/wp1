@@ -133,7 +133,7 @@ def delete_builder(wp10db, user_id, builder_id):
             user_id,
             builder_id.decode("utf-8"),
         )
-        logging.warning(msg)
+        logger.warning(msg)
         raise UserNotAuthorizedError(msg)
 
     # Connect to Redis for zimfarm operations
@@ -144,7 +144,7 @@ def delete_builder(wp10db, user_id, builder_id):
     try:
         zimfarm.delete_zimfarm_schedule_by_builder_id(redis, builder_id)
     except Exception as e:
-        logging.warning(
+        logger.warning(
             "Failed to delete zimfarm schedule for builder_id=%s: %s",
             builder_id.decode("utf-8"),
             str(e),
@@ -175,7 +175,7 @@ def delete_builder(wp10db, user_id, builder_id):
                 if not success:
                     rq_cancel_success = False
             except Exception as e:
-                logging.warning(
+                logger.warning(
                     "Failed to cancel RQ job %s: %s", job_id.decode("utf-8"), str(e)
                 )
                 rq_cancel_success = False
@@ -290,7 +290,7 @@ def auto_handle_zim_generation(redis, wp10db, builder_id):
             zimfarm.cancel_zim_by_task_id(redis, task_id)
             logic_selection.update_zimfarm_task(wp10db, task_id, "CANCELLED")
         except ZimFarmError:
-            logging.exception("Could not cancel task_id=%s", task_id)
+            logger.exception("Could not cancel task_id=%s", task_id)
 
     zim_file = latest_zim_file_for(wp10db, builder_id)
     zim_schedule: ZimSchedule = logic_zim_schedules.get_zim_schedule_by_zim_file_id(
