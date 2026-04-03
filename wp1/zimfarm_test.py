@@ -190,9 +190,9 @@ class ZimFarmTest(BaseWpOneDbTest):
         s3.client.head_object.return_value = {"ContentLength": 20000000}
         from wp1.zimfarm import CREDENTIALS
 
-        CREDENTIALS[Environment.TEST]["ZIMFARM"]["cache_url"] = (
-            "https://wasabi.fake/bucket"
-        )
+        CREDENTIALS[Environment.TEST]["ZIMFARM"][
+            "cache_url"
+        ] = "https://wasabi.fake/bucket"
 
         actual = zimfarm._get_params(
             self.builder,
@@ -210,12 +210,12 @@ class ZimFarmTest(BaseWpOneDbTest):
         s3.client.head_object.return_value = {"ContentLength": 20000000}
         from wp1.zimfarm import CREDENTIALS
 
-        CREDENTIALS[Environment.TEST]["ZIMFARM"]["cache_url"] = (
-            "https://wasabi.fake/bucket"
-        )
-        CREDENTIALS[Environment.TEST]["ZIMFARM"]["image"] = (
-            "ghcr.io/openzim/mwoffliner-advanced:1.23.45"
-        )
+        CREDENTIALS[Environment.TEST]["ZIMFARM"][
+            "cache_url"
+        ] = "https://wasabi.fake/bucket"
+        CREDENTIALS[Environment.TEST]["ZIMFARM"][
+            "image"
+        ] = "ghcr.io/openzim/mwoffliner-advanced:1.23.45"
 
         expected = self.expected_params.copy()
         expected["config"]["image"] = {
@@ -671,7 +671,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             self.assertIn("access_token", call_args[1]["mapping"])
             self.assertEqual(call_args[1]["mapping"]["access_token"], "token_to_store")
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     def test_create_or_update_zimfarm_schedule_missing_token(self, mock_token_provider):
         redis = MagicMock()
         mock_token_provider.get_access_token.side_effect = ZimFarmError(
@@ -688,7 +688,7 @@ class ZimFarmTest(BaseWpOneDbTest):
                 long_description=None,
             )
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     def test_create_or_update_zimfarm_schedule_missing_builder(
         self, mock_token_provider
     ):
@@ -706,7 +706,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             )
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm._get_params")
     def test_create_or_update_zimfarm_schedule_creates(
         self, get_params_mock, mock_token_provider, mock_requests
@@ -749,7 +749,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             self.assertEqual(long_desc.encode("utf-8"), result["s_long_description"])
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm._get_params")
     @patch("wp1.zimfarm.zimfarm_schedule_exists", return_value=True)
     def test_create_or_update_zimfarm_schedule_updates(
@@ -801,7 +801,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             self.assertIsNone(result["s_remaining_generations"])
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm._get_params")
     def test_create_or_update_zimfarm_schedule_http_error(
         self, get_params_mock, mock_token_provider, mock_requests
@@ -826,7 +826,7 @@ class ZimFarmTest(BaseWpOneDbTest):
                 None,
             )
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     def test_create_or_update_zimfarm_schedule_too_long_title(
         self, mock_token_provider
     ):
@@ -839,7 +839,7 @@ class ZimFarmTest(BaseWpOneDbTest):
                 redis, self.wp10db, self.builder, wrong_title, "Test Description", None
             )
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     def test_create_or_update_zimfarm_schedule_too_long_description(
         self, mock_token_provider
     ):
@@ -857,7 +857,7 @@ class ZimFarmTest(BaseWpOneDbTest):
                 None,
             )
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     def test_create_or_update_zimfarm_schedule_too_long_long_description(
         self, mock_token_provider
     ):
@@ -875,7 +875,7 @@ class ZimFarmTest(BaseWpOneDbTest):
                 long_description=too_long_long_description,
             )
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     def test_create_or_update_zimfarm_schedule_too_short_long_description(
         self, mock_token_provider
     ):
@@ -893,7 +893,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             )
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm._get_params")
     def test_create_or_update_zimfarm_schedule_create_empty_long_desc_ok(
         self, get_params_mock, mock_token_provider, mock_requests
@@ -923,7 +923,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             self.assertEqual(None, result["s_long_description"])
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm._get_params")
     def test_create_or_update_zimfarm_schedule_create_missing_long_desc_ok(
         self, get_params_mock, mock_token_provider, mock_requests
@@ -952,7 +952,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             self.assertEqual(b"Test Description", result["s_description"])
             self.assertEqual(None, result["s_long_description"])
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     def test_create_or_update_zimfarm_schedule_equal_descriptions(
         self, mock_token_provider
     ):
@@ -969,7 +969,7 @@ class ZimFarmTest(BaseWpOneDbTest):
                 long_description="Same description",
             )
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.logic.builder.latest_selection_for")
     def test_create_or_update_zimfarm_schedule_too_many_articles(
         self, mock_latest_selection, mock_token_provider
@@ -991,7 +991,7 @@ class ZimFarmTest(BaseWpOneDbTest):
                 None,
             )
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.logic.builder.latest_selection_for")
     def test_create_or_update_zimfarm_schedule_none_article_count(
         self, mock_latest_selection, mock_token_provider
@@ -1014,7 +1014,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             )
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm._get_params")
     def test_create_or_update_zimfarm_schedule_valid_graphemes(
         self, get_params_mock, mock_token_provider, mock_requests
@@ -1037,7 +1037,7 @@ class ZimFarmTest(BaseWpOneDbTest):
         )
         mock_requests.post.assert_called_once()
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     def test_request_zimfarm_task_missing_token(self, mock_token_provider):
         redis = MagicMock()
         mock_token_provider.get_access_token.side_effect = ZimFarmError(
@@ -1048,7 +1048,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.get_zimfarm_schedule_name")
     def test_request_zimfarm_task(
         self, get_zimfarm_schedule_name_mock, mock_token_provider, mock_requests
@@ -1065,7 +1065,7 @@ class ZimFarmTest(BaseWpOneDbTest):
         self.assertEqual("9876", actual)
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     def test_request_zimfarm_task_missing_builder(
         self, mock_token_provider, mock_requests
     ):
@@ -1075,7 +1075,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             zimfarm.request_zimfarm_task(redis, self.wp10db, None)
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.get_zimfarm_schedule_name")
     def test_request_zimfarm_task_post_requests(
         self, get_zimfarm_schedule_name_mock, mock_token_provider, mock_requests
@@ -1099,7 +1099,7 @@ class ZimFarmTest(BaseWpOneDbTest):
         )
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.get_zimfarm_schedule_name")
     def test_request_zimfarm_task_missing_task_id(
         self, get_zimfarm_schedule_name_mock, mock_token_provider, mock_requests
@@ -1115,7 +1115,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.get_zimfarm_schedule_name")
     def test_request_zimfarm_task_missing_article_count(
         self, get_zimfarm_schedule_name_mock, mock_token_provider, mock_requests
@@ -1131,7 +1131,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.get_zimfarm_schedule_name")
     def test_request_zimfarm_task_too_many_articles(
         self, get_zimfarm_schedule_name_mock, mock_token_provider, mock_requests
@@ -1204,7 +1204,7 @@ class ZimFarmTest(BaseWpOneDbTest):
         with self.assertRaises(ZimFarmError):
             zimfarm.zim_file_url_for_task_id("foo-bar")
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.requests.delete")
     def test_cancel_zim_by_task_id(self, patched_delete, mock_token_provider):
         mock_token_provider.get_access_token.return_value = "foo-token"
@@ -1219,7 +1219,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             },
         )
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.requests.delete")
     @patch("wp1.zimfarm.requests.post")
     def test_cancel_zim_by_task_id_first_delete_404(
@@ -1248,7 +1248,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             },
         )
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.requests.delete")
     @patch("wp1.zimfarm.requests.post")
     def test_cancel_zim_by_task_id_first_delete_other_error(
@@ -1264,7 +1264,7 @@ class ZimFarmTest(BaseWpOneDbTest):
         with self.assertRaises(ZimFarmError):
             zimfarm.cancel_zim_by_task_id(redis, "task-abc-123")
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.requests.delete")
     @patch("wp1.zimfarm.requests.post")
     def test_cancel_zim_by_task_id_second_delete_error(
@@ -1288,7 +1288,7 @@ class ZimFarmTest(BaseWpOneDbTest):
         with self.assertRaises(ZimFarmError):
             zimfarm.cancel_zim_by_task_id(redis, "task-abc-123")
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.requests")
     def test_zimfarm_schedule_exists_true(self, mock_requests, mock_token_provider):
         """Test zimfarm_schedule_exists returns True when schedule exists (200 status)"""
@@ -1311,7 +1311,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             },
         )
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.requests")
     def test_zimfarm_schedule_exists_false(self, mock_requests, mock_token_provider):
         """Test zimfarm_schedule_exists returns False when schedule doesn't exist (404 status)"""
@@ -1327,7 +1327,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
         self.assertFalse(result)
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     def test_zimfarm_schedule_exists_no_token(self, mock_token_provider):
         """Test zimfarm_schedule_exists raises error when token is None"""
         mock_token_provider.get_access_token.side_effect = ZimFarmError(
@@ -1340,7 +1340,7 @@ class ZimFarmTest(BaseWpOneDbTest):
         with self.assertRaises(ZimFarmError):
             zimfarm.zimfarm_schedule_exists(redis, builder_id)
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.requests")
     def test_zimfarm_schedule_exists_http_error(
         self, mock_requests, mock_token_provider
@@ -1416,7 +1416,7 @@ class ZimFarmTest(BaseWpOneDbTest):
         result = zimfarm.find_existing_schedule_in_db(self.wp10db, self.builder.b_id)
         self.assertIsNone(result)
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.requests.delete")
     def test_delete_zimfarm_schedule_by_builder_id_success(
         self, patched_delete, mock_token_provider
@@ -1439,7 +1439,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             },
         )
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.requests.delete")
     def test_delete_zimfarm_schedule_by_builder_id_not_found(
         self, patched_delete, mock_token_provider
@@ -1462,7 +1462,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             },
         )
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.requests.delete")
     def test_delete_zimfarm_schedule_by_builder_id_error(
         self, patched_delete, mock_token_provider
@@ -1477,7 +1477,7 @@ class ZimFarmTest(BaseWpOneDbTest):
         with self.assertRaises(ZimFarmError):
             zimfarm.delete_zimfarm_schedule_by_builder_id(redis, "1a-2b-3c-4d")
 
-    @patch("wp1.zimfarm.zimfarm_token_provider")
+    @patch("wp1.zimfarm.token_provider")
     def test_delete_zimfarm_schedule_by_builder_id_no_token(self, mock_token_provider):
         mock_token_provider.get_access_token.side_effect = ZimFarmError(
             "Failed to generate access token."

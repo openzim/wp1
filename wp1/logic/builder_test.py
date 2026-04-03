@@ -1115,7 +1115,7 @@ class BuilderTest(BaseWpOneDbTest):
         "wp1.logic.builder.utcnow",
         return_value=datetime.datetime(2022, 12, 25, 0, 1, 2),
     )
-    @patch("wp1.logic.builder.zimfarm.get_zimfarm_token", return_value="test_token")
+    @patch("wp1.logic.builder.zimfarm.token_provider", return_value="test_token")
     def test_handle_zim_generation_long_title(
         self, mock_utcnow, mock_get_zimfarm_token
     ):

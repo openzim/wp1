@@ -197,7 +197,7 @@ class ZimfarmClientTokenProvider:
         return self._access_token
 
 
-zimfarm_token_provider = ZimfarmClientTokenProvider()
+token_provider = ZimfarmClientTokenProvider()
 
 
 def get_zimfarm_url():
@@ -369,7 +369,7 @@ def _get_zimfarm_headers(token):
 
 def zimfarm_schedule_exists(redis, builder_id: str) -> bool:
     """Checks if a ZimSchedule exists in the zimfarm"""
-    token = zimfarm_token_provider.get_access_token(redis)
+    token = token_provider.get_access_token(redis)
     base_url = get_zimfarm_url()
     headers = _get_zimfarm_headers(token)
 
@@ -409,7 +409,7 @@ def create_or_update_zimfarm_schedule(
     """
     Requests a ZIM file schedule from the Zimfarm for the given builder.
     """
-    token = zimfarm_token_provider.get_access_token(redis)
+    token = token_provider.get_access_token(redis)
 
     if builder is None:
         raise ObjectNotFoundError("Cannot schedule for None builder")
@@ -493,7 +493,7 @@ def request_zimfarm_task(redis, wp10db, builder):
     """
     Requests a ZIM file task from the Zimfarm for the given builder.
     """
-    token = zimfarm_token_provider.get_access_token(redis)
+    token = token_provider.get_access_token(redis)
     if builder is None:
         raise ObjectNotFoundError("Cannot schedule for None builder")
 
@@ -589,7 +589,7 @@ def cancel_zim_by_task_id(redis, task_id):
     if isinstance(task_id, bytes):
         task_id = task_id.decode("utf-8")
 
-    token = zimfarm_token_provider.get_access_token(redis)
+    token = token_provider.get_access_token(redis)
     base_url = get_zimfarm_url()
     headers = _get_zimfarm_headers(token)
 
@@ -621,7 +621,7 @@ def delete_zimfarm_schedule_by_builder_id(redis, builder_id):
     if isinstance(builder_id, bytes):
         builder_id = builder_id.decode("utf-8")
 
-    token = zimfarm_token_provider.get_access_token(redis)
+    token = token_provider.get_access_token(redis)
 
     base_url = get_zimfarm_url()
     headers = _get_zimfarm_headers(token)
