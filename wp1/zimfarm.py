@@ -1,10 +1,12 @@
 import logging
 import urllib.parse
 import uuid
-from datetime import UTC, datetime
+from typing import cast, Any
+from datetime import datetime, UTC, timedelta
 
 import regex
 import requests
+from requests.auth import HTTPBasicAuth
 
 import wp1.logic.builder as logic_builder
 import wp1.logic.selection as logic_selection
@@ -24,7 +26,6 @@ from wp1.logic import util
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
 from wp1.models.wp10.zim_schedule import ZimSchedule
-from wp1.time import get_current_datetime
 
 REDIS_AUTH_KEY = "zimfarm.auth"
 
@@ -45,87 +46,158 @@ def store_zimfarm_token(redis, data):
     redis.hset(REDIS_AUTH_KEY, mapping=data)
 
 
-def request_zimfarm_token(redis):
-    user = CREDENTIALS[ENV].get("ZIMFARM", {}).get("user")
-    password = CREDENTIALS[ENV].get("ZIMFARM", {}).get("password")
+def getnow():
+    """naive UTC now"""
+    return datetime.now(UTC).replace(tzinfo=None)
 
-    if user is None or password is None:
-        raise ZimFarmError(
-            "Could not log into zimfarm, user/password not found in " "site credentials"
+
+class ZimfarmClientTokenProvider:
+    """Client to generate access tokens to authenticate with Zimfarm API"""
+
+    def __init__(self):
+        self._access_token: str | None = None
+        self._refresh_token: str | None = None
+        self._expires_at: datetime = datetime.fromtimestamp(0, UTC).replace(tzinfo=None)
+        self._zimfarm_creds: dict[str, Any] = CREDENTIALS[ENV].get("ZIMFARM", {})
+
+    def _validate_creds(self):
+        if self._zimfarm_creds.get("auth_mode", "local") == "local":
+            if not (
+                self._zimfarm_creds.get("user") and self._zimfarm_creds.get("password")
+            ):
+                raise ZimFarmError(
+                    "user and password must be set in Zimfarm site credentials "
+                    "when auth mode is 'local' "
+                )
+        elif self._zimfarm_creds.get("auth_mode") == "oauth":
+            if not (
+                self._zimfarm_creds.get("oauth_issuer")
+                and self._zimfarm_creds.get("oauth_client_id")
+                and self._zimfarm_creds.get("oauth_client_secret")
+                and self._zimfarm_creds.get("oauth_audience_id")
+            ):
+                raise ZimFarmError(
+                    "oauth_client_secret, oauth_client_id and oauth_audience_id must be set "
+                    "in Zimfarm site credentials when auth mode is 'oauth'"
+                )
+        else:
+            raise ZimFarmError(
+                f"Unknown auth mode {self._zimfarm_creds.get('auth_mode')}. "
+                "Allowed values are 'local' and 'oauth'."
+            )
+
+    def _generate_oauth_access_token(self) -> None:
+        """Generate oauth access token and update expires_at."""
+
+        logger.debug(
+            "Requesting auth token from %s with oauth credentials",
+            self._zimfarm_creds.get("oauth_issuer"),
+        )
+        response = requests.post(
+            f"{self._zimfarm_creds.get('oauth_issuer')}/oauth2/token",
+            data={
+                "grant_type": "client_credentials",
+                "audience": self._zimfarm_creds.get("oauth_audience_id"),
+            },
+            auth=HTTPBasicAuth(
+                self._zimfarm_creds.get("oauth_client_id"),
+                self._zimfarm_creds.get("oauth_client_secret"),
+            ),
+            timeout=self._zimfarm_creds.get("requests_timeout", 30),
+            headers={"User-Agent": WP1_USER_AGENT},
         )
 
-    logger.debug(
-        "Requesting auth token from %s with username/password", get_zimfarm_url()
-    )
-    r = requests.post(
-        "%s/auth/authorize" % get_zimfarm_url(),
-        headers={"User-Agent": WP1_USER_AGENT},
-        json={"username": user, "password": password},
-    )
-    try:
-        r.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.exception(r.text)
-        raise ZimFarmError("Error getting authentication token for Zimfarm") from e
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            logger.exception(response.text)
+            raise ZimFarmError("Error getting authentication token for Zimfarm") from e
 
-    data = r.json()
-    store_zimfarm_token(redis, data)
+        payload = response.json()
+        self._access_token = cast(str, payload["access_token"])
+        self._expires_at = getnow() + timedelta(seconds=payload["expires_in"])
 
-    access_token = data.get("access_token")
-    if access_token is None:
-        logger.warning(
-            "Access token from zimfarm API was None, full response: %s", data
+    def _generate_local_access_token(self) -> None:
+        if self._refresh_token:
+            logger.debug(
+                "Requesting access_token from %s using refresh_token", get_zimfarm_url()
+            )
+            response = requests.post(
+                f"{get_zimfarm_url()}/auth/refresh",
+                json={
+                    "refresh_token": self._refresh_token,
+                },
+                timeout=self._zimfarm_creds.get("requests_timeout", 30),
+                headers={"User-Agent": WP1_USER_AGENT},
+            )
+        else:
+            logger.debug(
+                "Requesting auth token from %s with username/password",
+                get_zimfarm_url(),
+            )
+            response = requests.post(
+                f"{get_zimfarm_url()}/auth/authorize",
+                json={
+                    "username": self._zimfarm_creds.get("user"),
+                    "password": self._zimfarm_creds.get("password"),
+                },
+                timeout=self._zimfarm_creds.get("requests_timeout", 30),
+                headers={"User-Agent": WP1_USER_AGENT},
+            )
+
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            logger.exception(response.text)
+            raise ZimFarmError("Error getting authentication token for Zimfarm") from e
+
+        payload = response.json()
+        self._access_token = cast(str, payload["access_token"])
+        self._refresh_token = cast(str, payload["refresh_token"])
+        self._expires_at = datetime.fromisoformat(payload["expires_time"]).replace(
+            tzinfo=None
         )
-    return access_token
+
+    def get_access_token(self, redis) -> str:
+        """Retrieve or generate access token depending on if token has expired."""
+        self._validate_creds()
+
+        data = redis.hgetall(REDIS_AUTH_KEY)
+        if data is not None:
+            self._access_token = data.get("access_token")
+            self._refresh_token = data.get("refresh_token")
+            if data.get("expires_at"):
+                self._expires_at = datetime.fromisoformat(data["expires_at"]).replace(
+                    tzinfo=None
+                )
+
+        now = getnow()
+        if self._access_token is None or now >= (
+            self._expires_at
+            - timedelta(seconds=self._zimfarm_creds.get("token_renewal_window", 300))
+        ):
+            logger.debug("Refreshing Zimfarm acess token")
+            if self._zimfarm_creds.get("auth_mode") == "oauth":
+                self._generate_oauth_access_token()
+            elif self._zimfarm_creds.get("auth_mode") == "local":
+                self._generate_local_access_token()
+
+            if self._access_token:
+                store_zimfarm_token(
+                    redis,
+                    {
+                        "access_token": self._access_token,
+                        "refresh_token": self._refresh_token or "",
+                        "expires_at": self._expires_at.isoformat(),
+                    },
+                )
+
+        if self._access_token is None:
+            raise ZimFarmError("Failed to generate access token.")
+        return self._access_token
 
 
-def refresh_zimfarm_token(redis, refresh_token):
-    logger.debug(
-        "Requesting access_token from %s using refresh_token", get_zimfarm_url()
-    )
-    r = requests.post(
-        "%s/auth/refresh" % get_zimfarm_url(),
-        headers={
-            "User-Agent": WP1_USER_AGENT,
-        },
-        json={
-            "refresh_token": refresh_token,
-        },
-    )
-    try:
-        r.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.exception(r.text)
-        raise ZimFarmError("Error getting authentication token for Zimfarm") from e
-
-    data = r.json()
-    access_token = data.get("access_token")
-    if access_token is None:
-        logger.warning(
-            "Access token from zimfarm API was None, full response: %s", data
-        )
-
-    return access_token
-
-
-def get_zimfarm_token(redis):
-    data = redis.hgetall(REDIS_AUTH_KEY)
-    if data is None or data.get("refresh_token") is None:
-        logger.debug("No saved zimfarm refresh_token, requesting")
-        return request_zimfarm_token(redis)
-
-    access_expired = (
-        datetime.strptime(
-            data.get("expires_time", "1970-01-01T00:00:00Z"), "%Y-%m-%dT%H:%M:%SZ"
-        )
-        < get_current_datetime()
-    )
-
-    if access_expired:
-        logger.debug("Zimfarm access_token is expired, refreshing")
-        return refresh_zimfarm_token(redis, data["refresh_token"])
-
-    return data.get("access_token")
+zimfarm_token_provider = ZimfarmClientTokenProvider()
 
 
 def get_zimfarm_url():
@@ -297,9 +369,7 @@ def _get_zimfarm_headers(token):
 
 def zimfarm_schedule_exists(redis, builder_id: str) -> bool:
     """Checks if a ZimSchedule exists in the zimfarm"""
-    token = get_zimfarm_token(redis)
-    if token is None:
-        raise ZimFarmError("Error retrieving auth token for request")
+    token = zimfarm_token_provider.get_access_token(redis)
     base_url = get_zimfarm_url()
     headers = _get_zimfarm_headers(token)
 
@@ -339,9 +409,7 @@ def create_or_update_zimfarm_schedule(
     """
     Requests a ZIM file schedule from the Zimfarm for the given builder.
     """
-    token = get_zimfarm_token(redis)
-    if token is None:
-        raise ZimFarmError("Error retrieving auth token for request")
+    token = zimfarm_token_provider.get_access_token(redis)
 
     if builder is None:
         raise ObjectNotFoundError("Cannot schedule for None builder")
@@ -425,10 +493,7 @@ def request_zimfarm_task(redis, wp10db, builder):
     """
     Requests a ZIM file task from the Zimfarm for the given builder.
     """
-    token = get_zimfarm_token(redis)
-    if token is None:
-        raise ZimFarmError("Error retrieving auth token for request")
-
+    token = zimfarm_token_provider.get_access_token(redis)
     if builder is None:
         raise ObjectNotFoundError("Cannot schedule for None builder")
 
@@ -524,9 +589,7 @@ def cancel_zim_by_task_id(redis, task_id):
     if isinstance(task_id, bytes):
         task_id = task_id.decode("utf-8")
 
-    token = get_zimfarm_token(redis)
-    if token is None:
-        raise ZimFarmError("Error retrieving auth token for request")
+    token = zimfarm_token_provider.get_access_token(redis)
     base_url = get_zimfarm_url()
     headers = _get_zimfarm_headers(token)
 
@@ -547,7 +610,7 @@ def cancel_zim_by_task_id(redis, task_id):
 
     try:
         r.raise_for_status()
-    except requests.exceptions.HTTPError as e:
+    except requests.exceptions.HTTPError:
         raise ZimFarmError("Task could not be deleted/canceled (task_id=%s)" % task_id)
 
 
@@ -558,9 +621,7 @@ def delete_zimfarm_schedule_by_builder_id(redis, builder_id):
     if isinstance(builder_id, bytes):
         builder_id = builder_id.decode("utf-8")
 
-    token = get_zimfarm_token(redis)
-    if token is None:
-        raise ZimFarmError("Error retrieving auth token for request")
+    token = zimfarm_token_provider.get_access_token(redis)
 
     base_url = get_zimfarm_url()
     headers = _get_zimfarm_headers(token)
