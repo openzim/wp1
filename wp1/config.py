@@ -44,7 +44,13 @@ def _getenv_int(key, *, default=None, required=False):
     value = _getenv(key, default=default, required=required)
     if value is None:
         return None
-    return int(value)
+    try:
+        return int(value)
+    except ValueError:
+        raise RuntimeError(
+            f"Invalid integer value for {key}: '{value}'. "
+            f"Check your .env file or environment."
+        )
 
 
 def _getenv_list(key, *, default=None, separator=","):
