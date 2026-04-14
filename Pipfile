@@ -38,7 +38,7 @@ idna = "~=3.7"
 
 [dev-packages]
 pre-commit = "==2.21.0"
-pytest = "~=7.2"
+pytest = "~=9.0"
 yapf = "==0.28.0"
 black = "~=26.3"
 
