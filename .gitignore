@@ -1,6 +1,7 @@
 **/__pycache__
 venv
 docs-venv/
+.tool-versions
 
 # Don't commit credentials, credential backup files, or login cookies!
 wp1/credentials.py
