@@ -587,7 +587,7 @@ class BuildersTest(BaseWebTestcase):
         patched_request_zimfarm_task.assert_called_once()
         with self.wp10db.cursor() as cursor:
             cursor.execute(
-                "SELECT z_task_id, z_status FROM zim_tasks " "WHERE z_selection_id = 3"
+                "SELECT z_task_id, z_status FROM zim_tasks WHERE z_selection_id = 3"
             )
             data = cursor.fetchone()
 
@@ -665,7 +665,7 @@ class BuildersTest(BaseWebTestcase):
     @patch("wp1.zimfarm.request_zimfarm_task")
     # Mock requests to avoid actual HTTP calls
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider.get_access_token")
     def test_create_zim_file_for_builder_no_title(
         self, mock_get_token, mock_requests, mock_request_zimfarm_task
     ):
@@ -685,7 +685,7 @@ class BuildersTest(BaseWebTestcase):
     @patch("wp1.zimfarm.request_zimfarm_task")
     # Mock requests to avoid actual HTTP calls
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider.get_access_token")
     def test_create_zim_file_for_builder_too_long_title(
         self, mock_get_token, mock_requests, mock_request_zimfarm_task
     ):
@@ -706,7 +706,7 @@ class BuildersTest(BaseWebTestcase):
     @patch("wp1.zimfarm.request_zimfarm_task")
     # Mock requests to avoid actual HTTP calls
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider.get_access_token")
     def test_create_zim_file_for_builder_too_long_description(
         self, mock_get_token, mock_requests, mock_request_zimfarm_task
     ):
@@ -727,7 +727,7 @@ class BuildersTest(BaseWebTestcase):
     @patch("wp1.zimfarm.request_zimfarm_task")
     # Mock requests to avoid actual HTTP calls
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider.get_access_token")
     def test_create_zim_file_for_builder_too_long_long_description(
         self, mock_get_token, mock_requests, mock_request_zimfarm_task
     ):
@@ -752,7 +752,7 @@ class BuildersTest(BaseWebTestcase):
     @patch("wp1.zimfarm.request_zimfarm_task")
     # Mock requests to avoid actual HTTP calls
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider.get_access_token")
     def test_create_zim_file_for_builder_too_short_long_description(
         self, mock_get_token, mock_requests, mock_request_zimfarm_task
     ):
@@ -775,7 +775,7 @@ class BuildersTest(BaseWebTestcase):
 
     # Mock requests to avoid actual HTTP calls
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider.get_access_token")
     def test_create_zim_file_for_builder_too_many_articles(
         self, token_mock, requests_mock
     ):

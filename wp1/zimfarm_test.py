@@ -21,6 +21,7 @@ from wp1.zimfarm import (
     ZIM_DESCRIPTION_MAX_LENGTH,
     ZIM_LONG_DESCRIPTION_MAX_LENGTH,
     ZIM_TITLE_MAX_LENGTH,
+    ZimfarmClientTokenProvider,
 )
 
 
@@ -238,157 +239,444 @@ class ZimFarmTest(BaseWpOneDbTest):
         with self.assertRaises(ValueError):
             zimfarm._get_params(None, self.selection, "Tile", "Desc", "Long Desc")
 
+    @patch("wp1.zimfarm.CREDENTIALS")
+    def test_token_provider_init_oauth_valid(self, mock_credentials):
+        mock_credentials.__getitem__.return_value = {
+            "ZIMFARM": {
+                "auth_mode": "oauth",
+                "oauth_client_id": "test_client_id",
+                "oauth_client_secret": "test_client_secret",
+                "oauth_audience_id": "test_audience",
+                "oauth_issuer": "https://oauth.example.com",
+            }
+        }
+
+        provider = ZimfarmClientTokenProvider()
+        provider._validate_creds()
+
+        self.assertIsNone(provider._access_token)
+        self.assertIsNone(provider._refresh_token)
+
+    @patch("wp1.zimfarm.CREDENTIALS")
+    def test_token_provider_init_local_valid(self, mock_credentials):
+        mock_credentials.__getitem__.return_value = {
+            "ZIMFARM": {
+                "auth_mode": "local",
+                "user": "test_user",
+                "password": "test_pass",
+            }
+        }
+
+        provider = ZimfarmClientTokenProvider()
+        provider._validate_creds()
+
+        self.assertIsNone(provider._access_token)
+        self.assertIsNone(provider._refresh_token)
+
+    @patch("wp1.zimfarm.CREDENTIALS")
+    def test_token_provider_init_oauth_missing_credentials(self, mock_credentials):
+        mock_credentials.__getitem__.return_value = {
+            "ZIMFARM": {
+                "auth_mode": "oauth",
+                "oauth_client_id": "test_client_id",
+            }
+        }
+
+        with self.assertRaises(ZimFarmError):
+            ZimfarmClientTokenProvider()._validate_creds()
+
+    @patch("wp1.zimfarm.CREDENTIALS")
+    def test_token_provider_init_local_missing_credentials(self, mock_credentials):
+        mock_credentials.__getitem__.return_value = {
+            "ZIMFARM": {
+                "auth_mode": "local",
+                "user": "test_user",
+            }
+        }
+
+        with self.assertRaises(ZimFarmError):
+            ZimfarmClientTokenProvider()._validate_creds()
+
+    @patch("wp1.zimfarm.CREDENTIALS")
+    def test_token_provider_init_unknown_auth_mode(self, mock_credentials):
+        mock_credentials.__getitem__.return_value = {
+            "ZIMFARM": {"auth_mode": "unknown"}
+        }
+
+        with self.assertRaises(ZimFarmError):
+            ZimfarmClientTokenProvider()._validate_creds()
+
+    @patch("wp1.zimfarm.CREDENTIALS")
     @patch("wp1.zimfarm.requests")
-    def test_request_zimfarm_token(self, mock_requests):
-        redis = MagicMock()
+    @patch("wp1.zimfarm.getnow")
+    def test_token_provider_generate_oauth_access_token_success(
+        self, mock_getnow, mock_requests, mock_credentials
+    ):
+        """Test _generate_oauth_access_token successfully generates token"""
+        mock_credentials.__getitem__.return_value = {
+            "ZIMFARM": {
+                "auth_mode": "oauth",
+                "oauth_client_id": "test_client_id",
+                "oauth_client_secret": "test_client_secret",
+                "oauth_audience_id": "test_audience",
+                "oauth_issuer": "https://oauth.example.com",
+                "requests_timeout": 30,
+            }
+        }
+
+        mock_getnow.return_value = datetime.datetime(2023, 1, 1, 0, 0, 0, tzinfo=None)
         mock_response = MagicMock()
-        mock_response.json.return_value = {"access_token": "abcdef"}
+        mock_response.json.return_value = {
+            "access_token": "oauth_token_123",
+            "expires_in": 3600,
+        }
         mock_requests.post.return_value = mock_response
 
-        actual = zimfarm.request_zimfarm_token(redis)
+        provider = ZimfarmClientTokenProvider()
+        provider._generate_oauth_access_token()
 
-        self.assertEqual("abcdef", actual)
+        self.assertEqual(provider._access_token, "oauth_token_123")
+        self.assertEqual(provider._expires_at, datetime.datetime(2023, 1, 1, 1, 0, 0))
 
+    @patch("wp1.zimfarm.CREDENTIALS")
     @patch("wp1.zimfarm.requests")
-    def test_request_zimfarm_token_posts_with_correct_data(self, mock_requests):
-        redis = MagicMock()
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"access_token": "abcdef"}
-        mock_requests.post.return_value = mock_response
+    def test_token_provider_generate_oauth_access_token_http_error(
+        self, mock_requests, mock_credentials
+    ):
+        mock_credentials.__getitem__.return_value = {
+            "ZIMFARM": {
+                "auth_mode": "oauth",
+                "oauth_client_id": "test_client_id",
+                "oauth_client_secret": "test_client_secret",
+                "oauth_audience_id": "test_audience",
+                "oauth_issuer": "https://oauth.example.com",
+            }
+        }
 
-        zimfarm.request_zimfarm_token(redis)
-
-        mock_requests.post.assert_called_once_with(
-            "https://fake.farm/v2/auth/authorize",
-            headers={"User-Agent": "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>"},
-            json={"username": "farmuser", "password": "farmpass"},
-        )
-
-    @patch("wp1.zimfarm.requests")
-    def test_request_zimfarm_token_raises_for_status(self, mock_requests):
-        redis = MagicMock()
         mock_response = MagicMock()
         mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError
+        mock_requests.post.return_value = mock_response
         mock_requests.exceptions.HTTPError = requests.exceptions.HTTPError
-        mock_requests.post.return_value = mock_response
+
+        provider = ZimfarmClientTokenProvider()
 
         with self.assertRaises(ZimFarmError):
-            zimfarm.request_zimfarm_token(redis)
+            provider._generate_oauth_access_token()
 
-    @patch("wp1.zimfarm.CREDENTIALS", {Environment.TEST: {}})
-    def test_request_zimfarm_token_no_creds(self):
-        redis = MagicMock()
-
-        with self.assertRaises(ZimFarmError):
-            zimfarm.request_zimfarm_token(redis)
-
+    @patch("wp1.zimfarm.CREDENTIALS")
     @patch("wp1.zimfarm.requests")
-    def test_refresh_zimfarm_token(self, mock_requests):
-        redis = MagicMock()
+    @patch("wp1.zimfarm.get_zimfarm_url")
+    def test_token_provider_generate_local_access_token_no_refresh(
+        self, mock_get_url, mock_requests, mock_credentials
+    ):
+        mock_credentials.__getitem__.return_value = {
+            "ZIMFARM": {
+                "auth_mode": "local",
+                "user": "test_user",
+                "password": "test_pass",
+                "requests_timeout": 30,
+            }
+        }
+        mock_get_url.return_value = "https://fake.farm/v2"
+
         mock_response = MagicMock()
-        mock_response.json.return_value = {"access_token": "abcdef"}
+        mock_response.json.return_value = {
+            "access_token": "local_token_123",
+            "refresh_token": "refresh_token_123",
+            "expires_time": "2023-01-01T12:00:00Z",
+        }
         mock_requests.post.return_value = mock_response
 
-        refresh_token = "12345"
-        actual = zimfarm.refresh_zimfarm_token(redis, refresh_token)
+        provider = ZimfarmClientTokenProvider()
+        provider._generate_local_access_token()
 
-        self.assertEqual("abcdef", actual)
+        self.assertEqual(provider._access_token, "local_token_123")
+        self.assertEqual(provider._refresh_token, "refresh_token_123")
+        self.assertEqual(provider._expires_at, datetime.datetime(2023, 1, 1, 12, 0, 0))
 
+    @patch("wp1.zimfarm.CREDENTIALS")
     @patch("wp1.zimfarm.requests")
-    def test_refresh_zimfarm_token_posts_with_correct_data(self, mock_requests):
-        redis = MagicMock()
+    @patch("wp1.zimfarm.get_zimfarm_url")
+    def test_token_provider_generate_local_access_token_with_refresh(
+        self, mock_get_url, mock_requests, mock_credentials
+    ):
+        mock_credentials.__getitem__.return_value = {
+            "ZIMFARM": {
+                "auth_mode": "local",
+                "user": "test_user",
+                "password": "test_pass",
+                "requests_timeout": 30,
+            }
+        }
+        mock_get_url.return_value = "https://fake.farm/v2"
+
         mock_response = MagicMock()
-        mock_response.json.return_value = {"access_token": "abcdef"}
+        mock_response.json.return_value = {
+            "access_token": "new_token_456",
+            "refresh_token": "new_refresh_456",
+            "expires_time": "2023-01-01T13:00:00Z",
+        }
         mock_requests.post.return_value = mock_response
 
-        refresh_token = "12345"
-        zimfarm.refresh_zimfarm_token(redis, refresh_token)
+        provider = ZimfarmClientTokenProvider()
+        provider._refresh_token = "old_refresh_token"
+        provider._generate_local_access_token()
 
+        self.assertEqual(provider._access_token, "new_token_456")
+        self.assertEqual(provider._refresh_token, "new_refresh_456")
         mock_requests.post.assert_called_once_with(
             "https://fake.farm/v2/auth/refresh",
-            headers={
-                "User-Agent": "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>",
-            },
-            json={"refresh_token": "12345"},
+            json={"refresh_token": "old_refresh_token"},
+            timeout=30,
+            headers={"User-Agent": "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>"},
         )
 
+    @patch("wp1.zimfarm.CREDENTIALS")
     @patch("wp1.zimfarm.requests")
-    def test_refresh_zimfarm_token_raises_for_status(self, mock_requests):
-        redis = MagicMock()
+    @patch("wp1.zimfarm.get_zimfarm_url")
+    def test_token_provider_generate_local_access_token_http_error(
+        self, mock_get_url, mock_requests, mock_credentials
+    ):
+        mock_credentials.__getitem__.return_value = {
+            "ZIMFARM": {
+                "auth_mode": "local",
+                "user": "test_user",
+                "password": "test_pass",
+            }
+        }
+        mock_get_url.return_value = "https://fake.farm/v2"
+
         mock_response = MagicMock()
         mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError
+        mock_requests.post.return_value = mock_response
         mock_requests.exceptions.HTTPError = requests.exceptions.HTTPError
+
+        provider = ZimfarmClientTokenProvider()
+
+        with self.assertRaises(ZimFarmError):
+            provider._generate_local_access_token()
+
+    @patch("wp1.zimfarm.CREDENTIALS")
+    @patch("wp1.zimfarm.getnow")
+    def test_token_provider_get_access_token_not_expired(
+        self, mock_getnow, mock_credentials
+    ):
+        mock_credentials.__getitem__.return_value = {
+            "ZIMFARM": {
+                "auth_mode": "local",
+                "user": "test_user",
+                "password": "test_pass",
+                "token_renewal_window": 300,
+            }
+        }
+
+        mock_getnow.return_value = datetime.datetime(2023, 1, 1, 11, 50, 0, tzinfo=None)
+
+        redis = MagicMock()
+        redis.hgetall.return_value = {
+            "access_token": "existing_token",
+            "refresh_token": "existing_refresh",
+            "expires_at": "2023-01-01T12:00:00Z",
+        }
+
+        provider = ZimfarmClientTokenProvider()
+        token = provider.get_access_token(redis)
+
+        self.assertEqual(token, "existing_token")
+        redis.hset.assert_not_called()
+
+    @patch("wp1.zimfarm.CREDENTIALS")
+    @patch("wp1.zimfarm.getnow")
+    @patch("wp1.zimfarm.requests")
+    def test_token_provider_get_access_token_expired_oauth(
+        self, mock_requests, mock_getnow, mock_credentials
+    ):
+        mock_credentials.__getitem__.return_value = {
+            "ZIMFARM": {
+                "auth_mode": "oauth",
+                "oauth_client_id": "test_client_id",
+                "oauth_client_secret": "test_client_secret",
+                "oauth_audience_id": "test_audience",
+                "oauth_issuer": "https://oauth.example.com",
+                "token_renewal_window": 300,
+            }
+        }
+
+        mock_getnow.return_value = datetime.datetime(2023, 1, 1, 12, 0, 0, tzinfo=None)
+
+        redis = MagicMock()
+        redis.hgetall.return_value = {
+            "access_token": "old_token",
+            "refresh_token": "",
+            "expires_at": "2023-01-01T11:50:00Z",  # Expired
+        }
+
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "access_token": "new_oauth_token",
+            "expires_in": 3600,
+        }
         mock_requests.post.return_value = mock_response
 
-        with self.assertRaises(ZimFarmError):
-            zimfarm.refresh_zimfarm_token(redis, "12345")
+        provider = ZimfarmClientTokenProvider()
+        token = provider.get_access_token(redis)
 
-    @patch("wp1.zimfarm.CREDENTIALS", {Environment.TEST: {}})
-    def test_refresh_zimfarm_token_no_creds(self):
+        self.assertEqual(token, "new_oauth_token")
+        redis.hset.assert_called_once()
+
+    @patch("wp1.zimfarm.CREDENTIALS")
+    @patch("wp1.zimfarm.getnow")
+    @patch("wp1.zimfarm.requests")
+    @patch("wp1.zimfarm.get_zimfarm_url")
+    def test_token_provider_get_access_token_expired_local(
+        self, mock_get_url, mock_requests, mock_getnow, mock_credentials
+    ):
+        """Test get_access_token refreshes token when expired (local mode)"""
+        mock_credentials.__getitem__.return_value = {
+            "ZIMFARM": {
+                "auth_mode": "local",
+                "user": "test_user",
+                "password": "test_pass",
+                "token_renewal_window": 300,
+            }
+        }
+        mock_get_url.return_value = "https://fake.farm/v2"
+
+        mock_getnow.return_value = datetime.datetime(2023, 1, 1, 12, 0, 0, tzinfo=None)
+
         redis = MagicMock()
+        redis.hgetall.return_value = {
+            "access_token": "old_token",
+            "refresh_token": "old_refresh",
+            "expires_at": "2023-01-01T11:50:00Z",  # Expired
+        }
 
-        with self.assertRaises(ZimFarmError):
-            zimfarm.refresh_zimfarm_token(redis, "12345")
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "access_token": "new_local_token",
+            "refresh_token": "new_refresh",
+            "expires_time": "2023-01-01T13:00:00Z",
+        }
+        mock_requests.post.return_value = mock_response
 
-    @patch("wp1.zimfarm.request_zimfarm_token")
-    def test_get_zimfarm_token_no_data(self, request_token_mock):
+        provider = ZimfarmClientTokenProvider()
+        token = provider.get_access_token(redis)
+
+        self.assertEqual(token, "new_local_token")
+        redis.hset.assert_called_once()
+
+    @patch("wp1.zimfarm.CREDENTIALS")
+    @patch("wp1.zimfarm.getnow")
+    @patch("wp1.zimfarm.requests")
+    def test_token_provider_get_access_token_no_redis_data_oauth(
+        self, mock_requests, mock_getnow, mock_credentials
+    ):
+        mock_credentials.__getitem__.return_value = {
+            "ZIMFARM": {
+                "auth_mode": "oauth",
+                "oauth_client_id": "test_client_id",
+                "oauth_client_secret": "test_client_secret",
+                "oauth_audience_id": "test_audience",
+                "oauth_issuer": "https://oauth.example.com",
+            }
+        }
+
+        mock_getnow.return_value = datetime.datetime(2023, 1, 1, 12, 0, 0, tzinfo=None)
+
         redis = MagicMock()
         redis.hgetall.return_value = None
 
-        request_token_mock.return_value = "bcdefg"
-        actual = zimfarm.get_zimfarm_token(redis)
-        self.assertEqual(actual, "bcdefg")
-
-    @patch("wp1.zimfarm.request_zimfarm_token")
-    def test_get_zimfarm_token_no_refresh_token(self, request_token_mock):
-        redis = MagicMock()
-        redis.hgetall.return_value = {
-            "expires_time": "2023-01-01T00:00:01Z",
-            "access_token": "abcdef",
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "access_token": "fresh_oauth_token",
+            "expires_in": 3600,
         }
+        mock_requests.post.return_value = mock_response
 
-        request_token_mock.return_value = "bcdefg"
-        actual = zimfarm.get_zimfarm_token(redis)
-        self.assertEqual(actual, "bcdefg")
+        provider = ZimfarmClientTokenProvider()
+        token = provider.get_access_token(redis)
 
-    @patch("wp1.zimfarm.get_current_datetime")
-    def test_get_zimfarm_token_access_token_not_expired(self, current_datetime_mock):
-        current_datetime_mock.return_value = datetime.datetime(2022, 12, 25, 5, 5, 55)
+        self.assertEqual(token, "fresh_oauth_token")
+        redis.hset.assert_called_once()
 
-        redis = MagicMock()
-        redis.hgetall.return_value = {
-            "expires_time": "2023-01-01T00:00:01Z",
-            "refresh_token": "12345",
-            "access_token": "abcdef",
-        }
-
-        actual = zimfarm.get_zimfarm_token(redis)
-
-        self.assertEqual(actual, "abcdef")
-
-    @patch("wp1.zimfarm.get_current_datetime")
-    @patch("wp1.zimfarm.refresh_zimfarm_token")
-    def test_get_zimfarm_token_access_token_expired(
-        self, refresh_token_mock, current_datetime_mock
+    @patch("wp1.zimfarm.CREDENTIALS")
+    @patch("wp1.zimfarm.getnow")
+    @patch("wp1.zimfarm.requests")
+    @patch("wp1.zimfarm.get_zimfarm_url")
+    def test_token_provider_get_access_token_no_redis_data_local(
+        self, mock_get_url, mock_requests, mock_getnow, mock_credentials
     ):
-        current_datetime_mock.return_value = datetime.datetime(2022, 12, 25, 5, 5, 55)
-        refresh_token_mock.return_value = "bcdefg"
+        mock_credentials.__getitem__.return_value = {
+            "ZIMFARM": {
+                "auth_mode": "local",
+                "user": "test_user",
+                "password": "test_pass",
+            }
+        }
+        mock_get_url.return_value = "https://fake.farm/v2"
+
+        mock_getnow.return_value = datetime.datetime(2023, 1, 1, 12, 0, 0, tzinfo=None)
 
         redis = MagicMock()
-        redis.hgetall.return_value = {
-            "expires_time": "2022-12-01T00:00:01Z",
-            "refresh_token": "12345",
-            "access_token": "abcdef",
+        redis.hgetall.return_value = None
+
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "access_token": "fresh_local_token",
+            "refresh_token": "fresh_refresh",
+            "expires_time": "2023-01-01T13:00:00Z",
+        }
+        mock_requests.post.return_value = mock_response
+
+        provider = ZimfarmClientTokenProvider()
+        token = provider.get_access_token(redis)
+
+        self.assertEqual(token, "fresh_local_token")
+        redis.hset.assert_called_once()
+
+    @patch("wp1.zimfarm.CREDENTIALS")
+    @patch("wp1.zimfarm.getnow")
+    def test_token_provider_get_access_token_stores_in_redis(
+        self, mock_getnow, mock_credentials
+    ):
+        mock_credentials.__getitem__.return_value = {
+            "ZIMFARM": {
+                "auth_mode": "oauth",
+                "oauth_client_id": "test_client_id",
+                "oauth_client_secret": "test_client_secret",
+                "oauth_audience_id": "test_audience",
+                "oauth_issuer": "https://oauth.example.com",
+            }
         }
 
-        actual = zimfarm.get_zimfarm_token(redis)
+        mock_getnow.return_value = datetime.datetime(2023, 1, 1, 12, 0, 0, tzinfo=None)
 
-        self.assertEqual(actual, "bcdefg")
-
-    @patch("wp1.zimfarm.get_zimfarm_token")
-    def test_create_or_update_zimfarm_schedule_missing_token(self, get_token_mock):
         redis = MagicMock()
-        get_token_mock.return_value = None
+        redis.hgetall.return_value = None
+
+        with patch("wp1.zimfarm.requests") as mock_requests:
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "access_token": "token_to_store",
+                "expires_in": 3600,
+            }
+            mock_requests.post.return_value = mock_response
+
+            provider = ZimfarmClientTokenProvider()
+            provider.get_access_token(redis)
+
+            redis.hset.assert_called_once()
+            call_args = redis.hset.call_args
+            self.assertEqual(call_args[0][0], "zimfarm.auth")
+            self.assertIn("access_token", call_args[1]["mapping"])
+            self.assertEqual(call_args[1]["mapping"]["access_token"], "token_to_store")
+
+    @patch("wp1.zimfarm.token_provider")
+    def test_create_or_update_zimfarm_schedule_missing_token(self, mock_token_provider):
+        redis = MagicMock()
+        mock_token_provider.get_access_token.side_effect = ZimFarmError(
+            "Failed to generate access token."
+        )
 
         with self.assertRaises(ZimFarmError):
             zimfarm.create_or_update_zimfarm_schedule(
@@ -400,10 +688,12 @@ class ZimFarmTest(BaseWpOneDbTest):
                 long_description=None,
             )
 
-    @patch("wp1.zimfarm.get_zimfarm_token")
-    def test_create_or_update_zimfarm_schedule_missing_builder(self, get_token_mock):
+    @patch("wp1.zimfarm.token_provider")
+    def test_create_or_update_zimfarm_schedule_missing_builder(
+        self, mock_token_provider
+    ):
         redis = MagicMock()
-        get_token_mock.return_value = "test-token"
+        mock_token_provider.get_access_token.return_value = "test-token"
 
         with self.assertRaises(ObjectNotFoundError):
             zimfarm.create_or_update_zimfarm_schedule(
@@ -416,15 +706,15 @@ class ZimFarmTest(BaseWpOneDbTest):
             )
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm._get_params")
     def test_create_or_update_zimfarm_schedule_creates(
-        self, get_params_mock, get_token_mock, mock_requests
+        self, get_params_mock, mock_token_provider, mock_requests
     ):
         """Test creating a new schedule when no existing schedule is found"""
         redis = MagicMock()
         get_params_mock.return_value = {"name": "bar"}
-        get_token_mock.return_value = "abcdef"
+        mock_token_provider.get_access_token.return_value = "abcdef"
         mock_response = MagicMock()
         mock_response.json.return_value = {"requested": ["9876"]}
         mock_requests.post.side_effect = (MagicMock(), mock_response)
@@ -459,16 +749,20 @@ class ZimFarmTest(BaseWpOneDbTest):
             self.assertEqual(long_desc.encode("utf-8"), result["s_long_description"])
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm._get_params")
     @patch("wp1.zimfarm.zimfarm_schedule_exists", return_value=True)
     def test_create_or_update_zimfarm_schedule_updates(
-        self, get_params_mock, get_token_mock, mock_requests, zimfarm_schedule_exists
+        self,
+        zimfarm_schedule_exists,
+        get_params_mock,
+        mock_token_provider,
+        mock_requests,
     ):
         """Test that an existing schedule is updated and persisted in the DB."""
         redis = MagicMock()
         get_params_mock.return_value = {"name": "bar"}
-        get_token_mock.return_value = "abcdef"
+        mock_token_provider.get_access_token.return_value = "abcdef"
         # Insert an existing schedule
         schedule_id = self._insert_zim_schedule(
             schedule_id=b"existing-123",
@@ -481,7 +775,8 @@ class ZimFarmTest(BaseWpOneDbTest):
 
         mock_response = MagicMock()
         mock_response.json.return_value = {"requested": ["9876"]}
-        mock_requests.post.side_effect = (MagicMock(), mock_response)
+        mock_requests.patch.side_effect = (MagicMock(),)
+        mock_requests.post.side_effect = (mock_response,)
 
         # Call the function
         zimfarm.create_or_update_zimfarm_schedule(
@@ -506,14 +801,14 @@ class ZimFarmTest(BaseWpOneDbTest):
             self.assertIsNone(result["s_remaining_generations"])
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm._get_params")
     def test_create_or_update_zimfarm_schedule_http_error(
-        self, get_params_mock, get_token_mock, mock_requests
+        self, get_params_mock, mock_token_provider, mock_requests
     ):
         redis = MagicMock()
         get_params_mock.return_value = {"name": "bar"}
-        get_token_mock.return_value = "abcdef"
+        mock_token_provider.get_access_token.return_value = "abcdef"
         create_schedule_response = MagicMock()
         create_schedule_response.raise_for_status.side_effect = (
             requests.exceptions.HTTPError
@@ -531,10 +826,12 @@ class ZimFarmTest(BaseWpOneDbTest):
                 None,
             )
 
-    @patch("wp1.zimfarm.get_zimfarm_token")
-    def test_create_or_update_zimfarm_schedule_too_long_title(self, get_token_mock):
+    @patch("wp1.zimfarm.token_provider")
+    def test_create_or_update_zimfarm_schedule_too_long_title(
+        self, mock_token_provider
+    ):
         redis = MagicMock()
-        get_token_mock.return_value = "test-token"
+        mock_token_provider.get_access_token.return_value = "test-token"
 
         wrong_title = "a" * (ZIM_TITLE_MAX_LENGTH + 1)
         with self.assertRaises(InvalidZimTitleError):
@@ -542,12 +839,12 @@ class ZimFarmTest(BaseWpOneDbTest):
                 redis, self.wp10db, self.builder, wrong_title, "Test Description", None
             )
 
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     def test_create_or_update_zimfarm_schedule_too_long_description(
-        self, get_token_mock
+        self, mock_token_provider
     ):
         redis = MagicMock()
-        get_token_mock.return_value = "test-token"
+        mock_token_provider.get_access_token.return_value = "test-token"
 
         too_long_description = "z" * (ZIM_DESCRIPTION_MAX_LENGTH + 1)
         with self.assertRaises(InvalidZimDescriptionError):
@@ -560,12 +857,12 @@ class ZimFarmTest(BaseWpOneDbTest):
                 None,
             )
 
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     def test_create_or_update_zimfarm_schedule_too_long_long_description(
-        self, get_token_mock
+        self, mock_token_provider
     ):
         redis = MagicMock()
-        get_token_mock.return_value = "test-token"
+        mock_token_provider.get_access_token.return_value = "test-token"
 
         too_long_long_description = "z" * (ZIM_LONG_DESCRIPTION_MAX_LENGTH + 1)
         with self.assertRaises(InvalidZimLongDescriptionError):
@@ -578,12 +875,12 @@ class ZimFarmTest(BaseWpOneDbTest):
                 long_description=too_long_long_description,
             )
 
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     def test_create_or_update_zimfarm_schedule_too_short_long_description(
-        self, get_token_mock
+        self, mock_token_provider
     ):
         redis = MagicMock()
-        get_token_mock.return_value = "test-token"
+        mock_token_provider.get_access_token.return_value = "test-token"
 
         with self.assertRaises(InvalidZimLongDescriptionError):
             zimfarm.create_or_update_zimfarm_schedule(
@@ -596,15 +893,15 @@ class ZimFarmTest(BaseWpOneDbTest):
             )
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm._get_params")
     def test_create_or_update_zimfarm_schedule_create_empty_long_desc_ok(
-        self, get_params_mock, get_token_mock, mock_requests
+        self, get_params_mock, mock_token_provider, mock_requests
     ):
         """Test creating a new schedule when no existing schedule is found"""
         redis = MagicMock()
         get_params_mock.return_value = {"name": "bar"}
-        get_token_mock.return_value = "abcdef"
+        mock_token_provider.get_access_token.return_value = "abcdef"
 
         zimfarm.create_or_update_zimfarm_schedule(
             redis,
@@ -626,15 +923,15 @@ class ZimFarmTest(BaseWpOneDbTest):
             self.assertEqual(None, result["s_long_description"])
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm._get_params")
     def test_create_or_update_zimfarm_schedule_create_missing_long_desc_ok(
-        self, get_params_mock, get_token_mock, mock_requests
+        self, get_params_mock, mock_token_provider, mock_requests
     ):
         """Test creating a new schedule when no existing schedule is found"""
         redis = MagicMock()
         get_params_mock.return_value = {"name": "bar"}
-        get_token_mock.return_value = "abcdef"
+        mock_token_provider.get_access_token.return_value = "abcdef"
 
         zimfarm.create_or_update_zimfarm_schedule(
             redis,
@@ -655,10 +952,12 @@ class ZimFarmTest(BaseWpOneDbTest):
             self.assertEqual(b"Test Description", result["s_description"])
             self.assertEqual(None, result["s_long_description"])
 
-    @patch("wp1.zimfarm.get_zimfarm_token")
-    def test_create_or_update_zimfarm_schedule_equal_descriptions(self, get_token_mock):
+    @patch("wp1.zimfarm.token_provider")
+    def test_create_or_update_zimfarm_schedule_equal_descriptions(
+        self, mock_token_provider
+    ):
         redis = MagicMock()
-        get_token_mock.return_value = "test-token"
+        mock_token_provider.get_access_token.return_value = "test-token"
 
         with self.assertRaises(InvalidZimLongDescriptionError):
             zimfarm.create_or_update_zimfarm_schedule(
@@ -670,13 +969,13 @@ class ZimFarmTest(BaseWpOneDbTest):
                 long_description="Same description",
             )
 
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.logic.builder.latest_selection_for")
     def test_create_or_update_zimfarm_schedule_too_many_articles(
-        self, mock_latest_selection, get_token_mock
+        self, mock_latest_selection, mock_token_provider
     ):
         redis = MagicMock()
-        get_token_mock.return_value = "test-token"
+        mock_token_provider.get_access_token.return_value = "test-token"
 
         mock_selection = MagicMock()
         mock_selection.s_article_count = 60000  # Above MAX_ZIMFARM_ARTICLE_COUNT
@@ -692,13 +991,13 @@ class ZimFarmTest(BaseWpOneDbTest):
                 None,
             )
 
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.logic.builder.latest_selection_for")
     def test_create_or_update_zimfarm_schedule_none_article_count(
-        self, mock_latest_selection, get_token_mock
+        self, mock_latest_selection, mock_token_provider
     ):
         redis = MagicMock()
-        get_token_mock.return_value = "test-token"
+        mock_token_provider.get_access_token.return_value = "test-token"
 
         mock_selection = MagicMock()
         mock_selection.s_article_count = None
@@ -715,14 +1014,14 @@ class ZimFarmTest(BaseWpOneDbTest):
             )
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm._get_params")
     def test_create_or_update_zimfarm_schedule_valid_graphemes(
-        self, get_params_mock, get_token_mock, mock_requests
+        self, get_params_mock, mock_token_provider, mock_requests
     ):
         redis = MagicMock()
         get_params_mock.return_value = {"name": "bar"}
-        get_token_mock.return_value = "abcdef"
+        mock_token_provider.get_access_token.return_value = "abcdef"
         mock_response = MagicMock()
         mock_response.json.return_value = {"requested": ["9876"]}
         mock_requests.post.side_effect = (MagicMock(), mock_response, MagicMock())
@@ -738,23 +1037,25 @@ class ZimFarmTest(BaseWpOneDbTest):
         )
         mock_requests.post.assert_called_once()
 
-    @patch("wp1.zimfarm.get_zimfarm_token")
-    def test_request_zimfarm_task_missing_token(self, get_token_mock):
+    @patch("wp1.zimfarm.token_provider")
+    def test_request_zimfarm_task_missing_token(self, mock_token_provider):
         redis = MagicMock()
-        get_token_mock.return_value = None
+        mock_token_provider.get_access_token.side_effect = ZimFarmError(
+            "Failed to generate access token."
+        )
 
         with self.assertRaises(ZimFarmError):
             zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.get_zimfarm_schedule_name")
     def test_request_zimfarm_task(
-        self, get_zimfarm_schedule_name_mock, get_token_mock, mock_requests
+        self, get_zimfarm_schedule_name_mock, mock_token_provider, mock_requests
     ):
         redis = MagicMock()
         get_zimfarm_schedule_name_mock.return_value = "bar"
-        get_token_mock.return_value = "abcdef"
+        mock_token_provider.get_access_token.return_value = "abcdef"
         mock_response = MagicMock()
         mock_response.json.return_value = {"requested": ["9876"]}
         mock_requests.post.return_value = mock_response
@@ -764,22 +1065,24 @@ class ZimFarmTest(BaseWpOneDbTest):
         self.assertEqual("9876", actual)
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.get_zimfarm_token")
-    def test_request_zimfarm_task_missing_builder(self, get_token_mock, mock_requests):
+    @patch("wp1.zimfarm.token_provider")
+    def test_request_zimfarm_task_missing_builder(
+        self, mock_token_provider, mock_requests
+    ):
         redis = MagicMock()
 
         with self.assertRaises(ObjectNotFoundError):
             zimfarm.request_zimfarm_task(redis, self.wp10db, None)
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.get_zimfarm_schedule_name")
     def test_request_zimfarm_task_post_requests(
-        self, get_zimfarm_schedule_name_mock, get_token_mock, mock_requests
+        self, get_zimfarm_schedule_name_mock, mock_token_provider, mock_requests
     ):
         redis = MagicMock()
         get_zimfarm_schedule_name_mock.return_value = "bar"
-        get_token_mock.return_value = "abcdef"
+        mock_token_provider.get_access_token.return_value = "abcdef"
         mock_response = MagicMock()
         mock_response.json.return_value = {"requested": ["9876"]}
         mock_requests.post.side_effect = (MagicMock(), mock_response)
@@ -796,10 +1099,10 @@ class ZimFarmTest(BaseWpOneDbTest):
         )
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.get_zimfarm_schedule_name")
     def test_request_zimfarm_task_missing_task_id(
-        self, get_zimfarm_schedule_name_mock, get_token_mock, mock_requests
+        self, get_zimfarm_schedule_name_mock, mock_token_provider, mock_requests
     ):
         redis = MagicMock()
         get_zimfarm_schedule_name_mock.return_value = "bar"
@@ -812,10 +1115,10 @@ class ZimFarmTest(BaseWpOneDbTest):
             zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.get_zimfarm_schedule_name")
     def test_request_zimfarm_task_missing_article_count(
-        self, get_zimfarm_schedule_name_mock, get_token_mock, mock_requests
+        self, get_zimfarm_schedule_name_mock, mock_token_provider, mock_requests
     ):
         redis = MagicMock()
         get_zimfarm_schedule_name_mock.return_value = "bar"
@@ -828,10 +1131,10 @@ class ZimFarmTest(BaseWpOneDbTest):
             zimfarm.request_zimfarm_task(redis, self.wp10db, self.builder)
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.get_zimfarm_schedule_name")
     def test_request_zimfarm_task_too_many_articles(
-        self, get_zimfarm_schedule_name_mock, get_zimfarm_token_mock, mock_requests
+        self, get_zimfarm_schedule_name_mock, mock_token_provider, mock_requests
     ):
         redis = MagicMock()
         get_zimfarm_schedule_name_mock.return_value = "bar"
@@ -901,10 +1204,10 @@ class ZimFarmTest(BaseWpOneDbTest):
         with self.assertRaises(ZimFarmError):
             zimfarm.zim_file_url_for_task_id("foo-bar")
 
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.requests.delete")
-    def test_cancel_zim_by_task_id(self, patched_delete, patched_get_zimfarm_token):
-        patched_get_zimfarm_token.return_value = "foo-token"
+    def test_cancel_zim_by_task_id(self, patched_delete, mock_token_provider):
+        mock_token_provider.get_access_token.return_value = "foo-token"
         redis = MagicMock()
 
         zimfarm.cancel_zim_by_task_id(redis, "task-abc-123")
@@ -916,13 +1219,13 @@ class ZimFarmTest(BaseWpOneDbTest):
             },
         )
 
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.requests.delete")
     @patch("wp1.zimfarm.requests.post")
     def test_cancel_zim_by_task_id_first_delete_404(
-        self, patched_post, patched_delete, patched_get_zimfarm_token
+        self, patched_post, patched_delete, mock_token_provider
     ):
-        patched_get_zimfarm_token.return_value = "foo-token"
+        mock_token_provider.get_access_token.return_value = "foo-token"
         redis = MagicMock()
         response_404 = MagicMock()
         response_404.status_code = 404
@@ -945,13 +1248,13 @@ class ZimFarmTest(BaseWpOneDbTest):
             },
         )
 
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.requests.delete")
     @patch("wp1.zimfarm.requests.post")
     def test_cancel_zim_by_task_id_first_delete_other_error(
-        self, patched_post, patched_delete, patched_get_zimfarm_token
+        self, patched_post, patched_delete, mock_token_provider
     ):
-        patched_get_zimfarm_token.return_value = "foo-token"
+        mock_token_provider.get_access_token.return_value = "foo-token"
         redis = MagicMock()
         response_500 = MagicMock()
         response_500.status_code = 500
@@ -961,13 +1264,13 @@ class ZimFarmTest(BaseWpOneDbTest):
         with self.assertRaises(ZimFarmError):
             zimfarm.cancel_zim_by_task_id(redis, "task-abc-123")
 
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.requests.delete")
     @patch("wp1.zimfarm.requests.post")
     def test_cancel_zim_by_task_id_second_delete_error(
-        self, patched_post, patched_delete, patched_get_zimfarm_token
+        self, patched_post, patched_delete, mock_token_provider
     ):
-        patched_get_zimfarm_token.return_value = "foo-token"
+        mock_token_provider.get_access_token.return_value = "foo-token"
         redis = MagicMock()
         response_404 = MagicMock()
         response_404.status_code = 404
@@ -985,11 +1288,11 @@ class ZimFarmTest(BaseWpOneDbTest):
         with self.assertRaises(ZimFarmError):
             zimfarm.cancel_zim_by_task_id(redis, "task-abc-123")
 
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.requests")
-    def test_zimfarm_schedule_exists_true(self, mock_requests, mock_get_token):
+    def test_zimfarm_schedule_exists_true(self, mock_requests, mock_token_provider):
         """Test zimfarm_schedule_exists returns True when schedule exists (200 status)"""
-        mock_get_token.return_value = "test-token"
+        mock_token_provider.get_access_token.return_value = "test-token"
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_requests.get.return_value = mock_response
@@ -1008,11 +1311,11 @@ class ZimFarmTest(BaseWpOneDbTest):
             },
         )
 
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.requests")
-    def test_zimfarm_schedule_exists_false(self, mock_requests, mock_get_token):
+    def test_zimfarm_schedule_exists_false(self, mock_requests, mock_token_provider):
         """Test zimfarm_schedule_exists returns False when schedule doesn't exist (404 status)"""
-        mock_get_token.return_value = "test-token"
+        mock_token_provider.get_access_token.return_value = "test-token"
         mock_response = MagicMock()
         mock_response.status_code = 404
         mock_requests.get.return_value = mock_response
@@ -1024,24 +1327,26 @@ class ZimFarmTest(BaseWpOneDbTest):
 
         self.assertFalse(result)
 
-    @patch("wp1.zimfarm.get_zimfarm_token")
-    def test_zimfarm_schedule_exists_no_token(self, mock_get_token):
+    @patch("wp1.zimfarm.token_provider")
+    def test_zimfarm_schedule_exists_no_token(self, mock_token_provider):
         """Test zimfarm_schedule_exists raises error when token is None"""
-        mock_get_token.return_value = None
+        mock_token_provider.get_access_token.side_effect = ZimFarmError(
+            "Failed to generate access token."
+        )
 
         redis = MagicMock()
         builder_id = "1a-2b-3c-4d"
 
-        with self.assertRaises(ZimFarmError) as cm:
+        with self.assertRaises(ZimFarmError):
             zimfarm.zimfarm_schedule_exists(redis, builder_id)
 
-        self.assertEqual(str(cm.exception), "Error retrieving auth token for request")
-
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.requests")
-    def test_zimfarm_schedule_exists_http_error(self, mock_requests, mock_get_token):
+    def test_zimfarm_schedule_exists_http_error(
+        self, mock_requests, mock_token_provider
+    ):
         """Test zimfarm_schedule_exists raises error when HTTP request fails"""
-        mock_get_token.return_value = "test-token"
+        mock_token_provider.get_access_token.return_value = "test-token"
         mock_response = MagicMock()
         mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError
         mock_requests.get.return_value = mock_response
@@ -1111,12 +1416,12 @@ class ZimFarmTest(BaseWpOneDbTest):
         result = zimfarm.find_existing_schedule_in_db(self.wp10db, self.builder.b_id)
         self.assertIsNone(result)
 
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.requests.delete")
     def test_delete_zimfarm_schedule_by_builder_id_success(
-        self, patched_delete, patched_get_zimfarm_token
+        self, patched_delete, mock_token_provider
     ):
-        patched_get_zimfarm_token.return_value = "foo-token"
+        mock_token_provider.get_access_token.return_value = "foo-token"
         redis = MagicMock()
         response = MagicMock()
         response.status_code = 204
@@ -1134,12 +1439,12 @@ class ZimFarmTest(BaseWpOneDbTest):
             },
         )
 
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.requests.delete")
     def test_delete_zimfarm_schedule_by_builder_id_not_found(
-        self, patched_delete, patched_get_zimfarm_token
+        self, patched_delete, mock_token_provider
     ):
-        patched_get_zimfarm_token.return_value = "foo-token"
+        mock_token_provider.get_access_token.return_value = "foo-token"
         redis = MagicMock()
         response = MagicMock()
         response.status_code = 404
@@ -1157,12 +1462,12 @@ class ZimFarmTest(BaseWpOneDbTest):
             },
         )
 
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm.requests.delete")
     def test_delete_zimfarm_schedule_by_builder_id_error(
-        self, patched_delete, patched_get_zimfarm_token
+        self, patched_delete, mock_token_provider
     ):
-        patched_get_zimfarm_token.return_value = "foo-token"
+        mock_token_provider.get_access_token.return_value = "foo-token"
         redis = MagicMock()
         response = MagicMock()
         response.status_code = 500
@@ -1172,11 +1477,11 @@ class ZimFarmTest(BaseWpOneDbTest):
         with self.assertRaises(ZimFarmError):
             zimfarm.delete_zimfarm_schedule_by_builder_id(redis, "1a-2b-3c-4d")
 
-    @patch("wp1.zimfarm.get_zimfarm_token")
-    def test_delete_zimfarm_schedule_by_builder_id_no_token(
-        self, patched_get_zimfarm_token
-    ):
-        patched_get_zimfarm_token.return_value = None
+    @patch("wp1.zimfarm.token_provider")
+    def test_delete_zimfarm_schedule_by_builder_id_no_token(self, mock_token_provider):
+        mock_token_provider.get_access_token.side_effect = ZimFarmError(
+            "Failed to generate access token."
+        )
         redis = MagicMock()
 
         with self.assertRaises(ZimFarmError):
