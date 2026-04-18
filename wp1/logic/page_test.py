@@ -48,19 +48,48 @@ class LogicPageCategoryTest(BaseWikiDbTest):
         """,
                     page,
                 )
+            cursor.execute(
+                """
+            INSERT INTO linktarget
+              (lt_id, lt_namespace, lt_title)
+            VALUES
+              (501, 14, %(title)s)
+        """,
+                {"title": b"Articles about Superman"},
+            )
             cls = [
-                {"from": 100, "to": b"Articles about Superman", "timestamp": ts},
-                {"from": 101, "to": b"Articles about Superman", "timestamp": ts},
-                {"from": 102, "to": b"Articles about Superman", "timestamp": ts},
-                {"from": 103, "to": b"Articles about Superman", "timestamp": ts},
+                {
+                    "from": 100,
+                    "to": b"Articles about Superman",
+                    "timestamp": ts,
+                    "target_id": 501,
+                },
+                {
+                    "from": 101,
+                    "to": b"Articles about Superman",
+                    "timestamp": ts,
+                    "target_id": 501,
+                },
+                {
+                    "from": 102,
+                    "to": b"Articles about Superman",
+                    "timestamp": ts,
+                    "target_id": 501,
+                },
+                {
+                    "from": 103,
+                    "to": b"Articles about Superman",
+                    "timestamp": ts,
+                    "target_id": 501,
+                },
             ]
             for cl in cls:
                 cursor.execute(
                     """
             INSERT INTO categorylinks
-              (cl_from, cl_to, cl_timestamp)
+              (cl_from, cl_to, cl_timestamp, cl_target_id)
             VALUES
-              (%(from)s, %(to)s, %(timestamp)s)
+              (%(from)s, %(to)s, %(timestamp)s, %(target_id)s)
         """,
                     cl,
                 )
@@ -205,6 +234,55 @@ class LogicPageMovesTest(BaseCombinedDbTest):
             self.wp10db, self.wikidb, 0, b"Some Moved Article", datetime(2014, 1, 1)
         )
         self.assertIsNone(move_data)
+
+    def test_get_redirect_from_db_stale(self):
+        # Insert a redirect row with a 2016 timestamp which is older than last run
+        with self.wikidb.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO page (page_id, page_namespace, page_title, page_touched)
+                VALUES (200, 0, 'Some_Moved_Article', '20160315142300')
+            """
+            )
+            cursor.execute(
+                """
+                INSERT INTO redirect (rd_from, rd_namespace, rd_title)
+                VALUES (200, 0, 'Destination_Article')
+            """
+            )
+        self.wikidb.commit()
+
+        # Last run was 2022, redirect is from 2016 so should be discarded
+        move_data = logic_page._get_redirects_from_db(
+            self.wikidb, 0, b"Some Moved Article", datetime(2022, 1, 1)
+        )
+        self.assertIsNone(move_data)
+
+    def test_get_redirect_from_db_fresh(self):
+        # Insert a redirect row with a 2023 timestamp which newer than last run
+        with self.wikidb.cursor() as cursor:
+            cursor.execute(
+                """
+                INSERT INTO page (page_id, page_namespace, page_title, page_touched)
+                VALUES (201, 0, 'Some_Moved_Article', '20230315142300')
+            """
+            )
+            cursor.execute(
+                """
+                INSERT INTO redirect (rd_from, rd_namespace, rd_title)
+                VALUES (201, 0, 'Destination_Article')
+            """
+            )
+        self.wikidb.commit()
+
+        # Last run was 2022, redirect is from 2023 so should return
+        move_data = logic_page._get_redirects_from_db(
+            self.wikidb, 0, b"Some Moved Article", datetime(2022, 1, 1)
+        )
+        self.assertIsNotNone(move_data)
+        self.assertEqual(0, move_data["dest_ns"])
+        self.assertEqual(b"Destination_Article", move_data["dest_title"])
+        self.assertEqual(datetime(2023, 3, 15, 14, 23, 0), move_data["timestamp_dt"])
 
 
 class LogicPageMoveDbTest(BaseWpOneDbTest):

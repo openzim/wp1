@@ -29,7 +29,7 @@ The `cron` directory contains wrapper scripts for cron jobs that are
 run [inside the workers image](https://github.com/openzim/wp1/blob/master/docker/workers/Dockerfile#L15).
 
 The `setup` directory contains a historical record of the database
-schema used by the tool for what is refered to in code as the `wp10`
+schema used by the tool for what is referred to in code as the `wp10`
 database. This file has been heavily edited, but should be able to be
 used to re-create the `enwp10` database if necessary.
 
@@ -71,7 +71,7 @@ interfaces with. They are used for unit testing.
 ## Installation
 
 This code is targeted to and tested on Python 3.12.0. For now, all development
-has been on Linux, use other platforms at your own risk.
+has been on Linux, Other platforms may not be fully supported.
 
 ### Installing dependencies
 
@@ -127,7 +127,7 @@ in order to run the development server.
 
 ### Populating the credentials module
 
-The script needs access to the enwiki_p replica database (referred to
+The script requires access to the enwiki_p replica database (referred to
 in the code as `wikidb`), as well as its own toolsdb application database
 (referred to in the code as `wp10db`). If you are a part of the toolforge
 `enwp10` [project](https://tools.wmflabs.org/admin/tool/enwp10), you can

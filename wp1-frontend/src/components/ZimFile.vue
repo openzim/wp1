@@ -83,7 +83,10 @@
             page and the My Selections page will automatically update with a URL
             to download your ZIM file once it is ready.
           </p>
-          <p v-if="isDeleted && status == 'FILE_READY'" class="errors">
+          <p
+            v-if="forceExpiredDisplay || (isDeleted && status == 'FILE_READY')"
+            class="errors"
+          >
             Your ZIM file has expired and needs to be re-created. ZIM file
             download links are only valid for 2 weeks. You can re-create your
             ZIM file with the button below.
@@ -103,12 +106,24 @@
             this was a transient or external error, you can try requesting your
             ZIM file again below.
           </p>
+          <p
+            v-if="
+              flavour &&
+              (status === 'FILE_READY' ||
+                status === 'REQUESTED' ||
+                status === 'FAILED')
+            "
+            class="text-muted"
+          >
+            <strong>Content:</strong> {{ selectedFlavourDescription }}
+          </p>
         </div>
       </div>
       <div
         v-if="
           !activeSchedule &&
-          (status === 'NOT_REQUESTED' ||
+          (forceExpiredDisplay ||
+            status === 'NOT_REQUESTED' ||
             status === 'FAILED' ||
             (status != 'REQUESTED' && isDeleted))
         "
@@ -209,6 +224,18 @@
                 Long description must differ from description and not be shorter
               </div>
             </div>
+            <div id="flavour-group" class="form-group">
+              <label for="flavour">What to include</label>
+              <select id="flavour" class="form-control" v-model="flavour">
+                <option
+                  v-for="opt in flavourOptions"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
+                  {{ opt.description }}
+                </option>
+              </select>
+            </div>
             <!-- Scheduling options -->
             <div class="form-group form-check mt-3">
               <input
@@ -294,7 +321,10 @@
         </div>
       </div>
       <div
-        v-else-if="status === 'FILE_READY' || status === 'REQUESTED'"
+        v-else-if="
+          !forceExpiredDisplay &&
+          (status === 'FILE_READY' || status === 'REQUESTED')
+        "
         class="row"
       >
         <div class="col-lg-6 col-md-9 mx-4">
@@ -364,11 +394,38 @@ export default {
       repetitionPeriodInMonths: 1,
       numberOfRepetitions: 1,
       scheduleEmail: '',
+      forceExpiredDisplay: false,
+      flavour: '',
+      flavourOptions: [
+        {
+          value: '',
+          label: 'All',
+          description: 'Everything including videos',
+        },
+        {
+          value: 'maxi',
+          label: 'Maxi',
+          description: 'All except article videos',
+        },
+        {
+          value: 'nopic',
+          label: 'Nopic',
+          description: 'No article pictures or videos',
+        },
+        {
+          value: 'mini',
+          label: 'Mini',
+          description: 'No article details or pictures or videos',
+        },
+      ],
     };
   },
   created: async function () {
     await this.getBuilder();
     await this.getStatus();
+    if (this.$route.query.expired) {
+      this.forceExpiredDisplay = true;
+    }
     await this.loadUserEmail();
     this.ready = true;
   },
@@ -426,6 +483,9 @@ export default {
       this.status = data.status;
       this.isDeleted = data.is_deleted;
       this.activeSchedule = data.active_schedule;
+      if (data.flavour) {
+        this.flavour = data.flavour;
+      }
       if (this.status === 'FILE_READY') {
         this.stopProgressPolling();
       } else if (this.status === 'FAILED') {
@@ -471,6 +531,9 @@ export default {
         description: this.description,
         long_description: this.longDescription,
       };
+      if (this.flavour) {
+        payload.flavour = this.flavour;
+      }
       if (this.schedulingEnabled) {
         const scheduled = {
           repetition_period_in_months: this.repetitionPeriodInMonths,
@@ -636,6 +699,10 @@ export default {
           ? !this.isValidEmail(this.scheduleEmail)
           : false;
       return baseInvalid || scheduleInvalid;
+    },
+    selectedFlavourDescription: function () {
+      const opt = this.flavourOptions.find((o) => o.value === this.flavour);
+      return opt ? opt.description : '';
     },
   },
   watch: {

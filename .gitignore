@@ -1,6 +1,7 @@
 **/__pycache__
 venv
 docs-venv/
+.tool-versions
 
 #credential.py is now a secret-free adapter and is committed.
 #credential.py.dev contains hardcoded secrets (used by Docker volume mounts)
