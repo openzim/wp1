@@ -168,8 +168,11 @@ you should be able to simply run the following command from this
 directory to run the tests:
 
 ```bash
-pipenv run pytest
+pipenv run WP1_ENV=test pytest
 ```
+
+**Note:** Inline env var support in `pipenv run` requires Pipenv >= 2026.5.2.
+Make sure your Pipenv is up to date.
 
 ### Running the frontend (Cypress) integration tests
 
