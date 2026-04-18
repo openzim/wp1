@@ -7,21 +7,18 @@ on the Config class.
 """
 
 import os
-import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
 
 from wp1.environment import Environment
 
-# Load .env from project root (parent of wp1/ directory).
-# When running under pytest, load .env.test instead so that WP1_ENV=test
-# is set automatically — matching the old credentials.py.e2e behaviour.
-# We check both 'pytest' in sys.modules AND the PYTEST_CURRENT_TEST env var
-# because config.py may be imported before pytest registers in sys.modules.
+# Load the appropriate .env file from the project root (parent of wp1/ directory).
+# The file is chosen based on WP1_ENV: "test" loads .env.test, anything else loads .env.
+# For tests, set WP1_ENV=test inline: pipenv run WP1_ENV=test pytest
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
-_is_testing = "pytest" in sys.modules or "PYTEST_CURRENT_TEST" in os.environ
-if _is_testing:
+_env_name = os.environ.get("WP1_ENV", "development")
+if _env_name == "test":
     load_dotenv(_PROJECT_ROOT / ".env.test", override=True)
 else:
     load_dotenv(_PROJECT_ROOT / ".env")
