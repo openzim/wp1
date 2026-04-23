@@ -26,6 +26,7 @@ from wp1.logic import util
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
 from wp1.models.wp10.zim_schedule import ZimSchedule
+from wp1.timestamp import naive_utcnow
 
 REDIS_AUTH_KEY = "zimfarm.auth"
 
@@ -44,11 +45,6 @@ MAX_ZIMFARM_ARTICLE_COUNT = 50_000
 
 def store_zimfarm_token(redis, data):
     redis.hset(REDIS_AUTH_KEY, mapping=data)
-
-
-def getnow():
-    """naive UTC now"""
-    return datetime.now(UTC).replace(tzinfo=None)
 
 
 class ZimfarmClientTokenProvider:
@@ -115,7 +111,7 @@ class ZimfarmClientTokenProvider:
 
         payload = response.json()
         self._access_token = cast(str, payload["access_token"])
-        self._expires_at = getnow() + timedelta(seconds=payload["expires_in"])
+        self._expires_at = naive_utcnow() + timedelta(seconds=payload["expires_in"])
 
     def _generate_local_access_token(self) -> None:
         if self._refresh_token:
@@ -171,7 +167,7 @@ class ZimfarmClientTokenProvider:
                     tzinfo=None
                 )
 
-        now = getnow()
+        now = naive_utcnow()
         if self._access_token is None or now >= (
             self._expires_at
             - timedelta(seconds=self._zimfarm_creds.get("token_renewal_window", 300))
