@@ -226,11 +226,11 @@ def update_pageviews(filter_lang=None, commit_after=50000):
 
             n += 1
             if n >= commit_after:
-                logger.debug("Commiting in temp db")
+                logger.debug("Committing in temp db")
                 wp10db.commit()
                 n = 0
         wp10db.commit()
-        logger.debug("Swaping data from temp db to scores db")
+        logger.debug("Swapping data from temp db to scores db")
         swap_temp_pageviews_to_scores(wp10db)
         reset_missing_articles_pageviews(wp10db)
         truncate_temp_pageviews(wp10db)

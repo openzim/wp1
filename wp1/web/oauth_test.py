@@ -326,7 +326,7 @@ class DevelopmentModeTest(BaseWebTestcase):
     @patch("wp1.web.oauth.ENV", Environment.DEVELOPMENT)
     @patch("wp1.web.oauth.CREDENTIALS", DEV_NO_CREDS)
     def test_initiate_dev_mode_multiple_sessions_same_user(self):
-        """Test : different sesssions hitting initiate don't duplicate users."""
+        """Test : different sessions hitting initiate don't duplicate users."""
         self.app = create_app()
         with self.override_db(self.app):
             with self.app.test_client() as client1:
