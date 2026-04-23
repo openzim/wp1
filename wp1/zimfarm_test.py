@@ -311,9 +311,9 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     @patch("wp1.zimfarm.CREDENTIALS")
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.getnow")
+    @patch("wp1.zimfarm.naive_utcnow")
     def test_token_provider_generate_oauth_access_token_success(
-        self, mock_getnow, mock_requests, mock_credentials
+        self, mock_naive_utcnow, mock_requests, mock_credentials
     ):
         """Test _generate_oauth_access_token successfully generates token"""
         mock_credentials.__getitem__.return_value = {
@@ -327,7 +327,9 @@ class ZimFarmTest(BaseWpOneDbTest):
             }
         }
 
-        mock_getnow.return_value = datetime.datetime(2023, 1, 1, 0, 0, 0, tzinfo=None)
+        mock_naive_utcnow.return_value = datetime.datetime(
+            2023, 1, 1, 0, 0, 0, tzinfo=None
+        )
         mock_response = MagicMock()
         mock_response.json.return_value = {
             "access_token": "oauth_token_123",
@@ -460,9 +462,9 @@ class ZimFarmTest(BaseWpOneDbTest):
             provider._generate_local_access_token()
 
     @patch("wp1.zimfarm.CREDENTIALS")
-    @patch("wp1.zimfarm.getnow")
+    @patch("wp1.zimfarm.naive_utcnow")
     def test_token_provider_get_access_token_not_expired(
-        self, mock_getnow, mock_credentials
+        self, mock_naive_utcnow, mock_credentials
     ):
         mock_credentials.__getitem__.return_value = {
             "ZIMFARM": {
@@ -473,7 +475,9 @@ class ZimFarmTest(BaseWpOneDbTest):
             }
         }
 
-        mock_getnow.return_value = datetime.datetime(2023, 1, 1, 11, 50, 0, tzinfo=None)
+        mock_naive_utcnow.return_value = datetime.datetime(
+            2023, 1, 1, 11, 50, 0, tzinfo=None
+        )
 
         redis = MagicMock()
         redis.hgetall.return_value = {
@@ -489,10 +493,10 @@ class ZimFarmTest(BaseWpOneDbTest):
         redis.hset.assert_not_called()
 
     @patch("wp1.zimfarm.CREDENTIALS")
-    @patch("wp1.zimfarm.getnow")
+    @patch("wp1.zimfarm.naive_utcnow")
     @patch("wp1.zimfarm.requests")
     def test_token_provider_get_access_token_expired_oauth(
-        self, mock_requests, mock_getnow, mock_credentials
+        self, mock_requests, mock_naive_utcnow, mock_credentials
     ):
         mock_credentials.__getitem__.return_value = {
             "ZIMFARM": {
@@ -505,7 +509,9 @@ class ZimFarmTest(BaseWpOneDbTest):
             }
         }
 
-        mock_getnow.return_value = datetime.datetime(2023, 1, 1, 12, 0, 0, tzinfo=None)
+        mock_naive_utcnow.return_value = datetime.datetime(
+            2023, 1, 1, 12, 0, 0, tzinfo=None
+        )
 
         redis = MagicMock()
         redis.hgetall.return_value = {
@@ -528,11 +534,11 @@ class ZimFarmTest(BaseWpOneDbTest):
         redis.hset.assert_called_once()
 
     @patch("wp1.zimfarm.CREDENTIALS")
-    @patch("wp1.zimfarm.getnow")
+    @patch("wp1.zimfarm.naive_utcnow")
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.get_zimfarm_url")
     def test_token_provider_get_access_token_expired_local(
-        self, mock_get_url, mock_requests, mock_getnow, mock_credentials
+        self, mock_get_url, mock_requests, mock_naive_utcnow, mock_credentials
     ):
         """Test get_access_token refreshes token when expired (local mode)"""
         mock_credentials.__getitem__.return_value = {
@@ -545,7 +551,9 @@ class ZimFarmTest(BaseWpOneDbTest):
         }
         mock_get_url.return_value = "https://fake.farm/v2"
 
-        mock_getnow.return_value = datetime.datetime(2023, 1, 1, 12, 0, 0, tzinfo=None)
+        mock_naive_utcnow.return_value = datetime.datetime(
+            2023, 1, 1, 12, 0, 0, tzinfo=None
+        )
 
         redis = MagicMock()
         redis.hgetall.return_value = {
@@ -569,10 +577,10 @@ class ZimFarmTest(BaseWpOneDbTest):
         redis.hset.assert_called_once()
 
     @patch("wp1.zimfarm.CREDENTIALS")
-    @patch("wp1.zimfarm.getnow")
+    @patch("wp1.zimfarm.naive_utcnow")
     @patch("wp1.zimfarm.requests")
     def test_token_provider_get_access_token_no_redis_data_oauth(
-        self, mock_requests, mock_getnow, mock_credentials
+        self, mock_requests, mock_naive_utcnow, mock_credentials
     ):
         mock_credentials.__getitem__.return_value = {
             "ZIMFARM": {
@@ -584,7 +592,9 @@ class ZimFarmTest(BaseWpOneDbTest):
             }
         }
 
-        mock_getnow.return_value = datetime.datetime(2023, 1, 1, 12, 0, 0, tzinfo=None)
+        mock_naive_utcnow.return_value = datetime.datetime(
+            2023, 1, 1, 12, 0, 0, tzinfo=None
+        )
 
         redis = MagicMock()
         redis.hgetall.return_value = None
@@ -603,11 +613,11 @@ class ZimFarmTest(BaseWpOneDbTest):
         redis.hset.assert_called_once()
 
     @patch("wp1.zimfarm.CREDENTIALS")
-    @patch("wp1.zimfarm.getnow")
+    @patch("wp1.zimfarm.naive_utcnow")
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.get_zimfarm_url")
     def test_token_provider_get_access_token_no_redis_data_local(
-        self, mock_get_url, mock_requests, mock_getnow, mock_credentials
+        self, mock_get_url, mock_requests, mock_naive_utcnow, mock_credentials
     ):
         mock_credentials.__getitem__.return_value = {
             "ZIMFARM": {
@@ -618,7 +628,9 @@ class ZimFarmTest(BaseWpOneDbTest):
         }
         mock_get_url.return_value = "https://fake.farm/v2"
 
-        mock_getnow.return_value = datetime.datetime(2023, 1, 1, 12, 0, 0, tzinfo=None)
+        mock_naive_utcnow.return_value = datetime.datetime(
+            2023, 1, 1, 12, 0, 0, tzinfo=None
+        )
 
         redis = MagicMock()
         redis.hgetall.return_value = None
@@ -638,9 +650,9 @@ class ZimFarmTest(BaseWpOneDbTest):
         redis.hset.assert_called_once()
 
     @patch("wp1.zimfarm.CREDENTIALS")
-    @patch("wp1.zimfarm.getnow")
+    @patch("wp1.zimfarm.naive_utcnow")
     def test_token_provider_get_access_token_stores_in_redis(
-        self, mock_getnow, mock_credentials
+        self, mock_naive_utcnow, mock_credentials
     ):
         mock_credentials.__getitem__.return_value = {
             "ZIMFARM": {
@@ -652,7 +664,9 @@ class ZimFarmTest(BaseWpOneDbTest):
             }
         }
 
-        mock_getnow.return_value = datetime.datetime(2023, 1, 1, 12, 0, 0, tzinfo=None)
+        mock_naive_utcnow.return_value = datetime.datetime(
+            2023, 1, 1, 12, 0, 0, tzinfo=None
+        )
 
         redis = MagicMock()
         redis.hgetall.return_value = None
