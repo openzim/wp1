@@ -30,7 +30,7 @@ validators = "*"
 attrs = "==24.3.0"
 pytest-cov = "*"
 supervisor = "~=4.2"
-yoyo-migrations = "==7.3.2"
+yoyo-migrations = "==8.0.0"
 pysocks = "*"
 regex = "==2024.11.6"
 # Versions required for dependabot
