@@ -3,23 +3,25 @@ import os
 import time
 
 import pymysql
+import pymysql.connections
 import pymysql.cursors
 import pymysql.err
 import socks
 
 from wp1.credentials import CREDENTIALS, ENV
+from wp1.environment import Environment
 
 logger = logging.getLogger(__name__)
 
 RETRY_TIME_SECONDS = 5
 
 
-def connect(db_name, **overrides):
+def connect(db_name: str, **overrides: object) -> pymysql.connections.Connection:
     creds = CREDENTIALS[ENV].get(db_name)
     if creds is None:
         raise ValueError("db credentials for %r in ENV=%s are None" % (db_name, ENV))
 
-    kwargs = {
+    kwargs: dict[str, object] = {
         "charset": None,
         "use_unicode": False,
         "cursorclass": pymysql.cursors.SSDictCursor,
@@ -30,7 +32,7 @@ def connect(db_name, **overrides):
     tries = 4
     while True:
         try:
-            if db_name == "WIKIDB" and ENV == ENV.DEVELOPMENT:
+            if db_name == "WIKIDB" and ENV == Environment.DEVELOPMENT:
                 # In development, connect through a SOCKS5 proxy so that hosts on
                 # *.eqiad.wmflabs can be reached.
                 s = socks.socksocket()
@@ -44,7 +46,7 @@ def connect(db_name, **overrides):
             return conn
         except pymysql.err.InternalError:
             if tries > 0:
-                logging.warning(
+                logger.warning(
                     "Could not connect to database, retrying in %s seconds",
                     RETRY_TIME_SECONDS,
                 )

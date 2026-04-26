@@ -38,10 +38,10 @@ class ZimSchedulesEmailConfirmationTest(BaseWpOneDbTest):
             cursor.execute(
                 """INSERT INTO zim_schedules
                    (s_id, s_builder_id, s_rq_job_id, s_last_updated_at,
-                    s_interval, s_remaining_generations, s_email, s_title, s_description, s_long_description, s_email_confirmation_token)
+                    s_interval, s_remaining_generations, s_email, s_title, s_description, s_long_description, s_email_confirmation_token, s_flavour)
                    VALUES
                    (%(s_id)s, %(s_builder_id)s, %(s_rq_job_id)s, %(s_last_updated_at)s,
-                    %(s_interval)s, %(s_remaining_generations)s, %(s_email)s, %(s_title)s, %(s_description)s, %(s_long_description)s, %(s_email_confirmation_token)s)
+                    %(s_interval)s, %(s_remaining_generations)s, %(s_email)s, %(s_title)s, %(s_description)s, %(s_long_description)s, %(s_email_confirmation_token)s, %(s_flavour)s)
                 """,
                 attr.asdict(zim_schedule),
             )

@@ -7,7 +7,7 @@ describe('the user selection list page', () => {
         fixture: 'list_data.json',
       }).as('list');
       cy.intercept('v1/oauth/identify', { fixture: 'identity.json' }).as(
-        'login',
+        'login'
       );
       cy.visit('/#/selections/user');
       cy.wait('@login');
@@ -17,7 +17,7 @@ describe('the user selection list page', () => {
     it('successfully loads', () => {});
 
     it('displays the datatables view', () => {
-      cy.get('.dataTables_info').contains('Showing 1 to 12 of 12 entries');
+      cy.get('.dataTables_info').contains('Showing 1 to 13 of 13 entries');
     });
 
     it('displays list and its contents', () => {
@@ -245,6 +245,28 @@ describe('the user selection list page', () => {
           .within(() => {
             cy.get('td').eq(7).should('contain', 'Failed');
           });
+      });
+    });
+
+    describe('when the builder has an active schedule', () => {
+      it('displays the Manage Schedule button', () => {
+        cy.contains('td', 'scheduled zim')
+          .parent('tr')
+          .within(() => {
+            cy.get('td').eq(7).should('contain', 'Manage Schedule');
+          });
+      });
+
+      it('navigates to the zim page when Manage Schedule is clicked', () => {
+        cy.contains('td', 'scheduled zim')
+          .parent('tr')
+          .within(() => {
+            cy.contains('button', 'Manage Schedule').click();
+          });
+        cy.url().should(
+          'eq',
+          'http://localhost:5173/#/selections/sched-builder-001/zim'
+        );
       });
     });
   });

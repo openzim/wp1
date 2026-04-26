@@ -1,11 +1,12 @@
 **/__pycache__
 venv
 docs-venv/
+.tool-versions
 
-# Don't commit credentials, credential backup files, or login cookies!
-wp1/credentials.py
-wp1/credentials.py.bak
+#credential.py is now a secret-free adapter and is committed.
+#credential.py.dev contains hardcoded secrets (used by Docker volume mounts)
 wp1/credentials.py.dev
+wp1/credentials.py.bak
 wp1/credentials.py.dev.bak
 cookies.txt
 
@@ -16,6 +17,10 @@ cookies.txt
 
 # Don't commit logs
 log/**
+
+# Don't commit the active .env file (contains secrets).
+# .env.example, .env.test, and .env.docker are committed and safe to share.
+.env
 
 
 # Don't commit SSH keys

@@ -87,8 +87,9 @@ def calculate_logs_to_update(redis, project_name, from_dt=None):
     those that are newer than that date. Otherwise, the date of the most recently
     uploaded log, as determined by querying the wiki replica, is used.
     """
-    from_dt = get_current_datetime() - timedelta(days=7)
-    from_dt.replace(hour=23, minute=59, second=59)
+    if from_dt is None:
+        from_dt = get_current_datetime() - timedelta(days=7)
+    from_dt = from_dt.replace(hour=23, minute=59, second=59)
 
     dt_to_log = defaultdict(list)
     for log in logic_log.get_logs(redis, project=project_name, start_dt=from_dt):
@@ -215,7 +216,7 @@ def update_log_page_for_project(project_name):
 
         p = api.get_page(log_page_name(project_name))
 
-        header = "<noinclude>{{Log}}</noinclude>\n"
+        header = "<noinclude>{{Log}}\n{{Automatically generated}}</noinclude>\n"
 
         if len(edits) == 0:
             today = get_current_datetime()
@@ -244,4 +245,3 @@ def update_log_page_for_project(project_name):
             wikidb.close()
         if wp10db:
             wp10db.close()
-        api.save_page(p, update, "Update logs for past 7 days")

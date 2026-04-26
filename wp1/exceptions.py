@@ -30,6 +30,10 @@ class InvalidZimLongDescriptionError(ZimFarmError):
     pass
 
 
+class InvalidZimFlavourError(ZimFarmError):
+    pass
+
+
 class ZimFarmTooManyArticlesError(ZimFarmError):
 
     def user_message(self):

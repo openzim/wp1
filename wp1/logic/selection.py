@@ -179,13 +179,12 @@ def update_zimfarm_task(wp10db, task_id, status, set_updated_now=False):
     with wp10db.cursor() as cursor:
         if set_updated_now:
             updated_at = utcnow().strftime(TS_FORMAT_WP10).encode("utf-8")
-            with wp10db.cursor() as cursor:
-                cursor.execute(
-                    """UPDATE zim_tasks SET z_status = %s, z_updated_at = %s
+            cursor.execute(
+                """UPDATE zim_tasks SET z_status = %s, z_updated_at = %s
                WHERE z_task_id = %s""",
-                    (status, updated_at, task_id),
-                )
-                found = bool(cursor.rowcount)
+                (status, updated_at, task_id),
+            )
+            found = bool(cursor.rowcount)
         else:
             cursor.execute(
                 "UPDATE zim_tasks SET z_status = %s WHERE z_task_id = %s",
