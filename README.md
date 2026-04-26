@@ -235,7 +235,7 @@ You may need to install the `jq` tool with [these instructions](https://github.c
   necessary as they contain the latest parameters needed to run the `mwoffliner`
   scraper.
 
-  In your `credentials.py`, set the defintion version to any of the versions pulled from the API. For example, if `1.17.2` was one of the downloaded definitions of the mwoffliner scraper, you want to set `definition_version` under the `ZIMFARM` section:
+  In your `credentials.py`, set the definition version to any of the versions pulled from the API. For example, if `1.17.2` was one of the downloaded definitions of the mwoffliner scraper, you want to set `definition_version` under the `ZIMFARM` section:
 
   ```py
     "ZIMFARM": {
@@ -277,7 +277,7 @@ pipenv run flask --app wp1.web.app --debug run
 ```
 
 If you're having difficulties connecting to the backend server from the
-frontend, especially in cypress e2e tests, and espcially on macOS, it might have
+frontend, especially in cypress e2e tests, and especially on macOS, it might have
 something to do with IPv4 versus IPv6 networking stacks. You can try adding the
 option `--host 127.0.0.1` to the command line above (see
 https://github.com/openzim/wp1/pull/859).

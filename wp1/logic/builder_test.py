@@ -1833,7 +1833,7 @@ class BuilderTest(BaseWpOneDbTest):
         self, mock_utcnow, mock_request_zimfarm_task
     ):
         """
-        Ensure the existing zim_task is updated (not dupplicated) when the selection version changes.
+        Ensure the existing zim_task is updated (not duplicated) when the selection version changes.
         """
         self._insert_builder()
         zim_schedule_id = self._setup_failed_zim_regeneration_scenario(

@@ -31,7 +31,7 @@ More information on YoYo Migrations is available
 
 After migrations have been applied to production and are stable, it makes sense
 to "permanently" apply them to the dev database dump so that the migrations do
-not have to be run everytime the dev database is recreated.
+not have to be run every time the dev database is recreated.
 
 As part of this process, you will create a MySQL dump file of the dev database.
 It is important to recognize that all data from your dev database will be included
