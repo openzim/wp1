@@ -1646,7 +1646,9 @@ class ZimFarmTest(BaseWpOneDbTest):
             self.assertEqual(b"nopic", result["s_flavour"])
 
     @patch("wp1.zimfarm.token_provider")
-    def test_create_or_update_zimfarm_schedule_invalid_flavour(self, mock_token_provider):
+    def test_create_or_update_zimfarm_schedule_invalid_flavour(
+        self, mock_token_provider
+    ):
         redis = MagicMock()
         mock_token_provider.get_access_token.return_value = "test-token"
 
