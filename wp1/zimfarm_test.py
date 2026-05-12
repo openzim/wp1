@@ -1615,14 +1615,14 @@ class ZimFarmTest(BaseWpOneDbTest):
         self.assertNotIn("format", actual["config"]["offliner"])
 
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm._get_params")
     def test_create_or_update_zimfarm_schedule_with_flavour(
-        self, get_params_mock, get_token_mock, mock_requests
+        self, get_params_mock, mock_token_provider, mock_requests
     ):
         redis = MagicMock()
         get_params_mock.return_value = {"name": "bar"}
-        get_token_mock.return_value = "abcdef"
+        mock_token_provider.get_access_token.return_value = "abcdef"
         mock_response = MagicMock()
         mock_response.json.return_value = {"requested": ["9876"]}
         mock_requests.post.side_effect = (MagicMock(), mock_response)
@@ -1645,10 +1645,10 @@ class ZimFarmTest(BaseWpOneDbTest):
             self.assertIsNotNone(result)
             self.assertEqual(b"nopic", result["s_flavour"])
 
-    @patch("wp1.zimfarm.get_zimfarm_token")
-    def test_create_or_update_zimfarm_schedule_invalid_flavour(self, get_token_mock):
+    @patch("wp1.zimfarm.token_provider")
+    def test_create_or_update_zimfarm_schedule_invalid_flavour(self, mock_token_provider):
         redis = MagicMock()
-        get_token_mock.return_value = "test-token"
+        mock_token_provider.get_access_token.return_value = "test-token"
 
         with self.assertRaises(InvalidZimFlavourError):
             zimfarm.create_or_update_zimfarm_schedule(

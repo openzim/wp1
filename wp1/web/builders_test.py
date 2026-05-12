@@ -633,14 +633,14 @@ class BuildersTest(BaseWebTestcase):
 
     @patch("wp1.zimfarm.request_zimfarm_task")
     @patch("wp1.zimfarm.requests")
-    @patch("wp1.zimfarm.get_zimfarm_token")
+    @patch("wp1.zimfarm.token_provider")
     def test_create_zim_file_for_builder_invalid_flavour(
-        self, mock_get_token, mock_requests, mock_request_zimfarm_task
+        self, mock_token_provider, mock_requests, mock_request_zimfarm_task
     ):
         builder_id = self._insert_builder()
         self._insert_selections(builder_id)
 
-        mock_get_token.return_value = "test-token"
+        mock_token_provider.get_access_token.return_value = "test-token"
 
         self.app = create_app()
         with self.override_db(self.app), self.app.test_client() as client:
