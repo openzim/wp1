@@ -1,3 +1,6 @@
 {
-  "ZIMFARM_WEBAPI": "http://localhost:8004/v2"
+  "ZIMFARM_WEBAPI": "http://localhost:8004/v2",
+  "OAUTH_BASE_URL": "https://ory.login-staging.kiwix.org",
+  "OAUTH_MODE": "session",
+  "LOGIN_MODES": ["local"]
 }
