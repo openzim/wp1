@@ -88,7 +88,9 @@ class LogicZimSchedulesActiveTest(BaseWpOneDbTest):
         deleted = delete_zim_schedule(self.redis, self.wp10db, schedule.s_id)
 
         self.assertTrue(deleted)
-        mock_cancel_job.assert_called_once_with(self.redis, schedule.s_rq_job_id)
+        mock_cancel_job.assert_called_once_with(
+            self.redis, schedule.s_rq_job_id.decode("utf-8")
+        )
 
         # Verify the schedule is deleted
         retrieved_schedule = get_zim_schedule(self.wp10db, schedule.s_id)
