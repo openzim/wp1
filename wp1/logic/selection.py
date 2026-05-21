@@ -3,12 +3,15 @@ import json
 import logging
 import math
 import urllib.parse
+from typing import Any
 
 import attr
+from pymysql.connections import Connection
 
 from wp1.constants import CONTENT_TYPE_TO_EXT, TS_FORMAT_WP10, ZIM_FILE_TTL
 from wp1.credentials import CREDENTIALS, ENV
 from wp1.logic import util
+from wp1.models.wp10.selection import Selection
 from wp1.storage import connect_storage
 from wp1.timestamp import utcnow
 
@@ -23,7 +26,7 @@ DEFAULT_SELECTION_NAME = "selection"
 logger = logging.getLogger(__name__)
 
 
-def insert_selection(wp10db, selection):
+def insert_selection(wp10db: Connection, selection: Selection) -> None:
     with wp10db.cursor() as cursor:
         cursor.execute(
             """INSERT INTO selections
@@ -44,7 +47,7 @@ def insert_selection(wp10db, selection):
     wp10db.commit()
 
 
-def get_next_version(wp10db, builder_id, content_type):
+def get_next_version(wp10db: Connection, builder_id: bytes, content_type: str) -> int:
     with wp10db.cursor() as cursor:
         cursor.execute(
             """SELECT MAX(s_version) as version FROM selections
@@ -60,13 +63,15 @@ def get_next_version(wp10db, builder_id, content_type):
         return version + 1
 
 
-def url_for_selection(selection):
+def url_for_selection(selection: Selection) -> str:
     if not selection:
         raise ValueError("Cannot get url for empty selection")
+    if selection.s_object_key is None:
+        raise ValueError("Cannot get url for selection with no object_key")
     return url_for(selection.s_object_key)
 
 
-def url_for(object_key, s3_public_url=None):
+def url_for(object_key: str | bytes, s3_public_url: str | None = None) -> str:
     if s3_public_url is None:
         s3_public_url = S3_PUBLIC_URL
     if not object_key:
@@ -78,7 +83,7 @@ def url_for(object_key, s3_public_url=None):
     return f"{s3_public_url}/{path}"
 
 
-def zim_file_requested_at_for(wp10db, task_id):
+def zim_file_requested_at_for(wp10db: Connection, task_id: str | bytes) -> int | None:
     with wp10db.cursor() as cursor:
         cursor.execute(
             "SELECT z_requested_at " "FROM zim_tasks WHERE z_task_id = %s", task_id
@@ -91,8 +96,12 @@ def zim_file_requested_at_for(wp10db, task_id):
 
 
 def object_key_for(
-    selection_id, content_type, model, name=None, use_legacy_schema=False
-):
+    selection_id: str,
+    content_type: str,
+    model: str,
+    name: str | None = None,
+    use_legacy_schema: bool = False,
+) -> str:
     if not selection_id:
         raise ValueError("Cannot get object key for empty selection_id")
     if not model:
@@ -115,9 +124,16 @@ def object_key_for(
     }
 
 
-def object_key_for_selection(selection, model, name=None, use_legacy_schema=False):
+def object_key_for_selection(
+    selection: Selection,
+    model: str,
+    name: str | None = None,
+    use_legacy_schema: bool = False,
+) -> str:
     if not selection:
         raise ValueError("Cannot get object key for empty selection")
+    if selection.s_id is None:
+        raise ValueError("Cannot get object key for selection with no s_id")
     return object_key_for(
         selection.s_id.decode("utf-8"),
         selection.s_content_type.decode("utf-8"),
@@ -127,7 +143,7 @@ def object_key_for_selection(selection, model, name=None, use_legacy_schema=Fals
     )
 
 
-def delete_keys_from_storage(keys):
+def delete_keys_from_storage(keys: bytes | list[bytes]) -> bool:
     if isinstance(keys, (bytes)):
         keys = [keys]
 
@@ -167,7 +183,7 @@ def delete_keys_from_storage(keys):
     return fully_successful
 
 
-def set_error_messages(selection, e):
+def set_error_messages(selection: Selection, e: Exception) -> None:
     messages = [str(e)]
     # Use __cause__ because we can use '... from e' expressions to either set or suppress the cause.
     if e.__cause__:
@@ -175,7 +191,12 @@ def set_error_messages(selection, e):
     selection.s_error_messages = json.dumps({"error_messages": messages})
 
 
-def update_zimfarm_task(wp10db, task_id, status, set_updated_now=False):
+def update_zimfarm_task(
+    wp10db: Connection,
+    task_id: str | bytes,
+    status: str,
+    set_updated_now: bool = False,
+) -> bool:
     with wp10db.cursor() as cursor:
         if set_updated_now:
             updated_at = utcnow().strftime(TS_FORMAT_WP10).encode("utf-8")
@@ -195,20 +216,20 @@ def update_zimfarm_task(wp10db, task_id, status, set_updated_now=False):
     return found
 
 
-def is_zim_file_deleted(update_at_timestamp):
+def is_zim_file_deleted(update_at_timestamp: int | float) -> bool:
     return utcnow().timestamp() - update_at_timestamp > ZIM_FILE_TTL
 
 
-TASK_CPU = 3
-TASK_DISK = 1024 * 1024 * 1024 * 20  # Base disk space is 20 GB
+TASK_CPU: int = 3
+TASK_DISK: int = 1024 * 1024 * 1024 * 20  # Base disk space is 20 GB
 
 
-def get_resource_profile(selection):
+def get_resource_profile(selection: Selection) -> dict[str, int | float]:
     if not selection:
         raise ValueError("Cannot get resource profile for empty selection")
 
     if not selection.s_article_count:
-        memory_gb = 2
+        memory_gb: float = 2
     else:
         memory_gb = max(2, -10 + 1.75 * math.log(selection.s_article_count))
 
