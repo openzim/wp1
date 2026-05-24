@@ -1017,7 +1017,7 @@ class BuilderTest(BaseWpOneDbTest):
 
         self.assertTrue(actual["db_delete_success"])
         self.assertTrue(actual["rq_cancel_success"])
-        mock_cancel_job.assert_called_once_with(ANY, b"rq_job_456")
+        mock_cancel_job.assert_called_once_with(ANY, "rq_job_456")
         mock_delete_schedule.assert_called_once_with(ANY, builder_id)
 
     def test_latest_selections_with_errors(self):
@@ -1796,11 +1796,11 @@ class BuilderTest(BaseWpOneDbTest):
 
         mock_request_zimfarm_task.return_value = "test_task_id_no_selection"
 
-        with self.assertRaises(Exception):
+        with self.assertRaises(ObjectNotFoundError):
             logic_builder.request_zim_file_task_for_builder(
                 redis=redis_mock,
                 wp10db=self.wp10db,
-                builder=self.builder.b_id,
+                builder=self.builder,
                 zim_schedule_id=b"schedule_123",
             )
 
