@@ -1,5 +1,7 @@
-from functools import partial
+import pymysql.connections
 
-from wp1.db import connect
+from wp1.db import connect as _connect
 
-connect = partial(connect, "WP10DB")
+
+def connect() -> pymysql.connections.Connection:
+    return _connect("WP10DB")
