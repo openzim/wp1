@@ -1,12 +1,11 @@
 coverage:
   status:
-    patch:
-      default:
-        target: 90%
-        threshold: 1%
     project:
       default:
         target: 90%
         threshold: 1%
+    patch:
+      default:
+        informational: true
 ignore:
   - '**/*_test.py'

@@ -1,0 +1,7 @@
+[run]
+source = wp1/
+omit =
+    *_test.py
+
+[report]
+show_missing = True

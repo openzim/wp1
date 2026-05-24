@@ -79,13 +79,14 @@ jobs:
 
       - name: Test with pytest, with coverage
         run: |
-          pipenv run pytest --cov=wp1
+          pipenv run pytest --cov --cov-config=.coveragerc --cov-report=xml
 
       - name: Upload to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
+          files: ./coverage.xml
           fail_ci_if_error: false
 
   frontend-cypress:
