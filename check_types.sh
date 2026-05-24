@@ -20,6 +20,12 @@ TYPED_FILES=(
   wp1/logic/selection.py
   wp1/logic/zim_files.py
   wp1/logic/zim_schedules.py
+  wp1/selection/abstract_builder.py
+  wp1/selection/models/simple.py
+  wp1/selection/models/petscan.py
+  wp1/selection/models/sparql.py
+  wp1/selection/models/wikiproject.py
+  wp1/selection/models/book.py
 )
 
 if [ "$#" -gt 0 ]; then

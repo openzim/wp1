@@ -1,5 +1,6 @@
 import json
 import urllib.parse
+from typing import Any
 
 from pyparsing.exceptions import ParseException
 import requests
@@ -33,10 +34,12 @@ class Builder(AbstractBuilder):
     abstract class.
     """
 
-    def _article_id_from_url(self, url):
+    def _article_id_from_url(self, url: str) -> str:
         return urllib.parse.unquote(url.split("/")[-1])
 
-    def _extract_articles(self, project, query, data):
+    def _extract_articles(
+        self, project: str, query: str, data: dict[str, Any]
+    ) -> list[str]:
         """
         Method for getting article ids from the query results.
 
@@ -47,7 +50,7 @@ class Builder(AbstractBuilder):
         parse_results = parser.parseQuery(query)
         q = algebra.translateQuery(parse_results, initNs=WIKIDATA_PREFIXES)
 
-        urls = []
+        urls: list[str] = []
         # Check every variable that appears in the query graph.
         for variable in [str(v) for v in q.algebra._vars]:
             has_struct = len(data.get("results", {}).get("bindings", [])) > 0
@@ -72,7 +75,7 @@ class Builder(AbstractBuilder):
         # The final return value is the article ID for each url.
         return [self._article_id_from_url(url) for url in urls]
 
-    def build(self, content_type, **params):
+    def build(self, content_type: str, **params: Any) -> bytes:
         if content_type != "text/tab-separated-values":
             raise Wp1FatalSelectionError("Unrecognized content type")
 
@@ -131,11 +134,13 @@ class Builder(AbstractBuilder):
             "For more information, check the WP1 end user documentation."
         )
 
-    def validate(self, **params):
+    def validate(
+        self, **params: Any
+    ) -> tuple[list[str] | str, list[str] | str, list[str]]:
 
         try:
             parse_results = parser.parseQuery(params["query"])
-        except ParseException as pe:
+        except ParseException:
             # The query cannot be parsed as SPARQL, invalid syntax.
             return (
                 "",
@@ -143,7 +148,7 @@ class Builder(AbstractBuilder):
                 ["Could not parse query, are you sure it's valid SPARQL?"],
             )
         try:
-            query = algebra.translateQuery(parse_results, initNs=WIKIDATA_PREFIXES)
+            algebra.translateQuery(parse_results, initNs=WIKIDATA_PREFIXES)
         except Exception as e:
             # In testing, this was most common when the query contained
             # an undefined prefix.
