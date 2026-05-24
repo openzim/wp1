@@ -23,7 +23,7 @@ TYPED_FILES=(
 )
 
 if [ "$#" -gt 0 ]; then
-  ty check "$@"
+  pipenv run ty check "$@"
 else
-  ty check "${TYPED_FILES[@]}"
+  pipenv run ty check "${TYPED_FILES[@]}"
 fi

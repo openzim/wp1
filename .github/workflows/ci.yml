@@ -40,10 +40,11 @@ jobs:
         with:
           python-version: '3.14.4'
 
-      - name: Install ty
+      - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install ty
+          pip install pipenv
+          pipenv install --deploy --dev
 
       - name: Run ty
         run: ./check_types.sh
