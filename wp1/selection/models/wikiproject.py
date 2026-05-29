@@ -1,8 +1,12 @@
+from typing import Any
+
+from pymysql.connections import Connection
+
 from wp1.exceptions import Wp1FatalSelectionError
 from wp1.selection.abstract_builder import AbstractBuilder
 
 
-def _get_articles_for_project(wp10db, project):
+def _get_articles_for_project(wp10db: Connection, project: str) -> list[str]:
     with wp10db.cursor() as cursor:
         cursor.execute(
             "SELECT r_article FROM ratings WHERE r_namespace = 0 AND r_project = %s",
@@ -11,7 +15,7 @@ def _get_articles_for_project(wp10db, project):
         return [row["r_article"].decode("utf-8") for row in cursor.fetchall()]
 
 
-def _project_exists(wp10db, project):
+def _project_exists(wp10db: Connection, project: str) -> bool:
     with wp10db.cursor() as cursor:
         cursor.execute(
             "SELECT 1 FROM projects WHERE p_project = %s",
@@ -22,7 +26,7 @@ def _project_exists(wp10db, project):
 
 class Builder(AbstractBuilder):
 
-    def build(self, content_type, **params):
+    def build(self, content_type: str, **params: Any) -> bytes:
         if content_type != "text/tab-separated-values":
             raise Wp1FatalSelectionError("Unrecognized content type")
         if "wp10db" not in params:
@@ -34,13 +38,13 @@ class Builder(AbstractBuilder):
                 "Cannot create selection with empty `include` list"
             )
 
-        included_articles = set()
+        included_articles: set[str] = set()
         for project in params["include"]:
             included_articles.update(
                 _get_articles_for_project(params["wp10db"], project)
             )
 
-        excluded_articles = set()
+        excluded_articles: set[str] = set()
         for project in params.get("exclude", []):
             excluded_articles.update(
                 _get_articles_for_project(params["wp10db"], project)
@@ -50,21 +54,23 @@ class Builder(AbstractBuilder):
             "utf-8"
         )
 
-    def validate(self, **params):
+    def validate(
+        self, **params: Any
+    ) -> tuple[list[str] | str, list[str] | str, list[str]]:
         if "wp10db" not in params:
             raise Wp1FatalSelectionError("Cannot validate without param `wp10db`")
         if "include" not in params or not params["include"]:
             return ([], [], ["Missing articles to include"])
 
-        valid = []
-        invalid = []
+        valid: list[str] = []
+        invalid: list[str] = []
         for project in params["include"] + params.get("exclude", []):
             if _project_exists(params["wp10db"], project):
                 valid.append(project)
             else:
                 invalid.append(project)
 
-        errors = []
+        errors: list[str] = []
         if invalid:
             errors = ["Not all given projects exist"]
 

@@ -1,5 +1,6 @@
 import logging
-import urllib
+import urllib.parse
+from typing import Any
 
 import requests
 import validators
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 class Builder(AbstractBuilder):
 
-    def build(self, content_type, **params):
+    def build(self, content_type: str, **params: Any) -> bytes:
         if content_type != "text/tab-separated-values":
             raise Wp1FatalSelectionError("Unrecognized content type")
         if "url" not in params:
@@ -39,7 +40,9 @@ class Builder(AbstractBuilder):
 
         return resp.text.encode("utf-8")
 
-    def validate(self, **params):
+    def validate(
+        self, **params: Any
+    ) -> tuple[list[str] | str, list[str] | str, list[str]]:
         if "url" not in params:
             return ("", "", ["Missing URL parameter"])
 
