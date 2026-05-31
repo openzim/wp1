@@ -65,6 +65,7 @@ class AbstractBuilder:
                 content_type,
                 project=builder.b_project.decode("utf-8"),
                 wp10db=wp10db,
+                s3=s3,
                 **params,
             )
             selection.s_article_count = selection.data.count(b"\n") + 1
