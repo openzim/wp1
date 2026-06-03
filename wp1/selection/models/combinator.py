@@ -16,20 +16,17 @@ from wp1.selection.abstract_builder import AbstractBuilder
 logger = logging.getLogger(__name__)
 
 
-# as  abstract Metabuilder should be added later
-# some functions will be moved to it
+# TODO: move shared metabuilder helpers into a metaBuilder base class when that abstraction is introduced
 
 META_BUILDER_MODELS = {"wp1.selection.models.combinator"}
 
 
-# metabuilder
 def _as_text(value: bytes | str | int | None) -> str:
     if isinstance(value, bytes):
         return value.decode("utf-8")
     return str(value)
 
 
-# metabuilder
 def _builder_label(builder: Wp10Builder) -> str:
     name = getattr(builder, "b_name", None)
     builder_id = _as_text(getattr(builder, "b_id", ""))
@@ -38,18 +35,14 @@ def _builder_label(builder: Wp10Builder) -> str:
     return builder_id
 
 
-# metabuilder
 def _builder_model(builder: Wp10Builder) -> str:
     return _as_text(getattr(builder, "b_model", ""))
 
 
-# metabuilder
 def _is_meta_builder(builder: Wp10Builder) -> bool:
     return _builder_model(builder) in META_BUILDER_MODELS
 
 
-# metabuilder
-# just to preserve order
 def _dedupe(builder_ids: list[str]) -> list[str]:
     seen: set[str] = set()
     unique_ids: list[str] = []
@@ -72,25 +65,25 @@ def _validate_group_shape(
         return [], errors
 
     if not isinstance(group, dict):
-        return [], [f"The {name} group configuration is invalid"]
+        return [], [f"The {name} group must be a dictionary"]
 
     builder_values = group.get("builders", [])
     if builder_values is None:
         builder_values = []
     if not isinstance(builder_values, list):
-        errors.append(f"The {name} group builder list is invalid")
-        builder_values = []
-
-    builders = [
-        builder_id for builder_id in builder_values if isinstance(builder_id, str)
-    ]
+        return [], [f"The {name} group builder list must be a list"]
 
     if required and not builder_values:
         errors.append(f"Please add at least one builder to the {name} group")
 
-    if len(builders) != len(builder_values) or any(
-        not builder_id for builder_id in builders
-    ):
+    builders: list[str] = []
+    has_invalid_builder_id = False
+    for builder_id in builder_values:
+        if not isinstance(builder_id, str) or not builder_id:
+            has_invalid_builder_id = True
+            continue
+        builders.append(builder_id)
+    if has_invalid_builder_id:
         errors.append(f"The {name} group contains an invalid builder ID")
 
     operation = group.get("operation")
@@ -102,6 +95,7 @@ def _validate_group_shape(
     return builders, errors
 
 
+# TODO: extractt TSV title parsing helpers if more selection builders needs this behavior
 def _normalize(line: bytes) -> str | None:
     s = line.decode("utf-8", errors="replace").strip()
     if not s or s.startswith("#"):
@@ -131,7 +125,6 @@ def _apply_operation(operation: str, sets: list[set[str]]) -> set[str]:
     raise ValueError(f"Unsupported operation: {operation}")
 
 
-# metabuilder
 def _fetch_selection_data(wp10db, s3, builder_id: str) -> bytes:
     """Fetch the latest materialized TSV snapshot for a referenced builder."""
     selection = logic_builder.latest_selection_for(
@@ -144,23 +137,21 @@ def _fetch_selection_data(wp10db, s3, builder_id: str) -> bytes:
             f"(no selection found)"
         )
 
-    status = selection.s_status
-    if status == b"FAILED" or status == "FAILED":
+    status = _as_text(selection.s_status)
+    if status == "FAILED":
         raise Wp1FatalSelectionError(
-            f"Referenced builder {builder_id} has no usable selection "
-            f"(status={status!r})"
+            f"Referenced builder {builder_id} latest selection failed"
         )
 
-    if status != b"OK" and status != "OK":
+    if status != "OK":
         raise Wp1RetryableSelectionError(
-            f"Referenced builder {builder_id} has no usable selection "
+            f"Referenced builder {builder_id} latest selection is not ready "
             f"(status={status!r})"
         )
 
     if selection.s_object_key is None:
         raise Wp1RetryableSelectionError(
-            f"Referenced builder {builder_id} has no usable selection "
-            f"(s_object_key is None)"
+            f"Referenced builder {builder_id} latest selection has no object key"
         )
 
     object_key = selection.s_object_key
@@ -175,11 +166,6 @@ def _fetch_selection_data(wp10db, s3, builder_id: str) -> bytes:
         raise Wp1RetryableSelectionError(
             f"Failed to download selection for builder {builder_id} "
             f"from S3 key {object_key!r}: {code}"
-        ) from e
-    except Exception as e:
-        raise Wp1RetryableSelectionError(
-            f"Failed to download selection for builder {builder_id} "
-            f"from S3 key {object_key!r}: {e}"
         ) from e
 
     return buffer.getvalue()
@@ -225,11 +211,21 @@ class Builder(AbstractBuilder):
         if errors:
             return ([], [], errors)
 
-        if "wp10db" not in params or "user_id" not in params or "project" not in params:
+        missing_params = []
+        if params.get("wp10db") is None:
+            missing_params.append("wp10db")
+        if params.get("user_id") is None:
+            missing_params.append("user_id")
+        if params.get("project") is None:
+            missing_params.append("project")
+        if missing_params:
             return (
                 [],
                 [],
-                ["Configuration could not be validated. Please try saving again."],
+                [
+                    "Missing required validation parameters: "
+                    + ", ".join(missing_params)
+                ],
             )
 
         wp10db = params["wp10db"]
@@ -249,6 +245,7 @@ class Builder(AbstractBuilder):
             try:
                 builder = logic_builder.get_builder(wp10db, reference_id)
             except ObjectNotFoundError:
+                # TODO: https://github.com/openzim/wp1/issues/1178
                 errors.append(
                     f"Builder {reference_id!r} no longer exists. Please remove it "
                     "from this combinator."
@@ -288,18 +285,18 @@ class Builder(AbstractBuilder):
             raise Wp1FatalSelectionError(f"Unrecognized content type: {content_type!r}")
 
         wp10db = params.get("wp10db")
-        s3 = params.get("s3")
-
         if wp10db is None:
             raise Wp1FatalSelectionError("Combinator build requires 'wp10db' parameter")
+
+        s3 = params.get("s3")
         if s3 is None:
             raise Wp1FatalSelectionError("Combinator build requires 's3' parameter")
 
         include_group = params.get("include")
-        exclude_group = params.get("exclude")
-
         if include_group is None:
             raise Wp1FatalSelectionError("Missing required 'include' group")
+
+        exclude_group = params.get("exclude")
 
         include_set = _process_group(wp10db, s3, include_group)
 
