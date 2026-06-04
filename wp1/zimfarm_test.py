@@ -30,10 +30,9 @@ class ZimFarmTest(BaseWpOneDbTest):
     expected_params = {
         "name": "wp1_selection_3c4d",
         "language": "eng",
-        "category": "wikipedia",
         "context": "wikimedia",
         "periodicity": "manually",
-        "tags": [],
+        "tags": ["wikipedia"],
         "enabled": True,
         "notification": {
             "ended": {
