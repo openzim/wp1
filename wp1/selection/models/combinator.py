@@ -35,6 +35,14 @@ def _builder_label(builder: Wp10Builder) -> str:
     return builder_id
 
 
+def _reference_label(wp10db, builder_id: str) -> str:
+    try:
+        builder = logic_builder.get_builder(wp10db, builder_id)
+    except ObjectNotFoundError:
+        return builder_id
+    return _builder_label(builder)
+
+
 def _builder_model(builder: Wp10Builder) -> str:
     return _as_text(getattr(builder, "b_model", ""))
 
@@ -125,33 +133,36 @@ def _apply_operation(operation: str, sets: list[set[str]]) -> set[str]:
     raise ValueError(f"Unsupported operation: {operation}")
 
 
-def _fetch_selection_data(wp10db, s3, builder_id: str) -> bytes:
+def _fetch_selection_data(
+    wp10db, s3, builder_id: str, reference_label: str | None = None
+) -> bytes:
     """Fetch the latest materialized TSV snapshot for a referenced builder."""
+    label = reference_label or builder_id
     selection = logic_builder.latest_selection_for(
         wp10db, builder_id, "text/tab-separated-values"
     )
 
     if selection is None:
         raise Wp1RetryableSelectionError(
-            f"Referenced builder {builder_id} has no usable selection "
+            f"Referenced builder {label} has no usable selection "
             f"(no selection found)"
         )
 
     status = _as_text(selection.s_status)
     if status == "FAILED":
         raise Wp1FatalSelectionError(
-            f"Referenced builder {builder_id} latest selection failed"
+            f"Referenced builder {label} latest selection failed"
         )
 
     if status != "OK":
         raise Wp1RetryableSelectionError(
-            f"Referenced builder {builder_id} latest selection is not ready "
+            f"Referenced builder {label} latest selection is not ready "
             f"(status={status!r})"
         )
 
     if selection.s_object_key is None:
         raise Wp1RetryableSelectionError(
-            f"Referenced builder {builder_id} latest selection has no object key"
+            f"Referenced builder {label} latest selection has no object key"
         )
 
     object_key = selection.s_object_key
@@ -164,7 +175,7 @@ def _fetch_selection_data(wp10db, s3, builder_id: str) -> bytes:
     except ClientError as e:
         code = e.response.get("Error", {}).get("Code", "Unknown")
         raise Wp1RetryableSelectionError(
-            f"Failed to download selection for builder {builder_id} "
+            f"Failed to download selection for builder {label} "
             f"from S3 key {object_key!r}: {code}"
         ) from e
 
@@ -183,7 +194,9 @@ def _process_group(wp10db, s3, group: dict[str, Any]) -> set[str]:
 
     sets: list[set[str]] = []
     for builder_id in _dedupe(builder_ids):
-        data = _fetch_selection_data(wp10db, s3, builder_id)
+        data = _fetch_selection_data(
+            wp10db, s3, builder_id, _reference_label(wp10db, builder_id)
+        )
         title_set = _parse_tsv_to_set(data)
         sets.append(title_set)
 

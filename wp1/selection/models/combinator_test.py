@@ -187,16 +187,18 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
         )
         self.assertEqual(expected, actual)
 
+    @patch("wp1.selection.models.combinator.logic_builder.get_builder")
     @patch("wp1.selection.models.combinator._fetch_selection_data")
-    def test_build(self, mock_fetch_selection_data):
+    def test_build(self, mock_fetch_selection_data, mock_get_builder):
+        mock_get_builder.return_value = _reference_builder()
         data = {
             "builder-a": b"first article\r\nsecond\n# ignored\n",
             "builder-b": b"second\nthird\n",
             "builder-c": b"third\n",
         }
-        mock_fetch_selection_data.side_effect = lambda _wp10db, _s3, builder_id: data[
-            builder_id
-        ]
+        mock_fetch_selection_data.side_effect = (
+            lambda _wp10db, _s3, builder_id, _label: data[builder_id]
+        )
         params = dict(self.params)
         params.update(
             include={"builders": ["builder-a", "builder-b"], "operation": "union"},
@@ -208,15 +210,17 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
 
         self.assertEqual(b"first_article\nsecond", actual)
 
+    @patch("wp1.selection.models.combinator.logic_builder.get_builder")
     @patch("wp1.selection.models.combinator._fetch_selection_data")
-    def test_build_intersection(self, mock_fetch_selection_data):
+    def test_build_intersection(self, mock_fetch_selection_data, mock_get_builder):
+        mock_get_builder.return_value = _reference_builder()
         data = {
             "builder-a": b"first\nshared\n",
             "builder-b": b"second\nshared\n",
         }
-        mock_fetch_selection_data.side_effect = lambda _wp10db, _s3, builder_id: data[
-            builder_id
-        ]
+        mock_fetch_selection_data.side_effect = (
+            lambda _wp10db, _s3, builder_id, _label: data[builder_id]
+        )
         params = dict(self.params)
         params.update(
             include={
@@ -230,8 +234,10 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
 
         self.assertEqual(b"shared", actual)
 
+    @patch("wp1.selection.models.combinator.logic_builder.get_builder")
     @patch("wp1.selection.models.combinator._fetch_selection_data")
-    def test_build_empty_result(self, mock_fetch_selection_data):
+    def test_build_empty_result(self, mock_fetch_selection_data, mock_get_builder):
+        mock_get_builder.return_value = _reference_builder()
         mock_fetch_selection_data.return_value = b""
         params = dict(self.params)
         params.update(s3=MagicMock())
