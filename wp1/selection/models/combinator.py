@@ -16,11 +16,10 @@ from wp1.selection.abstract_builder import AbstractBuilder
 logger = logging.getLogger(__name__)
 
 
-# TODO: move shared metabuilder helpers into a metaBuilder base class when that abstraction is introduced
-
 META_BUILDER_MODELS = {"wp1.selection.models.combinator"}
 
 
+# TODO: #1181 - Move shared helpers into AbstractBuilder.
 def _as_text(value: bytes | str | int | None) -> str:
     if isinstance(value, bytes):
         return value.decode("utf-8")
@@ -66,7 +65,6 @@ def _validate_group_shape(
 ) -> tuple[list[str], list[str]]:
     errors: list[str] = []
 
-    # can we have empty groups?
     if group is None:
         if required:
             errors.append(f"Please add at least one builder to the {name} group")
@@ -103,7 +101,7 @@ def _validate_group_shape(
     return builders, errors
 
 
-# TODO: extractt TSV title parsing helpers if more selection builders needs this behavior
+# TODO: #1181 - Move shared title parsing helpers into AbstractBuilder.
 def _normalize(line: bytes) -> str | None:
     s = line.decode("utf-8", errors="replace").strip()
     if not s or s.startswith("#"):
@@ -120,6 +118,7 @@ def _parse_tsv_to_set(data: bytes) -> set[str]:
     return titles
 
 
+# TODO: #1181 - Move shared set operation helpers into AbstractBuilder.
 def _apply_operation(operation: str, sets: list[set[str]]) -> set[str]:
     if not sets:
         return set()
@@ -160,6 +159,8 @@ def _fetch_selection_data(
             f"(status={status!r})"
         )
 
+    # OK selections can have no object key when materialization produced empty
+    # data, since AbstractBuilder only uploads filled selection.data.
     if selection.s_object_key is None:
         raise Wp1RetryableSelectionError(
             f"Referenced builder {label} latest selection has no object key"
@@ -193,6 +194,7 @@ def _process_group(wp10db, s3, group: dict[str, Any]) -> set[str]:
     operation = group.get("operation", "union")
 
     sets: list[set[str]] = []
+    # TODO: #1184 - Handle multiple bad referenced selections in combinator build.
     for builder_id in _dedupe(builder_ids):
         data = _fetch_selection_data(
             wp10db, s3, builder_id, _reference_label(wp10db, builder_id)
@@ -258,7 +260,7 @@ class Builder(AbstractBuilder):
             try:
                 builder = logic_builder.get_builder(wp10db, reference_id)
             except ObjectNotFoundError:
-                # TODO: https://github.com/openzim/wp1/issues/1178
+                # TODO: #1178 - Think more about broken referenced builders.
                 errors.append(
                     f"Builder {reference_id!r} no longer exists. Please remove it "
                     "from this combinator."
