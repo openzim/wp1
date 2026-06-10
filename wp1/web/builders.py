@@ -46,9 +46,14 @@ def _create_or_update_builder(wp10db, data, builder_id=None):
         logger.warning(str(e))
         flask.abort(400)
 
+    user_id = flask.session["user"]["identity"]["sub"]
     builder_obj = builder_cls()
     valid_values, invalid_values, errors = builder_obj.validate(
-        project=project, wp10db=wp10db, **params
+        project=project,
+        wp10db=wp10db,
+        user_id=user_id,
+        builder_id=builder_id,
+        **params,
     )
     if invalid_values or errors:
         return flask.jsonify(
@@ -65,7 +70,6 @@ def _create_or_update_builder(wp10db, data, builder_id=None):
     wp10db = get_db("wp10db")
     redis = get_redis()
 
-    user_id = flask.session["user"]["identity"]["sub"]
     builder_id = logic_builder.create_or_update_builder(
         wp10db, list_name, user_id, project, params, model, builder_id=builder_id
     )

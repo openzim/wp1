@@ -26,6 +26,8 @@ TYPED_FILES=(
   wp1/selection/models/sparql.py
   wp1/selection/models/wikiproject.py
   wp1/selection/models/book.py
+  wp1/selection/models/combinator.py
+  wp1/selection/models/combinator_test.py
 )
 
 if [ "$#" -gt 0 ]; then
