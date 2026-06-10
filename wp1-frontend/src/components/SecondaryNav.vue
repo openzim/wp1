@@ -83,6 +83,18 @@
               >WikiProject Selection</router-link
             >
           </li>
+          <li
+            :class="
+              'nav-item ' +
+              (this.$route.path.startsWith('/selections/combinator')
+                ? 'active'
+                : '')
+            "
+          >
+            <router-link class="nav-link" to="/selections/combinator"
+              >Combinator Selection</router-link
+            >
+          </li>
         </ul>
       </div>
     </nav>
