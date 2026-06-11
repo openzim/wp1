@@ -140,33 +140,13 @@ jobs:
           cp wp1/credentials.py.e2e wp1/credentials.py
           cp wp1/credentials.py.dev.e2e wp1/credentials.py.dev
 
-      - uses: docker/setup-buildx-action@v4
-
-      - name: Build Docker images (with layer cache)
-        uses: docker/bake-action@v7
-        with:
-          source: .
-          files: docker-compose-dev.yml
-          targets: |
-            dev-database
-            dev-workers
-            dev-web
-          load: true
-          set: |
-            dev-database.cache-from=type=gha,scope=dev-database
-            dev-database.cache-to=type=gha,scope=dev-database,mode=max
-            dev-workers.cache-from=type=gha,scope=dev-workers
-            dev-workers.cache-to=type=gha,scope=dev-workers,mode=max
-            dev-web.cache-from=type=gha,scope=dev-web
-            dev-web.cache-to=type=gha,scope=dev-web,mode=max
-
       # This is the dev database, the dev redis, the dev workers, the dev
       # minio and the dev web server (Flask, port 5000). The dev-frontend
       # container is deliberately not started: the tests run against the
       # built frontend bundle, served below on port 5173.
       - name: Start Docker dev services
         run: |
-          docker compose -f docker-compose-dev.yml up -d --no-build \
+          docker compose -f docker-compose-dev.yml up -d --build \
             redis dev-database minio createbuckets dev-workers dev-web
 
       - name: Build frontend server
