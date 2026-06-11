@@ -70,8 +70,7 @@ class AbstractBuilder:
             )
             if invalid or errors:
                 raise Wp1RetryableSelectionError(
-                    "The selection contained invalid parameters: %s"
-                    % "; ".join(errors)
+                    "The selection contained invalid parameters: %s" % "; ".join(errors)
                 )
 
             selection.data = self.build(
