@@ -157,11 +157,9 @@ def project_names_to_update(wikidb):
 
 def list_all_projects(wp10db):
     with wp10db.cursor() as cursor:
-        cursor.execute(
-            """
+        cursor.execute("""
       SELECT p_project, p_timestamp, p_count, p_qcount, p_icount FROM projects
-      """
-        )
+      """)
         return [Project(**db_project) for db_project in cursor.fetchall()]
 
 

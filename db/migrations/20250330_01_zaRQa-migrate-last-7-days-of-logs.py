@@ -27,13 +27,11 @@ def migrate_logs(conn):
     n = 0
     print(f"Fetching logs from {from_dt} to now")
     with conn.cursor() as cursor:
-        cursor.execute(
-            f"""
+        cursor.execute(f"""
         SELECT l_project, l_namespace, l_article, l_action,
             l_timestamp, l_old, l_new, l_revision_timestamp FROM logging
         WHERE l_timestamp >= '{from_dt}'
-    """
-        )
+    """)
         for log_db in cursor.fetchall():
             log = Log(
                 l_project=log_db[0],

@@ -4,7 +4,6 @@ import logging
 from wp1.credentials import CREDENTIALS, ENV
 from wp1.templates import env as jinja_env
 
-
 logger = logging.getLogger(__name__)
 
 

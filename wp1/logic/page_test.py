@@ -238,18 +238,14 @@ class LogicPageMovesTest(BaseCombinedDbTest):
     def test_get_redirect_from_db_stale(self):
         # Insert a redirect row with a 2016 timestamp which is older than last run
         with self.wikidb.cursor() as cursor:
-            cursor.execute(
-                """
+            cursor.execute("""
                 INSERT INTO page (page_id, page_namespace, page_title, page_touched)
                 VALUES (200, 0, 'Some_Moved_Article', '20160315142300')
-            """
-            )
-            cursor.execute(
-                """
+            """)
+            cursor.execute("""
                 INSERT INTO redirect (rd_from, rd_namespace, rd_title)
                 VALUES (200, 0, 'Destination_Article')
-            """
-            )
+            """)
         self.wikidb.commit()
 
         # Last run was 2022, redirect is from 2016 so should be discarded
@@ -261,18 +257,14 @@ class LogicPageMovesTest(BaseCombinedDbTest):
     def test_get_redirect_from_db_fresh(self):
         # Insert a redirect row with a 2023 timestamp which newer than last run
         with self.wikidb.cursor() as cursor:
-            cursor.execute(
-                """
+            cursor.execute("""
                 INSERT INTO page (page_id, page_namespace, page_title, page_touched)
                 VALUES (201, 0, 'Some_Moved_Article', '20230315142300')
-            """
-            )
-            cursor.execute(
-                """
+            """)
+            cursor.execute("""
                 INSERT INTO redirect (rd_from, rd_namespace, rd_title)
                 VALUES (201, 0, 'Destination_Article')
-            """
-            )
+            """)
         self.wikidb.commit()
 
         # Last run was 2022, redirect is from 2023 so should return

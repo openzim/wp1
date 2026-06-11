@@ -9,14 +9,12 @@ class CustomTablesInitTest(BaseWpOneDbTest):
 
     def test_all_custom_table_names(self):
         with self.wp10db.cursor() as cursor:
-            cursor.execute(
-                """
+            cursor.execute("""
         INSERT INTO custom (c_name, c_module, c_is_active) VALUES
           ("Apple", "wp1.custom_tables.apple", 1),
           ("Orange", "wp1.custom_tables.apple", 0),
           ("Banana", "wp1.custom_tables.apple", 1)
-      """
-            )
+      """)
 
         actual = all_custom_table_names(self.wp10db)
         self.assertEqual([b"Apple", b"Banana"], actual)
@@ -24,12 +22,10 @@ class CustomTablesInitTest(BaseWpOneDbTest):
     @patch("wp1.custom_tables.importlib")
     def test_upload_custom_table_by_name(self, patched_importlib):
         with self.wp10db.cursor() as cursor:
-            cursor.execute(
-                """
+            cursor.execute("""
         INSERT INTO custom (c_name, c_module, c_params, c_is_active) VALUES
           ("foo", "wp1.custom_tables.foo", '{"wiki_path": "Wiki/Path"}', 1)
-      """
-            )
+      """)
         self.wp10db.commit()
 
         module = MagicMock()
@@ -49,12 +45,10 @@ class CustomTablesInitTest(BaseWpOneDbTest):
     @patch("wp1.custom_tables.importlib")
     def test_upload_custom_table_by_name_no_entry(self, patched_importlib):
         with self.wp10db.cursor() as cursor:
-            cursor.execute(
-                """
+            cursor.execute("""
         INSERT INTO custom (c_name, c_module, c_params, c_is_active) VALUES
           ("foo", "wp1.custom_tables.foo", '{"wiki_path": "Wiki/Path"}', 1)
-      """
-            )
+      """)
         self.wp10db.commit()
 
         module = MagicMock()
@@ -73,12 +67,10 @@ class CustomTablesInitTest(BaseWpOneDbTest):
     @patch("wp1.custom_tables.importlib")
     def test_upload_custom_table_by_name_bad_json(self, patched_importlib):
         with self.wp10db.cursor() as cursor:
-            cursor.execute(
-                """
+            cursor.execute("""
         INSERT INTO custom (c_name, c_module, c_params, c_is_active) VALUES
           ("foo", "wp1.custom_tables.foo", '{foo123}', 1)
-      """
-            )
+      """)
         self.wp10db.commit()
 
         module = MagicMock()
@@ -97,12 +89,10 @@ class CustomTablesInitTest(BaseWpOneDbTest):
     @patch("wp1.custom_tables.importlib")
     def test_upload_custom_table_by_name_bad_module_path(self, patched_importlib):
         with self.wp10db.cursor() as cursor:
-            cursor.execute(
-                """
+            cursor.execute("""
         INSERT INTO custom (c_name, c_module, c_params, c_is_active) VALUES
           ("foo", "wp1.bar.foo", '{foo123}', 1)
-      """
-            )
+      """)
         self.wp10db.commit()
 
         module = MagicMock()

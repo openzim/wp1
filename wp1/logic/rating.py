@@ -19,9 +19,7 @@ logger = logging.getLogger(__name__)
 def get_project_ratings(wp10db, project_name):
     with wp10db.cursor() as cursor:
         cursor.execute(
-            "SELECT * FROM "
-            + Rating.table_name
-            + """
+            "SELECT * FROM " + Rating.table_name + """
       WHERE r_project = %(r_project)s
     """,
             {"r_project": project_name},
@@ -336,8 +334,7 @@ def insert_or_update(wp10db, rating, kind):
           (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
            %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
            %(r_importance_timestamp)s)
-    """
-            + duplicate_clause,
+    """ + duplicate_clause,
             attr.asdict(rating),
         )
 

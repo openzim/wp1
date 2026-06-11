@@ -222,12 +222,10 @@ class SelectionTest(BaseWebTestcase):
         self.app = create_app()
         with self.override_db(self.app), self.app.test_client() as client:
             with self.wp10db.cursor() as cursor:
-                cursor.execute(
-                    """INSERT INTO builders
+                cursor.execute("""INSERT INTO builders
         (b_id, b_name, b_user_id, b_project, b_model, b_created_at, b_updated_at, b_current_version)
         VALUES ('1a-2b-3c-4d', 'name', '1234', 'project_name', 'model', '20201225105544', '20201225105544', 1)
-      """
-                )
+      """)
             self.wp10db.commit()
             with client.session_transaction() as sess:
                 sess["user"] = self.USER
@@ -241,14 +239,12 @@ class SelectionTest(BaseWebTestcase):
         self.app = create_app()
         with self.override_db(self.app), self.app.test_client() as client:
             with self.wp10db.cursor() as cursor:
-                cursor.execute(
-                    """
+                cursor.execute("""
           INSERT INTO selections
             (s_id, s_builder_id, s_content_type, s_updated_at, s_version, s_object_key)
           VALUES
             (2, \'1a-2b-3c-4d\', "application/vnd.ms-excel", '20201225105544', 1, "object_key")
-        """
-                )
+        """)
             self.wp10db.commit()
             with client.session_transaction() as sess:
                 sess["user"] = self.USER
