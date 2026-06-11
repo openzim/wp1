@@ -834,12 +834,10 @@ class BuilderTest(BaseWpOneDbTest):
     def test_latest_zim_file_url_for(self, mock_zimfarm_url_for):
         builder_id = self._insert_builder_with_multiple_version_selections()
         with self.wp10db.cursor() as cursor:
-            cursor.execute(
-                '''UPDATE zim_tasks z
+            cursor.execute('''UPDATE zim_tasks z
                           INNER JOIN selections s ON s.s_id = z.z_selection_id
                           INNER JOIN builders b ON b.b_selection_zim_version = s.s_version
-                        SET z_status = "FILE_READY"'''
-            )
+                        SET z_status = "FILE_READY"''')
 
         actual = logic_builder.latest_zim_file_url_for(self.wp10db, builder_id)
 
@@ -1506,13 +1504,11 @@ class BuilderTest(BaseWpOneDbTest):
         )
 
         with self.wp10db.cursor() as cursor:
-            cursor.execute(
-                """UPDATE zim_tasks z
+            cursor.execute("""UPDATE zim_tasks z
                         JOIN selections s
                           ON s.s_id = z.z_selection_id
                         SET z.z_status = "REQUESTED"
-                        WHERE s.s_id IN (2,3)"""
-            )
+                        WHERE s.s_id IN (2,3)""")
         logic_builder.auto_handle_zim_generation(redis, self.wp10db, builder_id)
 
         mock_cancel_zim.assert_has_calls(
@@ -1568,13 +1564,11 @@ class BuilderTest(BaseWpOneDbTest):
         )
 
         with self.wp10db.cursor() as cursor:
-            cursor.execute(
-                """UPDATE zim_tasks z
+            cursor.execute("""UPDATE zim_tasks z
                         JOIN selections s
                           ON s.s_id = z.z_selection_id
                         SET z.z_status = "REQUESTED"
-                        WHERE s.s_id IN (2,3)"""
-            )
+                        WHERE s.s_id IN (2,3)""")
 
         tasks = logic_builder.pending_zim_tasks_for(self.wp10db, builder_id)
         self.assertIsNotNone(tasks)

@@ -1284,11 +1284,9 @@ class BuildersTest(BaseWebTestcase):
                  VALUES (1, %s, 'text/tab-separated-values', '20201225105544', 1, 'object_key')""",
                 (builder_id,),
             )
-            cursor.execute(
-                """INSERT INTO zim_tasks
+            cursor.execute("""INSERT INTO zim_tasks
                    (z_id, z_selection_id, z_task_id, z_status, z_zim_schedule_id)
-                 VALUES (1, 1, 'task-id-non-zim', 'REQUESTED', 'schedule_456')"""
-            )
+                 VALUES (1, 1, 'task-id-non-zim', 'REQUESTED', 'schedule_456')""")
 
         self._insert_zim_schedule(
             schedule_id=b"schedule_456",

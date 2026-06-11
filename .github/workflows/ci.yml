@@ -21,9 +21,11 @@ jobs:
           python-version: '3.14.4'
 
       - name: Install Black
+        # Install the exact version from Pipfile.lock so CI and local
+        # formatting can never disagree.
         run: |
           pip install --upgrade pip
-          pip install black~=25.12
+          pip install "black==$(jq -r '.develop.black.version | ltrimstr("==")' Pipfile.lock)"
 
       - name: Check formatting with Black
         run: |

@@ -15,11 +15,9 @@ __depends__ = {"20220813_02_Yqp7y-add-version-column-to-selections"}
 
 def add_object_keys(conn):
     cursor = conn.cursor()
-    cursor.execute(
-        """SELECT s.s_id, s.s_content_type, b.b_model, b.b_name
+    cursor.execute("""SELECT s.s_id, s.s_content_type, b.b_model, b.b_name
                     FROM selections AS s JOIN builders AS b ON s.s_builder_id = b.b_id
-            """
-    )
+            """)
     data = cursor.fetchall()
     for row in data:
         object_key = logic_selection.object_key_for(

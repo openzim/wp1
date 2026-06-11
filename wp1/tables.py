@@ -96,8 +96,7 @@ def get_global_categories():
 def get_global_stats(wp10db):
     wp10db.ping()
     with wp10db.cursor() as cursor:
-        cursor.execute(
-            """
+        cursor.execute("""
         SELECT count(distinct a_article) AS n,
                grq.gr_rating AS q, gri.gr_rating AS i
         FROM global_articles
@@ -106,8 +105,7 @@ def get_global_stats(wp10db):
           JOIN global_rankings AS gri
             ON gri.gr_type = 'importance' AND gri.gr_ranking = a_importance
         GROUP BY grq.gr_rating, gri.gr_rating
-    """
-        )
+    """)
         return cursor.fetchall()
 
 

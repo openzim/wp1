@@ -8,7 +8,6 @@ from wp1.models.wp10.zim_file import ZimTask
 from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.templates import env as jinja_env
 
-
 logger = logging.getLogger(__name__)
 
 

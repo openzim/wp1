@@ -164,15 +164,13 @@ def pageview_components():
 
 def reset_missing_articles_pageviews(wp10db):
     with wp10db.cursor() as cursor:
-        cursor.execute(
-            """
+        cursor.execute("""
       UPDATE page_scores
       LEFT JOIN temp_pageviews
       ON page_scores.ps_article = temp_pageviews.tp_article
       SET page_scores.ps_views = 0
       WHERE temp_pageviews.tp_article IS NULL;
-      """
-        )
+      """)
     wp10db.commit()
 
 
