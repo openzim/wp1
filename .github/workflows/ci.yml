@@ -119,26 +119,6 @@ jobs:
         with:
           lfs: true
 
-      - name: Set up Python 3.14.4
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.14.4'
-
-      - uses: actions/cache@v4
-        name: Cache pip dependencies
-        id: pip-cache
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/Pipfile.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install Python dependencies
-        run: |
-          pip install --upgrade pip
-          pip install pipenv
-          pipenv install --system --deploy --dev
-
       - name: Get yarn cache directory path
         id: yarn-dep-cache-dir-path
         run: cd wp1-frontend && echo "YARN_CACHE_DIR=$(yarn cache dir)" >> $GITHUB_OUTPUT
@@ -160,14 +140,14 @@ jobs:
           cp wp1/credentials.py.e2e wp1/credentials.py
           cp wp1/credentials.py.dev.e2e wp1/credentials.py.dev
 
-      # This is the dev database, the dev redis, and the dev workers, as
-      # well as the dev minio and the dev web server (Flask, port 5000).
+      # This is the dev database, the dev redis, the dev workers, the dev
+      # minio and the dev web server (Flask, port 5000). The dev-frontend
+      # container is deliberately not started: the tests run against the
+      # built frontend bundle, served below on port 5173.
       - name: Start Docker dev services
-        run: docker compose -f docker-compose-dev.yml up -d --build
-
-      - name: Wait for Docker dev services to be up (30s)
-        run: sleep 30s
-        shell: bash
+        run: |
+          docker compose -f docker-compose-dev.yml up -d --build \
+            redis dev-database minio createbuckets dev-workers dev-web
 
       - name: Build frontend server
         run: |
@@ -177,21 +157,19 @@ jobs:
       - name: Start frontend server
         run: |
           cd wp1-frontend
-          pipenv run python -m http.server 5173 --directory dist/ &
+          python3 -m http.server 5173 --directory dist/ &
 
-      - name: Wait for API and frontend server to be up (10s)
-        run: sleep 10s
-        shell: bash
+      - name: Wait for API and frontend server to be up
+        run: |
+          timeout 120 bash -c \
+            'until curl -sf http://localhost:5000/v1/projects/count > /dev/null; do sleep 2; done'
+          timeout 30 bash -c \
+            'until curl -sf http://localhost:5173/ > /dev/null; do sleep 1; done'
 
       - name: Run frontend tests
         run: |
           cd wp1-frontend
           $(yarn bin)/cypress run
-
-      - name: Stop containers
-        continue-on-error: true
-        if: always()
-        run: docker compose -f "docker-compose-dev.yml" down
 
       - uses: actions/upload-artifact@v4
         continue-on-error: true
