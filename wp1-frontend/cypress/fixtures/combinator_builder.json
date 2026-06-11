@@ -1,0 +1,16 @@
+{
+  "params": {
+    "include": {
+      "builders": ["simple-ready"],
+      "operation": "intersection"
+    },
+    "exclude": {
+      "builders": ["sparql-ready"],
+      "operation": "union"
+    }
+  },
+  "name": "Combinator Builder",
+  "model": "wp1.selection.models.combinator",
+  "project": "en.wikipedia.org",
+  "selection_errors": []
+}

@@ -237,6 +237,24 @@
         "interval_months": 3,
         "next_generation_date": "2026-06-01"
       }
+    },
+    {
+      "created_at": 1685646000,
+      "id": "combo-list",
+      "model": "wp1.selection.models.combinator",
+      "name": "combinator list",
+      "project": "en.wikipedia.org",
+      "s_content_type": "text/tab-separated-values",
+      "s_extension": "tsv",
+      "s_id": "combo-selection-001",
+      "s_status": "OK",
+      "s_updated_at": 1685646500,
+      "s_url": "https://www.example.fake/combo-selection-001",
+      "updated_at": 1685646150,
+      "z_updated_at": null,
+      "z_url": null,
+      "z_status": "NOT_REQUESTED",
+      "z_is_deleted": null
     }
   ]
 }
