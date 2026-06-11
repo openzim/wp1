@@ -61,6 +61,19 @@ class AbstractBuilder:
         )
         selection.set_id()
         try:
+            _, invalid, errors = self.validate(
+                project=builder.b_project.decode("utf-8"),
+                wp10db=wp10db,
+                user_id=builder.b_user_id,
+                builder_id=builder.b_id,
+                **params,
+            )
+            if invalid or errors:
+                raise Wp1RetryableSelectionError(
+                    "The selection contained invalid parameters: %s"
+                    % "; ".join(errors)
+                )
+
             selection.data = self.build(
                 content_type,
                 project=builder.b_project.decode("utf-8"),
