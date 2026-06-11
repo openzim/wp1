@@ -67,7 +67,7 @@
                     type="button"
                     class="btn btn-success"
                     :disabled="!includeDropdown"
-                    @click="addInclude"
+                    @click="addSelectedBuilder('include')"
                   >
                     Add
                   </button>
@@ -114,7 +114,7 @@
                 <button
                   type="button"
                   class="remove-builder"
-                  @click="removeInclude(builderId)"
+                  @click="removeSelectedBuilder('include', builderId)"
                   aria-label="Remove included builder"
                 >
                   &times;
@@ -173,7 +173,7 @@
                     type="button"
                     class="btn btn-danger"
                     :disabled="!excludeDropdown"
-                    @click="addExclude"
+                    @click="addSelectedBuilder('exclude')"
                   >
                     Add
                   </button>
@@ -198,7 +198,7 @@
                 <button
                   type="button"
                   class="remove-builder"
-                  @click="removeExclude(builderId)"
+                  @click="removeSelectedBuilder('exclude', builderId)"
                   aria-label="Remove excluded builder"
                 >
                   &times;
@@ -439,18 +439,6 @@ export default {
     },
     operationText: function (operation) {
       return operation === 'intersection' ? ' INTERSECTION ' : ' UNION ';
-    },
-    addInclude: function () {
-      this.addSelectedBuilder('include');
-    },
-    removeInclude: function (builderId) {
-      this.removeSelectedBuilder('include', builderId);
-    },
-    addExclude: function () {
-      this.addSelectedBuilder('exclude');
-    },
-    removeExclude: function (builderId) {
-      this.removeSelectedBuilder('exclude', builderId);
     },
     addSelectedBuilder: function (group) {
       var dropdownKey = `${group}Dropdown`;
