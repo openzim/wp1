@@ -83,6 +83,13 @@
                 Loading builders...
               </div>
               <div
+                v-else-if="buildersLoadError"
+                class="alert alert-danger mt-2 mb-0"
+                role="alert"
+              >
+                {{ buildersLoadError }}
+              </div>
+              <div
                 v-else-if="
                   availableIncludeBuilders(builder.project).length === 0
                 "
@@ -225,6 +232,7 @@ export default {
   data: function () {
     return {
       allBuilders: [],
+      buildersLoadError: '',
       buildersLoaded: false,
       invalidItems: '',
       includeBuilders: [],
@@ -294,6 +302,8 @@ export default {
           }
         );
         if (!response.ok) {
+          this.buildersLoadError =
+            'Unable to load builders. Please try again later.';
           this.buildersLoaded = true;
           return;
         }
@@ -303,8 +313,11 @@ export default {
           ...builder,
           id: String(builder.id),
         }));
+        this.buildersLoadError = '';
         this.buildersLoaded = true;
       } catch (e) {
+        this.buildersLoadError =
+          'Unable to load builders. Please try again later.';
         this.buildersLoaded = true;
       }
     },
