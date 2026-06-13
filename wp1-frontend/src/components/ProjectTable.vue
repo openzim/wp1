@@ -45,35 +45,87 @@
         <th :class="getClass(tableData.row_labels[row])">
           <span v-if="tableData.row_labels[row].text == 'FA'">
             <img
-              alt="Featured list"
-              src="//upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Featured_article_star.svg/16px-Featured_article_star.svg.png"
-              decoding="async"
-              width="16"
-              height="16"
-              srcset="
-                //upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Featured_article_star.svg/24px-Featured_article_star.svg.png 1.5x,
-                //upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Featured_article_star.svg/32px-Featured_article_star.svg.png 2x
-              "
-              data-file-width="180"
+              alt="Star icon"
               data-file-height="180"
+              data-file-width="180"
+              decoding="async"
+              height="16"
+              src="//upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Featured_article_star.svg/20px-Featured_article_star.svg.png"
+              srcset="
+                //upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Featured_article_star.svg/40px-Featured_article_star.svg.png 2.5x,
+                //upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Featured_article_star.svg/60px-Featured_article_star.svg.png 3.75x
+              "
               style="position: relative; top: -2px"
+              title="Featured article"
+              width="16"
+            />
+          </span>
+          <span v-if="tableData.row_labels[row].text == 'FL'">
+            <img
+              alt="Star icon"
+              data-file-height="180"
+              data-file-width="180"
+              decoding="async"
+              height="16"
+              src="//upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Featured_article_star.svg/20px-Featured_article_star.svg.png"
+              srcset="
+                //upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Featured_article_star.svg/40px-Featured_article_star.svg.png 2.5x,
+                //upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Featured_article_star.svg/60px-Featured_article_star.svg.png 3.75x
+              "
+              style="position: relative; top: -2px"
+              title="Featured list"
+              width="16"
+            />
+          </span>
+          <span v-if="tableData.row_labels[row].text == 'FM'">
+            <img
+              alt="Star icon"
+              data-file-height="180"
+              data-file-width="180"
+              decoding="async"
+              height="16"
+              src="//upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Featured_article_star.svg/20px-Featured_article_star.svg.png"
+              srcset="
+                //upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Featured_article_star.svg/40px-Featured_article_star.svg.png 2.5x,
+                //upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Featured_article_star.svg/60px-Featured_article_star.svg.png 3.75x
+              "
+              style="position: relative; top: -2px"
+              title="Featured media"
+              width="16"
             />
           </span>
           <span v-if="tableData.row_labels[row].text == 'GA'">
             <img
-              alt=""
-              src="//upload.wikimedia.org/wikipedia/en/thumb/9/94/Symbol_support_vote.svg/16px-Symbol_support_vote.svg.png"
+              alt="Green plus icon on white circle with green border"
+              data-file-height="185"
+              data-file-width="180"
               decoding="async"
+              height="16"
+              src="//upload.wikimedia.org/wikipedia/commons/thumb/9/94/Symbol_support_vote.svg/20px-Symbol_support_vote.svg.png"
+              srcset="
+                //upload.wikimedia.org/wikipedia/commons/thumb/9/94/Symbol_support_vote.svg/40px-Symbol_support_vote.svg.png 2.5x,
+                //upload.wikimedia.org/wikipedia/commons/thumb/9/94/Symbol_support_vote.svg/60px-Symbol_support_vote.svg.png 3.75x
+              "
+              style="position: relative; top: -2px"
               title="Good article"
               width="16"
-              height="16"
-              srcset="
-                //upload.wikimedia.org/wikipedia/en/thumb/9/94/Symbol_support_vote.svg/24px-Symbol_support_vote.svg.png 1.5x,
-                //upload.wikimedia.org/wikipedia/en/thumb/9/94/Symbol_support_vote.svg/32px-Symbol_support_vote.svg.png 2x
-              "
-              data-file-width="180"
+            />
+          </span>
+          <span v-if="tableData.row_labels[row].text == 'A'">
+            <img
+              alt="Light blue capital letter A over pale yellow star icon in white circle with light blue border"
               data-file-height="185"
+              data-file-width="180"
+              decoding="async"
+              height="16"
+              src="//upload.wikimedia.org/wikipedia/commons/thumb/2/25/Symbol_a_class.svg/20px-Symbol_a_class.svg.png"
+              srcset="
+                //upload.wikimedia.org/wikipedia/commons/thumb/2/25/Symbol_a_class.svg/40px-Symbol_a_class.svg.png 2.5x,
+                //upload.wikimedia.org/wikipedia/commons/thumb/2/25/Symbol_a_class.svg/60px-Symbol_a_class.svg.png 3.75x
+              "
               style="position: relative; top: -2px"
+              title="A-Class"
+              width="16"
             />
           </span>
           <WikiLink
@@ -201,8 +253,8 @@ export default {
 }
 
 table {
-  border-collapse: collapse;
   border: 1px solid #aaa;
+  border-collapse: collapse;
   margin: auto;
   text-align: right;
 }
@@ -234,9 +286,9 @@ td {
 }
 
 .timestamp {
-  text-align: center;
-  margin: 1rem 0;
   color: #666;
   font-size: 0.9rem;
+  margin: 1rem 0;
+  text-align: center;
 }
 </style>
