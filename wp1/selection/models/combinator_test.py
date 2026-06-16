@@ -175,7 +175,7 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
         )
         self.assertEqual(expected, actual)
 
-    @patch("wp1.selection.meta_builder.logic_builder.get_builder")
+    @patch("wp1.logic.builder.get_builder")
     @patch("wp1.selection.models.combinator.Builder._fetch_selection_data")
     def test_build(self, mock_fetch_selection_data, mock_get_builder):
         mock_get_builder.return_value = _reference_builder()
@@ -198,7 +198,7 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
 
         self.assertEqual(b"first_article\nsecond", actual)
 
-    @patch("wp1.selection.meta_builder.logic_builder.get_builder")
+    @patch("wp1.logic.builder.get_builder")
     @patch("wp1.selection.models.combinator.Builder._fetch_selection_data")
     def test_build_intersection(self, mock_fetch_selection_data, mock_get_builder):
         mock_get_builder.return_value = _reference_builder()
@@ -222,7 +222,7 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
 
         self.assertEqual(b"shared", actual)
 
-    @patch("wp1.selection.meta_builder.logic_builder.get_builder")
+    @patch("wp1.logic.builder.get_builder")
     @patch("wp1.selection.models.combinator.Builder._fetch_selection_data")
     def test_build_empty_result(self, mock_fetch_selection_data, mock_get_builder):
         mock_get_builder.return_value = _reference_builder()

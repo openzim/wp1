@@ -15,6 +15,12 @@ ARTICLES_LABEL_STR = config["ARTICLES_LABEL"]
 DATABASE_WIKI_TS = config["DATABASE_WIKI_TS"]
 
 
+def as_text(value: bytes | str | int | None) -> str:
+    if isinstance(value, bytes):
+        return value.decode("utf-8")
+    return str(value)
+
+
 def wp10_timestamp_to_unix(ts):
     if ts is None:
         raise ValueError("Cannot convert None timestamp")

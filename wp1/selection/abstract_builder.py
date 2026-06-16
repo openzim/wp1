@@ -22,11 +22,6 @@ logger = logging.getLogger(__name__)
 
 class AbstractBuilder:
 
-    def _as_text(self, value: bytes | str | int | None) -> str:
-        if isinstance(value, bytes):
-            return value.decode("utf-8")
-        return str(value)
-
     def _upload_to_storage(
         self, s3: KiwixStorage, selection: Selection, builder: Builder
     ) -> None:

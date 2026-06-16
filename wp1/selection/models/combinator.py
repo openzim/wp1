@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 import wp1.logic.builder as logic_builder
+from wp1.logic import util as logic_util
 from wp1.exceptions import (
     ObjectNotFoundError,
     Wp1FatalSelectionError,
@@ -124,9 +125,9 @@ class Builder(MetaBuilder):
         project = params["project"]
         builder_id = params.get("builder_id")
 
-        referenced_ids = self._dedupe(include_builders + exclude_builders)
+        referenced_ids = set(include_builders + exclude_builders)
 
-        if builder_id is not None and self._as_text(builder_id) in referenced_ids:
+        if builder_id is not None and logic_util.as_text(builder_id) in referenced_ids:
             errors.append("This combinator cannot reference itself")
 
         if errors:
@@ -143,20 +144,20 @@ class Builder(MetaBuilder):
                 )
                 continue
 
-            label = self._builder_label(builder)
+            label = builder.label
 
-            if self._as_text(builder.b_user_id) != self._as_text(user_id):
+            if builder.user_id != logic_util.as_text(user_id):
                 errors.append(
                     f"Builder {label} belongs to another user. You can only "
                     "reference your own builders."
                 )
-            if self._as_text(builder.b_project) != self._as_text(project):
+            if builder.project != logic_util.as_text(project):
                 errors.append(
                     f"Builder {label} belongs to project "
-                    f"{self._as_text(builder.b_project)!r}. All referenced builders "
+                    f"{builder.project!r}. All referenced builders "
                     "must use the same project."
                 )
-            if self._is_meta_builder(builder):
+            if logic_builder.is_meta_builder(builder):
                 errors.append(
                     f"Builder {label} is a combinator. Combinators can only "
                     "reference leaf builders such as Simple, SPARQL, PetScan, "
@@ -180,9 +181,12 @@ class Builder(MetaBuilder):
 
         sets: list[set[str]] = []
         # TODO: #1184 - Handle multiple bad referenced selections in combinator build.
-        for builder_id in self._dedupe(builder_ids):
+        for builder_id in set(builder_ids):
             data = self._fetch_selection_data(
-                wp10db, s3, builder_id, self._reference_label(wp10db, builder_id)
+                wp10db,
+                s3,
+                builder_id,
+                logic_builder.builder_label_by_id(wp10db, builder_id),
             )
             title_set = _parse_tsv_to_set(data)
             sets.append(title_set)

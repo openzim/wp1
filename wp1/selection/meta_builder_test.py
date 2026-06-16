@@ -6,7 +6,7 @@ from wp1.models.wp10.selection import Selection
 from wp1.selection.meta_builder import MetaBuilder
 
 
-def _selection(status=b"OK", object_key=b"object-key"):
+def _selection(status: bytes = b"OK", object_key: bytes | None = b"object-key"):
     return Selection(
         s_builder_id=b"builder-a",
         s_content_type=b"text/tab-separated-values",
@@ -44,6 +44,13 @@ class MetaBuilderTest(TestCase):
         mock_latest_selection.return_value = _selection(status=b"CAN_RETRY")
 
         with self.assertRaises(Wp1RetryableSelectionError):
+            self.builder._fetch_selection_data(MagicMock(), MagicMock(), "builder-a")
+
+    @patch("wp1.selection.meta_builder.logic_builder.latest_selection_for")
+    def test_fetch_selection_data_without_stored_data(self, mock_latest_selection):
+        mock_latest_selection.return_value = _selection(object_key=None)
+
+        with self.assertRaisesRegex(Wp1RetryableSelectionError, "no stored data"):
             self.builder._fetch_selection_data(MagicMock(), MagicMock(), "builder-a")
 
     @patch("wp1.selection.meta_builder.logic_builder.latest_selection_for")

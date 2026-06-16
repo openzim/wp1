@@ -39,6 +39,20 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+META_BUILDER_MODELS = {"wp1.selection.models.combinator"}
+
+
+def builder_label_by_id(wp10db: Connection, builder_id: str | bytes) -> str:
+    try:
+        builder = get_builder(wp10db, builder_id)
+    except ObjectNotFoundError:
+        return logic_util.as_text(builder_id)
+    return builder.label
+
+
+def is_meta_builder(builder: Builder) -> bool:
+    return builder.model in META_BUILDER_MODELS
+
 
 def get_builder_module_class(model: str) -> type[AbstractBuilder]:
     """Dynamically imports the builder module and returns the Builder class."""
