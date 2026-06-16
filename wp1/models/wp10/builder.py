@@ -6,6 +6,7 @@ from typing import Any
 
 import attr
 
+from wp1.logic import util as logic_util
 from wp1.constants import TS_FORMAT_WP10
 from wp1.timestamp import utcnow
 
@@ -32,6 +33,32 @@ class Builder:
     b_updated_at: bytes | None = attr.ib(default=None)
     b_current_version: int = attr.ib(default=0)
     b_selection_zim_version: int = attr.ib(default=0)
+
+    @property
+    def id(self) -> str:
+        return logic_util.as_text(self.b_id)
+
+    @property
+    def name(self) -> str:
+        return logic_util.as_text(self.b_name)
+
+    @property
+    def user_id(self) -> str:
+        return logic_util.as_text(self.b_user_id)
+
+    @property
+    def project(self) -> str:
+        return logic_util.as_text(self.b_project)
+
+    @property
+    def model(self) -> str:
+        return logic_util.as_text(self.b_model)
+
+    @property
+    def label(self) -> str:
+        if self.b_name is not None:
+            return f"{self.name} ({self.id})"
+        return self.id
 
     @property
     def created_at_dt(self) -> datetime.datetime:
@@ -75,10 +102,10 @@ class Builder:
 
     def to_web_dict(self) -> dict[str, Any]:
         return {
-            "name": self.b_name.decode("utf-8"),
-            "project": self.b_project.decode("utf-8"),
+            "name": self.name,
+            "project": self.project,
             "params": json.loads(self.b_params.decode("utf-8")),
-            "model": self.b_model.decode("utf-8"),
+            "model": self.model,
         }
 
     def set_id(self) -> None:

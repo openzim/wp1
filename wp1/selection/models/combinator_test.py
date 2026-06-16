@@ -1,11 +1,9 @@
 from unittest.mock import MagicMock, patch
 
 from wp1.base_db_test import BaseWpOneDbTest
-from wp1.exceptions import Wp1FatalSelectionError, Wp1RetryableSelectionError
+from wp1.exceptions import Wp1FatalSelectionError
 from wp1.models.wp10.builder import Builder
-from wp1.models.wp10.selection import Selection
 from wp1.selection.models.combinator import Builder as CombinatorBuilder
-from wp1.selection.models.combinator import _fetch_selection_data
 
 
 def _reference_builder(
@@ -22,16 +20,6 @@ def _reference_builder(
         b_project=project.encode("utf-8"),
         b_model=model.encode("utf-8"),
         b_params=b"{}",
-    )
-
-
-def _selection(status=b"OK", object_key=b"object-key"):
-    return Selection(
-        s_builder_id=b"builder-a",
-        s_content_type=b"text/tab-separated-values",
-        s_version=1,
-        s_status=status,
-        s_object_key=object_key,
     )
 
 
@@ -187,8 +175,8 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
         )
         self.assertEqual(expected, actual)
 
-    @patch("wp1.selection.models.combinator.logic_builder.get_builder")
-    @patch("wp1.selection.models.combinator._fetch_selection_data")
+    @patch("wp1.logic.builder.get_builder")
+    @patch("wp1.selection.models.combinator.Builder._fetch_selection_data")
     def test_build(self, mock_fetch_selection_data, mock_get_builder):
         mock_get_builder.return_value = _reference_builder()
         data = {
@@ -210,8 +198,8 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
 
         self.assertEqual(b"first_article\nsecond", actual)
 
-    @patch("wp1.selection.models.combinator.logic_builder.get_builder")
-    @patch("wp1.selection.models.combinator._fetch_selection_data")
+    @patch("wp1.logic.builder.get_builder")
+    @patch("wp1.selection.models.combinator.Builder._fetch_selection_data")
     def test_build_intersection(self, mock_fetch_selection_data, mock_get_builder):
         mock_get_builder.return_value = _reference_builder()
         data = {
@@ -234,8 +222,8 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
 
         self.assertEqual(b"shared", actual)
 
-    @patch("wp1.selection.models.combinator.logic_builder.get_builder")
-    @patch("wp1.selection.models.combinator._fetch_selection_data")
+    @patch("wp1.logic.builder.get_builder")
+    @patch("wp1.selection.models.combinator.Builder._fetch_selection_data")
     def test_build_empty_result(self, mock_fetch_selection_data, mock_get_builder):
         mock_get_builder.return_value = _reference_builder()
         mock_fetch_selection_data.return_value = b""
@@ -244,38 +232,6 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
 
         with self.assertRaises(Wp1FatalSelectionError):
             self.builder.build("text/tab-separated-values", **params)
-
-    @patch("wp1.selection.models.combinator.logic_builder.latest_selection_for")
-    def test_fetch_selection_data(self, mock_latest_selection):
-        mock_latest_selection.return_value = _selection()
-        s3 = MagicMock()
-        s3.download_fileobj.side_effect = lambda _key, buf: buf.write(b"first\n")
-
-        actual = _fetch_selection_data(MagicMock(), s3, "builder-a")
-
-        self.assertEqual(b"first\n", actual)
-        s3.download_fileobj.assert_called_once()
-
-    @patch("wp1.selection.models.combinator.logic_builder.latest_selection_for")
-    def test_fetch_selection_data_failed_selection(self, mock_latest_selection):
-        mock_latest_selection.return_value = _selection(status=b"FAILED")
-
-        with self.assertRaises(Wp1FatalSelectionError):
-            _fetch_selection_data(MagicMock(), MagicMock(), "builder-a")
-
-    @patch("wp1.selection.models.combinator.logic_builder.latest_selection_for")
-    def test_fetch_selection_data_retryable_selection(self, mock_latest_selection):
-        mock_latest_selection.return_value = _selection(status=b"CAN_RETRY")
-
-        with self.assertRaises(Wp1RetryableSelectionError):
-            _fetch_selection_data(MagicMock(), MagicMock(), "builder-a")
-
-    @patch("wp1.selection.models.combinator.logic_builder.latest_selection_for")
-    def test_fetch_selection_data_missing_selection(self, mock_latest_selection):
-        mock_latest_selection.return_value = None
-
-        with self.assertRaises(Wp1RetryableSelectionError):
-            _fetch_selection_data(MagicMock(), MagicMock(), "builder-a")
 
     def test_validate_with_referenced_builder_in_db(self):
         self._insert_builder()

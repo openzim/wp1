@@ -1,63 +1,15 @@
-import io
 import logging
 from typing import Any
 
-from botocore.exceptions import ClientError
-
 import wp1.logic.builder as logic_builder
+from wp1.logic import util as logic_util
 from wp1.exceptions import (
     ObjectNotFoundError,
     Wp1FatalSelectionError,
-    Wp1RetryableSelectionError,
 )
-from wp1.models.wp10.builder import Builder as Wp10Builder
-from wp1.selection.abstract_builder import AbstractBuilder
+from wp1.selection.meta_builder import MetaBuilder
 
 logger = logging.getLogger(__name__)
-
-
-META_BUILDER_MODELS = {"wp1.selection.models.combinator"}
-
-
-# TODO: #1181 - Move shared helpers into AbstractBuilder.
-def _as_text(value: bytes | str | int | None) -> str:
-    if isinstance(value, bytes):
-        return value.decode("utf-8")
-    return str(value)
-
-
-def _builder_label(builder: Wp10Builder) -> str:
-    name = getattr(builder, "b_name", None)
-    builder_id = _as_text(getattr(builder, "b_id", ""))
-    if name is not None:
-        return f"{_as_text(name)} ({builder_id})"
-    return builder_id
-
-
-def _reference_label(wp10db, builder_id: str) -> str:
-    try:
-        builder = logic_builder.get_builder(wp10db, builder_id)
-    except ObjectNotFoundError:
-        return builder_id
-    return _builder_label(builder)
-
-
-def _builder_model(builder: Wp10Builder) -> str:
-    return _as_text(getattr(builder, "b_model", ""))
-
-
-def _is_meta_builder(builder: Wp10Builder) -> bool:
-    return _builder_model(builder) in META_BUILDER_MODELS
-
-
-def _dedupe(builder_ids: list[str]) -> list[str]:
-    seen: set[str] = set()
-    unique_ids: list[str] = []
-    for builder_id in builder_ids:
-        if builder_id not in seen:
-            seen.add(builder_id)
-            unique_ids.append(builder_id)
-    return unique_ids
 
 
 def _validate_group_shape(
@@ -101,7 +53,6 @@ def _validate_group_shape(
     return builders, errors
 
 
-# TODO: #1181 - Move shared title parsing helpers into AbstractBuilder.
 def _normalize(line: bytes) -> str | None:
     s = line.decode("utf-8", errors="replace").strip()
     if not s or s.startswith("#"):
@@ -118,7 +69,6 @@ def _parse_tsv_to_set(data: bytes) -> set[str]:
     return titles
 
 
-# TODO: #1181 - Move shared set operation helpers into AbstractBuilder.
 def _apply_operation(operation: str, sets: list[set[str]]) -> set[str]:
     if not sets:
         return set()
@@ -132,80 +82,7 @@ def _apply_operation(operation: str, sets: list[set[str]]) -> set[str]:
     raise ValueError(f"Unsupported operation: {operation}")
 
 
-def _fetch_selection_data(
-    wp10db, s3, builder_id: str, reference_label: str | None = None
-) -> bytes:
-    """Fetch the latest materialized TSV snapshot for a referenced builder."""
-    label = reference_label or builder_id
-    selection = logic_builder.latest_selection_for(
-        wp10db, builder_id, "text/tab-separated-values"
-    )
-
-    if selection is None:
-        raise Wp1RetryableSelectionError(
-            f"Referenced builder {label} has no usable selection "
-            f"(no selection found)"
-        )
-
-    status = _as_text(selection.s_status)
-    if status == "FAILED":
-        raise Wp1FatalSelectionError(
-            f"Referenced builder {label} latest selection failed"
-        )
-
-    if status != "OK":
-        raise Wp1RetryableSelectionError(
-            f"Referenced builder {label} latest selection is not ready "
-            f"(status={status!r})"
-        )
-
-    # OK selections can have no object key when materialization produced empty
-    # data, since AbstractBuilder only uploads filled selection.data.
-    if selection.s_object_key is None:
-        raise Wp1RetryableSelectionError(
-            f"Referenced builder {label} latest selection has no object key"
-        )
-
-    object_key = selection.s_object_key
-    if isinstance(object_key, bytes):
-        object_key = object_key.decode("utf-8")
-
-    buffer = io.BytesIO()
-    try:
-        s3.download_fileobj(object_key, buffer)
-    except ClientError as e:
-        code = e.response.get("Error", {}).get("Code", "Unknown")
-        raise Wp1RetryableSelectionError(
-            f"Failed to download selection for builder {label} "
-            f"from S3 key {object_key!r}: {code}"
-        ) from e
-
-    return buffer.getvalue()
-
-
-def _process_group(wp10db, s3, group: dict[str, Any]) -> set[str]:
-
-    builder_values = group.get("builders", [])
-
-    builder_ids = [
-        builder_id for builder_id in builder_values if isinstance(builder_id, str)
-    ]
-
-    operation = group.get("operation", "union")
-
-    sets: list[set[str]] = []
-    # TODO: #1184 - Handle multiple bad referenced selections in combinator build.
-    for builder_id in _dedupe(builder_ids):
-        data = _fetch_selection_data(
-            wp10db, s3, builder_id, _reference_label(wp10db, builder_id)
-        )
-        title_set = _parse_tsv_to_set(data)
-        sets.append(title_set)
-
-    return _apply_operation(operation, sets)
-
-
-class Builder(AbstractBuilder):
+class Builder(MetaBuilder):
     """Combinator builder: combines other builders using set operations."""
 
     def validate(
@@ -248,9 +125,9 @@ class Builder(AbstractBuilder):
         project = params["project"]
         builder_id = params.get("builder_id")
 
-        referenced_ids = _dedupe(include_builders + exclude_builders)
+        referenced_ids = set(include_builders + exclude_builders)
 
-        if builder_id is not None and _as_text(builder_id) in referenced_ids:
+        if builder_id is not None and logic_util.as_text(builder_id) in referenced_ids:
             errors.append("This combinator cannot reference itself")
 
         if errors:
@@ -267,22 +144,20 @@ class Builder(AbstractBuilder):
                 )
                 continue
 
-            # name + id is only for helping testing, in prod we dont show the id
-            # TODO : show the name only
-            label = _builder_label(builder)
+            label = builder.label
 
-            if _as_text(builder.b_user_id) != _as_text(user_id):
+            if builder.user_id != logic_util.as_text(user_id):
                 errors.append(
                     f"Builder {label} belongs to another user. You can only "
                     "reference your own builders."
                 )
-            if _as_text(builder.b_project) != _as_text(project):
+            if builder.project != logic_util.as_text(project):
                 errors.append(
                     f"Builder {label} belongs to project "
-                    f"{_as_text(builder.b_project)!r}. All referenced builders "
+                    f"{builder.project!r}. All referenced builders "
                     "must use the same project."
                 )
-            if _is_meta_builder(builder):
+            if logic_builder.is_meta_builder(builder):
                 errors.append(
                     f"Builder {label} is a combinator. Combinators can only "
                     "reference leaf builders such as Simple, SPARQL, PetScan, "
@@ -293,6 +168,30 @@ class Builder(AbstractBuilder):
             return ([], [], errors)
 
         return ([], [], [])
+
+    def _process_group(self, wp10db, s3, group: dict[str, Any]) -> set[str]:
+
+        builder_values = group.get("builders", [])
+
+        builder_ids = [
+            builder_id for builder_id in builder_values if isinstance(builder_id, str)
+        ]
+
+        operation = group.get("operation", "union")
+
+        sets: list[set[str]] = []
+        # TODO: #1184 - Handle multiple bad referenced selections in combinator build.
+        for builder_id in set(builder_ids):
+            data = self._fetch_selection_data(
+                wp10db,
+                s3,
+                builder_id,
+                logic_builder.builder_label_by_id(wp10db, builder_id),
+            )
+            title_set = _parse_tsv_to_set(data)
+            sets.append(title_set)
+
+        return _apply_operation(operation, sets)
 
     def build(self, content_type: str, **params: Any) -> bytes:
         """Build the combinator selection from referenced builders."""
@@ -313,13 +212,13 @@ class Builder(AbstractBuilder):
 
         exclude_group = params.get("exclude")
 
-        include_set = _process_group(wp10db, s3, include_group)
+        include_set = self._process_group(wp10db, s3, include_group)
 
         exclude_set: set[str] = set()
         if exclude_group is not None:
             exclude_builders = exclude_group.get("builders", [])
             if exclude_builders:
-                exclude_set = _process_group(wp10db, s3, exclude_group)
+                exclude_set = self._process_group(wp10db, s3, exclude_group)
 
         result = include_set - exclude_set
 
