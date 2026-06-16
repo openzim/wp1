@@ -79,7 +79,7 @@
                   }}
                 </div>
               </div>
-              <div v-if="!buildersLoaded" class="text-muted small mt-2">
+              <div v-if="!buildersFetchFinished" class="text-muted small mt-2">
                 Loading builders...
               </div>
               <div
@@ -233,7 +233,7 @@ export default {
     return {
       allBuilders: [],
       buildersLoadError: '',
-      buildersLoaded: false,
+      buildersFetchFinished: false,
       invalidItems: '',
       includeBuilders: [],
       includeDropdown: '',
@@ -304,7 +304,7 @@ export default {
         if (!response.ok) {
           this.buildersLoadError =
             'Unable to load builders. Please try again later.';
-          this.buildersLoaded = true;
+          this.buildersFetchFinished = true;
           return;
         }
 
@@ -314,11 +314,11 @@ export default {
           id: String(builder.id),
         }));
         this.buildersLoadError = '';
-        this.buildersLoaded = true;
+        this.buildersFetchFinished = true;
       } catch (e) {
         this.buildersLoadError =
           'Unable to load builders. Please try again later.';
-        this.buildersLoaded = true;
+        this.buildersFetchFinished = true;
       }
     },
     onBuilderLoaded: function (builder) {
