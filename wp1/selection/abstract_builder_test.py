@@ -18,8 +18,11 @@ class TestBuilder(AbstractBuilder):
     def build(self, content_type, **params):
         return "\n".join(params["list"]).encode("utf-8")
 
+    def validate(self, **params):
+        return ([], [], [])
 
-class TestBuilderRetryable(AbstractBuilder):
+
+class TestBuilderRetryable(TestBuilder):
 
     def build(self, content_type, **params):
         try:
@@ -28,7 +31,7 @@ class TestBuilderRetryable(AbstractBuilder):
             raise Wp1RetryableSelectionError("Could not convert to int") from e
 
 
-class TestBuilderFatal(AbstractBuilder):
+class TestBuilderFatal(TestBuilder):
 
     def build(self, content_type, **params):
         try:
@@ -37,19 +40,25 @@ class TestBuilderFatal(AbstractBuilder):
             raise Wp1FatalSelectionError("Could not convert to int") from e
 
 
-class TestBuilderNoContext(AbstractBuilder):
+class TestBuilderNoContext(TestBuilder):
 
     def build(self, content_type, **params):
         raise Wp1FatalSelectionError("Something broke")
 
 
-class TestBuilderSuppressedException(AbstractBuilder):
+class TestBuilderSuppressedException(TestBuilder):
 
     def build(self, content_type, **params):
         try:
             int("Not an int")
         except ValueError as e:
             raise Wp1SelectionError("Just this thing, really") from None
+
+
+class TestBuilderInvalidParams(TestBuilder):
+
+    def validate(self, **params):
+        return ([], ["bad_item"], ["The list contained an invalid item"])
 
 
 class AbstractBuilderTest(BaseWpOneDbTest):
@@ -214,6 +223,42 @@ class AbstractBuilderTest(BaseWpOneDbTest):
         self.assertEqual(
             {"error_messages": ["Just this thing, really"]},
             json.loads(actual.s_error_messages),
+        )
+
+    def test_materialize_validates_before_building(self):
+        builder_obj = TestBuilderInvalidParams()
+        builder_obj.build = MagicMock()
+        builder_obj.materialize(
+            self.s3, self.wp10db, self.builder, "text/tab-separated-values", 1
+        )
+
+        builder_obj.build.assert_not_called()
+        actual = get_first_selection(self.wp10db)
+
+        self.assertEqual(b"CAN_RETRY", actual.s_status)
+        self.assertEqual(
+            {
+                "error_messages": [
+                    "The selection contained invalid parameters: "
+                    "The list contained an invalid item"
+                ]
+            },
+            json.loads(actual.s_error_messages),
+        )
+
+    def test_materialize_passes_builder_context_to_validate(self):
+        builder_obj = TestBuilder()
+        builder_obj.validate = MagicMock(return_value=([], [], []))
+        builder_obj.materialize(
+            self.s3, self.wp10db, self.builder, "text/tab-separated-values", 1
+        )
+
+        builder_obj.validate.assert_called_once_with(
+            project="en.wikipedia.fake",
+            wp10db=self.wp10db,
+            user_id=1234,
+            builder_id=b"1a-2b-3c-4d",
+            list=["a", "b", "c"],
         )
 
     def test_materialize_update_article_count(self):

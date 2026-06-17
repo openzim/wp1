@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import MagicMock
 
 from wp1.base_db_test import BaseWpOneDbTest, get_first_selection
-from wp1.exceptions import Wp1FatalSelectionError, Wp1RetryableSelectionError
+from wp1.exceptions import Wp1FatalSelectionError
 from wp1.models.wp10.builder import Builder
 from wp1.selection.models.simple import Builder as SimpleBuilder
 
@@ -136,10 +136,14 @@ of text than an actual article name.",
         )
         self.assertEqual(expected, actual)
 
-    def test_build_disallows_invalid(self):
+    def test_materialize_disallows_invalid(self):
         simple_test_builder = SimpleBuilder()
-        with self.assertRaises(Wp1RetryableSelectionError):
-            simple_test_builder.build("text/tab-separated-values", list=["Foo#Bar"])
+        self.builder.b_params = '{"list":["Foo#Bar"]}'
+        simple_test_builder.materialize(
+            self.s3, self.wp10db, self.builder, "text/tab-separated-values", 1
+        )
+        actual = get_first_selection(self.wp10db)
+        self.assertEqual(b"CAN_RETRY", actual.s_status)
 
     def test_validate_items(self):
         simple_builder_test = SimpleBuilder()

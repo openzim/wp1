@@ -1,7 +1,7 @@
 import urllib.parse
 from typing import Any
 
-from wp1.exceptions import Wp1FatalSelectionError, Wp1RetryableSelectionError
+from wp1.exceptions import Wp1FatalSelectionError
 from wp1.selection.abstract_builder import AbstractBuilder
 
 
@@ -32,12 +32,9 @@ class Builder(AbstractBuilder):
         if "list" not in params:
             raise Wp1FatalSelectionError("Missing required param: list")
 
-        valid, invalid, errors = self.validate(**params)
-
-        if errors:
-            raise Wp1RetryableSelectionError(
-                "The selection contained invalid parameters"
-            )
+        # Validation errors are handled by AbstractBuilder.materialize before
+        # build is called; validate is used here only to normalize the list.
+        valid, _, _ = self.validate(**params)
 
         return "\n".join(valid).encode("utf-8")
 
