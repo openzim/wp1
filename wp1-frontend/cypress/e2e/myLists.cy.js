@@ -17,7 +17,7 @@ describe('the user selection list page', () => {
     it('successfully loads', () => {});
 
     it('displays the datatables view', () => {
-      cy.get('.dataTables_info').contains('Showing 1 to 13 of 13 entries');
+      cy.get('.dataTables_info').contains('Showing 1 to 14 of 14 entries');
     });
 
     it('displays list and its contents', () => {
@@ -83,6 +83,20 @@ describe('the user selection list page', () => {
         .contains('.btn-primary', 'Edit')
         .click();
       cy.url().should('eq', 'http://localhost:5173/#/selections/sparql/2');
+    });
+
+    it('takes the user to the combinator edit screen when combinator edit is clicked', () => {
+      cy.intercept('GET', 'v1/builders/combo-list', {
+        fixture: 'combinator_builder.json',
+      });
+      cy.contains('td', 'combinator list')
+        .siblings()
+        .contains('.btn-primary', 'Edit')
+        .click();
+      cy.url().should(
+        'eq',
+        'http://localhost:5173/#/selections/combinator/combo-list'
+      );
     });
 
     it('displays a failed link for selection with failed ZIM', () => {

@@ -1,0 +1,24 @@
+{
+  "params": {
+    "include": {
+      "builders": ["simple-ready"],
+      "operation": "union"
+    },
+    "exclude": {
+      "builders": [],
+      "operation": "union"
+    }
+  },
+  "name": "Combinator Fatal Error",
+  "model": "wp1.selection.models.combinator",
+  "project": "en.wikipedia.org",
+  "selection_errors": [
+    {
+      "error_messages": [
+        "Referenced builder Failed Builder (failed-builder) latest selection failed"
+      ],
+      "ext": "tsv",
+      "status": "FAILED"
+    }
+  ]
+}

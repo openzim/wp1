@@ -1,0 +1,44 @@
+{
+  "builders": [
+    {
+      "id": "simple-ready",
+      "name": "Simple Ready",
+      "project": "en.wikipedia.org",
+      "model": "wp1.selection.models.simple",
+      "updated_at": 1685646150,
+      "s_updated_at": 1685646500,
+      "s_status": "OK",
+      "s_url": "https://www.example.fake/simple-ready.tsv"
+    },
+    {
+      "id": "sparql-ready",
+      "name": "SPARQL Ready",
+      "project": "en.wikipedia.org",
+      "model": "wp1.selection.models.sparql",
+      "updated_at": 1685646150,
+      "s_updated_at": 1685646500,
+      "s_status": "OK",
+      "s_url": "https://www.example.fake/sparql-ready.tsv"
+    },
+    {
+      "id": "german-simple",
+      "name": "German Simple",
+      "project": "de.wikipedia.org",
+      "model": "wp1.selection.models.simple",
+      "updated_at": 1685646150,
+      "s_updated_at": 1685646500,
+      "s_status": "OK",
+      "s_url": "https://www.example.fake/german-simple.tsv"
+    },
+    {
+      "id": "combo-1",
+      "name": "Existing Combinator",
+      "project": "en.wikipedia.org",
+      "model": "wp1.selection.models.combinator",
+      "updated_at": 1685646150,
+      "s_updated_at": 1685646500,
+      "s_status": "OK",
+      "s_url": "https://www.example.fake/combo-1.tsv"
+    }
+  ]
+}

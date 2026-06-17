@@ -115,7 +115,11 @@
                   Please provide a valid list name
                 </div>
               </div>
-              <slot name="extra-params" :success="success"></slot>
+              <slot
+                name="extra-params"
+                :success="success"
+                :builder="builder"
+              ></slot>
             </div>
             <div
               v-if="this.success == false || this.deleteSuccess == false"
@@ -277,7 +281,7 @@ export default {
         {
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-        },
+        }
       );
       if (response.status == 404 || response.status == 401) {
         this.notFound = true;
@@ -290,7 +294,7 @@ export default {
       }
     },
     onSubmit: async function () {
-      this.$emit('onBeforeSubmit');
+      this.$emit('onBeforeSubmit', this.builder);
       const form = this.$refs.form;
       if (!form.checkValidity()) {
         this.$refs.form_group.classList.add('was-validated');
@@ -348,7 +352,7 @@ export default {
     onDelete: async function () {
       if (
         !window.confirm(
-          'Really delete this list? The definition and all downloadable selections will be permanently deleted.',
+          'Really delete this list? The definition and all downloadable selections will be permanently deleted.'
         )
       ) {
         return;
