@@ -47,6 +47,41 @@ describe('the combinator builder page', () => {
       cy.contains('No builders are available').should('not.exist');
     });
 
+    it('displays a separate message when no eligible builders are available', () => {
+      cy.intercept('v1/selection/simple/lists', {
+        body: {
+          builders: [
+            {
+              id: 'german-simple',
+              name: 'German Simple',
+              project: 'de.wikipedia.org',
+              model: 'wp1.selection.models.simple',
+            },
+            {
+              id: 'combo-1',
+              name: 'Existing Combinator',
+              project: 'en.wikipedia.org',
+              model: 'wp1.selection.models.combinator',
+            },
+          ],
+        },
+      }).as('listsNoEligible');
+
+      cy.visit('/#/selections/combinator');
+      cy.wait('@listsNoEligible');
+
+      cy.get('#include-items .alert-warning')
+        .should('be.visible')
+        .and(
+          'contain',
+          'No eligible builders are available for en.wikipedia.org.'
+        );
+      cy.get('#include-items .alert-danger').should('not.exist');
+      cy.contains('Unable to load builders. Please try again later.').should(
+        'not.exist'
+      );
+    });
+
     it('validates that at least one include builder is selected', () => {
       cy.visit('/#/selections/combinator');
       cy.wait('@lists');

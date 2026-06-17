@@ -90,12 +90,11 @@
                 {{ buildersLoadError }}
               </div>
               <div
-                v-else-if="
-                  availableIncludeBuilders(builder.project).length === 0
-                "
-                class="text-muted small mt-2"
+                v-else-if="hasNoEligibleBuilders(builder.project)"
+                class="alert alert-warning mt-2 mb-0"
+                role="alert"
               >
-                No builders are available for
+                No eligible builders are available for
                 {{ builder.project }}.
               </div>
             </div>
@@ -293,6 +292,9 @@ export default {
       };
     },
     fetchBuilders: async function () {
+      this.buildersLoadError = '';
+      this.buildersFetchFinished = false;
+
       try {
         const response = await fetch(
           `${import.meta.env.VITE_API_URL}/selection/simple/lists`,
@@ -304,7 +306,6 @@ export default {
         if (!response.ok) {
           this.buildersLoadError =
             'Unable to load builders. Please try again later.';
-          this.buildersFetchFinished = true;
           return;
         }
 
@@ -313,11 +314,10 @@ export default {
           ...builder,
           id: String(builder.id),
         }));
-        this.buildersLoadError = '';
-        this.buildersFetchFinished = true;
       } catch (e) {
         this.buildersLoadError =
           'Unable to load builders. Please try again later.';
+      } finally {
         this.buildersFetchFinished = true;
       }
     },
@@ -380,6 +380,13 @@ export default {
     },
     availableExcludeBuilders: function (project) {
       return this.availableBuildersFor(project, this.excludeBuilders);
+    },
+    hasNoEligibleBuilders: function (project) {
+      return (
+        this.buildersFetchFinished &&
+        !this.buildersLoadError &&
+        this.availableIncludeBuilders(project).length === 0
+      );
     },
     availableBuildersFor: function (project, selectedIds) {
       return this.allBuilders.filter((builder) => {
