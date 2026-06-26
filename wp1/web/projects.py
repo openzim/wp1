@@ -1,15 +1,15 @@
-from wp1.web import authenticate
-import attr
-import flask
 import logging
 
-from wp1.constants import PAGE_SIZE
-from wp1.web.db import get_db
-from wp1.web.redis import get_redis
+import attr
+import flask
+
 import wp1.logic.project as logic_project
 import wp1.logic.rating as logic_rating
-from wp1 import queues
-from wp1 import tables
+from wp1 import queues, tables
+from wp1.constants import PAGE_SIZE
+from wp1.web import authenticate
+from wp1.web.db import get_db
+from wp1.web.redis import get_redis
 
 projects = flask.Blueprint("projects", __name__)
 
@@ -26,6 +26,14 @@ def count():
     wp10db = get_db("wp10db")
     count = logic_project.count_projects(wp10db)
     return flask.jsonify({"count": count})
+
+
+@projects.route("/assessments")
+def assessments():
+    wp10db = get_db("wp10db")
+    redis = get_redis()
+    assessments = logic_rating.get_all_assessment_numbers(wp10db, redis)
+    return flask.jsonify(assessments)
 
 
 @projects.route("/<project_name>")

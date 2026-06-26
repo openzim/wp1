@@ -1,7 +1,9 @@
 import logging
-import random
+import pickle
+from datetime import timedelta
 
 import attr
+from redis import Redis
 
 from wp1.conf import get_conf
 from wp1.constants import GLOBAL_TIMESTAMP, AssessmentKind
@@ -12,8 +14,89 @@ from wp1.models.wp10.rating import Rating
 config = get_conf()
 NOT_A_CLASS = config["NOT_A_CLASS"]
 UNASSESSED_CLASS = config["UNASSESSED_CLASS"]
+ALL_ASSESSMENTS_CACHE_KEY = "all_assessment_numbers"
 
 logger = logging.getLogger(__name__)
+
+
+def get_cached_assessment_numbers(redis):
+    if redis is None:
+        return
+
+    pkl = redis.get(ALL_ASSESSMENTS_CACHE_KEY)
+    if pkl is None:
+        return None
+    return pickle.loads(pkl)  # nosec
+
+
+def cache_assessment_numbers(redis, data):
+    if redis is None:
+        return
+
+    pkl = pickle.dumps(data)
+    # The warming job (see wp1.queues.schedule_assessment_cache_warming) refreshes
+    # this once a day at noon UTC. The TTL is a bit over 24h so the entry never
+    # expires before the next day's run overwrites it (which would otherwise open
+    # a daily window where a web request hits the slow query directly).
+    redis.setex(ALL_ASSESSMENTS_CACHE_KEY, timedelta(hours=25), value=pkl)
+
+
+def get_all_assessment_numbers(wp10db, redis: Redis = None):
+    """
+    Get the number of assessed/unassessed articles for every project.
+    Returns a list of (project, unassessed, assessed) tuples, ordered by the
+    number of unassessed articles descending (as returned by the database).
+    """
+    if redis is not None:
+        cached = get_cached_assessment_numbers(redis)
+        if cached is not None:
+            return cached
+
+    with wp10db.cursor() as cursor:
+        cursor.execute("""
+              SELECT r_project,
+                CAST(SUM(r_quality = 'NotA-Class' OR r_quality = 'Unassessed-Class') AS UNSIGNED) as unassessed,
+                CAST(SUM(r_quality != 'NotA-Class' AND r_quality != 'Unassessed-Class') AS UNSIGNED) as assessed
+              FROM ratings
+              GROUP BY r_project
+              ORDER BY unassessed DESC;
+            """)
+        results = cursor.fetchall()
+
+    results = [
+        (row["r_project"].decode("utf-8"), row["unassessed"], row["assessed"])
+        for row in results
+    ]
+    if redis is not None:
+        cache_assessment_numbers(redis, results)
+
+    return results
+
+
+def update_assessment_cache():
+    """Recompute the assessment numbers and refresh the cache.
+
+    This is the entry point for the recurring cache-warming job (registered by
+    wp1.queues.schedule_assessment_cache_warming). It runs in its own RQ worker,
+    so it opens its own database and Redis connections. The underlying query is
+    slow (minutes in production), which is exactly why it runs here on a
+    schedule rather than in a web request.
+
+    It passes no Redis handle to get_all_assessment_numbers so that the
+    read-through cache is bypassed and the numbers are always recomputed, then
+    writes the fresh result to the cache.
+    """
+    from wp1.redis_db import connect as redis_connect
+    from wp1.wp10_db import connect as wp10_connect
+
+    wp10db = wp10_connect()
+    redis = redis_connect()
+
+    logger.info("Refreshing cached assessment numbers")
+    data = get_all_assessment_numbers(wp10db)
+    cache_assessment_numbers(redis, data)
+    logger.info("Refreshed cached assessment numbers for %d projects", len(data))
+    return data
 
 
 def get_project_ratings(wp10db, project_name):
@@ -40,7 +123,6 @@ def _project_rating_query(
     limit=100,
 ):
     if count:
-
         query = "SELECT COUNT(*) as count FROM " + Rating.table_name + " as rating_a"
     else:
         if project_b_name is None:
@@ -245,6 +327,7 @@ def get_random_article(
     efficient index usage without requiring additional indices.
     """
     import random
+
     from wp1.models.wp10.rating import Rating
 
     # Build WHERE clause

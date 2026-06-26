@@ -175,6 +175,41 @@ class ProjectTest(BaseWebTestcase):
             data = json.loads(rv.data)
             self.assertEqual(101, data["count"])
 
+    def test_assessments(self):
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.get("/v1/projects/assessments")
+            self.assertEqual("200 OK", rv.status)
+
+            data = json.loads(rv.data)
+            # setUp seeds 150 ratings each for Project 0 and Project 1, all with
+            # assessed qualities (FA/A/B-Class) and none unassessed. The endpoint
+            # returns [project, unassessed, assessed] tuples; the two projects
+            # tie at 0 unassessed, so sort before comparing.
+            self.assertEqual(
+                [["Project 0", 0, 150], ["Project 1", 0, 150]],
+                sorted(data),
+            )
+
+    def test_assessments_served_from_cache(self):
+        with self.override_db(self.app), self.app.test_client() as client:
+            first = json.loads(client.get("/v1/projects/assessments").data)
+
+            # Add an unassessed rating *after* the first request populated the
+            # cache. A cached response will not reflect it; an uncached one would.
+            with self.wp10db.cursor() as cursor:
+                cursor.execute(
+                    "INSERT INTO ratings "
+                    "(r_project, r_namespace, r_article, r_score, r_quality, "
+                    " r_quality_timestamp, r_importance, r_importance_timestamp) "
+                    "VALUES ('Project 0', 0, 'Brand_New', 0, 'Unassessed-Class', "
+                    " '20191225T00:00:00', 'Low-Class', '20191226T00:00:00')"
+                )
+            self.wp10db.commit()
+
+            second = json.loads(client.get("/v1/projects/assessments").data)
+
+            self.assertEqual(first, second)
+
     def test_table(self):
         with self.override_db(self.app), self.app.test_client() as client:
             rv = client.get("/v1/projects/Project 1/table")

@@ -31,6 +31,7 @@
               'nav-item ' +
               (!this.$route.path.startsWith('/update') &&
               !this.$route.path.startsWith('/compare') &&
+              !this.$route.path.startsWith('/assessments') &&
               !this.$route.path.startsWith('/selections')
                 ? 'active'
                 : '')
@@ -68,6 +69,16 @@
               >Compare Projects</router-link
             >
           </li>
+          <li
+            :class="
+              'nav-item ' +
+              (this.$route.path.startsWith('/assessments') ? 'active' : '')
+            "
+          >
+            <router-link class="nav-link" to="/assessments"
+              >Assessments by Project</router-link
+            >
+          </li>
         </ul>
         <div>
           <div v-if="this.username">
@@ -88,7 +99,11 @@
     <footer class="footer bg-light border-top">
       <div class="container-fluid py-3">
         <div class="text-right">
-          <a href="https://kiwix.org/privacy-policy/" target="_blank" rel="noopener noreferrer">
+          <a
+            href="https://kiwix.org/privacy-policy/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Privacy Policy
           </a>
         </div>
@@ -123,7 +138,7 @@ export default {
         `${import.meta.env.VITE_API_URL}/oauth/identify`,
         {
           credentials: 'include',
-        },
+        }
       )
         .then((response) => {
           if (response.ok) {
@@ -155,8 +170,8 @@ export default {
 </script>
 
 <style>
-
-html, body {
+html,
+body {
   height: 100%;
 }
 

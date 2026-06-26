@@ -17,6 +17,7 @@ import PetscanBuilder from './components/PetscanBuilder.vue';
 import SimpleBuilder from './components/SimpleBuilder.vue';
 import SparqlBuilder from './components/SparqlBuilder.vue';
 import ComparePage from './components/ComparePage.vue';
+import AssessmentsByProject from './components/AssessmentsByProject.vue';
 import IndexPage from './components/IndexPage.vue';
 import MyLists from './components/MyLists.vue';
 import ProjectPage from './components/ProjectPage.vue';
@@ -91,6 +92,13 @@ const routes = [
         route.params.projectNameA +
         ' and ' +
         route.params.projectNameB,
+    },
+  },
+  {
+    path: '/assessments/',
+    component: AssessmentsByProject,
+    meta: {
+      title: () => BASE_TITLE + ' - Assessments by Project',
     },
   },
   {
