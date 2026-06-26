@@ -1,7 +1,9 @@
 import logging
-import random
+import pickle
+from datetime import timedelta
 
 import attr
+from redis import Redis
 
 from wp1.conf import get_conf
 from wp1.constants import GLOBAL_TIMESTAMP, AssessmentKind
@@ -12,8 +14,59 @@ from wp1.models.wp10.rating import Rating
 config = get_conf()
 NOT_A_CLASS = config["NOT_A_CLASS"]
 UNASSESSED_CLASS = config["UNASSESSED_CLASS"]
+ALL_ASSESSMENTS_CACHE_KEY = "all_assessment_numbers"
 
 logger = logging.getLogger(__name__)
+
+
+def get_cached_assessment_numbers(redis):
+    if redis is None:
+        return
+
+    pkl = redis.get(ALL_ASSESSMENTS_CACHE_KEY)
+    if pkl is None:
+        return None
+    return pickle.loads(pkl)  # nosec
+
+
+def cache_assessment_numbers(redis, data):
+    if redis is None:
+        return
+
+    pkl = pickle.dumps(data)
+    redis.setex(ALL_ASSESSMENTS_CACHE_KEY, timedelta(hours=2), value=pkl)
+
+
+def get_all_assessment_numbers(wp10db, redis: Redis = None):
+    """
+    Get the number of assessed/unassessed articles for every project.
+    Returns a list of (project, unassessed, assessed) tuples, ordered by the
+    number of unassessed articles descending (as returned by the database).
+    """
+    if redis is not None:
+        cached = get_cached_assessment_numbers(redis)
+        if cached is not None:
+            return cached
+
+    with wp10db.cursor() as cursor:
+        cursor.execute("""
+              SELECT r_project,
+                CAST(SUM(r_quality = 'NotA-Class' OR r_quality = 'Unassessed-Class') AS UNSIGNED) as unassessed,
+                CAST(SUM(r_quality != 'NotA-Class' AND r_quality != 'Unassessed-Class') AS UNSIGNED) as assessed
+              FROM ratings
+              GROUP BY r_project
+              ORDER BY unassessed DESC;
+            """)
+        results = cursor.fetchall()
+
+    results = [
+        (row["r_project"].decode("utf-8"), row["unassessed"], row["assessed"])
+        for row in results
+    ]
+    if redis is not None:
+        cache_assessment_numbers(redis, results)
+
+    return results
 
 
 def get_project_ratings(wp10db, project_name):
@@ -40,7 +93,6 @@ def _project_rating_query(
     limit=100,
 ):
     if count:
-
         query = "SELECT COUNT(*) as count FROM " + Rating.table_name + " as rating_a"
     else:
         if project_b_name is None:
@@ -245,6 +297,7 @@ def get_random_article(
     efficient index usage without requiring additional indices.
     """
     import random
+
     from wp1.models.wp10.rating import Rating
 
     # Build WHERE clause
