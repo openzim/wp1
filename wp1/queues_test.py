@@ -274,3 +274,15 @@ class QueuesTest(BaseWpOneDbTest):
             queue_name="assessment-cache",
             timeout=constants.JOB_TIMEOUT,
         )
+
+    @patch("wp1.queues.Queue")
+    def test_enqueue_assessment_cache_warming(self, mock_queue):
+        queue_mock = MagicMock()
+        mock_queue.return_value = queue_mock
+
+        queues.enqueue_assessment_cache_warming(self.redis)
+
+        queue_mock.enqueue.assert_called_once_with(
+            logic_rating.update_assessment_cache,
+            job_timeout=constants.JOB_TIMEOUT,
+        )
