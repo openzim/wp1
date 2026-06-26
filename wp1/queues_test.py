@@ -254,14 +254,11 @@ class QueuesTest(BaseWpOneDbTest):
         self.assertFalse(result)
         mock_scheduler_instance.cancel.assert_called_once_with("test-job-id")
 
-    @patch("wp1.queues.utcnow")
     @patch("wp1.queues.Scheduler")
-    def test_schedule_assessment_cache_warming(self, mock_scheduler, mock_utcnow):
+    def test_schedule_assessment_cache_warming(self, mock_scheduler):
         mock_scheduler_instance = MagicMock()
-        mock_scheduler_instance.schedule.return_value = "job-id"
+        mock_scheduler_instance.cron.return_value = "job-id"
         mock_scheduler.return_value = mock_scheduler_instance
-        now = datetime.datetime(2026, 12, 25, 4, 44, 44)
-        mock_utcnow.return_value = now
 
         result = queues.schedule_assessment_cache_warming(self.redis)
 
@@ -270,11 +267,9 @@ class QueuesTest(BaseWpOneDbTest):
         mock_scheduler_instance.cancel.assert_called_once_with(
             queues.ASSESSMENT_CACHE_JOB_ID
         )
-        mock_scheduler_instance.schedule.assert_called_once_with(
-            scheduled_time=now,
+        mock_scheduler_instance.cron.assert_called_once_with(
+            queues.ASSESSMENT_CACHE_CRON,
             func=logic_rating.update_assessment_cache,
-            interval=queues.ASSESSMENT_CACHE_INTERVAL_SECONDS,
-            repeat=None,
             id=queues.ASSESSMENT_CACHE_JOB_ID,
             queue_name="assessment-cache",
             timeout=constants.JOB_TIMEOUT,

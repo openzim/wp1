@@ -34,7 +34,11 @@ def cache_assessment_numbers(redis, data):
         return
 
     pkl = pickle.dumps(data)
-    redis.setex(ALL_ASSESSMENTS_CACHE_KEY, timedelta(hours=2), value=pkl)
+    # The warming job (see wp1.queues.schedule_assessment_cache_warming) refreshes
+    # this once a day at noon UTC. The TTL is a bit over 24h so the entry never
+    # expires before the next day's run overwrites it (which would otherwise open
+    # a daily window where a web request hits the slow query directly).
+    redis.setex(ALL_ASSESSMENTS_CACHE_KEY, timedelta(hours=25), value=pkl)
 
 
 def get_all_assessment_numbers(wp10db, redis: Redis = None):

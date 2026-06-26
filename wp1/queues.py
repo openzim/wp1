@@ -23,11 +23,13 @@ from wp1.credentials import ENV
 logger = logging.getLogger(__name__)
 
 # Recurring job that keeps the (slow) all-projects assessment-numbers query
-# warm in the cache. Runs in its own queue every 90 minutes. The interval is
-# kept below the cache TTL (see logic.rating.cache_assessment_numbers) so the
-# cache is refreshed before it can expire.
+# warm in the cache. The underlying ratings data is rebuilt once per day by the
+# update that starts at midnight UTC and takes ~8 hours, so there's no point
+# recomputing more than daily. We run at noon UTC, comfortably after that update
+# finishes. The cache TTL (see logic.rating.cache_assessment_numbers) is a bit
+# over 24h so each day's run refreshes the entry before it can expire.
 ASSESSMENT_CACHE_JOB_ID = "warm-assessment-cache"
-ASSESSMENT_CACHE_INTERVAL_SECONDS = 90 * 60
+ASSESSMENT_CACHE_CRON = "0 12 * * *"  # noon UTC, daily
 
 
 def _get_queues(redis, manual=False):
@@ -56,18 +58,16 @@ def schedule_assessment_cache_warming(redis: Redis):
 
     Safe to call on every deploy/worker boot: any previously registered
     schedule with the same id is cancelled first, so the schedule never stacks
-    up into duplicates. The job runs immediately (warming the cache right after
-    a deploy) and then every ASSESSMENT_CACHE_INTERVAL_SECONDS thereafter.
+    up into duplicates. The job runs once a day at noon UTC (cron times are UTC
+    by default in rq-scheduler).
     """
     queue = _get_assessment_cache_queue(redis)
     scheduler = Scheduler(connection=queue.connection, queue=queue)
 
     scheduler.cancel(ASSESSMENT_CACHE_JOB_ID)
-    return scheduler.schedule(
-        scheduled_time=utcnow(),
+    return scheduler.cron(
+        ASSESSMENT_CACHE_CRON,
         func=logic_rating.update_assessment_cache,
-        interval=ASSESSMENT_CACHE_INTERVAL_SECONDS,
-        repeat=None,
         id=ASSESSMENT_CACHE_JOB_ID,
         queue_name="assessment-cache",
         # Without this, the job inherits RQ's 180s default timeout, but the

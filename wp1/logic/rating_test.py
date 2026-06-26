@@ -659,8 +659,9 @@ class GetAllAssessmentNumbersTest(BaseWpOneDbTest):
     def test_cache_sets_expiry(self):
         logic_rating.cache_assessment_numbers(self.redis, [("Alpha", 0, 1)])
         ttl = self.redis.ttl(logic_rating.ALL_ASSESSMENTS_CACHE_KEY)
-        self.assertGreater(ttl, 0)
-        self.assertLessEqual(ttl, 2 * 60 * 60)
+        # A bit over 24h, so the daily refresh overwrites before expiry.
+        self.assertGreater(ttl, 24 * 60 * 60)
+        self.assertLessEqual(ttl, 25 * 60 * 60)
 
     def test_update_assessment_cache_populates_cache(self):
         # update_assessment_cache() opens its own connections (it's the recurring
