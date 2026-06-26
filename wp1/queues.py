@@ -76,6 +76,23 @@ def schedule_assessment_cache_warming(redis: Redis):
     )
 
 
+def enqueue_assessment_cache_warming(redis: Redis):
+    """Enqueue a one-off assessment-cache warming job to run immediately.
+
+    Called on container boot (see schedule-cache-warming.py) alongside
+    registering the recurring schedule, so that a fresh deploy or a Redis
+    restart seeds the cache right away instead of leaving the slow query to run
+    inline on the first web request until the next scheduled (noon UTC) run.
+    """
+    queue = _get_assessment_cache_queue(redis)
+    return queue.enqueue(
+        logic_rating.update_assessment_cache,
+        # Matches the scheduled job: the query takes minutes, so override RQ's
+        # 180s default timeout with the repo-wide job timeout.
+        job_timeout=constants.JOB_TIMEOUT,
+    )
+
+
 def enqueue_all_projects(redis, wp10db):
     update_q, upload_q = _get_queues(redis)
 
