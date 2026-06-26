@@ -12,6 +12,7 @@ from wp1 import custom_tables
 from wp1.environment import Environment
 import wp1.logic.builder as logic_builder
 import wp1.logic.project as logic_project
+import wp1.logic.rating as logic_rating
 from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.wiki_db import connect as wiki_connect
 from wp1 import logs
@@ -20,6 +21,13 @@ from wp1.timestamp import utcnow
 from wp1.credentials import ENV
 
 logger = logging.getLogger(__name__)
+
+# Recurring job that keeps the (slow) all-projects assessment-numbers query
+# warm in the cache. Runs in its own queue every 90 minutes. The interval is
+# kept below the cache TTL (see logic.rating.cache_assessment_numbers) so the
+# cache is refreshed before it can expire.
+ASSESSMENT_CACHE_JOB_ID = "warm-assessment-cache"
+ASSESSMENT_CACHE_INTERVAL_SECONDS = 90 * 60
 
 
 def _get_queues(redis, manual=False):
@@ -37,6 +45,35 @@ def _get_materializer_queue(redis):
 
 def _get_zimfile_scheduling_queue(redis):
     return Queue("zimfile-scheduling", connection=redis)
+
+
+def _get_assessment_cache_queue(redis):
+    return Queue("assessment-cache", connection=redis)
+
+
+def schedule_assessment_cache_warming(redis: Redis):
+    """Idempotently (re)register the recurring assessment-cache warming job.
+
+    Safe to call on every deploy/worker boot: any previously registered
+    schedule with the same id is cancelled first, so the schedule never stacks
+    up into duplicates. The job runs immediately (warming the cache right after
+    a deploy) and then every ASSESSMENT_CACHE_INTERVAL_SECONDS thereafter.
+    """
+    queue = _get_assessment_cache_queue(redis)
+    scheduler = Scheduler(connection=queue.connection, queue=queue)
+
+    scheduler.cancel(ASSESSMENT_CACHE_JOB_ID)
+    return scheduler.schedule(
+        scheduled_time=utcnow(),
+        func=logic_rating.update_assessment_cache,
+        interval=ASSESSMENT_CACHE_INTERVAL_SECONDS,
+        repeat=None,
+        id=ASSESSMENT_CACHE_JOB_ID,
+        queue_name="assessment-cache",
+        # Without this, the job inherits RQ's 180s default timeout, but the
+        # query takes minutes in production. Use the repo-wide job timeout.
+        timeout=constants.JOB_TIMEOUT,
+    )
 
 
 def enqueue_all_projects(redis, wp10db):

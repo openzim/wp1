@@ -8,6 +8,7 @@ from wp1.environment import Environment
 from wp1 import queues
 from wp1.selection.models.simple import Builder as SimpleBuilder
 import wp1.logic.builder as logic_builder
+import wp1.logic.rating as logic_rating
 
 
 class QueuesTest(BaseWpOneDbTest):
@@ -252,3 +253,29 @@ class QueuesTest(BaseWpOneDbTest):
 
         self.assertFalse(result)
         mock_scheduler_instance.cancel.assert_called_once_with("test-job-id")
+
+    @patch("wp1.queues.utcnow")
+    @patch("wp1.queues.Scheduler")
+    def test_schedule_assessment_cache_warming(self, mock_scheduler, mock_utcnow):
+        mock_scheduler_instance = MagicMock()
+        mock_scheduler_instance.schedule.return_value = "job-id"
+        mock_scheduler.return_value = mock_scheduler_instance
+        now = datetime.datetime(2026, 12, 25, 4, 44, 44)
+        mock_utcnow.return_value = now
+
+        result = queues.schedule_assessment_cache_warming(self.redis)
+
+        self.assertEqual("job-id", result)
+        # Cancel-then-schedule keeps registration idempotent across reboots.
+        mock_scheduler_instance.cancel.assert_called_once_with(
+            queues.ASSESSMENT_CACHE_JOB_ID
+        )
+        mock_scheduler_instance.schedule.assert_called_once_with(
+            scheduled_time=now,
+            func=logic_rating.update_assessment_cache,
+            interval=queues.ASSESSMENT_CACHE_INTERVAL_SECONDS,
+            repeat=None,
+            id=queues.ASSESSMENT_CACHE_JOB_ID,
+            queue_name="assessment-cache",
+            timeout=constants.JOB_TIMEOUT,
+        )

@@ -69,6 +69,32 @@ def get_all_assessment_numbers(wp10db, redis: Redis = None):
     return results
 
 
+def update_assessment_cache():
+    """Recompute the assessment numbers and refresh the cache.
+
+    This is the entry point for the recurring cache-warming job (registered by
+    wp1.queues.schedule_assessment_cache_warming). It runs in its own RQ worker,
+    so it opens its own database and Redis connections. The underlying query is
+    slow (minutes in production), which is exactly why it runs here on a
+    schedule rather than in a web request.
+
+    It passes no Redis handle to get_all_assessment_numbers so that the
+    read-through cache is bypassed and the numbers are always recomputed, then
+    writes the fresh result to the cache.
+    """
+    from wp1.redis_db import connect as redis_connect
+    from wp1.wp10_db import connect as wp10_connect
+
+    wp10db = wp10_connect()
+    redis = redis_connect()
+
+    logger.info("Refreshing cached assessment numbers")
+    data = get_all_assessment_numbers(wp10db)
+    cache_assessment_numbers(redis, data)
+    logger.info("Refreshed cached assessment numbers for %d projects", len(data))
+    return data
+
+
 def get_project_ratings(wp10db, project_name):
     with wp10db.cursor() as cursor:
         cursor.execute(

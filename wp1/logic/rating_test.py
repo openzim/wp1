@@ -661,3 +661,30 @@ class GetAllAssessmentNumbersTest(BaseWpOneDbTest):
         ttl = self.redis.ttl(logic_rating.ALL_ASSESSMENTS_CACHE_KEY)
         self.assertGreater(ttl, 0)
         self.assertLessEqual(ttl, 2 * 60 * 60)
+
+    def test_update_assessment_cache_populates_cache(self):
+        # update_assessment_cache() opens its own connections (it's the recurring
+        # job entry point), which in the test env are the same test DB/Redis.
+        self._add_ratings("Alpha", ("FA-Class", "Unassessed-Class"))
+        self.assertIsNone(logic_rating.get_cached_assessment_numbers(self.redis))
+
+        result = logic_rating.update_assessment_cache()
+
+        self.assertEqual([("Alpha", 1, 1)], result)
+        self.assertEqual(
+            [("Alpha", 1, 1)],
+            logic_rating.get_cached_assessment_numbers(self.redis),
+        )
+
+    def test_update_assessment_cache_overwrites_stale_cache(self):
+        # A read-through call would return this stale value; the warming job must
+        # bypass it and recompute from the database.
+        logic_rating.cache_assessment_numbers(self.redis, [("Stale", 5, 6)])
+        self._add_ratings("Alpha", ("FA-Class",))
+
+        logic_rating.update_assessment_cache()
+
+        self.assertEqual(
+            [("Alpha", 0, 1)],
+            logic_rating.get_cached_assessment_numbers(self.redis),
+        )
