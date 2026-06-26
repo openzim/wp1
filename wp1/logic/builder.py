@@ -54,6 +54,147 @@ def is_meta_builder(builder: Builder) -> bool:
     return builder.model in META_BUILDER_MODELS
 
 
+def _assert_builder_owner(builder: Builder, user_id: str | bytes | int) -> None:
+    user_id_str = logic_util.as_text(user_id)
+    if builder.user_id == user_id_str:
+        return
+
+    msg = "User %s is not authorized to delete builder %s" % (
+        user_id_str,
+        builder.id,
+    )
+    logger.warning(msg)
+    raise UserNotAuthorizedError(msg)
+
+
+def _group_builder_ids(params: dict[str, Any], group_name: str) -> list[str]:
+    group = params.get(group_name)
+    if not isinstance(group, dict):
+        return []
+
+    builders = group.get("builders", [])
+    if not isinstance(builders, list):
+        return []
+
+    return [builder_id for builder_id in builders if isinstance(builder_id, str)]
+
+
+def _remove_builder_reference_from_params(
+    params: dict[str, Any], target_builder_id: str
+) -> tuple[dict[str, Any], bool]:
+    changed = False
+    for group_name in ("include", "exclude"):
+        group = params.get(group_name)
+        if not isinstance(group, dict):
+            continue
+
+        builders = group.get("builders", [])
+        if not isinstance(builders, list):
+            continue
+
+        filtered_builders = [
+            builder_id for builder_id in builders if builder_id != target_builder_id
+        ]
+        if filtered_builders != builders:
+            group["builders"] = filtered_builders
+            changed = True
+
+    return params, changed
+
+
+def _combinator_reference_record(
+    combinator: Builder, target_builder_id: str
+) -> dict[str, Any] | None:
+    try:
+        params = json.loads(combinator.b_params or b"{}")
+    except json.decoder.JSONDecodeError:
+        logger.warning("Could not parse params for builder id=%s", combinator.id)
+        return None
+
+    if not isinstance(params, dict):
+        return None
+
+    include_builders = _group_builder_ids(params, "include")
+    exclude_builders = _group_builder_ids(params, "exclude")
+
+    referenced_in = []
+    if target_builder_id in include_builders:
+        referenced_in.append("include")
+    if target_builder_id in exclude_builders:
+        referenced_in.append("exclude")
+
+    if not referenced_in:
+        return None
+
+    remaining_include_builders = [
+        builder_id for builder_id in include_builders if builder_id != target_builder_id
+    ]
+    return {
+        "builder": combinator,
+        "params": params,
+        "id": combinator.id,
+        "name": combinator.name,
+        "project": combinator.project,
+        "referenced_in": referenced_in,
+        "remaining_include_builder_count": len(remaining_include_builders),
+        "will_be_auto_deleted": len(remaining_include_builders) == 0,
+    }
+
+
+def _find_referencing_combinators(
+    wp10db: Connection, user_id: str | bytes | int, builder_id: str | bytes
+) -> list[dict[str, Any]]:
+    target_builder_id = logic_util.as_text(builder_id)
+    user_id_str = logic_util.as_text(user_id)
+
+    with wp10db.cursor() as cursor:
+        cursor.execute(
+            """SELECT * FROM builders
+           WHERE b_user_id = %s AND b_model = %s
+        """,
+            (user_id_str, "wp1.selection.models.combinator"),
+        )
+        combinators = [Builder(**row) for row in cursor.fetchall()]
+
+    records = []
+    for combinator in combinators:
+        if combinator.id == target_builder_id:
+            continue
+        record = _combinator_reference_record(combinator, target_builder_id)
+        if record is not None:
+            records.append(record)
+    return records
+
+
+def get_builder_delete_impact(
+    wp10db: Connection, user_id: str | bytes | int, builder_id: str | bytes
+) -> dict[str, Any]:
+    builder = get_builder(wp10db, builder_id)
+    _assert_builder_owner(builder, user_id)
+
+    return {
+        "builder": {
+            "id": builder.id,
+            "name": builder.name,
+            "project": builder.project,
+            "model": builder.model,
+        },
+        "affected_combinators": [
+            {
+                "id": record["id"],
+                "name": record["name"],
+                "project": record["project"],
+                "referenced_in": record["referenced_in"],
+                "remaining_include_builder_count": record[
+                    "remaining_include_builder_count"
+                ],
+                "will_be_auto_deleted": record["will_be_auto_deleted"],
+            }
+            for record in _find_referencing_combinators(wp10db, user_id, builder.id)
+        ],
+    }
+
+
 def get_builder_module_class(model: str) -> type[AbstractBuilder]:
     """Dynamically imports the builder module and returns the Builder class."""
     builder_module = importlib.import_module(model)
@@ -146,31 +287,47 @@ def update_builder(wp10db: Connection, builder: Builder) -> bool:
     return rowcount > 0
 
 
-def delete_builder(
-    wp10db: Connection, user_id: str | bytes, builder_id: str | bytes
+def _update_builder_params(
+    wp10db: Connection, builder: Builder, params: dict[str, Any]
+) -> bool:
+    builder.b_params = json.dumps(params).encode("utf-8")
+    builder.set_updated_at_now()
+    with wp10db.cursor() as cursor:
+        cursor.execute(
+            """UPDATE builders
+           SET b_params = %s, b_updated_at = %s
+           WHERE b_id = %s AND b_user_id = %s
+        """,
+            (builder.b_params, builder.b_updated_at, builder.b_id, builder.b_user_id),
+        )
+        rowcount = cursor.rowcount
+    wp10db.commit()
+    return rowcount > 0
+
+
+def _combine_delete_status(aggregate: dict[str, Any], current: dict[str, bool]) -> None:
+    for key in (
+        "db_delete_success",
+        "s3_delete_success",
+        "zimfarm_delete_success",
+        "rq_cancel_success",
+    ):
+        aggregate[key] = aggregate[key] and current[key]
+
+
+def _delete_builder_and_assets(
+    wp10db: Connection,
+    redis: Redis,
+    user_id: str | bytes | int,
+    builder_id: str | bytes,
 ) -> dict[str, bool]:
     if not isinstance(builder_id, bytes):
         builder_id = str(builder_id).encode("utf-8")
 
     # Fail fast if the Builder doesn't even exist
-    try:
-        builder = get_builder(wp10db, builder_id)
-    except ObjectNotFoundError:
-        raise
-
-    user_id_str = (
-        user_id.decode("utf-8") if isinstance(user_id, bytes) else str(user_id)
-    )
-    if builder.b_user_id.decode("utf-8") != user_id_str:
-        msg = "User %s is not authorized to delete builder %s" % (
-            user_id_str,
-            builder_id.decode("utf-8"),
-        )
-        logger.warning(msg)
-        raise UserNotAuthorizedError(msg)
-
-    # Connect to Redis for zimfarm operations
-    redis = redis_connect()
+    builder = get_builder(wp10db, builder_id)
+    _assert_builder_owner(builder, user_id)
+    user_id_str = logic_util.as_text(user_id)
 
     # Try to delete the zimfarm schedule first (before deleting from DB)
     zimfarm_delete_success = True
@@ -219,7 +376,7 @@ def delete_builder(
            WHERE b.b_user_id = %s AND b.b_id = %s
              AND s.s_object_key IS NOT NULL
         """,
-            (user_id, builder_id),
+            (user_id_str, builder_id),
         )
         keys_to_delete = [d["object_key"] for d in cursor.fetchall()]
         cursor.execute(
@@ -227,7 +384,7 @@ def delete_builder(
            LEFT JOIN selections AS s ON s.s_builder_id = b.b_id
            WHERE b.b_user_id = %s AND b.b_id = %s
         """,
-            (user_id, builder_id),
+            (user_id_str, builder_id),
         )
         rowcount = cursor.rowcount
 
@@ -241,6 +398,87 @@ def delete_builder(
         "zimfarm_delete_success": zimfarm_delete_success,
         "rq_cancel_success": rq_cancel_success,
     }
+
+
+def delete_builder(
+    wp10db: Connection,
+    user_id: str | bytes | int,
+    builder_id: str | bytes,
+    delete_combinator_ids: list[str] | None = None,
+    confirm_builder_name: str | None = None,
+) -> dict[str, Any]:
+    if not isinstance(builder_id, bytes):
+        builder_id = str(builder_id).encode("utf-8")
+    builder = get_builder(wp10db, builder_id)
+    _assert_builder_owner(builder, user_id)
+
+    if confirm_builder_name is not None and confirm_builder_name != builder.name:
+        raise ValueError("Builder name confirmation did not match")
+
+    redis = redis_connect()
+
+    selected_combinator_ids = {
+        logic_util.as_text(combinator_id)
+        for combinator_id in (delete_combinator_ids or [])
+    }
+    referencing_records = _find_referencing_combinators(wp10db, user_id, builder.id)
+
+    selected_delete_records = []
+    auto_delete_records = []
+    kept_records = []
+    for record in referencing_records:
+        if record["id"] in selected_combinator_ids:
+            selected_delete_records.append(record)
+        elif record["will_be_auto_deleted"]:
+            auto_delete_records.append(record)
+        else:
+            kept_records.append(record)
+
+    status: dict[str, Any] = {
+        "db_delete_success": True,
+        "s3_delete_success": True,
+        "zimfarm_delete_success": True,
+        "rq_cancel_success": True,
+    }
+    for record in selected_delete_records + auto_delete_records:
+        _combine_delete_status(
+            status, _delete_builder_and_assets(wp10db, redis, user_id, record["id"])
+        )
+
+    _combine_delete_status(
+        status, _delete_builder_and_assets(wp10db, redis, user_id, builder_id)
+    )
+
+    updated_combinators = []
+    for record in kept_records:
+        params, changed = _remove_builder_reference_from_params(
+            record["params"], builder.id
+        )
+        if changed and _update_builder_params(wp10db, record["builder"], params):
+            updated_combinators.append(record["builder"])
+
+    combinator_cls = None
+    for combinator in updated_combinators:
+        if combinator_cls is None:
+            combinator_cls = get_builder_module_class(combinator.model)
+        queues.enqueue_materialize(
+            redis, combinator_cls, combinator, "text/tab-separated-values"
+        )
+
+    status.update(
+        {
+            "deleted_combinator_ids": [
+                record["id"] for record in selected_delete_records
+            ],
+            "auto_deleted_combinator_ids": [
+                record["id"] for record in auto_delete_records
+            ],
+            "updated_combinator_ids": [
+                combinator.id for combinator in updated_combinators
+            ],
+        }
+    )
+    return status
 
 
 def get_builder(wp10db: Connection, id_: str | bytes) -> Builder:
