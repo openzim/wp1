@@ -70,6 +70,80 @@ describe('the update simple list page', () => {
         cy.url().should('eq', 'http://localhost:5173/#/selections/user');
       });
 
+      it('requires typing the list name before deleting with no combinator impact', () => {
+        cy.intercept('GET', 'v1/builders/1/delete-impact', {
+          fixture: 'delete_impact_none.json',
+        }).as('deleteImpact');
+        cy.intercept('POST', 'v1/builders/1/delete', {
+          body: { status: '204' },
+        }).as('deleteBuilder');
+
+        cy.get('#deleteListButton').click();
+        cy.wait('@deleteImpact');
+        cy.get('#delete-impact-dialog').should('be.visible');
+        cy.get('#delete-impact-dialog').contains(
+          'No Combinator selections reference this list.'
+        );
+        cy.get('#confirmDeleteButton').should('be.disabled');
+        cy.get('#delete-confirm-name').type('Builder 1');
+        cy.get('#confirmDeleteButton').should('not.be.disabled').click();
+
+        cy.wait('@deleteBuilder').then((interception) => {
+          expect(interception.request.body).to.deep.equal({
+            delete_combinator_ids: [],
+            confirm_builder_name: 'Builder 1',
+          });
+        });
+        cy.url().should('eq', 'http://localhost:5173/#/selections/user');
+      });
+
+      it('lists affected combinators and sends selected deletes', () => {
+        cy.intercept('GET', 'v1/builders/1/delete-impact', {
+          fixture: 'delete_impact_combinators.json',
+        }).as('deleteImpact');
+        cy.intercept('POST', 'v1/builders/1/delete', {
+          body: { status: '204' },
+        }).as('deleteBuilder');
+
+        cy.get('#deleteListButton').click();
+        cy.wait('@deleteImpact');
+        cy.get('#delete-impact-dialog').contains('Keepable Combo');
+        cy.get('#delete-impact-dialog').contains('Empty Combo');
+        cy.get('#delete-impact-dialog').contains(
+          'they will be deleted automatically'
+        );
+        cy.get('#delete-combinator-combo-empty').should('not.exist');
+        cy.get('#delete-combinator-combo-keep').check();
+        cy.get('#delete-confirm-name').type('Builder 1');
+        cy.get('#confirmDeleteButton').click();
+
+        cy.wait('@deleteBuilder').then((interception) => {
+          expect(interception.request.body).to.deep.equal({
+            delete_combinator_ids: ['combo-keep'],
+            confirm_builder_name: 'Builder 1',
+          });
+        });
+      });
+
+      it('shows auto-deleted combinators without checkbox instructions', () => {
+        cy.intercept('GET', 'v1/builders/1/delete-impact', {
+          fixture: 'delete_impact_auto_delete_only.json',
+        }).as('deleteImpact');
+
+        cy.get('#deleteListButton').click();
+        cy.wait('@deleteImpact');
+
+        cy.get('#delete-impact-dialog').contains(
+          'They would have no included lists left, so they will be deleted automatically.'
+        );
+        cy.get('#delete-impact-dialog').contains('Empty Combo');
+        cy.get('#delete-impact-dialog').should(
+          'not.contain',
+          'Choose which Combinators to delete below'
+        );
+        cy.get('#delete-combinator-combo-empty').should('not.exist');
+      });
+
       describe('when update button clicked', () => {
         beforeEach(() => {
           cy.intercept('POST', 'v1/builders/1', (req) => {

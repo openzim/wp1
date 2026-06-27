@@ -1,0 +1,9 @@
+{
+  "builder": {
+    "id": "1",
+    "name": "Builder 1",
+    "project": "en.wiktionary.org",
+    "model": "wp1.selection.models.simple"
+  },
+  "affected_combinators": []
+}
