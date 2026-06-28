@@ -305,6 +305,22 @@ def _update_builder_params(
     return rowcount > 0
 
 
+def _enqueue_combinator_materializations(
+    redis: Redis, combinators: list[Builder]
+) -> list[str]:
+    combinator_cls = None
+    enqueued_combinator_ids = []
+    for combinator in combinators:
+        if combinator_cls is None:
+            combinator_cls = get_builder_module_class(combinator.model)
+        queues.enqueue_materialize(
+            redis, combinator_cls, combinator, "text/tab-separated-values"
+        )
+        enqueued_combinator_ids.append(combinator.id)
+
+    return enqueued_combinator_ids
+
+
 def _combine_delete_status(aggregate: dict[str, Any], current: dict[str, bool]) -> None:
     for key in (
         "db_delete_success",
@@ -457,13 +473,9 @@ def delete_builder(
         if changed and _update_builder_params(wp10db, record["builder"], params):
             updated_combinators.append(record["builder"])
 
-    combinator_cls = None
-    for combinator in updated_combinators:
-        if combinator_cls is None:
-            combinator_cls = get_builder_module_class(combinator.model)
-        queues.enqueue_materialize(
-            redis, combinator_cls, combinator, "text/tab-separated-values"
-        )
+    updated_combinator_ids = _enqueue_combinator_materializations(
+        redis, updated_combinators
+    )
 
     status.update(
         {
@@ -473,9 +485,7 @@ def delete_builder(
             "auto_deleted_combinator_ids": [
                 record["id"] for record in auto_delete_records
             ],
-            "updated_combinator_ids": [
-                combinator.id for combinator in updated_combinators
-            ],
+            "updated_combinator_ids": updated_combinator_ids,
         }
     )
     return status
