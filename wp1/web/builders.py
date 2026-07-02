@@ -135,18 +135,50 @@ def get_builder(builder_id):
     return flask.jsonify(res)
 
 
+@builders.route("/<builder_id>/delete-impact")
+@authenticate
+def get_builder_delete_impact(builder_id):
+    wp10db = get_db("wp10db")
+    user_id = flask.session["user"]["identity"]["sub"]
+
+    try:
+        impact = logic_builder.get_builder_delete_impact(wp10db, user_id, builder_id)
+    except UserNotAuthorizedError:
+        flask.abort(403)
+    except ObjectNotFoundError:
+        flask.abort(404)
+
+    return flask.jsonify(impact)
+
+
 @builders.route("/<builder_id>/delete", methods=["POST"])
 @authenticate
 def delete_builder(builder_id):
     wp10db = get_db("wp10db")
     user_id = flask.session["user"]["identity"]["sub"]
+    data = flask.request.get_json(silent=True) or {}
+    delete_combinator_ids = data.get("delete_combinator_ids", [])
+    confirm_builder_name = data.get("confirm_builder_name")
+
+    if not isinstance(delete_combinator_ids, list) or not all(
+        isinstance(item, str) for item in delete_combinator_ids
+    ):
+        return flask.jsonify({"error_messages": ["Invalid delete_combinator_ids"]}), 400
 
     try:
-        status = logic_builder.delete_builder(wp10db, user_id, builder_id)
+        status = logic_builder.delete_builder(
+            wp10db,
+            user_id,
+            builder_id,
+            delete_combinator_ids=delete_combinator_ids,
+            confirm_builder_name=confirm_builder_name,
+        )
     except UserNotAuthorizedError as e:
         flask.abort(403)
     except ObjectNotFoundError:
         flask.abort(404)
+    except ValueError as e:
+        return flask.jsonify({"error_messages": [str(e)]}), 400
 
     if not status["db_delete_success"]:
         return (

@@ -1,4 +1,5 @@
 import datetime
+import json
 from unittest.mock import ANY, MagicMock, call, patch
 
 import attr
@@ -184,6 +185,51 @@ class BuilderTest(BaseWpOneDbTest):
             )
         self.wp10db.commit()
         return value_dict["b_id"]
+
+    def _insert_builder_record(
+        self,
+        id_,
+        name,
+        user_id="1234",
+        project="en.wikipedia.fake",
+        model="wp1.selection.models.simple",
+        params=None,
+        current_version=0,
+    ):
+        if params is None:
+            params = {"list": ["a", "b", "c"]}
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO builders
+               (b_id, b_name, b_user_id, b_project, b_params, b_model,
+                b_created_at, b_updated_at, b_current_version,
+                b_selection_zim_version)
+             VALUES
+               (%s, %s, %s, %s, %s, %s,
+                '20191225044444', '20191225044444', %s, 0)
+          """,
+                (
+                    id_.encode("utf-8"),
+                    name.encode("utf-8"),
+                    str(user_id).encode("utf-8"),
+                    project.encode("utf-8"),
+                    json.dumps(params).encode("utf-8"),
+                    model.encode("utf-8"),
+                    current_version,
+                ),
+            )
+        self.wp10db.commit()
+        return id_.encode("utf-8")
+
+    def _get_builder_params(self, builder_id):
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "SELECT b_params FROM builders WHERE b_id = %s", (builder_id,)
+            )
+            row = cursor.fetchone()
+        if row is None:
+            return None
+        return json.loads(row["b_params"].decode("utf-8"))
 
     def _insert_zim_schedule(
         self,
@@ -854,6 +900,230 @@ class BuilderTest(BaseWpOneDbTest):
 
         self.assertIsNone(actual)
 
+    def test_get_builder_delete_impact_no_references(self):
+        self._insert_builder_record("target-builder", "Target Builder")
+
+        actual = logic_builder.get_builder_delete_impact(
+            self.wp10db, "1234", "target-builder"
+        )
+
+        self.assertEqual(
+            {
+                "builder": {
+                    "id": "target-builder",
+                    "name": "Target Builder",
+                    "project": "en.wikipedia.fake",
+                    "model": "wp1.selection.models.simple",
+                },
+                "affected_combinators": [],
+            },
+            actual,
+        )
+
+    def test_get_builder_delete_impact_with_references(self):
+        self._insert_builder_record("target-builder", "Target Builder")
+        self._insert_builder_record("other-builder", "Other Builder")
+        self._insert_builder_record(
+            "combo-keep",
+            "Keep Combo",
+            model="wp1.selection.models.combinator",
+            params={
+                "include": {
+                    "builders": ["target-builder", "other-builder"],
+                    "operation": "union",
+                },
+                "exclude": {"builders": ["target-builder"], "operation": "union"},
+            },
+        )
+        self._insert_builder_record(
+            "combo-empty",
+            "Empty Combo",
+            model="wp1.selection.models.combinator",
+            params={
+                "include": {"builders": ["target-builder"], "operation": "union"},
+                "exclude": {"builders": [], "operation": "union"},
+            },
+        )
+
+        actual = logic_builder.get_builder_delete_impact(
+            self.wp10db, "1234", "target-builder"
+        )
+        affected = sorted(actual["affected_combinators"], key=lambda item: item["id"])
+
+        self.assertEqual(
+            [
+                {
+                    "id": "combo-empty",
+                    "name": "Empty Combo",
+                    "project": "en.wikipedia.fake",
+                    "referenced_in": ["include"],
+                    "remaining_include_builder_count": 0,
+                    "will_be_auto_deleted": True,
+                },
+                {
+                    "id": "combo-keep",
+                    "name": "Keep Combo",
+                    "project": "en.wikipedia.fake",
+                    "referenced_in": ["include", "exclude"],
+                    "remaining_include_builder_count": 1,
+                    "will_be_auto_deleted": False,
+                },
+            ],
+            affected,
+        )
+
+    @patch("wp1.logic.builder.queues.enqueue_materialize")
+    @patch("wp1.logic.builder.queues.cancel_scheduled_job")
+    @patch("wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id")
+    @patch("wp1.logic.builder.logic_selection.delete_keys_from_storage")
+    def test_delete_builder_updates_kept_combinator(
+        self, mock_delete_keys, mock_delete_schedule, mock_cancel_job, mock_enqueue
+    ):
+        mock_delete_keys.return_value = True
+        self._insert_builder_record("target-builder", "Target Builder")
+        self._insert_builder_record("other-builder", "Other Builder")
+        self._insert_builder_record(
+            "combo-keep",
+            "Keep Combo",
+            model="wp1.selection.models.combinator",
+            params={
+                "include": {
+                    "builders": ["target-builder", "other-builder"],
+                    "operation": "union",
+                },
+                "exclude": {"builders": ["target-builder"], "operation": "union"},
+            },
+        )
+
+        actual = logic_builder.delete_builder(
+            self.wp10db,
+            "1234",
+            "target-builder",
+            confirm_builder_name="Target Builder",
+        )
+
+        self.assertTrue(actual["db_delete_success"])
+        self.assertEqual(["combo-keep"], actual["updated_combinator_ids"])
+        self.assertEqual(
+            {
+                "include": {"builders": ["other-builder"], "operation": "union"},
+                "exclude": {"builders": [], "operation": "union"},
+            },
+            self._get_builder_params(b"combo-keep"),
+        )
+        mock_enqueue.assert_called_once()
+
+    @patch("wp1.logic.builder.queues.enqueue_materialize")
+    @patch("wp1.logic.builder.queues.cancel_scheduled_job")
+    @patch("wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id")
+    @patch("wp1.logic.builder.logic_selection.delete_keys_from_storage")
+    def test_delete_builder_deletes_selected_combinator(
+        self, mock_delete_keys, mock_delete_schedule, mock_cancel_job, mock_enqueue
+    ):
+        mock_delete_keys.return_value = True
+        self._insert_builder_record("target-builder", "Target Builder")
+        self._insert_builder_record("other-builder", "Other Builder")
+        self._insert_builder_record(
+            "combo-delete",
+            "Delete Combo",
+            model="wp1.selection.models.combinator",
+            params={
+                "include": {
+                    "builders": ["target-builder", "other-builder"],
+                    "operation": "union",
+                },
+                "exclude": {"builders": [], "operation": "union"},
+            },
+        )
+
+        actual = logic_builder.delete_builder(
+            self.wp10db,
+            "1234",
+            "target-builder",
+            delete_combinator_ids=["combo-delete"],
+            confirm_builder_name="Target Builder",
+        )
+
+        self.assertTrue(actual["db_delete_success"])
+        self.assertEqual(["combo-delete"], actual["deleted_combinator_ids"])
+        self.assertIsNone(self._get_builder_params(b"combo-delete"))
+        mock_enqueue.assert_not_called()
+
+    @patch("wp1.logic.builder.queues.enqueue_materialize")
+    @patch("wp1.logic.builder.queues.cancel_scheduled_job")
+    @patch("wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id")
+    @patch("wp1.logic.builder.logic_selection.delete_keys_from_storage")
+    def test_delete_builder_auto_deletes_empty_combinator(
+        self, mock_delete_keys, mock_delete_schedule, mock_cancel_job, mock_enqueue
+    ):
+        mock_delete_keys.return_value = True
+        self._insert_builder_record("target-builder", "Target Builder")
+        self._insert_builder_record(
+            "combo-empty",
+            "Empty Combo",
+            model="wp1.selection.models.combinator",
+            params={
+                "include": {"builders": ["target-builder"], "operation": "union"},
+                "exclude": {"builders": [], "operation": "union"},
+            },
+        )
+
+        actual = logic_builder.delete_builder(
+            self.wp10db,
+            "1234",
+            "target-builder",
+            confirm_builder_name="Target Builder",
+        )
+
+        self.assertTrue(actual["db_delete_success"])
+        self.assertEqual(["combo-empty"], actual["auto_deleted_combinator_ids"])
+        self.assertIsNone(self._get_builder_params(b"combo-empty"))
+        mock_enqueue.assert_not_called()
+
+    @patch("wp1.logic.builder.queues.enqueue_materialize")
+    @patch("wp1.logic.builder.queues.cancel_scheduled_job")
+    @patch("wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id")
+    @patch("wp1.logic.builder.logic_selection.delete_keys_from_storage")
+    def test_delete_builder_ignores_stale_selected_combinator(
+        self, mock_delete_keys, mock_delete_schedule, mock_cancel_job, mock_enqueue
+    ):
+        mock_delete_keys.return_value = True
+        self._insert_builder_record("target-builder", "Target Builder")
+        self._insert_builder_record("other-builder", "Other Builder")
+        self._insert_builder_record(
+            "combo-stale",
+            "Stale Combo",
+            model="wp1.selection.models.combinator",
+            params={
+                "include": {"builders": ["other-builder"], "operation": "union"},
+                "exclude": {"builders": [], "operation": "union"},
+            },
+        )
+
+        actual = logic_builder.delete_builder(
+            self.wp10db,
+            "1234",
+            "target-builder",
+            delete_combinator_ids=["combo-stale"],
+            confirm_builder_name="Target Builder",
+        )
+
+        self.assertTrue(actual["db_delete_success"])
+        self.assertEqual([], actual["deleted_combinator_ids"])
+        self.assertIsNotNone(self._get_builder_params(b"combo-stale"))
+        mock_enqueue.assert_not_called()
+
+    def test_delete_builder_name_confirmation_mismatch(self):
+        self._insert_builder_record("target-builder", "Target Builder")
+
+        with self.assertRaises(ValueError):
+            logic_builder.delete_builder(
+                self.wp10db,
+                "1234",
+                "target-builder",
+                confirm_builder_name="Wrong Name",
+            )
+
     @patch("wp1.logic.builder.queues.cancel_scheduled_job")
     @patch("wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id")
     @patch("wp1.logic.builder.logic_selection")
@@ -990,6 +1260,29 @@ class BuilderTest(BaseWpOneDbTest):
                 b"proper/selection/4321/name.tsv",
             ]
         )
+
+    @patch("wp1.logic.selection.connect_storage")
+    @patch("wp1.logic.builder.queues.cancel_scheduled_job")
+    @patch("wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id")
+    def test_delete_builder_retryable_selection_without_object_key(
+        self, mock_delete_schedule, mock_cancel_job, mock_connect_storage
+    ):
+        builder_id = self._insert_builder()
+        self._insert_selection(
+            1,
+            "text/tab-separated-values",
+            object_key=None,
+            builder_id=builder_id,
+            has_errors=True,
+            skip_zim=True,
+        )
+
+        actual = logic_builder.delete_builder(self.wp10db, 1234, builder_id)
+
+        self.assertTrue(actual["db_delete_success"])
+        self.assertTrue(actual["s3_delete_success"])
+        self.assertIsNone(self._get_builder_params(builder_id))
+        mock_connect_storage.assert_not_called()
 
     @patch("wp1.logic.builder.queues.cancel_scheduled_job")
     @patch("wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id")

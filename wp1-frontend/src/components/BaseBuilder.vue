@@ -160,6 +160,7 @@
                   id="deleteListButton"
                   type="button"
                   class="btn btn-danger ml-4"
+                  :disabled="deleteProcessing"
                 >
                   Delete List
                 </button>
@@ -184,6 +185,129 @@
               ></pulse-loader>
             </div>
           </form>
+        </div>
+      </div>
+
+      <div
+        v-if="showDeleteDialog"
+        id="delete-impact-dialog"
+        class="delete-dialog-backdrop"
+      >
+        <div
+          class="delete-dialog card shadow-lg"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div class="card-header bg-danger text-white text-center">
+            <h5 class="mb-0">Confirm Delete</h5>
+          </div>
+          <div class="card-body">
+            <p>
+              Deleting <strong>{{ deleteBuilderName }}</strong> will permanently
+              delete this list and all downloadable selections.
+            </p>
+
+            <div
+              v-if="affectedCombinators.length > 0"
+              id="affected-combinators"
+            >
+              <div class="alert alert-warning">
+                This list is used by one or more Combinators. You must remove
+                the list from the Combinator(s) or delete the Combinator(s)
+                completely. Choose below.
+              </div>
+
+              <div
+                v-for="item in affectedCombinators"
+                :key="'affected-combinator-' + item.id"
+                class="delete-combinator-choice border rounded p-3 mb-3"
+              >
+                <div class="font-weight-bold mb-2">
+                  <span
+                    v-if="!item.will_be_auto_deleted"
+                    :id="'decision-required-' + item.id"
+                    class="text-danger"
+                    aria-hidden="true"
+                  >
+                    *
+                  </span>
+                  {{ item.name }} ({{ item.project }})
+                </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    :id="'remove-builder-' + item.id"
+                    :name="'delete-action-' + item.id"
+                    :disabled="item.will_be_auto_deleted"
+                    :checked="deleteCombinatorAction(item) === 'remove'"
+                    @change="setDeleteCombinatorAction(item.id, 'remove')"
+                  />
+                  <label
+                    class="form-check-label"
+                    :for="'remove-builder-' + item.id"
+                  >
+                    Remove {{ deleteBuilderName }} from this combinator
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    :id="'delete-combinator-' + item.id"
+                    :name="'delete-action-' + item.id"
+                    :checked="deleteCombinatorAction(item) === 'delete'"
+                    @change="setDeleteCombinatorAction(item.id, 'delete')"
+                  />
+                  <label
+                    class="form-check-label text-danger"
+                    :for="'delete-combinator-' + item.id"
+                  >
+                    Delete this Combinator completely
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="requiresDeleteConfirmation" class="form-group mt-4">
+              <label for="delete-confirm-name">
+                Type <strong>{{ deleteBuilderName }}</strong> to confirm
+                deletion.
+              </label>
+              <input
+                id="delete-confirm-name"
+                v-model="deleteConfirmName"
+                type="text"
+                class="form-control"
+                autocomplete="off"
+              />
+            </div>
+
+            <div v-if="deleteSuccess == false" class="errors mb-3">
+              {{ errors }}
+            </div>
+
+            <div class="d-flex justify-content-end">
+              <button
+                id="cancelDeleteButton"
+                type="button"
+                class="btn btn-secondary mr-2"
+                :disabled="deleteProcessing"
+                @click="cancelDelete"
+              >
+                Cancel
+              </button>
+              <button
+                id="confirmDeleteButton"
+                type="button"
+                class="btn btn-danger"
+                :disabled="!canConfirmDelete"
+                @click="confirmDelete"
+              >
+                Delete List
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -220,11 +344,16 @@ export default {
       serverError: false,
       wikiProjects: [],
       processing: false,
+      deleteProcessing: false,
       loaderColor: '#007bff',
       loaderSize: '.75rem',
       success: true,
       deleteSuccess: true,
       errors: '',
+      showDeleteDialog: false,
+      deleteImpact: null,
+      deleteConfirmName: '',
+      deleteCombinatorActions: {},
       builder: {
         name: '',
         project: 'en.wikipedia.org',
@@ -253,6 +382,50 @@ export default {
       return (
         this.isEditing &&
         !this.builder.selection_errors.some((item) => item.status == 'FAILED')
+      );
+    },
+    affectedCombinators: function () {
+      if (!this.deleteImpact || !this.deleteImpact.affected_combinators) {
+        return [];
+      }
+      return this.deleteImpact.affected_combinators;
+    },
+    deleteBuilderName: function () {
+      if (this.deleteImpact && this.deleteImpact.builder) {
+        return this.deleteImpact.builder.name;
+      }
+      return this.builder.name;
+    },
+    deleteConfirmationMatches: function () {
+      return this.deleteConfirmName === this.deleteBuilderName;
+    },
+    requiresDeleteConfirmation: function () {
+      return this.affectedCombinators.length > 0;
+    },
+    allCombinatorActionsSelected: function () {
+      return this.affectedCombinators.every(
+        (item) =>
+          item.will_be_auto_deleted || this.deleteCombinatorActions[item.id]
+      );
+    },
+    selectedDeleteCombinators: function () {
+      return this.affectedCombinators
+        .filter(
+          (item) =>
+            !item.will_be_auto_deleted &&
+            this.deleteCombinatorActions[item.id] === 'delete'
+        )
+        .map((item) => item.id);
+    },
+    canConfirmDelete: function () {
+      if (this.deleteProcessing) {
+        return false;
+      }
+      if (!this.requiresDeleteConfirmation) {
+        return true;
+      }
+      return (
+        this.deleteConfirmationMatches && this.allCombinatorActionsSelected
       );
     },
   },
@@ -349,31 +522,120 @@ export default {
         event.target.classList.add('is-invalid');
       }
     },
+    deleteCombinatorAction: function (item) {
+      if (item.will_be_auto_deleted) {
+        return 'delete';
+      }
+      return this.deleteCombinatorActions[item.id] || '';
+    },
+    setDeleteCombinatorAction: function (id, action) {
+      this.$set(this.deleteCombinatorActions, id, action);
+    },
     onDelete: async function () {
-      if (
-        !window.confirm(
-          'Really delete this list? The definition and all downloadable selections will be permanently deleted.'
-        )
-      ) {
+      this.deleteSuccess = true;
+      this.errors = '';
+      this.deleteProcessing = true;
+
+      const impactUrl = `${import.meta.env.VITE_API_URL}/builders/${
+        this.$route.params.builder_id
+      }/delete-impact`;
+      let response = null;
+      try {
+        response = await fetch(impactUrl, {
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        });
+      } catch (e) {
+        this.deleteSuccess = false;
+        this.errors = 'Could not check delete impact. Please try again.';
+        this.deleteProcessing = false;
         return;
       }
 
-      const postUrl = `${import.meta.env.VITE_API_URL}/builders/${
-        this.$route.params.builder_id
-      }/delete`;
-      const response = await fetch(postUrl, {
-        method: 'post',
-        credentials: 'include',
-      });
-
-      if (response.status == 200) {
-        this.$router.push('/selections/user');
-        return;
-      } else if (response.status == 404 || response.status == 401) {
+      this.deleteProcessing = false;
+      if (
+        response.status == 404 ||
+        response.status == 401 ||
+        response.status == 403
+      ) {
         this.deleteSuccess = false;
         this.errors =
           "Could not delete this list. Check that the list still exists and you're logged in as its owner.";
         return;
+      }
+      if (!response.ok) {
+        this.deleteSuccess = false;
+        this.errors = 'Could not check delete impact. Please try again.';
+        return;
+      }
+
+      this.deleteImpact = await response.json();
+      this.deleteCombinatorActions = {};
+      this.deleteConfirmName = '';
+      this.showDeleteDialog = true;
+    },
+    cancelDelete: function () {
+      if (this.deleteProcessing) {
+        return;
+      }
+      this.showDeleteDialog = false;
+      this.deleteConfirmName = '';
+      this.deleteCombinatorActions = {};
+    },
+    confirmDelete: async function () {
+      if (!this.canConfirmDelete) {
+        return;
+      }
+
+      this.deleteSuccess = true;
+      this.errors = '';
+      this.deleteProcessing = true;
+      const postUrl = `${import.meta.env.VITE_API_URL}/builders/${
+        this.$route.params.builder_id
+      }/delete`;
+      const body = {
+        delete_combinator_ids: this.selectedDeleteCombinators,
+      };
+      if (this.requiresDeleteConfirmation) {
+        body.confirm_builder_name = this.deleteConfirmName;
+      }
+      let response = null;
+      try {
+        response = await fetch(postUrl, {
+          headers: { 'Content-Type': 'application/json' },
+          method: 'post',
+          credentials: 'include',
+          body: JSON.stringify(body),
+        });
+      } catch (e) {
+        this.deleteSuccess = false;
+        this.errors = 'Could not delete this list. Please try again.';
+        this.deleteProcessing = false;
+        return;
+      }
+
+      this.deleteProcessing = false;
+
+      if (response.status == 200) {
+        this.$router.push('/selections/user');
+        return;
+      } else if (
+        response.status == 404 ||
+        response.status == 401 ||
+        response.status == 403
+      ) {
+        this.deleteSuccess = false;
+        this.errors =
+          "Could not delete this list. Check that the list still exists and you're logged in as its owner.";
+        return;
+      }
+
+      this.deleteSuccess = false;
+      try {
+        const data = await response.json();
+        this.errors = (data.error_messages || []).join(', ');
+      } catch (e) {
+        this.errors = 'Could not delete this list. Please try again.';
       }
     },
   },
@@ -390,5 +652,25 @@ export default {
 }
 .loader {
   margin-left: 1rem;
+}
+
+.delete-dialog-backdrop {
+  align-items: flex-start;
+  background: rgba(0, 0, 0, 0.45);
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  left: 0;
+  overflow-y: auto;
+  padding: 3rem 1rem;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 1050;
+}
+
+.delete-dialog {
+  max-width: 720px;
+  width: 100%;
 }
 </style>
