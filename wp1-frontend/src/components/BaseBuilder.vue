@@ -208,70 +208,68 @@
             </p>
 
             <div
-              v-if="affectedCombinators.length === 0"
-              class="alert alert-info"
+              v-if="affectedCombinators.length > 0"
+              id="affected-combinators"
             >
-              No Combinator selections reference this list.
-            </div>
-            <div v-else id="affected-combinators">
-              <div
-                v-if="manualDeleteCombinators.length > 0"
-                class="alert alert-warning"
-              >
-                This list is used by one or more Combinators. Choose which
-                Combinators to delete below. Any Combinator you leave unchecked
-                will be kept, but this list will be removed from it.
-              </div>
-              <div v-else class="alert alert-warning">
-                This list is used by one or more Combinators. They would have no
-                included lists left, so they will be deleted automatically.
+              <div class="alert alert-warning">
+                This list is used by one or more Combinators. You must remove
+                the list from the Combinator(s) or delete the Combinator(s)
+                completely. Choose below.
               </div>
 
-              <div v-if="manualDeleteCombinators.length > 0">
-                <div
-                  v-for="item in manualDeleteCombinators"
-                  :key="'manual-delete-' + item.id"
-                  class="form-check mb-2"
-                >
+              <div
+                v-for="item in affectedCombinators"
+                :key="'affected-combinator-' + item.id"
+                class="delete-combinator-choice border rounded p-3 mb-3"
+              >
+                <div class="font-weight-bold mb-2">
+                  <span
+                    v-if="!item.will_be_auto_deleted"
+                    :id="'decision-required-' + item.id"
+                    class="text-danger"
+                    aria-hidden="true"
+                  >
+                    *
+                  </span>
+                  {{ item.name }} ({{ item.project }})
+                </div>
+                <div class="form-check">
                   <input
                     class="form-check-input"
-                    type="checkbox"
-                    :id="'delete-combinator-' + item.id"
-                    :value="item.id"
-                    v-model="selectedDeleteCombinators"
+                    type="radio"
+                    :id="'remove-builder-' + item.id"
+                    :name="'delete-action-' + item.id"
+                    :disabled="item.will_be_auto_deleted"
+                    :checked="deleteCombinatorAction(item) === 'remove'"
+                    @change="setDeleteCombinatorAction(item.id, 'remove')"
                   />
                   <label
                     class="form-check-label"
+                    :for="'remove-builder-' + item.id"
+                  >
+                    Remove {{ deleteBuilderName }} from this combinator
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    :id="'delete-combinator-' + item.id"
+                    :name="'delete-action-' + item.id"
+                    :checked="deleteCombinatorAction(item) === 'delete'"
+                    @change="setDeleteCombinatorAction(item.id, 'delete')"
+                  />
+                  <label
+                    class="form-check-label text-danger"
                     :for="'delete-combinator-' + item.id"
                   >
-                    Delete {{ item.name }} ({{ item.project }})
+                    Delete this Combinator completely
                   </label>
-                  <div class="text-muted small">
-                    Referenced in {{ item.referenced_in.join(', ') }} group.
-                  </div>
                 </div>
-              </div>
-
-              <div v-if="autoDeleteCombinators.length > 0" class="mt-3">
-                <div
-                  v-if="manualDeleteCombinators.length > 0"
-                  class="alert alert-warning"
-                >
-                  These Combinators would have no included lists left, so they
-                  will be deleted automatically.
-                </div>
-                <ul class="mb-0">
-                  <li
-                    v-for="item in autoDeleteCombinators"
-                    :key="'auto-delete-' + item.id"
-                  >
-                    {{ item.name }} ({{ item.project }})
-                  </li>
-                </ul>
               </div>
             </div>
 
-            <div class="form-group mt-4">
+            <div v-if="requiresDeleteConfirmation" class="form-group mt-4">
               <label for="delete-confirm-name">
                 Type <strong>{{ deleteBuilderName }}</strong> to confirm
                 deletion.
@@ -303,7 +301,7 @@
                 id="confirmDeleteButton"
                 type="button"
                 class="btn btn-danger"
-                :disabled="!deleteConfirmationMatches || deleteProcessing"
+                :disabled="!canConfirmDelete"
                 @click="confirmDelete"
               >
                 Delete List
@@ -355,7 +353,7 @@ export default {
       showDeleteDialog: false,
       deleteImpact: null,
       deleteConfirmName: '',
-      selectedDeleteCombinators: [],
+      deleteCombinatorActions: {},
       builder: {
         name: '',
         project: 'en.wikipedia.org',
@@ -392,16 +390,6 @@ export default {
       }
       return this.deleteImpact.affected_combinators;
     },
-    manualDeleteCombinators: function () {
-      return this.affectedCombinators.filter(
-        (item) => !item.will_be_auto_deleted
-      );
-    },
-    autoDeleteCombinators: function () {
-      return this.affectedCombinators.filter(
-        (item) => item.will_be_auto_deleted
-      );
-    },
     deleteBuilderName: function () {
       if (this.deleteImpact && this.deleteImpact.builder) {
         return this.deleteImpact.builder.name;
@@ -410,6 +398,35 @@ export default {
     },
     deleteConfirmationMatches: function () {
       return this.deleteConfirmName === this.deleteBuilderName;
+    },
+    requiresDeleteConfirmation: function () {
+      return this.affectedCombinators.length > 0;
+    },
+    allCombinatorActionsSelected: function () {
+      return this.affectedCombinators.every(
+        (item) =>
+          item.will_be_auto_deleted || this.deleteCombinatorActions[item.id]
+      );
+    },
+    selectedDeleteCombinators: function () {
+      return this.affectedCombinators
+        .filter(
+          (item) =>
+            !item.will_be_auto_deleted &&
+            this.deleteCombinatorActions[item.id] === 'delete'
+        )
+        .map((item) => item.id);
+    },
+    canConfirmDelete: function () {
+      if (this.deleteProcessing) {
+        return false;
+      }
+      if (!this.requiresDeleteConfirmation) {
+        return true;
+      }
+      return (
+        this.deleteConfirmationMatches && this.allCombinatorActionsSelected
+      );
     },
   },
   created: function () {
@@ -505,6 +522,15 @@ export default {
         event.target.classList.add('is-invalid');
       }
     },
+    deleteCombinatorAction: function (item) {
+      if (item.will_be_auto_deleted) {
+        return 'delete';
+      }
+      return this.deleteCombinatorActions[item.id] || '';
+    },
+    setDeleteCombinatorAction: function (id, action) {
+      this.$set(this.deleteCombinatorActions, id, action);
+    },
     onDelete: async function () {
       this.deleteSuccess = true;
       this.errors = '';
@@ -544,7 +570,7 @@ export default {
       }
 
       this.deleteImpact = await response.json();
-      this.selectedDeleteCombinators = [];
+      this.deleteCombinatorActions = {};
       this.deleteConfirmName = '';
       this.showDeleteDialog = true;
     },
@@ -554,10 +580,10 @@ export default {
       }
       this.showDeleteDialog = false;
       this.deleteConfirmName = '';
-      this.selectedDeleteCombinators = [];
+      this.deleteCombinatorActions = {};
     },
     confirmDelete: async function () {
-      if (!this.deleteConfirmationMatches) {
+      if (!this.canConfirmDelete) {
         return;
       }
 
@@ -567,16 +593,19 @@ export default {
       const postUrl = `${import.meta.env.VITE_API_URL}/builders/${
         this.$route.params.builder_id
       }/delete`;
+      const body = {
+        delete_combinator_ids: this.selectedDeleteCombinators,
+      };
+      if (this.requiresDeleteConfirmation) {
+        body.confirm_builder_name = this.deleteConfirmName;
+      }
       let response = null;
       try {
         response = await fetch(postUrl, {
           headers: { 'Content-Type': 'application/json' },
           method: 'post',
           credentials: 'include',
-          body: JSON.stringify({
-            delete_combinator_ids: this.selectedDeleteCombinators,
-            confirm_builder_name: this.deleteConfirmName,
-          }),
+          body: JSON.stringify(body),
         });
       } catch (e) {
         this.deleteSuccess = false;

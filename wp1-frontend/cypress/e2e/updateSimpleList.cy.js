@@ -70,7 +70,7 @@ describe('the update simple list page', () => {
         cy.url().should('eq', 'http://localhost:5173/#/selections/user');
       });
 
-      it('requires typing the list name before deleting with no combinator impact', () => {
+      it('deletes with no combinator impact without typing the list name', () => {
         cy.intercept('GET', 'v1/builders/1/delete-impact', {
           fixture: 'delete_impact_none.json',
         }).as('deleteImpact');
@@ -81,17 +81,13 @@ describe('the update simple list page', () => {
         cy.get('#deleteListButton').click();
         cy.wait('@deleteImpact');
         cy.get('#delete-impact-dialog').should('be.visible');
-        cy.get('#delete-impact-dialog').contains(
-          'No Combinator selections reference this list.'
-        );
-        cy.get('#confirmDeleteButton').should('be.disabled');
-        cy.get('#delete-confirm-name').type('Builder 1');
+        cy.get('#affected-combinators').should('not.exist');
+        cy.get('#delete-confirm-name').should('not.exist');
         cy.get('#confirmDeleteButton').should('not.be.disabled').click();
 
         cy.wait('@deleteBuilder').then((interception) => {
           expect(interception.request.body).to.deep.equal({
             delete_combinator_ids: [],
-            confirm_builder_name: 'Builder 1',
           });
         });
         cy.url().should('eq', 'http://localhost:5173/#/selections/user');
@@ -109,10 +105,22 @@ describe('the update simple list page', () => {
         cy.wait('@deleteImpact');
         cy.get('#delete-impact-dialog').contains('Keepable Combo');
         cy.get('#delete-impact-dialog').contains('Empty Combo');
-        cy.get('#delete-impact-dialog').contains(
-          'they will be deleted automatically'
+        cy.get('#affected-combinators .alert-warning').contains(
+          'You must remove the list from the Combinator(s) or delete the Combinator(s) completely.'
         );
-        cy.get('#delete-combinator-combo-empty').should('not.exist');
+        cy.get('#confirmDeleteButton').should('be.disabled');
+        cy.get('#decision-required-combo-keep').should('exist');
+        cy.get('#decision-required-combo-empty').should('not.exist');
+        cy.get('#remove-builder-combo-keep').should('not.be.disabled');
+        cy.get('#remove-builder-combo-keep').should('not.be.checked');
+        cy.get('#delete-combinator-combo-keep').should('not.be.disabled');
+        cy.get('#delete-combinator-combo-keep').should('not.be.checked');
+        cy.get('label[for="delete-combinator-combo-keep"]').should(
+          'have.class',
+          'text-danger'
+        );
+        cy.get('#remove-builder-combo-empty').should('be.disabled');
+        cy.get('#delete-combinator-combo-empty').should('be.checked');
         cy.get('#delete-combinator-combo-keep').check();
         cy.get('#delete-confirm-name').type('Builder 1');
         cy.get('#confirmDeleteButton').click();
@@ -125,7 +133,7 @@ describe('the update simple list page', () => {
         });
       });
 
-      it('shows auto-deleted combinators without checkbox instructions', () => {
+      it('requires deleting combinators that would have no included lists left', () => {
         cy.intercept('GET', 'v1/builders/1/delete-impact', {
           fixture: 'delete_impact_auto_delete_only.json',
         }).as('deleteImpact');
@@ -133,15 +141,13 @@ describe('the update simple list page', () => {
         cy.get('#deleteListButton').click();
         cy.wait('@deleteImpact');
 
-        cy.get('#delete-impact-dialog').contains(
-          'They would have no included lists left, so they will be deleted automatically.'
+        cy.get('#affected-combinators .alert-warning').contains(
+          'You must remove the list from the Combinator(s) or delete the Combinator(s) completely.'
         );
         cy.get('#delete-impact-dialog').contains('Empty Combo');
-        cy.get('#delete-impact-dialog').should(
-          'not.contain',
-          'Choose which Combinators to delete below'
-        );
-        cy.get('#delete-combinator-combo-empty').should('not.exist');
+        cy.get('#decision-required-combo-empty').should('not.exist');
+        cy.get('#remove-builder-combo-empty').should('be.disabled');
+        cy.get('#delete-combinator-combo-empty').should('be.checked');
       });
 
       describe('when update button clicked', () => {
