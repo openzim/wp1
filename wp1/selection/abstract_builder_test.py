@@ -46,6 +46,15 @@ class TestBuilderNoContext(TestBuilder):
         raise Wp1FatalSelectionError("Something broke")
 
 
+class TestBuilderExtraError(TestBuilder):
+
+    def build(self, content_type, **params):
+        raise Wp1FatalSelectionError(
+            "Referenced builder broke",
+            extra={"extra_context": "kept"},
+        )
+
+
 class TestBuilderSuppressedException(TestBuilder):
 
     def build(self, content_type, **params):
@@ -210,6 +219,22 @@ class AbstractBuilderTest(BaseWpOneDbTest):
 
         self.assertEqual(
             {"error_messages": ["Something broke"]}, json.loads(actual.s_error_messages)
+        )
+
+    def test_materialize_extra_error_data(self):
+        builder_obj = TestBuilderExtraError()
+        builder_obj.materialize(
+            self.s3, self.wp10db, self.builder, "text/tab-separated-values", 1
+        )
+
+        actual = get_first_selection(self.wp10db)
+
+        self.assertEqual(
+            {
+                "error_messages": ["Referenced builder broke"],
+                "extra_context": "kept",
+            },
+            json.loads(actual.s_error_messages),
         )
 
     def test_materialize_suppressed_message(self):

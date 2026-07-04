@@ -17,6 +17,18 @@
       "error_messages": [
         "Referenced builder Failed Builder (failed-builder) latest selection failed"
       ],
+      "referenced_builder_errors": [
+        {
+          "builder_id": "failed-builder",
+          "builder_name": "Failed Builder",
+          "builder_model": "wp1.selection.models.simple",
+          "code": "REFERENCED_SELECTION_FAILED",
+          "message": "Referenced builder Failed Builder (failed-builder) latest selection failed",
+          "reason": "latest selection failed",
+          "action": "Open this list, fix the failed selection, then update this Combinator.",
+          "status": "FAILED"
+        }
+      ],
       "ext": "tsv",
       "status": "FAILED"
     }
