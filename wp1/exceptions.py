@@ -3,7 +3,9 @@ class Wp1Error(Exception):
 
 
 class Wp1SelectionError(Wp1Error):
-    pass
+    def __init__(self, *args, extra=None):
+        super().__init__(*args)
+        self.extra = extra or {}
 
 
 class Wp1RetryableSelectionError(Wp1SelectionError):
