@@ -1,7 +1,13 @@
 from unittest.mock import MagicMock, patch
 
 from wp1.base_db_test import BaseWpOneDbTest
-from wp1.exceptions import Wp1FatalSelectionError, Wp1RetryableSelectionError
+from wp1.exceptions import (
+    Wp1FatalMetaSelectionError,
+    Wp1FatalSelectionError,
+    Wp1MetaBuilderProcessError,
+    Wp1RetryableMetaSelectionError,
+    Wp1RetryableSelectionError,
+)
 from wp1.models.wp10.builder import Builder
 from wp1.selection.models.combinator import Builder as CombinatorBuilder
 
@@ -249,8 +255,11 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
 
         def fetch_selection(_wp10db, _s3, builder_id, label):
             if builder_id in ("builder-a", "builder-b"):
-                raise Wp1RetryableSelectionError(
-                    f"Referenced builder {label} is not ready"
+                raise Wp1RetryableMetaSelectionError(
+                    f"Referenced builder {label} is not ready",
+                    code="REFERENCED_SELECTION_NOT_READY",
+                    reason="latest selection is not ready yet",
+                    action="Wait for this list to finish processing, then retry this Combinator.",
                 )
             return b"ok\n"
 
@@ -267,6 +276,7 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
         with self.assertRaises(Wp1RetryableSelectionError) as context:
             self.builder.build("text/tab-separated-values", **params)
 
+        self.assertIsInstance(context.exception.__cause__, Wp1MetaBuilderProcessError)
         self.assertEqual(3, mock_fetch_selection_data.call_count)
         message = str(context.exception)
         self.assertIn("Builder A (builder-a) is not ready", message)
@@ -297,17 +307,18 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
 
         def fetch_selection(_wp10db, _s3, builder_id, label):
             if builder_id == "builder-b":
-                raise Wp1RetryableSelectionError(
-                    f"Referenced builder {label} is not ready"
+                raise Wp1RetryableMetaSelectionError(
+                    f"Referenced builder {label} is not ready",
+                    code="REFERENCED_SELECTION_NOT_READY",
+                    reason="latest selection is not ready yet",
+                    action="Wait for this list to finish processing, then retry this Combinator.",
                 )
             if builder_id == "builder-c":
-                raise Wp1FatalSelectionError(
+                raise Wp1FatalMetaSelectionError(
                     f"Referenced builder {label} latest selection failed",
-                    extra={
-                        "dependency_code": "REFERENCED_SELECTION_FAILED",
-                        "dependency_reason": "latest selection failed",
-                        "dependency_action": "Open this list, fix the failed selection, then update this Combinator.",
-                    },
+                    code="REFERENCED_SELECTION_FAILED",
+                    reason="latest selection failed",
+                    action="Open this list, fix the failed selection, then update this Combinator.",
                 )
             return b"ok\n"
 
@@ -322,17 +333,19 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
         with self.assertRaises(Wp1FatalSelectionError) as context:
             self.builder.build("text/tab-separated-values", **params)
 
+        self.assertIsInstance(context.exception.__cause__, Wp1MetaBuilderProcessError)
         self.assertEqual(3, mock_fetch_selection_data.call_count)
         message = str(context.exception)
         self.assertIn("Builder B (builder-b) is not ready", message)
         self.assertIn("Builder C (builder-c) latest selection failed", message)
         referenced_errors = context.exception.extra["referenced_builder_errors"]
         self.assertEqual(
-            ["FAILED", "CAN_RETRY"],
+            ["CAN_RETRY", "FAILED"],
             [error["status"] for error in referenced_errors],
         )
-        self.assertEqual("REFERENCED_SELECTION_FAILED", referenced_errors[0]["code"])
-        self.assertIn("fix the failed selection", referenced_errors[0]["action"])
+        fatal_error = referenced_errors[1]
+        self.assertEqual("REFERENCED_SELECTION_FAILED", fatal_error["code"])
+        self.assertIn("fix the failed selection", fatal_error["action"])
 
     def test_validate_with_referenced_builder_in_db(self):
         self._insert_builder()

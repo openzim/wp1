@@ -6,6 +6,7 @@ from wp1.logic import util as logic_util
 from wp1.exceptions import (
     ObjectNotFoundError,
     Wp1FatalSelectionError,
+    Wp1MetaBuilderProcessError,
     Wp1RetryableSelectionError,
     Wp1SelectionError,
 )
@@ -176,98 +177,70 @@ class Builder(MetaBuilder):
         wp10db,
         s3,
         group: dict[str, Any],
-        retryable_errors: list[dict[str, Any]],
-        fatal_errors: list[dict[str, Any]],
-    ) -> set[str]:
+    ) -> tuple[set[str], list[tuple[dict[str, Any], Wp1SelectionError]]]:
 
         builder_values = group.get("builders", [])
 
-        builder_ids = []
-        for builder_id in builder_values:
-            if isinstance(builder_id, str) and builder_id not in builder_ids:
-                builder_ids.append(builder_id)
+        builder_ids = list(
+            dict.fromkeys(
+                builder_id
+                for builder_id in builder_values
+                if isinstance(builder_id, str)
+            )
+        )
 
         operation = group.get("operation", "union")
 
         sets: list[set[str]] = []
+        failures = []
         for builder_id in builder_ids:
-            reference: dict[str, Any]
             try:
                 builder = logic_builder.get_builder(wp10db, builder_id)
+            except ObjectNotFoundError:
+                reference = {
+                    "id": None,
+                    "name": None,
+                    "model": None,
+                    "label": builder_id,
+                }
+            else:
                 reference = {
                     "id": builder.id,
                     "name": builder.name,
                     "model": builder.model,
                     "label": builder.label,
                 }
-            except ObjectNotFoundError:
-                reference = {
-                    "id": builder_id,
-                    "name": builder_id,
-                    "model": None,
-                    "label": builder_id,
-                }
 
             try:
                 data = self._fetch_selection_data(
                     wp10db, s3, builder_id, reference["label"]
                 )
-            except Wp1FatalSelectionError as e:
-                fatal_errors.append(
-                    self._referenced_builder_error(reference, e, "FAILED")
-                )
+            except (Wp1FatalSelectionError, Wp1RetryableSelectionError) as e:
+                failures.append((reference, e))
                 continue
-            except Wp1RetryableSelectionError as e:
-                retryable_errors.append(
-                    self._referenced_builder_error(reference, e, "CAN_RETRY")
-                )
-                continue
+
             title_set = _parse_tsv_to_set(data)
             sets.append(title_set)
 
-        return _apply_operation(operation, sets)
+        return _apply_operation(operation, sets), failures
 
-    def _referenced_builder_error(
-        self, reference: dict[str, Any], error: Wp1SelectionError, status: str
-    ) -> dict[str, Any]:
-        message = str(error)
-        extra = error.extra if isinstance(error.extra, dict) else {}
-        reason = extra.get("dependency_reason")
-        if not reason:
-            label = reference["label"] or reference["id"] or ""
-            prefix = f"Referenced builder {label} "
-            if message.startswith(prefix):
-                reason = message[len(prefix) :]
-            else:
-                download_prefix = f"Failed to download selection for builder {label} "
-                if message.startswith(download_prefix):
-                    reason = (
-                        "could not download the latest selection "
-                        + message[len(download_prefix) :]
-                    )
-                else:
-                    reason = message
+    def _process_groups(
+        self, wp10db, s3, include_group: dict[str, Any], exclude_group: dict[str, Any]
+    ) -> tuple[set[str], set[str]]:
+        include_set, failures = self._process_group(wp10db, s3, include_group)
 
-        data = {
-            "builder_id": reference["id"],
-            "builder_name": reference["name"],
-            "builder_model": reference["model"],
-            "message": message,
-            "reason": reason,
-            "status": status,
-        }
-        optional_keys = (
-            ("code", "dependency_code"),
-            ("action", "dependency_action"),
-            ("object_key", "object_key"),
-            ("storage_error_code", "storage_error_code"),
-        )
-        for response_key, extra_key in optional_keys:
-            value = extra.get(extra_key)
-            if value:
-                data[response_key] = value
+        exclude_set: set[str] = set()
+        exclude_builders = exclude_group.get("builders", [])
+        if exclude_builders:
+            exclude_set, exclude_failures = self._process_group(
+                wp10db, s3, exclude_group
+            )
+            failures.extend(exclude_failures)
 
-        return data
+        if failures:
+            raise Wp1MetaBuilderProcessError(failures)
+
+        return include_set, exclude_set
 
     def build(self, content_type: str, **params: Any) -> bytes:
         """Build the combinator selection from referenced builders."""
@@ -286,35 +259,22 @@ class Builder(MetaBuilder):
         if include_group is None:
             raise Wp1FatalSelectionError("Missing required 'include' group")
 
-        exclude_group = params.get("exclude")
+        exclude_group = params.get("exclude") or {"builders": []}
 
-        retryable_errors: list[dict[str, Any]] = []
-        fatal_errors: list[dict[str, Any]] = []
-
-        include_set = self._process_group(
-            wp10db, s3, include_group, retryable_errors, fatal_errors
-        )
-
-        exclude_set: set[str] = set()
-        if exclude_group is not None:
-            exclude_builders = exclude_group.get("builders", [])
-            if exclude_builders:
-                exclude_set = self._process_group(
-                    wp10db, s3, exclude_group, retryable_errors, fatal_errors
-                )
-
-        if retryable_errors or fatal_errors:
-            referenced_builder_errors = fatal_errors + retryable_errors
+        try:
+            include_set, exclude_set = self._process_groups(
+                wp10db, s3, include_group, exclude_group
+            )
+        except Wp1MetaBuilderProcessError as e:
+            referenced_builder_errors = e.to_user_messages()
             message = (
                 "Could not build Combinator because referenced selections failed: "
-                + "; ".join(
-                    error["message"] or "" for error in referenced_builder_errors
-                )
+                + "; ".join(error["message"] for error in referenced_builder_errors)
             )
             extra = {"referenced_builder_errors": referenced_builder_errors}
-            if fatal_errors:
-                raise Wp1FatalSelectionError(message, extra=extra)
-            raise Wp1RetryableSelectionError(message, extra=extra)
+            if e.has_fatal_errors:
+                raise Wp1FatalSelectionError(message, extra=extra) from e
+            raise Wp1RetryableSelectionError(message, extra=extra) from e
 
         result = include_set - exclude_set
 

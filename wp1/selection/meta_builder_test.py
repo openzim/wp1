@@ -3,7 +3,10 @@ from unittest.mock import MagicMock, patch
 
 from botocore.exceptions import ClientError
 
-from wp1.exceptions import Wp1FatalSelectionError, Wp1RetryableSelectionError
+from wp1.exceptions import (
+    Wp1FatalMetaSelectionError,
+    Wp1RetryableMetaSelectionError,
+)
 from wp1.models.wp10.selection import Selection
 from wp1.selection.meta_builder import MetaBuilder
 
@@ -38,53 +41,41 @@ class MetaBuilderTest(TestCase):
     def test_fetch_selection_data_failed_selection(self, mock_latest_selection):
         mock_latest_selection.return_value = _selection(status=b"FAILED")
 
-        with self.assertRaises(Wp1FatalSelectionError) as context:
+        with self.assertRaises(Wp1FatalMetaSelectionError) as context:
             self.builder._fetch_selection_data(MagicMock(), MagicMock(), "builder-a")
 
-        self.assertEqual(
-            "REFERENCED_SELECTION_FAILED", context.exception.extra["dependency_code"]
-        )
-        self.assertEqual(
-            "latest selection failed", context.exception.extra["dependency_reason"]
-        )
+        self.assertEqual("REFERENCED_SELECTION_FAILED", context.exception.code)
+        self.assertEqual("latest selection failed", context.exception.reason)
 
     @patch("wp1.selection.meta_builder.logic_builder.latest_selection_for")
     def test_fetch_selection_data_retryable_selection(self, mock_latest_selection):
         mock_latest_selection.return_value = _selection(status=b"CAN_RETRY")
 
-        with self.assertRaises(Wp1RetryableSelectionError) as context:
+        with self.assertRaises(Wp1RetryableMetaSelectionError) as context:
             self.builder._fetch_selection_data(MagicMock(), MagicMock(), "builder-a")
 
         self.assertEqual(
-            "REFERENCED_SELECTION_RETRYABLE_FAILURE",
-            context.exception.extra["dependency_code"],
+            "REFERENCED_SELECTION_RETRYABLE_FAILURE", context.exception.code
         )
         self.assertEqual(
-            "latest selection failed but can be retried",
-            context.exception.extra["dependency_reason"],
-        )
-        self.assertEqual(
-            "Open this list and retry it, then retry this Combinator.",
-            context.exception.extra["dependency_action"],
+            "latest selection failed but can be retried", context.exception.reason
         )
 
     @patch("wp1.selection.meta_builder.logic_builder.latest_selection_for")
     def test_fetch_selection_data_without_stored_data(self, mock_latest_selection):
         mock_latest_selection.return_value = _selection(object_key=None)
 
-        with self.assertRaisesRegex(Wp1RetryableSelectionError, "no stored data"):
+        with self.assertRaisesRegex(Wp1RetryableMetaSelectionError, "no stored data"):
             self.builder._fetch_selection_data(MagicMock(), MagicMock(), "builder-a")
 
     @patch("wp1.selection.meta_builder.logic_builder.latest_selection_for")
     def test_fetch_selection_data_missing_selection(self, mock_latest_selection):
         mock_latest_selection.return_value = None
 
-        with self.assertRaises(Wp1RetryableSelectionError) as context:
+        with self.assertRaises(Wp1RetryableMetaSelectionError) as context:
             self.builder._fetch_selection_data(MagicMock(), MagicMock(), "builder-a")
 
-        self.assertEqual(
-            "REFERENCED_SELECTION_MISSING", context.exception.extra["dependency_code"]
-        )
+        self.assertEqual("REFERENCED_SELECTION_MISSING", context.exception.code)
 
     @patch("wp1.selection.meta_builder.logic_builder.latest_selection_for")
     def test_fetch_selection_data_download_error(self, mock_latest_selection):
@@ -94,16 +85,9 @@ class MetaBuilderTest(TestCase):
             {"Error": {"Code": "NoSuchKey"}}, "GetObject"
         )
 
-        with self.assertRaises(Wp1RetryableSelectionError) as context:
+        with self.assertRaises(Wp1RetryableMetaSelectionError) as context:
             self.builder._fetch_selection_data(MagicMock(), s3, "builder-a")
 
-        self.assertEqual(
-            "REFERENCED_SELECTION_DOWNLOAD_FAILED",
-            context.exception.extra["dependency_code"],
-        )
-        self.assertEqual(
-            "could not download the latest selection",
-            context.exception.extra["dependency_reason"],
-        )
-        self.assertEqual("object-key", context.exception.extra["object_key"])
-        self.assertEqual("NoSuchKey", context.exception.extra["storage_error_code"])
+        self.assertEqual("REFERENCED_SELECTION_DOWNLOAD_FAILED", context.exception.code)
+        self.assertEqual("object-key", context.exception.details["object_key"])
+        self.assertEqual("NoSuchKey", context.exception.details["storage_error_code"])
