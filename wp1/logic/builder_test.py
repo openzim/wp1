@@ -227,6 +227,7 @@ class BuilderTest(BaseWpOneDbTest):
         object_key="selections/foo/1234/name.tsv",
         builder_id=b"1a-2b-3c-4d",
         has_errors=False,
+        error_messages=None,
         zim_file_ready=False,
         zim_task_id="5678",
         skip_zim=False,
@@ -234,7 +235,8 @@ class BuilderTest(BaseWpOneDbTest):
     ):
         if has_errors:
             status = "CAN_RETRY"
-            error_messages = '{"error_messages":["There was an error"]}'
+            if error_messages is None:
+                error_messages = '{"error_messages":["There was an error"]}'
         else:
             status = "OK"
             error_messages = None
@@ -1067,6 +1069,48 @@ class BuilderTest(BaseWpOneDbTest):
         actual = logic_builder.latest_selections_with_errors(self.wp10db, builder_id)
 
         self.assertEqual(0, len(actual))
+
+    def test_latest_selection_with_errors_includes_referenced_builders(self):
+        builder_id = self._insert_builder(current_version=1)
+        self._insert_selection(
+            1,
+            "text/tab-separated-values",
+            builder_id=builder_id,
+            has_errors=True,
+            error_messages=(
+                '{"error_messages":["Combinator failed"],'
+                '"referenced_builder_errors":[{'
+                '"builder_id":"builder-a",'
+                '"builder_name":"Builder A",'
+                '"builder_model":"wp1.selection.models.simple",'
+                '"message":"Referenced builder Builder A failed",'
+                '"reason":"failed",'
+                '"status":"FAILED"}]}'
+            ),
+        )
+
+        actual = logic_builder.latest_selections_with_errors(self.wp10db, builder_id)
+
+        self.assertEqual(
+            [
+                {
+                    "status": "CAN_RETRY",
+                    "ext": "tsv",
+                    "error_messages": ["Combinator failed"],
+                    "referenced_builder_errors": [
+                        {
+                            "builder_id": "builder-a",
+                            "builder_name": "Builder A",
+                            "builder_model": "wp1.selection.models.simple",
+                            "message": "Referenced builder Builder A failed",
+                            "reason": "failed",
+                            "status": "FAILED",
+                        }
+                    ],
+                }
+            ],
+            actual,
+        )
 
     @patch("wp1.logic.builder.zimfarm.create_or_update_zimfarm_schedule")
     @patch("wp1.logic.builder.zimfarm.request_zimfarm_task")

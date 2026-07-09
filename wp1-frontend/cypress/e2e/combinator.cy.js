@@ -235,6 +235,18 @@ describe('the combinator builder page', () => {
       it('disables the retry button', () => {
         cy.get('.materialize-error .btn').should('have.attr', 'disabled');
       });
+
+      it('links to the failed referenced builder', () => {
+        cy.get('.materialize-error').contains(
+          'This Combinator could not be created because one or more referenced lists need attention.'
+        );
+        cy.get('.materialize-error a')
+          .contains('Failed Builder (failed-builder)')
+          .should('have.attr', 'href', '#/selections/simple/failed-builder');
+        cy.get('.materialize-error').contains(
+          'Open this list, fix the failed selection, then update this Combinator.'
+        );
+      });
     });
 
     describe('when the builder has retryable errors', () => {

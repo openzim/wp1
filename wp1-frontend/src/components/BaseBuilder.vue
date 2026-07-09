@@ -33,13 +33,41 @@
             </h4>
             <div
               v-for="item in builder.selection_errors"
-              v-bind:key="item.error_messages[0]"
+              v-bind:key="materializeErrorKey(item)"
             >
               <div>
                 The following errors occurred when creating the .{{ item.ext }}
                 version:
               </div>
-              <ul class="materialize-error-list">
+              <div
+                v-if="hasReferencedBuilderErrors(item)"
+                class="referenced-builder-errors"
+              >
+                <p>
+                  This Combinator could not be created because one or more
+                  referenced lists need attention.
+                </p>
+                <ul class="materialize-error-list">
+                  <li
+                    v-for="error in item.referenced_builder_errors"
+                    v-bind:key="referencedBuilderErrorKey(error)"
+                  >
+                    <router-link
+                      v-if="referencedBuilderPath(error)"
+                      class="referenced-builder-link"
+                      :to="referencedBuilderPath(error)"
+                    >
+                      {{ referencedBuilderLabel(error) }}
+                    </router-link>
+                    <span v-else>{{ referencedBuilderLabel(error) }}</span>
+                    <span>: {{ referencedBuilderReason(error) }}</span>
+                    <div v-if="error.action" class="referenced-builder-action">
+                      {{ error.action }}
+                    </div>
+                  </li>
+                </ul>
+              </div>
+              <ul v-else class="materialize-error-list">
                 <li v-for="msg in item.error_messages" v-bind:key="msg">
                   {{ msg }}
                 </li>
@@ -268,6 +296,37 @@ export default {
     },
   },
   methods: {
+    materializeErrorKey: function (item) {
+      const messages = item.error_messages || [];
+      return `${item.ext}:${item.status}:${messages[0] || ''}`;
+    },
+    hasReferencedBuilderErrors: function (item) {
+      return (
+        item.referenced_builder_errors &&
+        item.referenced_builder_errors.length > 0
+      );
+    },
+    referencedBuilderErrorKey: function (error) {
+      return `${error.builder_id || ''}:${error.message || ''}`;
+    },
+    referencedBuilderPath: function (error) {
+      if (!error.builder_id || !error.builder_model) {
+        return null;
+      }
+
+      const fragments = error.builder_model.split('.');
+      const modelFragment = fragments[fragments.length - 1];
+      return { path: `/selections/${modelFragment}/${error.builder_id}` };
+    },
+    referencedBuilderLabel: function (error) {
+      if (error.builder_name && error.builder_id) {
+        return `${error.builder_name} (${error.builder_id})`;
+      }
+      return error.builder_name || error.builder_id || 'Referenced list';
+    },
+    referencedBuilderReason: function (error) {
+      return error.reason || error.message || 'needs attention';
+    },
     getWikiProjects: async function () {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/sites/`);
       var data = await response.json();
@@ -388,6 +447,22 @@ export default {
 .materialize-error {
   background-color: pink;
 }
+
+.referenced-builder-link,
+.referenced-builder-link:visited,
+.referenced-builder-link:active,
+.referenced-builder-link:focus {
+  color: #0063cc !important;
+}
+
+.referenced-builder-link:hover {
+  color: #004a99 !important;
+}
+
+.referenced-builder-action {
+  margin-top: 0.25rem;
+}
+
 .loader {
   margin-left: 1rem;
 }

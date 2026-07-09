@@ -188,7 +188,11 @@ def set_error_messages(selection: Selection, e: Exception) -> None:
     # Use __cause__ because we can use '... from e' expressions to either set or suppress the cause.
     if e.__cause__:
         messages.append(str(e.__cause__))
-    selection.s_error_messages = json.dumps({"error_messages": messages})
+    error_data = {"error_messages": messages}
+    extra = getattr(e, "extra", None)
+    if isinstance(extra, dict):
+        error_data.update(extra)
+    selection.s_error_messages = json.dumps(error_data)
 
 
 def update_zimfarm_task(
