@@ -569,7 +569,13 @@ export default {
         return;
       }
 
-      this.deleteImpact = await response.json();
+      try {
+        this.deleteImpact = await response.json();
+      } catch (e) {
+        this.deleteSuccess = false;
+        this.errors = 'Could not check delete impact. Please try again.';
+        return;
+      }
       this.deleteCombinatorActions = {};
       this.deleteConfirmName = '';
       this.showDeleteDialog = true;

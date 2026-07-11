@@ -7,6 +7,7 @@ import attr
 from wp1.base_db_test import BaseWpOneDbTest
 from wp1.environment import Environment
 from wp1.exceptions import (
+    BuilderDeleteConfirmationError,
     InvalidZimTitleError,
     ObjectNotFoundError,
     UserNotAuthorizedError,
@@ -1116,7 +1117,7 @@ class BuilderTest(BaseWpOneDbTest):
     def test_delete_builder_name_confirmation_mismatch(self):
         self._insert_builder_record("target-builder", "Target Builder")
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(BuilderDeleteConfirmationError):
             logic_builder.delete_builder(
                 self.wp10db,
                 "1234",

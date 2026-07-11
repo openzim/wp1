@@ -23,7 +23,12 @@ from wp1.constants import (
 )
 from wp1.credentials import CREDENTIALS, ENV
 from wp1.environment import Environment
-from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError
+from wp1.exceptions import (
+    BuilderDeleteConfirmationError,
+    ObjectNotFoundError,
+    UserNotAuthorizedError,
+    ZimFarmError,
+)
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
 from wp1.models.wp10.zim_file import ZimTask
@@ -429,7 +434,7 @@ def delete_builder(
     _assert_builder_owner(builder, user_id)
 
     if confirm_builder_name is not None and confirm_builder_name != builder.name:
-        raise ValueError("Builder name confirmation did not match")
+        raise BuilderDeleteConfirmationError("Builder name confirmation did not match")
 
     redis = redis_connect()
 

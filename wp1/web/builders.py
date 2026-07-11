@@ -11,6 +11,7 @@ from wp1 import queues
 from wp1.constants import EXT_TO_CONTENT_TYPE
 from wp1.credentials import CREDENTIALS, ENV
 from wp1.exceptions import (
+    BuilderDeleteConfirmationError,
     InvalidZimDescriptionError,
     InvalidZimFlavourError,
     InvalidZimLongDescriptionError,
@@ -177,7 +178,7 @@ def delete_builder(builder_id):
         flask.abort(403)
     except ObjectNotFoundError:
         flask.abort(404)
-    except ValueError as e:
+    except BuilderDeleteConfirmationError as e:
         return flask.jsonify({"error_messages": [str(e)]}), 400
 
     if not status["db_delete_success"]:
