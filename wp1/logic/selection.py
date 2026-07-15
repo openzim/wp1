@@ -151,13 +151,20 @@ def delete_keys_from_storage(keys: bytes | list[bytes]) -> bool:
         if isinstance(key, str):
             raise ValueError("Expected keys to all be bytes, not str")
 
-    s3 = connect_storage()
-    resp = s3.bucket.delete_objects(
-        Delete={
-            "Objects": [{"Key": html.escape(k.decode("utf-8"))} for k in keys],
-            "Quiet": True,
-        }
-    )
+    if not keys:
+        return True
+
+    try:
+        s3 = connect_storage()
+        resp = s3.bucket.delete_objects(
+            Delete={
+                "Objects": [{"Key": html.escape(k.decode("utf-8"))} for k in keys],
+                "Quiet": True,
+            }
+        )
+    except Exception:
+        logger.warning("Failed to delete keys from storage", exc_info=True)
+        return False
 
     fully_successful = True
 

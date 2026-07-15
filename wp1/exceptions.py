@@ -121,5 +121,9 @@ class UserNotAuthorizedError(Wp1Error):
     pass
 
 
+class BuilderDeleteConfirmationError(Wp1Error):
+    pass
+
+
 class Wp1ScoreProcessingError(Wp1Error):
     pass
