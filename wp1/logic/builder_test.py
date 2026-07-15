@@ -3,6 +3,7 @@ import json
 from unittest.mock import ANY, MagicMock, call, patch
 
 import attr
+from redis.exceptions import RedisError
 
 from wp1.base_db_test import BaseWpOneDbTest
 from wp1.environment import Environment
@@ -231,6 +232,16 @@ class BuilderTest(BaseWpOneDbTest):
         if row is None:
             return None
         return json.loads(row["b_params"].decode("utf-8"))
+
+    def _get_builder_updated_at(self, builder_id):
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "SELECT b_updated_at FROM builders WHERE b_id = %s", (builder_id,)
+            )
+            row = cursor.fetchone()
+        if row is None:
+            return None
+        return row["b_updated_at"]
 
     def _insert_zim_schedule(
         self,
@@ -974,6 +985,62 @@ class BuilderTest(BaseWpOneDbTest):
             ],
             affected,
         )
+
+    @patch("wp1.logic.builder.time.strftime", return_value="20200102030405")
+    @patch("wp1.logic.builder.queues.enqueue_materialize")
+    def test_rebuild_referencing_combinators_enqueues_and_marks_pending(
+        self, mock_enqueue, mock_strftime
+    ):
+        self._insert_builder_record("target-builder", "Target Builder")
+        self._insert_builder_record("other-builder", "Other Builder")
+        self._insert_builder_record(
+            "combo-keep",
+            "Keep Combo",
+            model="wp1.selection.models.combinator",
+            params={
+                "include": {
+                    "builders": ["target-builder", "other-builder"],
+                    "operation": "union",
+                },
+                "exclude": {"builders": [], "operation": "union"},
+            },
+        )
+        target_builder = logic_builder.get_builder(self.wp10db, "target-builder")
+
+        actual = logic_builder._rebuild_referencing_combinators(
+            MagicMock(), self.wp10db, target_builder
+        )
+
+        self.assertEqual(["combo-keep"], actual)
+        self.assertEqual(b"20200102030405", self._get_builder_updated_at(b"combo-keep"))
+        mock_enqueue.assert_called_once()
+        mock_strftime.assert_called_once()
+
+    @patch("wp1.logic.builder.time.strftime", return_value="20200102030405")
+    @patch("wp1.logic.builder.queues.enqueue_materialize")
+    def test_rebuild_referencing_combinators_skips_pending_mark_on_enqueue_error(
+        self, mock_enqueue, mock_strftime
+    ):
+        mock_enqueue.side_effect = RedisError("Redis unavailable")
+        self._insert_builder_record("target-builder", "Target Builder")
+        self._insert_builder_record(
+            "combo-keep",
+            "Keep Combo",
+            model="wp1.selection.models.combinator",
+            params={
+                "include": {"builders": ["target-builder"], "operation": "union"},
+                "exclude": {"builders": [], "operation": "union"},
+            },
+        )
+        target_builder = logic_builder.get_builder(self.wp10db, "target-builder")
+
+        actual = logic_builder._rebuild_referencing_combinators(
+            MagicMock(), self.wp10db, target_builder
+        )
+
+        self.assertEqual([], actual)
+        self.assertEqual(b"20191225044444", self._get_builder_updated_at(b"combo-keep"))
+        mock_strftime.assert_not_called()
 
     @patch("wp1.logic.builder.queues.enqueue_materialize")
     @patch("wp1.logic.builder.queues.cancel_scheduled_job")

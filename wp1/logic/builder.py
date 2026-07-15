@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib
 import json
 import logging
+import time
 from typing import TYPE_CHECKING, Any
 
 import attr
@@ -10,7 +11,7 @@ from dateutil.relativedelta import relativedelta
 from kiwixstorage import KiwixStorage
 from pymysql.connections import Connection
 from redis import Redis
-
+from redis.exceptions import RedisError
 import wp1.logic.selection as logic_selection
 import wp1.logic.util as logic_util
 import wp1.logic.zim_files as logic_zim_tasks
@@ -310,9 +311,7 @@ def _update_builder_params(
     return rowcount > 0
 
 
-def _enqueue_combinator_materializations(
-    redis: Redis, combinators: list[Builder]
-) -> list[str]:
+def _enqueue_combinator_rebuilds(redis: Redis, combinators: list[Builder]) -> list[str]:
     combinator_cls = None
     enqueued_combinator_ids = []
     for combinator in combinators:
@@ -322,6 +321,45 @@ def _enqueue_combinator_materializations(
             redis, combinator_cls, combinator, "text/tab-separated-values"
         )
         enqueued_combinator_ids.append(combinator.id)
+
+    return enqueued_combinator_ids
+
+
+def _rebuild_referencing_combinators(
+    redis: Redis, wp10db: Connection, builder: Builder
+) -> list[str]:
+    referencing_records = _find_referencing_combinators(
+        wp10db, builder.user_id, builder.id
+    )
+
+    enqueued_combinator_ids = []
+    with wp10db.cursor() as cursor:
+        for record in referencing_records:
+            combinator = record["builder"]
+            try:
+                enqueued_combinator_ids.extend(
+                    _enqueue_combinator_rebuilds(redis, [combinator])
+                )
+            except RedisError:
+                logger.exception(
+                    "Could not enqueue dependent Combinator rebuild for builder id=%s",
+                    combinator.b_id,
+                )
+                continue
+
+            # The list UI treats builders newer than their latest selection as pending.
+            cursor.execute(
+                """UPDATE builders
+               SET b_updated_at = %s
+               WHERE b_id = %s AND b_user_id = %s
+            """,
+                (
+                    time.strftime(TS_FORMAT_WP10, time.gmtime()).encode("utf-8"),
+                    combinator.b_id,
+                    combinator.b_user_id,
+                ),
+            )
+    wp10db.commit()
 
     return enqueued_combinator_ids
 
@@ -478,9 +516,7 @@ def delete_builder(
         if changed and _update_builder_params(wp10db, record["builder"], params):
             updated_combinators.append(record["builder"])
 
-    updated_combinator_ids = _enqueue_combinator_materializations(
-        redis, updated_combinators
-    )
+    updated_combinator_ids = _enqueue_combinator_rebuilds(redis, updated_combinators)
 
     status.update(
         {
@@ -554,6 +590,8 @@ def materialize_builder(
             # version was updated, because that indicates that the ZIM file
             # was never requested or errored and should remain in that state.
             auto_handle_zim_generation(redis, wp10db, builder.b_id)
+        if content_type == "text/tab-separated-values" and not is_meta_builder(builder):
+            _rebuild_referencing_combinators(redis, wp10db, builder)
     finally:
         if should_close:
             wp10db.close()
