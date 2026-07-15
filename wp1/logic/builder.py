@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib
 import json
 import logging
+import time
 from typing import TYPE_CHECKING, Any
 
 import attr
@@ -10,7 +11,7 @@ from dateutil.relativedelta import relativedelta
 from kiwixstorage import KiwixStorage
 from pymysql.connections import Connection
 from redis import Redis
-
+from redis.exceptions import RedisError
 import wp1.logic.selection as logic_selection
 import wp1.logic.util as logic_util
 import wp1.logic.zim_files as logic_zim_tasks
@@ -310,26 +311,6 @@ def _update_builder_params(
     return rowcount > 0
 
 
-def _mark_combinator_pending_rebuild(wp10db: Connection, combinator: Builder) -> bool:
-    # The list UI treats builders newer than their latest selection as pending.
-    combinator = attr.evolve(combinator)
-    combinator.set_updated_at_now()
-    if combinator.b_id is None:
-        raise ValueError("Cannot update combinator without b_id")
-
-    with wp10db.cursor() as cursor:
-        cursor.execute(
-            """UPDATE builders
-           SET b_updated_at = %s
-           WHERE b_id = %s AND b_user_id = %s
-        """,
-            (combinator.b_updated_at, combinator.b_id, combinator.b_user_id),
-        )
-        rowcount = cursor.rowcount
-    wp10db.commit()
-    return rowcount > 0
-
-
 def _enqueue_combinator_rebuilds(redis: Redis, combinators: list[Builder]) -> list[str]:
     combinator_cls = None
     enqueued_combinator_ids = []
@@ -352,12 +333,33 @@ def _rebuild_referencing_combinators(
     )
 
     enqueued_combinator_ids = []
-    for record in referencing_records:
-        combinator = record["builder"]
-        enqueued_combinator_ids.extend(
-            _enqueue_combinator_rebuilds(redis, [combinator])
-        )
-        _mark_combinator_pending_rebuild(wp10db, combinator)
+    with wp10db.cursor() as cursor:
+        for record in referencing_records:
+            combinator = record["builder"]
+            try:
+                enqueued_combinator_ids.extend(
+                    _enqueue_combinator_rebuilds(redis, [combinator])
+                )
+            except RedisError:
+                logger.exception(
+                    "Could not enqueue dependent Combinator rebuild for builder id=%s",
+                    combinator.b_id,
+                )
+                continue
+
+            # The list UI treats builders newer than their latest selection as pending.
+            cursor.execute(
+                """UPDATE builders
+               SET b_updated_at = %s
+               WHERE b_id = %s AND b_user_id = %s
+            """,
+                (
+                    time.strftime(TS_FORMAT_WP10, time.gmtime()).encode("utf-8"),
+                    combinator.b_id,
+                    combinator.b_user_id,
+                ),
+            )
+    wp10db.commit()
 
     return enqueued_combinator_ids
 
@@ -589,13 +591,7 @@ def materialize_builder(
             # was never requested or errored and should remain in that state.
             auto_handle_zim_generation(redis, wp10db, builder.b_id)
         if content_type == "text/tab-separated-values" and not is_meta_builder(builder):
-            try:
-                _rebuild_referencing_combinators(redis, wp10db, builder)
-            except Exception:
-                logger.exception(
-                    "Could not enqueue dependent Combinator rebuilds for builder id=%s",
-                    builder.b_id,
-                )
+            _rebuild_referencing_combinators(redis, wp10db, builder)
     finally:
         if should_close:
             wp10db.close()
