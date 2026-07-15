@@ -128,6 +128,25 @@ class Builder(MetaBuilder):
         project = params["project"]
         builder_id = params.get("builder_id")
 
+        exclude_builder_ids = set(exclude_builders)
+        overlapping_builder_ids = [
+            builder_id
+            for builder_id in include_builders
+            if builder_id in exclude_builder_ids
+        ]
+        if overlapping_builder_ids:
+            overlapping_labels = [
+                logic_builder.builder_label_by_id(wp10db, builder_id)
+                for builder_id in overlapping_builder_ids
+            ]
+            errors.append(
+                "Builders cannot be both included and excluded: "
+                + ", ".join(overlapping_labels)
+            )
+
+        if errors:
+            return ([], [], errors)
+
         referenced_ids = set(include_builders + exclude_builders)
 
         if builder_id is not None and logic_util.as_text(builder_id) in referenced_ids:

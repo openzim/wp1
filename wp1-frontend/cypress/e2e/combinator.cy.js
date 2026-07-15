@@ -32,6 +32,96 @@ describe('the combinator builder page', () => {
       );
     });
 
+    it('sorts builders alphabetically in add dropdowns', () => {
+      cy.intercept('v1/selection/simple/lists', {
+        body: {
+          builders: [
+            {
+              id: 'zeta-ready',
+              name: 'Zeta Ready',
+              project: 'en.wikipedia.org',
+              model: 'wp1.selection.models.simple',
+              s_status: 'OK',
+              s_url: 'https://www.example.fake/zeta-ready.tsv',
+            },
+            {
+              id: 'alpha-ready',
+              name: 'Alpha Ready',
+              project: 'en.wikipedia.org',
+              model: 'wp1.selection.models.simple',
+              s_status: 'OK',
+              s_url: 'https://www.example.fake/alpha-ready.tsv',
+            },
+            {
+              id: 'beta-ready',
+              name: 'Beta Ready',
+              project: 'en.wikipedia.org',
+              model: 'wp1.selection.models.sparql',
+              s_status: 'OK',
+              s_url: 'https://www.example.fake/beta-ready.tsv',
+            },
+          ],
+        },
+      }).as('sortedLists');
+
+      cy.visit('/#/selections/combinator');
+      cy.wait('@sortedLists');
+
+      cy.get('#include-builder-select option').then((options) => {
+        const labels = [...options]
+          .map((option) => option.text.trim())
+          .filter((label) => label !== 'Select a builder to add');
+        expect(labels).to.deep.equal([
+          'Alpha Ready (Simple, ready)',
+          'Beta Ready (SPARQL, ready)',
+          'Zeta Ready (Simple, ready)',
+        ]);
+      });
+      cy.get('#exclude-builder-select option').then((options) => {
+        const labels = [...options]
+          .map((option) => option.text.trim())
+          .filter((label) => label !== 'Select a builder to add');
+        expect(labels).to.deep.equal([
+          'Alpha Ready (Simple, ready)',
+          'Beta Ready (SPARQL, ready)',
+          'Zeta Ready (Simple, ready)',
+        ]);
+      });
+    });
+
+    it('does not offer builders already selected in the other group', () => {
+      cy.visit('/#/selections/combinator');
+      cy.wait('@lists');
+
+      cy.get('#include-builder-select').select('simple-ready');
+      cy.get('#add-include-builder').click();
+      cy.get('#exclude-builder-select option').should(
+        'not.contain',
+        'Simple Ready'
+      );
+
+      cy.get('#exclude-builder-select').select('sparql-ready');
+      cy.get('#add-exclude-builder').click();
+      cy.get('#include-builder-select option').should(
+        'not.contain',
+        'SPARQL Ready'
+      );
+    });
+
+    it('hides no eligible builders message after adding all include builders', () => {
+      cy.visit('/#/selections/combinator');
+      cy.wait('@lists');
+
+      cy.get('#include-builder-select').select('simple-ready');
+      cy.get('#add-include-builder').click();
+      cy.get('#include-builder-select').select('sparql-ready');
+      cy.get('#add-include-builder').click();
+
+      cy.get('#include-items .alert-warning').should('not.exist');
+      cy.get('#include-builder-select').should('be.disabled');
+      cy.get('#exclude-builder-select').should('be.disabled');
+    });
+
     it('displays builder loading errors', () => {
       cy.intercept('v1/selection/simple/lists', {
         statusCode: 500,
@@ -77,6 +167,8 @@ describe('the combinator builder page', () => {
           'No eligible builders are available for en.wikipedia.org.'
         );
       cy.get('#include-items .alert-danger').should('not.exist');
+      cy.get('#include-builder-select').should('be.disabled');
+      cy.get('#exclude-builder-select').should('be.disabled');
       cy.contains('Unable to load builders. Please try again later.').should(
         'not.exist'
       );
@@ -123,6 +215,34 @@ describe('the combinator builder page', () => {
       cy.get('.errors').contains(
         "Builder 'missing-builder' no longer exists. Please remove it from this combinator."
       );
+      cy.contains('Combinator configuration is not valid').should('not.exist');
+    });
+
+    it('clears backend validation errors before frontend validation', () => {
+      cy.visit('/#/selections/combinator');
+      cy.wait('@lists');
+
+      cy.get('#listName > .form-control').click().type('Combined List');
+      cy.get('#include-builder-select').select('simple-ready');
+      cy.get('#add-include-builder').click();
+      cy.intercept('POST', 'v1/builders/', {
+        fixture: 'save_combinator_failure.json',
+      }).as('createBuilderFailure');
+      cy.get('#saveListButton').click();
+
+      cy.wait('@createBuilderFailure');
+      cy.get('.errors').contains(
+        "Builder 'missing-builder' no longer exists. Please remove it from this combinator."
+      );
+
+      cy.get('#include-builders .remove-builder').click();
+      cy.get('#saveListButton').click();
+
+      cy.contains(
+        '.errors',
+        "Builder 'missing-builder' no longer exists. Please remove it from this combinator."
+      ).should('not.exist');
+      cy.get('#include-items .invalid-feedback').should('be.visible');
     });
 
     it('sends correct create payload to the API', () => {

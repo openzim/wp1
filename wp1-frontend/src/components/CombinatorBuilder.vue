@@ -51,6 +51,9 @@
                   v-model="includeDropdown"
                   class="custom-select my-list"
                   :class="{ 'is-invalid': includeValidationMessage }"
+                  :disabled="
+                    availableIncludeBuilders(builder.project).length === 0
+                  "
                 >
                   <option value="">Select a builder to add</option>
                   <option
@@ -156,6 +159,9 @@
                   v-model="excludeDropdown"
                   class="custom-select my-list"
                   :class="{ 'is-invalid': excludeValidationMessage }"
+                  :disabled="
+                    availableExcludeBuilders(builder.project).length === 0
+                  "
                 >
                   <option value="">Select a builder to add</option>
                   <option
@@ -310,10 +316,12 @@ export default {
         }
 
         const data = await response.json();
-        this.allBuilders = data.builders.map((builder) => ({
-          ...builder,
-          id: String(builder.id),
-        }));
+        this.allBuilders = data.builders
+          .map((builder) => ({
+            ...builder,
+            id: String(builder.id),
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name));
       } catch (e) {
         this.buildersLoadError =
           'Unable to load builders. Please try again later.';
@@ -371,22 +379,23 @@ export default {
     },
     onValidationError: function (data) {
       this.invalidItems = data.items.invalid.join('\n');
-      this.includeValidationMessage = 'Combinator configuration is not valid';
-      this.setSelectValidity('includeSelect', this.includeValidationMessage);
     },
-    // TODO : just refactor into one function
     availableIncludeBuilders: function (project) {
-      return this.availableBuildersFor(project, this.includeBuilders);
+      return this.availableBuildersFor(project, this.selectedBuilderIds());
     },
     availableExcludeBuilders: function (project) {
-      return this.availableBuildersFor(project, this.excludeBuilders);
+      return this.availableBuildersFor(project, this.selectedBuilderIds());
     },
     hasNoEligibleBuilders: function (project) {
       return (
         this.buildersFetchFinished &&
         !this.buildersLoadError &&
+        this.includeBuilders.length === 0 &&
         this.availableIncludeBuilders(project).length === 0
       );
+    },
+    selectedBuilderIds: function () {
+      return [...this.includeBuilders, ...this.excludeBuilders];
     },
     availableBuildersFor: function (project, selectedIds) {
       return this.allBuilders.filter((builder) => {
@@ -450,11 +459,17 @@ export default {
     addSelectedBuilder: function (group) {
       var dropdownKey = `${group}Dropdown`;
       var buildersKey = `${group}Builders`;
+      var otherBuildersKey =
+        group === 'include' ? 'excludeBuilders' : 'includeBuilders';
       var validationKey = `${group}ValidationMessage`;
       var selectRef = `${group}Select`;
       var builderId = this[dropdownKey];
 
-      if (builderId && !this[buildersKey].includes(builderId)) {
+      if (
+        builderId &&
+        !this[buildersKey].includes(builderId) &&
+        !this[otherBuildersKey].includes(builderId)
+      ) {
         this[buildersKey].push(builderId);
         this[dropdownKey] = '';
         this[validationKey] = '';

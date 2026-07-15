@@ -57,7 +57,7 @@ class Builder:
     @property
     def label(self) -> str:
         if self.b_name is not None:
-            return f"{self.name} ({self.id})"
+            return f"{self.name}"
         return self.id
 
     @property
