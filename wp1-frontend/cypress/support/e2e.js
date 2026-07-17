@@ -16,5 +16,16 @@
 // Import commands.js using ES2015 syntax:
 import './commands';
 
+// The replag banner script is third-party code fetched live from wmflabs on
+// every page load. Upstream changes to it can throw in the test browser and
+// fail every spec (Cypress fails tests on any uncaught exception). No test
+// asserts on the banner, so serve an empty script instead.
+beforeEach(() => {
+  cy.intercept(
+    { url: 'https://tools-static.wmflabs.org/replag-embed/replag-embed.js' },
+    { body: '' }
+  );
+});
+
 // Alternatively you can use CommonJS syntax:
 // require('./commands')

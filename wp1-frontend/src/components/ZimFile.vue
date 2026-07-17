@@ -652,10 +652,14 @@ export default {
       if (!dateString) return 'Unknown';
       try {
         const date = new Date(dateString);
+        // The backend sends a date-only string (YYYY-MM-DD), which parses as
+        // UTC midnight. Format in UTC too, so the date doesn't shift for
+        // viewers in timezones behind UTC.
         return date.toLocaleDateString('en-US', {
           year: 'numeric',
           month: 'long',
           day: 'numeric',
+          timeZone: 'UTC',
         });
       } catch {
         return dateString;
