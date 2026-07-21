@@ -125,6 +125,22 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
         self.assertEqual(expected, actual)
 
     @patch("wp1.selection.models.combinator.logic_builder.get_builder")
+    def test_validate_same_builder_in_include_and_exclude(self, mock_get_builder):
+        mock_get_builder.return_value = _reference_builder()
+        params = dict(self.params)
+        params["include"] = {"builders": ["builder-a"], "operation": "union"}
+        params["exclude"] = {"builders": ["builder-a"], "operation": "union"}
+
+        actual = self.builder.validate(**params)
+
+        expected = (
+            [],
+            [],
+            ["Builders cannot be both included and excluded: Builder A"],
+        )
+        self.assertEqual(expected, actual)
+
+    @patch("wp1.selection.models.combinator.logic_builder.get_builder")
     def test_validate_ignores_empty_exclude_operation(self, mock_get_builder):
         mock_get_builder.return_value = _reference_builder()
         params = dict(self.params)
@@ -144,7 +160,7 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
             [],
             [],
             [
-                "Builder Builder A (builder-a) belongs to another user. You can only reference your own builders."
+                "Builder Builder A belongs to another user. You can only reference your own builders."
             ],
         )
         self.assertEqual(expected, actual)
@@ -159,7 +175,7 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
             [],
             [],
             [
-                "Builder Builder A (builder-a) belongs to project 'de.wikipedia.org'. All referenced builders must use the same project."
+                "Builder Builder A belongs to project 'de.wikipedia.org'. All referenced builders must use the same project."
             ],
         )
         self.assertEqual(expected, actual)
@@ -176,7 +192,7 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
             [],
             [],
             [
-                "Builder Builder A (builder-a) is a combinator. Combinators can only reference leaf builders such as Simple, SPARQL, PetScan, Book, or WikiProject."
+                "Builder Builder A is a combinator. Combinators can only reference leaf builders such as Simple, SPARQL, PetScan, Book, or WikiProject."
             ],
         )
         self.assertEqual(expected, actual)
@@ -279,8 +295,8 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
         self.assertIsInstance(context.exception.__cause__, Wp1MetaBuilderProcessError)
         self.assertEqual(3, mock_fetch_selection_data.call_count)
         message = str(context.exception)
-        self.assertIn("Builder A (builder-a) is not ready", message)
-        self.assertIn("Builder B (builder-b) is not ready", message)
+        self.assertIn("Builder A is not ready", message)
+        self.assertIn("Builder B is not ready", message)
         referenced_errors = context.exception.extra["referenced_builder_errors"]
         self.assertEqual(
             ["builder-a", "builder-b"],
@@ -336,8 +352,8 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
         self.assertIsInstance(context.exception.__cause__, Wp1MetaBuilderProcessError)
         self.assertEqual(3, mock_fetch_selection_data.call_count)
         message = str(context.exception)
-        self.assertIn("Builder B (builder-b) is not ready", message)
-        self.assertIn("Builder C (builder-c) latest selection failed", message)
+        self.assertIn("Builder B is not ready", message)
+        self.assertIn("Builder C latest selection failed", message)
         referenced_errors = context.exception.extra["referenced_builder_errors"]
         self.assertEqual(
             ["CAN_RETRY", "FAILED"],

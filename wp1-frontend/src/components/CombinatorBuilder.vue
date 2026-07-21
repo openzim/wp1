@@ -51,10 +51,13 @@
                   v-model="includeDropdown"
                   class="custom-select my-list"
                   :class="{ 'is-invalid': includeValidationMessage }"
+                  :disabled="
+                    availableSelectableBuilders(builder.project).length === 0
+                  "
                 >
                   <option value="">Select a builder to add</option>
                   <option
-                    v-for="item in availableIncludeBuilders(builder.project)"
+                    v-for="item in availableSelectableBuilders(builder.project)"
                     :key="'include-option-' + item.id"
                     :value="item.id"
                   >
@@ -156,10 +159,13 @@
                   v-model="excludeDropdown"
                   class="custom-select my-list"
                   :class="{ 'is-invalid': excludeValidationMessage }"
+                  :disabled="
+                    availableSelectableBuilders(builder.project).length === 0
+                  "
                 >
                   <option value="">Select a builder to add</option>
                   <option
-                    v-for="item in availableExcludeBuilders(builder.project)"
+                    v-for="item in availableSelectableBuilders(builder.project)"
                     :key="'exclude-option-' + item.id"
                     :value="item.id"
                   >
@@ -310,10 +316,12 @@ export default {
         }
 
         const data = await response.json();
-        this.allBuilders = data.builders.map((builder) => ({
-          ...builder,
-          id: String(builder.id),
-        }));
+        this.allBuilders = data.builders
+          .map((builder) => ({
+            ...builder,
+            id: String(builder.id),
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name));
       } catch (e) {
         this.buildersLoadError =
           'Unable to load builders. Please try again later.';
@@ -371,24 +379,17 @@ export default {
     },
     onValidationError: function (data) {
       this.invalidItems = data.items.invalid.join('\n');
-      this.includeValidationMessage = 'Combinator configuration is not valid';
-      this.setSelectValidity('includeSelect', this.includeValidationMessage);
-    },
-    // TODO : just refactor into one function
-    availableIncludeBuilders: function (project) {
-      return this.availableBuildersFor(project, this.includeBuilders);
-    },
-    availableExcludeBuilders: function (project) {
-      return this.availableBuildersFor(project, this.excludeBuilders);
     },
     hasNoEligibleBuilders: function (project) {
       return (
         this.buildersFetchFinished &&
         !this.buildersLoadError &&
-        this.availableIncludeBuilders(project).length === 0
+        this.includeBuilders.length === 0 &&
+        this.availableSelectableBuilders(project).length === 0
       );
     },
-    availableBuildersFor: function (project, selectedIds) {
+    availableSelectableBuilders: function (project) {
+      var selectedIds = [...this.includeBuilders, ...this.excludeBuilders];
       return this.allBuilders.filter((builder) => {
         return (
           builder.id !== this.currentBuilderId &&
@@ -450,11 +451,17 @@ export default {
     addSelectedBuilder: function (group) {
       var dropdownKey = `${group}Dropdown`;
       var buildersKey = `${group}Builders`;
+      var otherBuildersKey =
+        group === 'include' ? 'excludeBuilders' : 'includeBuilders';
       var validationKey = `${group}ValidationMessage`;
       var selectRef = `${group}Select`;
       var builderId = this[dropdownKey];
 
-      if (builderId && !this[buildersKey].includes(builderId)) {
+      if (
+        builderId &&
+        !this[buildersKey].includes(builderId) &&
+        !this[otherBuildersKey].includes(builderId)
+      ) {
         this[buildersKey].push(builderId);
         this[dropdownKey] = '';
         this[validationKey] = '';

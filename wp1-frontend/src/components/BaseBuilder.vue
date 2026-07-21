@@ -526,6 +526,8 @@ export default {
       }
     },
     onSubmit: async function () {
+      this.success = true;
+      this.errors = '';
       this.$emit('onBeforeSubmit', this.builder);
       const form = this.$refs.form;
       if (!form.checkValidity()) {
