@@ -52,12 +52,12 @@
                   class="custom-select my-list"
                   :class="{ 'is-invalid': includeValidationMessage }"
                   :disabled="
-                    availableIncludeBuilders(builder.project).length === 0
+                    availableSelectableBuilders(builder.project).length === 0
                   "
                 >
                   <option value="">Select a builder to add</option>
                   <option
-                    v-for="item in availableIncludeBuilders(builder.project)"
+                    v-for="item in availableSelectableBuilders(builder.project)"
                     :key="'include-option-' + item.id"
                     :value="item.id"
                   >
@@ -160,12 +160,12 @@
                   class="custom-select my-list"
                   :class="{ 'is-invalid': excludeValidationMessage }"
                   :disabled="
-                    availableExcludeBuilders(builder.project).length === 0
+                    availableSelectableBuilders(builder.project).length === 0
                   "
                 >
                   <option value="">Select a builder to add</option>
                   <option
-                    v-for="item in availableExcludeBuilders(builder.project)"
+                    v-for="item in availableSelectableBuilders(builder.project)"
                     :key="'exclude-option-' + item.id"
                     :value="item.id"
                   >
@@ -380,24 +380,16 @@ export default {
     onValidationError: function (data) {
       this.invalidItems = data.items.invalid.join('\n');
     },
-    availableIncludeBuilders: function (project) {
-      return this.availableBuildersFor(project, this.selectedBuilderIds());
-    },
-    availableExcludeBuilders: function (project) {
-      return this.availableBuildersFor(project, this.selectedBuilderIds());
-    },
     hasNoEligibleBuilders: function (project) {
       return (
         this.buildersFetchFinished &&
         !this.buildersLoadError &&
         this.includeBuilders.length === 0 &&
-        this.availableIncludeBuilders(project).length === 0
+        this.availableSelectableBuilders(project).length === 0
       );
     },
-    selectedBuilderIds: function () {
-      return [...this.includeBuilders, ...this.excludeBuilders];
-    },
-    availableBuildersFor: function (project, selectedIds) {
+    availableSelectableBuilders: function (project) {
+      var selectedIds = [...this.includeBuilders, ...this.excludeBuilders];
       return this.allBuilders.filter((builder) => {
         return (
           builder.id !== this.currentBuilderId &&
