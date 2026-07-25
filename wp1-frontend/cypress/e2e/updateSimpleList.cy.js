@@ -152,12 +152,12 @@ describe('the update simple list page', () => {
 
       describe('when update button clicked', () => {
         beforeEach(() => {
-          cy.intercept('POST', 'v1/builders/1', (req) => {
-            req.continue(() => {
-              return new Promise((resolve) => {
-                setTimeout(resolve, 4000);
-              });
-            });
+          // Reply with a delay (instead of passing the request through to a
+          // real backend) so the spinner stays visible to assert on.
+          cy.intercept('POST', 'v1/builders/1', {
+            delay: 4000,
+            statusCode: 200,
+            fixture: 'save_list_success.json',
           });
         });
 

@@ -1,6 +1,12 @@
 /// <reference types="Cypress" />
 
 describe('the home page', () => {
+  beforeEach(() => {
+    cy.intercept('v1/projects/Alien/table', {
+      fixture: 'project_table_alien.json',
+    });
+  });
+
   it('successfully loads', () => {
     cy.visit('/');
   });

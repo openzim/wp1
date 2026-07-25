@@ -1,11 +1,18 @@
 /// <reference types="Cypress" />
 
 describe('the article page', () => {
+  beforeEach(() => {
+    cy.intercept('v1/projects/Alien', { fixture: 'project_alien.json' });
+    cy.intercept('v1/projects/Alien/articles', {
+      fixture: 'articles_alien.json',
+    });
+  });
+
   it('filters by article name', () => {
     cy.visit('/#/project/Alien/articles');
-    cy.intercept('v1/projects/Alien/articles?articlePattern=Predator').as(
-      'predatorArticles'
-    );
+    cy.intercept('v1/projects/Alien/articles?articlePattern=Predator', {
+      fixture: 'articles_alien_predator.json',
+    }).as('predatorArticles');
 
     cy.contains('a', 'Filter by article name').click();
 
@@ -24,6 +31,15 @@ describe('the article page', () => {
   });
 
   it('displays article on wikipedia', () => {
+    // Serve a minimal stand-in for the Wikipedia article page, echoing the
+    // requested title, so the test doesn't depend on wikipedia.org.
+    cy.intercept('https://en.wikipedia.org/w/index.php*', (req) => {
+      const title = new URL(req.url).searchParams.get('title');
+      req.reply(
+        `<html><body><h1 id="firstHeading">${title}</h1></body></html>`
+      );
+    });
+
     cy.visit('/#/project/Alien/articles');
 
     cy.get('tr')
@@ -41,9 +57,9 @@ describe('the article page', () => {
   describe('custom pagination', () => {
     it('shows 50 rows in article-table', () => {
       cy.visit('/#/project/Alien/articles');
-      cy.intercept('/v1/projects/Alien/articles?page=2&numRows=50').as(
-        'Pagination'
-      );
+      cy.intercept('/v1/projects/Alien/articles?page=2&numRows=50', {
+        fixture: 'articles_alien_page2.json',
+      }).as('Pagination');
 
       cy.contains('Custom pagination').click();
 
@@ -66,7 +82,8 @@ describe('the article page', () => {
     it('displays articles with selected quality and importance', () => {
       cy.visit('/#/project/Alien/articles');
       cy.intercept(
-        'v1/projects/Alien/articles?importance=Top-Class&quality=B-Class'
+        'v1/projects/Alien/articles?importance=Top-Class&quality=B-Class',
+        { fixture: 'articles_alien_top_b.json' }
       ).as('TopBArticles');
 
       cy.contains('Select Quality/Importance').click();

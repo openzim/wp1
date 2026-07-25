@@ -1,0 +1,69 @@
+{
+  "articles": [
+    {
+      "article": "Alien: Covenant",
+      "article_history_link": "https://en.wikipedia.org/w/index.php?title=Alien%3A%20Covenant&action=history",
+      "article_link": "https://en.wikipedia.org/w/index.php?title=Alien%3A%20Covenant",
+      "article_talk": "Talk:Alien: Covenant",
+      "article_talk_link": "https://en.wikipedia.org/w/index.php?title=Talk:Alien%3A%20Covenant",
+      "importance": "Top-Class",
+      "importance_updated": "2016-04-10T08:23:25Z",
+      "quality": "B-Class",
+      "quality_updated": "2017-12-18T18:42:53Z"
+    },
+    {
+      "article": "Alien (creature in Alien franchise)",
+      "article_history_link": "https://en.wikipedia.org/w/index.php?title=Alien%20%28creature%20in%20Alien%20franchise%29&action=history",
+      "article_link": "https://en.wikipedia.org/w/index.php?title=Alien%20%28creature%20in%20Alien%20franchise%29",
+      "article_talk": "Talk:Alien (creature in Alien franchise)",
+      "article_talk_link": "https://en.wikipedia.org/w/index.php?title=Talk:Alien%20%28creature%20in%20Alien%20franchise%29",
+      "importance": "Top-Class",
+      "importance_updated": "2010-08-19T17:50:17Z",
+      "quality": "B-Class",
+      "quality_updated": "2010-08-19T17:50:17Z"
+    },
+    {
+      "article": "Aliens vs. Predator: Requiem",
+      "article_history_link": "https://en.wikipedia.org/w/index.php?title=Aliens%20vs.%20Predator%3A%20Requiem&action=history",
+      "article_link": "https://en.wikipedia.org/w/index.php?title=Aliens%20vs.%20Predator%3A%20Requiem",
+      "article_talk": "Talk:Aliens vs. Predator: Requiem",
+      "article_talk_link": "https://en.wikipedia.org/w/index.php?title=Talk:Aliens%20vs.%20Predator%3A%20Requiem",
+      "importance": "Top-Class",
+      "importance_updated": "2009-04-26T03:24:32Z",
+      "quality": "B-Class",
+      "quality_updated": "2012-10-24T12:32:51Z"
+    },
+    {
+      "article": "Predator (fictional species)",
+      "article_history_link": "https://en.wikipedia.org/w/index.php?title=Predator%20%28fictional%20species%29&action=history",
+      "article_link": "https://en.wikipedia.org/w/index.php?title=Predator%20%28fictional%20species%29",
+      "article_talk": "Talk:Predator (fictional species)",
+      "article_talk_link": "https://en.wikipedia.org/w/index.php?title=Talk:Predator%20%28fictional%20species%29",
+      "importance": "Top-Class",
+      "importance_updated": "2009-04-26T03:26:14Z",
+      "quality": "B-Class",
+      "quality_updated": "2009-03-10T02:23:30Z"
+    },
+    {
+      "article": "Predator (film)",
+      "article_history_link": "https://en.wikipedia.org/w/index.php?title=Predator%20%28film%29&action=history",
+      "article_link": "https://en.wikipedia.org/w/index.php?title=Predator%20%28film%29",
+      "article_talk": "Talk:Predator (film)",
+      "article_talk_link": "https://en.wikipedia.org/w/index.php?title=Talk:Predator%20%28film%29",
+      "importance": "Top-Class",
+      "importance_updated": "2009-04-26T03:23:22Z",
+      "quality": "B-Class",
+      "quality_updated": "2009-03-11T19:31:50Z"
+    }
+  ],
+  "pagination": {
+    "display": {
+      "end": 5,
+      "num_rows": 100,
+      "start": 1
+    },
+    "page": 1,
+    "total": 5,
+    "total_pages": 1
+  }
+}

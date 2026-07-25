@@ -176,19 +176,35 @@ Make sure your Pipenv is up to date.
 
 ### Running the frontend (Cypress) integration tests
 
-For frontend tests, you need to have a full working local development
-environment. You should follow the steps in 'Installation' above, as well as the
-steps in 'Development' below. Your frontend should be running on port 5173 (the
-default) and the backend should be on port 5000 (also the default).
+The Cypress tests are hermetic: every API call is stubbed with
+`cy.intercept` (see `wp1-frontend/cypress/support/e2e.js` for the default
+stubs and `wp1-frontend/cypress/fixtures/` for the response data), so you
+don't need the Python backend, the dev database, or any Docker services.
+All that's required is the frontend itself, served on port 5173. You can
+either use the Vite dev server:
 
-To run the tests:
+```bash
+cd wp1-frontend
+yarn dev
+```
+
+or, to match CI exactly, the built bundle:
+
+```bash
+cd wp1-frontend
+yarn build --mode staging
+python3 -m http.server 5173 --directory dist/
+```
+
+Then, in another terminal, run the tests:
 
 ```bash
 cd wp1-frontend
 $(yarn bin)/cypress run
 ```
 
-Then follow the GUI prompts to run "Electron E2E tests".
+Or use `$(yarn bin)/cypress open` for the interactive GUI, where you can
+follow the prompts to run "Electron E2E tests".
 
 # Development
 

@@ -23,7 +23,7 @@ describe('the create WikiProject builder page', () => {
     it('validates input on clicking save', () => {
       cy.get('#saveListButton').click();
       cy.get('#listName > .invalid-feedback').should('be.visible');
-      cy.get('#lists .invalid-feedback').should('be.visible')
+      cy.get('#lists .invalid-feedback').should('be.visible');
       cy.get('#include-items').find('.invalid-feedback').should('be.visible');
     });
 
@@ -42,12 +42,15 @@ describe('the create WikiProject builder page', () => {
           statusCode: 200,
           fixture: 'save_wikiproject_failure.json',
         });
-    });
+      });
       cy.get('#include-items').type('Fake Project\n');
-      cy.get('#include-projects').children().eq(0).should('contain.text', 'Fake Project');
+      cy.get('#include-projects')
+        .children()
+        .eq(0)
+        .should('contain.text', 'Fake Project');
       cy.get('#invalid_articles > .form-control').should(
         'have.value',
-        'Fake Project',
+        'Fake Project'
       );
     });
 
@@ -79,24 +82,28 @@ describe('the create WikiProject builder page', () => {
 
     describe('when save button clicked', () => {
       beforeEach(() => {
-        cy.intercept('v1/builders/', (req) => {
-          req.continue(() => {
-            return new Promise((resolve) => {
-              setTimeout(resolve, 4000);
-            });
-          });
+        // Reply with a delay (instead of passing the request through to a
+        // real backend) so the spinner stays visible to assert on.
+        cy.intercept('v1/builders/', {
+          delay: 4000,
+          statusCode: 200,
+          fixture: 'save_list_success.json',
         });
       });
 
       it('shows spinner', () => {
         cy.get('#listName > .form-control').click();
         cy.get('#listName > .form-control').type('List Name');
-        
+
         cy.get('#include-items').find('.search').type('Alien');
         cy.get('#include-items').find('.results').should('be.visible');
-        cy.get('#include-items').find('.results').children('li').eq(0).should('contain.text', 'Alien');
+        cy.get('#include-items')
+          .find('.results')
+          .children('li')
+          .eq(0)
+          .should('contain.text', 'Alien');
         cy.get('#include-items').find('.results').children('li').eq(0).click();
-        
+
         cy.get('#saveListButton').click();
         cy.get('#saveLoader').should('be.visible');
       });
@@ -104,12 +111,16 @@ describe('the create WikiProject builder page', () => {
       it('disables save button', () => {
         cy.get('#listName > .form-control').click();
         cy.get('#listName > .form-control').type('List Name');
-        
+
         cy.get('#include-items').find('.search').type('Alien');
         cy.get('#include-items').find('.results').should('be.visible');
-        cy.get('#include-items').find('.results').children('li').eq(0).should('contain.text', 'Alien');
+        cy.get('#include-items')
+          .find('.results')
+          .children('li')
+          .eq(0)
+          .should('contain.text', 'Alien');
         cy.get('#include-items').find('.results').children('li').eq(0).click();
-        
+
         cy.get('#saveListButton').click();
         cy.get('#saveListButton').should('have.attr', 'disabled');
       });
@@ -118,14 +129,18 @@ describe('the create WikiProject builder page', () => {
     it('redirects on saving valid project names', () => {
       cy.get('#listName > .form-control').click();
       cy.get('#listName > .form-control').type('List Name');
-      
+
       cy.get('#include-items').find('.search').type('Alien');
       cy.get('#include-items').find('.results').should('be.visible');
-      cy.get('#include-items').find('.results').children('li').eq(0).should('contain.text', 'Alien');
+      cy.get('#include-items')
+        .find('.results')
+        .children('li')
+        .eq(0)
+        .should('contain.text', 'Alien');
       cy.get('#include-items').find('.results').children('li').eq(0).click();
 
       cy.intercept('v1/builders/', { fixture: 'save_list_success.json' }).as(
-        'createBuilderSuccess',
+        'createBuilderSuccess'
       );
       cy.get('#saveListButton').click();
       cy.wait('@createBuilderSuccess');
@@ -135,19 +150,27 @@ describe('the create WikiProject builder page', () => {
     it('sends correct data to API', () => {
       cy.get('#listName > .form-control').click();
       cy.get('#listName > .form-control').type('List Name');
-      
+
       cy.get('#include-items').find('.search').type('Alien');
       cy.get('#include-items').find('.results').should('be.visible');
-      cy.get('#include-items').find('.results').children('li').eq(0).should('contain.text', 'Alien');
+      cy.get('#include-items')
+        .find('.results')
+        .children('li')
+        .eq(0)
+        .should('contain.text', 'Alien');
       cy.get('#include-items').find('.results').children('li').eq(0).click();
 
       cy.get('#exclude-items').find('.search').type('Barbados');
       cy.get('#exclude-items').find('.results').should('be.visible');
-      cy.get('#exclude-items').find('.results').children('li').eq(0).should('contain.text', 'Barbados');
+      cy.get('#exclude-items')
+        .find('.results')
+        .children('li')
+        .eq(0)
+        .should('contain.text', 'Barbados');
       cy.get('#exclude-items').find('.results').children('li').eq(0).click();
 
       cy.intercept('v1/builders/', { fixture: 'save_list_success.json' }).as(
-        'createBuilderSuccess',
+        'createBuilderSuccess'
       );
       cy.get('#saveListButton').click();
       cy.wait('@createBuilderSuccess').then((interception) => {

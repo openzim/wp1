@@ -1,6 +1,26 @@
 /// <reference types="Cypress" />
 
 describe('the project page', () => {
+  beforeEach(() => {
+    cy.intercept('v1/projects/Aesthetics', {
+      fixture: 'project_aesthetics.json',
+    });
+    cy.intercept('v1/projects/Aesthetics/table', {
+      fixture: 'project_table_aesthetics.json',
+    });
+    cy.intercept('v1/projects/Alien', { fixture: 'project_alien.json' });
+    cy.intercept('v1/projects/Alien/table', {
+      fixture: 'project_table_alien.json',
+    });
+    cy.intercept(
+      {
+        pathname: '/v1/projects/Alien/articles',
+        query: { importance: 'Top-Class', quality: 'FA-Class' },
+      },
+      { fixture: 'articles_alien_top_fa.json' }
+    );
+  });
+
   it('displays row and column labels in project-table', () => {
     cy.visit('/#/project/Aesthetics');
 
