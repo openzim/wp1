@@ -390,6 +390,34 @@ The `serve` command should print out the port to view the docs at, likely localh
 - Run the production database migrations in the worker container:
   - `sudo docker exec -ti -e PYTHONPATH=. wp1bot-workers yoyo -c /usr/src/app/db/production/yoyo.ini apply`
 
+# Rolling back production
+
+In addition to the moving `release` tag, every push to the `release`
+branch publishes each image with two immutable tags: `release-<n>`
+(where `<n>` is the run number of the publish workflow) and
+`sha-<git sha>`. The available versions for each image are listed on
+its GitHub packages page:
+
+- https://github.com/openzim/wp1/pkgs/container/wp1-workers/versions
+- https://github.com/openzim/wp1/pkgs/container/wp1-web/versions
+- https://github.com/openzim/wp1/pkgs/container/wp1-frontend/versions
+
+To roll back a bad deploy, log in to the production machine, then pull
+the previous version of each image and re-tag it locally as `release`
+(no registry login or push is required, the local tag is what
+docker compose uses):
+
+- `sudo docker pull ghcr.io/openzim/wp1-workers:release-41`
+- `sudo docker tag ghcr.io/openzim/wp1-workers:release-41 ghcr.io/openzim/wp1-workers:release`
+- Repeat for `wp1-web` and `wp1-frontend`, then recreate the containers:
+- `sudo docker compose up -d`
+
+Note that the next normal deploy (`docker pull ... :release`) rolls
+forward again. If the deploy being rolled back included database
+migrations, roll those back too:
+
+- `sudo docker exec -ti -e PYTHONPATH=. wp1bot-workers yoyo -c /usr/src/app/db/production/yoyo.ini rollback`
+
 # Pre-commit hooks
 
 This project is configured to use git pre-commit hooks managed by the
