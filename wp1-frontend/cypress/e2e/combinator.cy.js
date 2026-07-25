@@ -7,7 +7,7 @@ describe('the combinator builder page', () => {
       cy.intercept('v1/oauth/identify', { fixture: 'identity.json' }).as(
         'identity'
       );
-      cy.intercept('v1/selection/simple/lists', {
+      cy.intercept('v1/selection/lists', {
         fixture: 'combinator_lists.json',
       }).as('lists');
     });
@@ -33,7 +33,7 @@ describe('the combinator builder page', () => {
     });
 
     it('sorts builders alphabetically in add dropdowns', () => {
-      cy.intercept('v1/selection/simple/lists', {
+      cy.intercept('v1/selection/lists', {
         body: {
           builders: [
             {
@@ -123,7 +123,7 @@ describe('the combinator builder page', () => {
     });
 
     it('displays builder loading errors', () => {
-      cy.intercept('v1/selection/simple/lists', {
+      cy.intercept('v1/selection/lists', {
         statusCode: 500,
         body: {},
       }).as('listsFailure');
@@ -138,7 +138,7 @@ describe('the combinator builder page', () => {
     });
 
     it('displays a separate message when no eligible builders are available', () => {
-      cy.intercept('v1/selection/simple/lists', {
+      cy.intercept('v1/selection/lists', {
         body: {
           builders: [
             {

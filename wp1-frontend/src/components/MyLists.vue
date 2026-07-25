@@ -203,7 +203,7 @@ export default {
       }
 
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/selection/simple/lists`,
+        `${import.meta.env.VITE_API_URL}/selection/lists`,
         {
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',

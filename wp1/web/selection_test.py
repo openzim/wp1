@@ -169,6 +169,38 @@ class SelectionTest(BaseWebTestcase):
             rv = client.get("/v1/selection/simple/lists")
             self.assertEqual(self.expected_list_data, rv.get_json())
 
+    def test_get_list_data_lists_alias(self):
+        self.app = create_app()
+        with self.override_db(self.app), self.app.test_client() as client:
+            self._insert_builder(
+                (
+                    "1a-2b-3c-4d",
+                    "name",
+                    "1234",
+                    "project_name",
+                    "model",
+                    "20201225105544",
+                    "20201225105544",
+                    1,
+                )
+            )
+            self._insert_selection(
+                (
+                    1,
+                    "1a-2b-3c-4d",
+                    "text/tab-separated-values",
+                    "20201225105544",
+                    1,
+                    "object_key",
+                    "OK",
+                    None,
+                )
+            )
+            with client.session_transaction() as sess:
+                sess["user"] = self.USER
+            rv = client.get("/v1/selection/lists")
+            self.assertEqual(self.expected_list_data, rv.get_json())
+
     def test_list_with_multiple_selections(self):
         self.app = create_app()
         with self.override_db(self.app), self.app.test_client() as client:
