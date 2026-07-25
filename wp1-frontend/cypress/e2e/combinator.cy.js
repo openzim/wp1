@@ -33,7 +33,7 @@ describe('the combinator builder page', () => {
     });
 
     it('sorts builders alphabetically in add dropdowns', () => {
-      cy.intercept('v1/selection/simple/lists', {
+      cy.intercept('v1/selection/lists', {
         body: {
           builders: [
             {
