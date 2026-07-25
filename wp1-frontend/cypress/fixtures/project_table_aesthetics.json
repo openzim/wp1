@@ -1,0 +1,235 @@
+{
+  "table_data": {
+    "center_table": false,
+    "col_labels": {
+      "High-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:High-importance_Aesthetics_articles",
+        "text": "High"
+      },
+      "Low-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Low-importance_Aesthetics_articles",
+        "text": "Low"
+      },
+      "Mid-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Mid-importance_Aesthetics_articles",
+        "text": "Mid"
+      },
+      "NA-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:NA-importance_Aesthetics_articles",
+        "text": "NA"
+      },
+      "NotA-Class": "Other",
+      "Top-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Top-importance_Aesthetics_articles",
+        "text": "Top"
+      },
+      "Unassessed-Class": "No-Class",
+      "Unknown-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Unknown-importance_Aesthetics_articles",
+        "text": "???"
+      }
+    },
+    "col_totals": {
+      "High-Class": 40,
+      "Low-Class": 469,
+      "Mid-Class": 166,
+      "NA-Class": 136,
+      "Top-Class": 10,
+      "Unknown-Class": 100
+    },
+    "create_link": true,
+    "data": {
+      "Assessed-Class": {
+        "High-Class": 40,
+        "Low-Class": 469,
+        "Mid-Class": 166,
+        "NA-Class": 136,
+        "Top-Class": 10,
+        "Unknown-Class": 100
+      },
+      "B-Class": {
+        "High-Class": 12,
+        "Low-Class": 28,
+        "Mid-Class": 19,
+        "Top-Class": 7,
+        "Unknown-Class": 3
+      },
+      "C-Class": {
+        "High-Class": 10,
+        "Low-Class": 59,
+        "Mid-Class": 45,
+        "Top-Class": 2,
+        "Unknown-Class": 11
+      },
+      "Category-Class": {
+        "Mid-Class": 1,
+        "NA-Class": 115
+      },
+      "Disambig-Class": {
+        "NA-Class": 2
+      },
+      "File-Class": {
+        "NA-Class": 4
+      },
+      "GA-Class": {
+        "High-Class": 1,
+        "Low-Class": 5,
+        "Mid-Class": 3,
+        "Top-Class": 1
+      },
+      "List-Class": {
+        "High-Class": 1,
+        "Low-Class": 5,
+        "Mid-Class": 2,
+        "NA-Class": 1,
+        "Unknown-Class": 2
+      },
+      "NotA-Class": {
+        "NA-Class": 1
+      },
+      "Project-Class": {
+        "NA-Class": 2
+      },
+      "Redirect-Class": {
+        "NA-Class": 5
+      },
+      "Start-Class": {
+        "High-Class": 15,
+        "Low-Class": 194,
+        "Mid-Class": 66,
+        "NA-Class": 2,
+        "Unknown-Class": 57
+      },
+      "Stub-Class": {
+        "High-Class": 1,
+        "Low-Class": 178,
+        "Mid-Class": 30,
+        "NA-Class": 1,
+        "Unknown-Class": 27
+      },
+      "Template-Class": {
+        "NA-Class": 3
+      },
+      "Unassessed-Class": {}
+    },
+    "link_to_v2": true,
+    "ordered_cols": [
+      "Top-Class",
+      "High-Class",
+      "Mid-Class",
+      "Low-Class",
+      "NA-Class",
+      "Unknown-Class"
+    ],
+    "ordered_rows": [
+      "GA-Class",
+      "B-Class",
+      "C-Class",
+      "Start-Class",
+      "Stub-Class",
+      "List-Class",
+      "Category-Class",
+      "Disambig-Class",
+      "File-Class",
+      "Project-Class",
+      "Redirect-Class",
+      "Template-Class",
+      "NotA-Class",
+      "Assessed-Class"
+    ],
+    "project": "Aesthetics",
+    "project_display": "Aesthetics",
+    "row_labels": {
+      "Assessed-Class": "Assessed",
+      "B-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:B-Class_Aesthetics_articles",
+        "text": "B"
+      },
+      "C-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:C-Class_Aesthetics_articles",
+        "text": "C"
+      },
+      "Category-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Category-Class_Aesthetics_articles",
+        "text": "Category"
+      },
+      "Disambig-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Disambig-Class_Aesthetics_articles",
+        "text": "Disambig"
+      },
+      "FA-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:FA-Class_Aesthetics_articles",
+        "text": "FA"
+      },
+      "FL-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:FL-Class_Aesthetics_articles",
+        "text": "FL"
+      },
+      "File-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:File-Class_Aesthetics_articles",
+        "text": "File"
+      },
+      "GA-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:GA-Class_Aesthetics_articles",
+        "text": "GA"
+      },
+      "List-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:List-Class_Aesthetics_articles",
+        "text": "List"
+      },
+      "NA-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:NA-Class_aesthetics_articles",
+        "text": "NA"
+      },
+      "NotA-Class": "Other",
+      "Portal-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Portal-Class_Aesthetics_articles",
+        "text": "Portal"
+      },
+      "Project-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Project-Class_Aesthetics_articles",
+        "text": "Project"
+      },
+      "Redirect-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Redirect-Class_Aesthetics_articles",
+        "text": "Redirect"
+      },
+      "Start-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Start-Class_Aesthetics_articles",
+        "text": "Start"
+      },
+      "Stub-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Stub-Class_Aesthetics_articles",
+        "text": "Stub"
+      },
+      "Template-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Template-Class_Aesthetics_articles",
+        "text": "Template"
+      },
+      "Unassessed-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Unassessed_Aesthetics_articles",
+        "text": "Unassessed"
+      }
+    },
+    "row_totals": {
+      "Assessed-Class": 921,
+      "B-Class": 69,
+      "C-Class": 127,
+      "Category-Class": 116,
+      "Disambig-Class": 2,
+      "File-Class": 4,
+      "GA-Class": 10,
+      "List-Class": 11,
+      "NotA-Class": 1,
+      "Project-Class": 2,
+      "Redirect-Class": 5,
+      "Start-Class": 334,
+      "Stub-Class": 237,
+      "Template-Class": 3
+    },
+    "timestamp": 1583705001,
+    "title": "Aesthetics articles by quality and importance",
+    "total": 921,
+    "total_cols": 8
+  }
+}

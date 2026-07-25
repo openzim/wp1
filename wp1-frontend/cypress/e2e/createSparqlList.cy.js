@@ -124,12 +124,12 @@ describe('the create SPARQL builder page', () => {
 
     describe('when save button clicked', () => {
       beforeEach(() => {
-        cy.intercept('v1/builders/', (req) => {
-          req.continue(() => {
-            return new Promise((resolve) => {
-              setTimeout(resolve, 4000);
-            });
-          });
+        // Reply with a delay (instead of passing the request through to a
+        // real backend) so the spinner stays visible to assert on.
+        cy.intercept('v1/builders/', {
+          delay: 4000,
+          statusCode: 200,
+          fixture: 'save_sparql_success.json',
         });
       });
 

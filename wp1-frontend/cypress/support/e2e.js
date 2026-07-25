@@ -27,5 +27,30 @@ beforeEach(() => {
   );
 });
 
+// Default stubs for API endpoints that components fetch on nearly every
+// page, so that no test depends on the Python backend being up. The
+// responses mirror what the real backend returns when there is no login
+// session (the state CI used to run in). Specs override these with their
+// own cy.intercept calls where a test needs different data — intercepts
+// defined later (i.e. in the spec) take precedence over these.
+beforeEach(() => {
+  cy.intercept('v1/oauth/identify', { statusCode: 401, body: 'Unauthorized' });
+  cy.intercept('v1/oauth/email', { statusCode: 401, body: 'Unauthorized' });
+  cy.intercept('v1/selection/simple/lists', {
+    statusCode: 401,
+    body: 'Unauthorized',
+  });
+  cy.intercept('v1/builders/*', { statusCode: 401, body: 'Unauthorized' });
+  cy.intercept('v1/sites/', { fixture: 'sites.json' });
+  cy.intercept('v1/projects/count', { fixture: 'projects_count.json' });
+  cy.intercept('v1/projects/', { fixture: 'projects.json' });
+  cy.intercept('v1/projects/*/category_links', {
+    fixture: 'category_links_alien.json',
+  });
+  cy.intercept('v1/projects/*/category_links/sorted', {
+    fixture: 'category_links_sorted_alien.json',
+  });
+});
+
 // Alternatively you can use CommonJS syntax:
 // require('./commands')

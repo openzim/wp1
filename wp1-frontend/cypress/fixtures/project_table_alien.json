@@ -1,0 +1,243 @@
+{
+  "table_data": {
+    "center_table": false,
+    "col_labels": {
+      "High-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:High-importance_Alien_articles",
+        "text": "High"
+      },
+      "Low-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Low-importance_Alien_articles",
+        "text": "Low"
+      },
+      "Mid-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Mid-importance_Alien_articles",
+        "text": "Mid"
+      },
+      "NA-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:NA-importance_Alien_articles",
+        "text": "NA"
+      },
+      "NotA-Class": "Other",
+      "Top-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Top-importance_Alien_articles",
+        "text": "Top"
+      },
+      "Unassessed-Class": "No-Class",
+      "Unknown-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Unknown-importance_Alien_articles",
+        "text": "???"
+      }
+    },
+    "col_totals": {
+      "High-Class": 26,
+      "Low-Class": 44,
+      "Mid-Class": 25,
+      "NA-Class": 220,
+      "Top-Class": 15
+    },
+    "create_link": true,
+    "data": {
+      "Assessed-Class": {
+        "High-Class": 26,
+        "Low-Class": 44,
+        "Mid-Class": 25,
+        "NA-Class": 220,
+        "Top-Class": 15
+      },
+      "B-Class": {
+        "High-Class": 1,
+        "Mid-Class": 1,
+        "Top-Class": 5
+      },
+      "C-Class": {
+        "High-Class": 2,
+        "Low-Class": 4,
+        "Mid-Class": 5,
+        "Top-Class": 4
+      },
+      "Category-Class": {
+        "NA-Class": 57
+      },
+      "Disambig-Class": {
+        "Low-Class": 2,
+        "NA-Class": 3
+      },
+      "FA-Class": {
+        "Low-Class": 1,
+        "Top-Class": 2
+      },
+      "FL-Class": {
+        "High-Class": 1
+      },
+      "File-Class": {
+        "NA-Class": 55
+      },
+      "GA-Class": {
+        "High-Class": 1,
+        "Low-Class": 1,
+        "Mid-Class": 2,
+        "Top-Class": 3
+      },
+      "List-Class": {
+        "High-Class": 1,
+        "Low-Class": 3,
+        "Mid-Class": 3
+      },
+      "Project-Class": {
+        "NA-Class": 21
+      },
+      "Redirect-Class": {
+        "Low-Class": 3,
+        "NA-Class": 67
+      },
+      "Start-Class": {
+        "High-Class": 15,
+        "Low-Class": 21,
+        "Mid-Class": 10,
+        "Top-Class": 1
+      },
+      "Stub-Class": {
+        "High-Class": 5,
+        "Low-Class": 9,
+        "Mid-Class": 4
+      },
+      "Template-Class": {
+        "NA-Class": 17
+      },
+      "Unassessed-Class": {}
+    },
+    "link_to_v2": true,
+    "ordered_cols": [
+      "Top-Class",
+      "High-Class",
+      "Mid-Class",
+      "Low-Class",
+      "NA-Class"
+    ],
+    "ordered_rows": [
+      "FA-Class",
+      "FL-Class",
+      "GA-Class",
+      "B-Class",
+      "C-Class",
+      "Start-Class",
+      "Stub-Class",
+      "List-Class",
+      "Category-Class",
+      "Disambig-Class",
+      "File-Class",
+      "Project-Class",
+      "Redirect-Class",
+      "Template-Class",
+      "Assessed-Class"
+    ],
+    "project": "Alien",
+    "project_display": "Alien",
+    "row_labels": {
+      "A-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:A-Class_Alien_articles",
+        "text": "A"
+      },
+      "Assessed-Class": "Assessed",
+      "B-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:B-Class_Alien_articles",
+        "text": "B"
+      },
+      "C-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:C-Class_Alien_articles",
+        "text": "C"
+      },
+      "Category-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Category-Class_Alien_articles",
+        "text": "Category"
+      },
+      "Current-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Current-Class_Alien_articles",
+        "text": "Current"
+      },
+      "Disambig-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Disambig-Class_Alien_articles",
+        "text": "Disambig"
+      },
+      "FA-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:FA-Class_Alien_articles",
+        "text": "FA"
+      },
+      "FL-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:FL-Class_Alien_articles",
+        "text": "FL"
+      },
+      "File-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:File-Class_Alien_articles",
+        "text": "File"
+      },
+      "Future-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Future-Class_Alien_articles",
+        "text": "Future"
+      },
+      "GA-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:GA-Class_Alien_articles",
+        "text": "GA"
+      },
+      "List-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:List-Class_Alien_articles",
+        "text": "List"
+      },
+      "NA-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:NA-Class_Alien_articles",
+        "text": "NA"
+      },
+      "NotA-Class": "Other",
+      "Portal-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Portal-Class_Alien_articles",
+        "text": "Portal"
+      },
+      "Project-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Project-Class_Alien_articles",
+        "text": "Project"
+      },
+      "Redirect-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Redirect-Class_Alien_articles",
+        "text": "Redirect"
+      },
+      "Start-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Start-Class_Alien_articles",
+        "text": "Start"
+      },
+      "Stub-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Stub-Class_Alien_articles",
+        "text": "Stub"
+      },
+      "Template-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Template-Class_Alien_articles",
+        "text": "Template"
+      },
+      "Unassessed-Class": {
+        "href": "https://en.wikipedia.org/wiki/Category:Unassessed_Alien_articles",
+        "text": "Unassessed"
+      }
+    },
+    "row_totals": {
+      "Assessed-Class": 330,
+      "B-Class": 7,
+      "C-Class": 15,
+      "Category-Class": 57,
+      "Disambig-Class": 5,
+      "FA-Class": 3,
+      "FL-Class": 1,
+      "File-Class": 55,
+      "GA-Class": 7,
+      "List-Class": 7,
+      "Project-Class": 21,
+      "Redirect-Class": 70,
+      "Start-Class": 47,
+      "Stub-Class": 18,
+      "Template-Class": 17
+    },
+    "timestamp": 1583705014,
+    "title": "Alien articles by quality and importance",
+    "total": 330,
+    "total_cols": 7
+  }
+}
