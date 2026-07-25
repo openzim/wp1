@@ -2,6 +2,7 @@
 source = wp1/
 omit =
     *_test.py
+    */base_web_testcase.py
 
 [report]
 show_missing = True
