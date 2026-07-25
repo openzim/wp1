@@ -3,7 +3,7 @@
 describe('the user selection list page', () => {
   describe('when the user is logged in', () => {
     beforeEach(() => {
-      cy.intercept('v1/selection/simple/lists', {
+      cy.intercept('v1/selection/lists', {
         fixture: 'list_data.json',
       }).as('list');
       cy.intercept('v1/oauth/identify', { fixture: 'identity.json' }).as(

@@ -548,7 +548,7 @@ paths:
           description: 'The id of the Builder to request as ZIM file for.'
           schema:
             type: string
-  /selection/simple/lists:
+  /selection/lists:
     get:
       summary: 'Return list details from database'
       operationId: getLists
@@ -601,6 +601,15 @@ paths:
                         s_status:
                           type: string
                           description: 'An enum-like value that is either null (there is no meaningful status to report), FAILED (building the selection failed permanently), or CAN_RETRY (building the selection failed but can be retried).'
+  /selection/simple/lists:
+    get:
+      summary: 'Deprecated alias for /selection/lists'
+      description: 'Deprecated: despite the name, this returns builders of every model, not just simple ones. Use /selection/lists instead.'
+      operationId: getListsDeprecated
+      deprecated: true
+      responses:
+        200:
+          description: 'Successful operation. See /selection/lists for the response schema.'
 
 components:
   schemas:

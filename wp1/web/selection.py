@@ -9,6 +9,9 @@ from wp1.web.storage import get_storage
 selection = flask.Blueprint("selection", __name__)
 
 
+@selection.route("/lists")
+# Deprecated alias: this endpoint returns builders of every model, not
+# just simple ones. Kept for backwards compatibility.
 @selection.route("/simple/lists")
 @authenticate
 def get_list_data():

@@ -36,7 +36,7 @@ beforeEach(() => {
 beforeEach(() => {
   cy.intercept('v1/oauth/identify', { statusCode: 401, body: 'Unauthorized' });
   cy.intercept('v1/oauth/email', { statusCode: 401, body: 'Unauthorized' });
-  cy.intercept('v1/selection/simple/lists', {
+  cy.intercept('v1/selection/lists', {
     statusCode: 401,
     body: 'Unauthorized',
   });
