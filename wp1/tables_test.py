@@ -704,6 +704,56 @@ class TablesDbTest(BaseWpOneDbTest):
             self.wp10db.close = orig_close
 
 
+class TablesNullRatingsTest(unittest.TestCase):
+    # Stats as returned by get_project_stats for a project where some
+    # articles have a NULL quality or importance rating in the database.
+    stats = [
+        {"n": 3, "q": b"B-Class", "i": b"High-Class"},
+        {"n": 2, "q": b"B-Class", "i": None},
+        {"n": 1, "q": None, "i": b"Low-Class"},
+        {"n": 4, "q": b"Unassessed-Class", "i": b"Low-Class"},
+    ]
+
+    categories = {
+        "sort_qual": {
+            b"B-Class": 300,
+            tables.NOT_A_CLASS: 11,
+            tables.UNASSESSED_CLASS: 0,
+        },
+        "sort_imp": {
+            b"High-Class": 300,
+            b"Low-Class": 100,
+            tables.NOT_A_CLASS: 11,
+        },
+        "qual_labels": {},
+        "imp_labels": {},
+    }
+
+    def test_data_for_stats_maps_null_to_not_a_class(self):
+        data, cols = tables.data_for_stats(self.stats)
+
+        self.assertNotIn(None, cols)
+        self.assertNotIn(None, data)
+        for value in data.values():
+            self.assertNotIn(None, value)
+        self.assertEqual(2, data[b"B-Class"][tables.NOT_A_CLASS])
+        self.assertEqual(1, data[tables.NOT_A_CLASS][b"Low-Class"])
+
+    def test_convert_table_data_for_web_with_null_ratings(self):
+        table_data = tables.generate_table_data(
+            self.stats,
+            self.categories,
+            {"project": b"Test_Project", "project_display": "Test Project"},
+        )
+
+        # This raised AttributeError ("'NoneType' object has no attribute
+        # 'decode'") before NULL ratings were mapped to NOT_A_CLASS.
+        actual = tables.convert_table_data_for_web(table_data)
+
+        self.assertEqual(2, actual["data"]["B-Class"]["NotA-Class"])
+        self.assertEqual(1, actual["data"]["NotA-Class"]["Low-Class"])
+
+
 class TestMakeWikiLink(unittest.TestCase):
 
     def test_creates_link(self):

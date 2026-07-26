@@ -283,11 +283,18 @@ def data_for_stats(stats):
     cols = {}
 
     for row in stats:
+        # A NULL quality or importance means the article has been rated on
+        # one axis but not the other. cleanup_project normalizes these to
+        # NOT_A_CLASS in the database, but the stats query can still see NULL
+        # rows (e.g. mid-update). Treat them as NOT_A_CLASS here as well, so
+        # that None never ends up as a table data key.
+        q = row["q"] if row["q"] is not None else NOT_A_CLASS
+        i = row["i"] if row["i"] is not None else NOT_A_CLASS
         # The += here is for 'NotA-Class' classifications, which
         # could happen either as a result of an actual category or as
         # the result of the if statements above
-        data[row["q"]][row["i"]] += row["n"]
-        cols[row["i"]] = 1
+        data[q][i] += row["n"]
+        cols[i] = 1
 
     return data, cols
 
