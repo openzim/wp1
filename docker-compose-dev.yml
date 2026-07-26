@@ -119,6 +119,7 @@ services:
       - ./wp1-frontend/index.html:/app/index.html
       - ./wp1-frontend/vite.config.js:/app/vite.config.js
       - ./wp1-frontend/postcss.config.js:/app/postcss.config.js
+      - ./wp1-frontend/tailwind.config.js:/app/tailwind.config.js
     restart: always
     depends_on:
       - dev-web

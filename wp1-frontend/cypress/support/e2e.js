@@ -41,6 +41,24 @@ beforeEach(() => {
     body: 'Unauthorized',
   });
   cy.intercept('v1/builders/*', { statusCode: 401, body: 'Unauthorized' });
+  // The single-segment glob above doesn't match nested builder paths, which
+  // the selections detail pane fetches for every selected row.
+  cy.intercept('v1/builders/*/zim/status', {
+    body: {
+      status: null,
+      error_url: null,
+      is_deleted: null,
+      active_schedule: null,
+    },
+  });
+  cy.intercept('v1/builders/*/selection/latest/article_count', {
+    statusCode: 401,
+    body: 'Unauthorized',
+  });
+  cy.intercept('v1/builders/*/delete-impact', {
+    statusCode: 401,
+    body: 'Unauthorized',
+  });
   cy.intercept('v1/sites/', { fixture: 'sites.json' });
   cy.intercept('v1/projects/count', { fixture: 'projects_count.json' });
   cy.intercept('v1/projects/', { fixture: 'projects.json' });

@@ -1,32 +1,63 @@
 <template>
-  <div v-if="isLoggedIn">
-    <div>
-      <SecondaryNav></SecondaryNav>
-    </div>
-    <div v-if="notFound">
-      <div id="404" class="col-lg-6 m-4">
-        <h2>404 Not Found</h2>
-        Sorry, the list with that ID either doesn't exist or isn't owned by you.
+  <div class="wp1r flex flex-1 flex-col bg-page">
+    <div
+      class="mx-auto flex w-full max-w-[1200px] flex-1 flex-col border-x border-border bg-surface"
+    >
+      <div v-if="!isLoggedIn" class="mx-auto w-full max-w-[760px]">
+        <SelectionsNullState mode="signed-out" />
       </div>
-    </div>
-    <div v-else-if="serverError || noArticleCount">
-      <h2>500 Server error</h2>
-      Something went wrong and we couldn't retrieve the list with that ID. You
-      might try again later.
-    </div>
-    <div v-else-if="ready">
-      <div class="row">
-        <div class="col-lg-6 col-md-9 mx-4">
-          <h3>Create ZIM file</h3>
 
-          <!-- Active Schedule Warning -->
+      <div v-else-if="notFound" class="mx-auto w-full max-w-[760px] p-[22px]">
+        <h1 class="m-0 mb-2 text-xl font-semibold">404 Not Found</h1>
+        <p class="m-0 text-[13.5px] text-ink-2">
+          Sorry, the selection with that ID either doesn't exist or isn't owned
+          by you.
+        </p>
+      </div>
+
+      <div
+        v-else-if="serverError || noArticleCount"
+        class="mx-auto w-full max-w-[760px] p-[22px]"
+      >
+        <h1 class="m-0 mb-2 text-xl font-semibold">500 Server error</h1>
+        <p class="m-0 text-[13.5px] text-ink-2">
+          Something went wrong and we couldn't retrieve the selection with that
+          ID. You might try again later.
+        </p>
+      </div>
+
+      <div v-else-if="ready" class="mx-auto w-full max-w-[760px]">
+        <div class="border-b border-border-subtle px-5 pb-4 pt-6">
+          <router-link
+            v-if="builder"
+            :to="`/selections/user/${builderId}`"
+            class="text-[12.5px]"
+            >← {{ builder.name }}</router-link
+          >
+          <h1 class="m-0 mt-1 text-[19px] font-semibold tracking-[-0.015em]">
+            Create ZIM file
+          </h1>
+          <p
+            v-if="articleCount !== null"
+            class="mb-0 mt-1 font-mono text-[11.5px] text-ink-3"
+          >
+            {{ articleCount.toLocaleString() }} articles in the latest selection
+          </p>
+        </div>
+
+        <div class="flex flex-col gap-4 px-5 py-[18px]">
+          <!-- Active schedule -->
           <div
             v-if="isScheduleWarningRequired"
-            class="alert alert-warning"
+            class="rounded border border-warn-border bg-warn-tint px-3.5 py-3"
             role="alert"
           >
-            <h5 class="alert-heading">📅 Active Schedule Found</h5>
-            <p>
+            <div class="text-[13.5px] font-semibold text-warn-text-strong">
+              Active schedule found
+            </div>
+            <p
+              class="mb-0 mt-1 text-[13px] leading-[1.5] text-warn-text-strong"
+            >
               You already have a ZIM scheduled for every
               <strong
                 >{{ activeSchedule.interval_months }} month{{
@@ -40,32 +71,32 @@
                 }}</strong
                 >.
               </span>
-            </p>
-            <p class="mb-2">
               You can delete that schedule and request a new ZIM immediately or
               create a new schedule.
             </p>
             <button
-              @click="deleteSchedule"
-              class="btn btn-outline-danger btn-sm"
+              class="wp1r-btn mt-2 h-7 border-warn-border-2 bg-surface px-2.5 !text-warn-text-strong"
               :disabled="deletingSchedule"
+              @click="deleteSchedule"
             >
-              <span v-if="deletingSchedule">Deleting...</span>
-              <span v-else>Delete Schedule</span>
+              <span v-if="deletingSchedule">Deleting…</span>
+              <span v-else>Delete schedule</span>
             </button>
           </div>
 
           <div v-else-if="status === 'NOT_REQUESTED'">
-            <p>
+            <p class="m-0 text-[13.5px] leading-[1.55] text-ink-2">
               Use this form to create a ZIM file from your selection, so that
-              you can browse the articles it contains offline. The
-              &quot;Description&quot; and &quot;Long Description&quot; fields
-              are required, but generic defaults will be used if they're not
-              provided.
+              you can browse the articles it contains offline.
             </p>
-            <div v-if="tooManyArticles()" class="article-limit-exceeded errors">
-              <h2>Too many articles</h2>
-              <p>
+            <div
+              v-if="tooManyArticles()"
+              class="article-limit-exceeded mt-3 rounded border border-danger-border bg-danger-tint px-3.5 py-3"
+            >
+              <div class="text-[13.5px] font-semibold text-danger">
+                Too many articles
+              </div>
+              <p class="mb-0 mt-1 text-[13px] leading-[1.5] text-ink-2">
                 Oh no! It seems that you have hit the limit for the maximum
                 number of articles ({{ articleCount.toLocaleString() }} /
                 {{ maxArticleCount.toLocaleString() }}). Could it be that such a
@@ -78,29 +109,45 @@
               </p>
             </div>
           </div>
-          <p v-else>
+          <p v-else class="m-0 text-[13.5px] leading-[1.55] text-ink-2">
             Once you request a ZIM file, it will be queued for creation. This
-            page and the My Selections page will automatically update with a URL
-            to download your ZIM file once it is ready.
+            page and the Selections page will automatically update with a URL to
+            download your ZIM file once it is ready.
           </p>
+
           <p
             v-if="forceExpiredDisplay || (isDeleted && status == 'FILE_READY')"
-            class="errors"
+            class="m-0 text-[13px] text-danger"
           >
             Your ZIM file has expired and needs to be re-created. ZIM file
             download links are only valid for 2 weeks. You can re-create your
             ZIM file with the button below.
           </p>
-          <p v-else-if="status === 'REQUESTED'">
+          <p
+            v-else-if="status === 'REQUESTED'"
+            class="m-0 flex items-center gap-2 text-[13px]"
+          >
+            <span
+              aria-hidden="true"
+              class="h-[7px] w-[7px] rounded-full bg-accent"
+            ></span>
             Your ZIM file has been requested and is being processed. This page
-            will update with the URL to download it once it is ready. It will
-            also keep you updated on any errors that may occur.
+            will update with the URL to download it once it is ready.
           </p>
-          <p v-else-if="status === 'FILE_READY'">
-            Your ZIM file is ready! Click the button below to download it. You
-            can also always download it from the My Selections page.
+          <p
+            v-else-if="status === 'FILE_READY'"
+            class="m-0 flex items-center gap-2 text-[13px]"
+          >
+            <span
+              aria-hidden="true"
+              class="h-[7px] w-[7px] rounded-full bg-ok"
+            ></span>
+            Your ZIM file is ready! Click the button below to download it.
           </p>
-          <p v-else-if="status === 'FAILED'" class="errors">
+          <p
+            v-else-if="status === 'FAILED'"
+            class="m-0 text-[13px] text-danger"
+          >
             There was an error creating your ZIM file. More information may be
             available <a :href="errorUrl">via the Zimfarm API</a>. If you feel
             this was a transient or external error, you can try requesting your
@@ -113,105 +160,97 @@
                 status === 'REQUESTED' ||
                 status === 'FAILED')
             "
-            class="text-muted"
+            class="m-0 text-[13px] text-ink-3"
           >
-            <strong>Content:</strong> {{ selectedFlavourDescription }}
+            <span class="font-medium text-ink-2">Content:</span>
+            {{ selectedFlavourDescription }}
           </p>
-        </div>
-      </div>
-      <div
-        v-if="
-          !activeSchedule &&
-          (forceExpiredDisplay ||
-            status === 'NOT_REQUESTED' ||
-            status === 'FAILED' ||
-            (status != 'REQUESTED' && isDeleted))
-        "
-        class="row"
-      >
-        <div class="col-lg-6 col-md-9 mx-4">
+
+          <!-- ============ Request form ============ -->
           <form
+            v-if="showForm"
             ref="form"
-            v-on:submit.prevent="onSubmit"
-            class="needs-validation"
-            novalidate
+            class="flex flex-col gap-3.5"
+            @submit.prevent="onSubmit"
           >
-            <div
-              id="zimtitle-group"
-              ref="zimtitle_form_group"
-              class="form-group"
-            >
-              <label for="zimtitle">Title</label>
+            <div id="zimtitle-group">
+              <label
+                for="zimtitle"
+                class="mb-1 block text-xs font-medium text-ink-2"
+                >Title</label
+              >
               <input
                 id="zimtitle"
                 ref="zimtitle"
-                v-on:blur="validationOnBlur"
-                v-on:input="validateInput('zimTitle', maxTitleLength)"
                 v-model="zimTitle"
-                class="form-control"
+                class="wp1r-input h-8 w-full"
                 placeholder="ZIM title"
-                required
+                @input="validateInput('zimTitle', maxTitleLength)"
               />
               <small
-                class="form-text"
-                :class="{
-                  'text-muted': graphemeCount(zimTitle) < maxTitleLength,
-                  'text-warning': graphemeCount(zimTitle) === maxTitleLength,
-                }"
+                class="mt-1 block font-mono text-[11px]"
+                :class="
+                  graphemeCount(zimTitle) === maxTitleLength
+                    ? 'text-warn-text'
+                    : 'text-ink-4'
+                "
               >
                 {{ displayGraphemeLimitText(zimTitle, maxTitleLength) }}
               </small>
-              <div class="invalid-feedback">Please provide a title</div>
             </div>
-            <div id="desc-group" ref="form_group" class="form-group">
-              <label for="desc">Description</label>
+            <div id="desc-group">
+              <label
+                for="desc"
+                class="mb-1 block text-xs font-medium text-ink-2"
+                >Description</label
+              >
               <input
                 id="desc"
                 ref="desc"
-                v-on:blur="validationOnBlur"
-                v-on:input="validateInput('description', maxDescriptionLength)"
                 v-model="description"
-                class="form-control"
+                class="wp1r-input h-8 w-full"
                 placeholder="ZIM file created from a WP1 Selection"
-                required
+                @input="validateInput('description', maxDescriptionLength)"
               />
               <small
-                class="form-text"
-                :class="{
-                  'text-muted':
-                    graphemeCount(description) < maxDescriptionLength,
-                  'text-warning':
-                    graphemeCount(description) === maxDescriptionLength,
-                }"
+                class="mt-1 block font-mono text-[11px]"
+                :class="
+                  graphemeCount(description) === maxDescriptionLength
+                    ? 'text-warn-text'
+                    : 'text-ink-4'
+                "
               >
                 {{
                   displayGraphemeLimitText(description, maxDescriptionLength)
                 }}
               </small>
-              <div class="invalid-feedback">Please provide a description</div>
             </div>
-            <div id="long-desc-group" class="form-group">
-              <label for="longdesc">Long Description</label>
+            <div id="long-desc-group">
+              <label
+                for="longdesc"
+                class="mb-1 block text-xs font-medium text-ink-2"
+                >Long description</label
+              >
               <textarea
                 id="longdesc"
                 ref="longdesc"
                 v-model="longDescription"
-                v-on:input="
+                rows="6"
+                class="wp1r-input w-full py-2"
+                :class="{ '!border-danger-border': !isLongDescriptionValid }"
+                style="resize: vertical"
+                placeholder="ZIM file created from a WP1 Selection"
+                @input="
                   validateInput('longDescription', maxLongDescriptionLength)
                 "
-                rows="6"
-                class="form-control"
-                :class="{ 'is-invalid': !isLongDescriptionValid }"
-                placeholder="ZIM file created from a WP1 Selection"
               ></textarea>
               <small
-                class="form-text"
-                :class="{
-                  'text-muted':
-                    graphemeCount(longDescription) < maxLongDescriptionLength,
-                  'text-warning':
-                    graphemeCount(longDescription) === maxLongDescriptionLength,
-                }"
+                class="mt-1 block font-mono text-[11px]"
+                :class="
+                  graphemeCount(longDescription) === maxLongDescriptionLength
+                    ? 'text-warn-text'
+                    : 'text-ink-4'
+                "
               >
                 {{
                   displayGraphemeLimitText(
@@ -220,13 +259,24 @@
                   )
                 }}
               </small>
-              <div class="invalid-feedback">
+              <div
+                v-if="!isLongDescriptionValid"
+                class="mt-1 text-[12.5px] text-danger"
+              >
                 Long description must differ from description and not be shorter
               </div>
             </div>
-            <div id="flavour-group" class="form-group">
-              <label for="flavour">What to include</label>
-              <select id="flavour" class="form-control" v-model="flavour">
+            <div id="flavour-group">
+              <label
+                for="flavour"
+                class="mb-1 block text-xs font-medium text-ink-2"
+                >What to include</label
+              >
+              <select
+                id="flavour"
+                v-model="flavour"
+                class="wp1r-select h-8 w-full"
+              >
                 <option
                   v-for="opt in flavourOptions"
                   :key="opt.value"
@@ -236,147 +286,146 @@
                 </option>
               </select>
             </div>
-            <!-- Scheduling options -->
-            <div class="form-group form-check mt-3">
+
+            <!-- Scheduling -->
+            <label
+              class="flex cursor-pointer items-center gap-2 text-[13px]"
+              for="enableScheduling"
+            >
               <input
-                type="checkbox"
-                class="form-check-input"
                 id="enableScheduling"
                 v-model="schedulingEnabled"
+                type="checkbox"
               />
-              <label class="form-check-label" for="enableScheduling"
-                >Schedule repeated ZIM generations</label
-              >
-            </div>
+              Schedule repeated ZIM generations
+            </label>
 
-            <div v-if="schedulingEnabled" class="border rounded p-3 mb-3">
-              <div class="form-group">
-                <label for="repetitionPeriod">Repetition period (months)</label>
+            <div
+              v-if="schedulingEnabled"
+              class="flex flex-col gap-3 rounded border border-border-strong bg-surface-muted px-3.5 py-3"
+            >
+              <div>
+                <label
+                  for="repetitionPeriod"
+                  class="mb-1 block text-xs font-medium text-ink-2"
+                  >Repetition period (months)</label
+                >
                 <select
                   id="repetitionPeriod"
-                  class="form-control"
                   v-model.number="repetitionPeriodInMonths"
+                  class="wp1r-select h-8 w-full"
                 >
                   <option v-for="m in [1, 3, 6]" :key="m" :value="m">
                     {{ m }}
                   </option>
                 </select>
               </div>
-
-              <div class="form-group">
-                <label for="numberOfRepetitions">Number of repetitions</label>
+              <div>
+                <label
+                  for="numberOfRepetitions"
+                  class="mb-1 block text-xs font-medium text-ink-2"
+                  >Number of repetitions</label
+                >
                 <select
                   id="numberOfRepetitions"
-                  class="form-control"
                   v-model.number="numberOfRepetitions"
+                  class="wp1r-select h-8 w-full"
                 >
                   <option v-for="n in [1, 2, 3]" :key="n" :value="n">
                     {{ n }}
                   </option>
                 </select>
               </div>
-
-              <div class="form-group">
-                <label for="scheduleEmail">Notification email (optional)</label>
+              <div>
+                <label
+                  for="scheduleEmail"
+                  class="mb-1 block text-xs font-medium text-ink-2"
+                  >Notification email (optional)</label
+                >
                 <input
                   id="scheduleEmail"
-                  type="email"
-                  class="form-control"
                   v-model.trim="scheduleEmail"
+                  type="email"
+                  class="wp1r-input h-8 w-full"
                   placeholder="you@example.org"
                 />
-                <small class="form-text text-muted"
+                <small class="mt-1 block text-[11.5px] text-ink-4"
                   >We'll notify you when each scheduled ZIM is ready.</small
                 >
-                <div class="invalid-feedback">Please provide a valid email</div>
               </div>
             </div>
-            <div v-if="!success" class="error-list errors">
-              <p>The following errors occurred:</p>
-              <ul>
-                <li v-for="msg in errors" v-bind:key="msg">
-                  {{ msg }}
-                </li>
+
+            <div
+              v-if="!success"
+              class="error-list rounded border border-danger-border bg-danger-tint px-3.5 py-3"
+            >
+              <p class="m-0 text-[13px] font-medium text-danger">
+                The following errors occurred:
+              </p>
+              <ul class="mb-0 mt-1 list-disc pl-5 text-[13px] text-ink-2">
+                <li v-for="msg in errors" :key="msg">{{ msg }}</li>
               </ul>
             </div>
+
+            <div class="flex items-center gap-2.5">
+              <button
+                id="request"
+                type="submit"
+                class="wp1r-btn-primary h-8 px-3.5"
+                :disabled="processing || tooManyArticles()"
+              >
+                {{ processing ? 'Requesting…' : 'Request ZIM file' }}
+              </button>
+            </div>
           </form>
-          <div>
-            <button
-              id="request"
-              v-on:click.prevent="onSubmit"
-              class="btn btn-primary"
-              type="button"
-              :disabled="processing || tooManyArticles()"
+
+          <!-- ============ Download ============ -->
+          <div
+            v-else-if="
+              !forceExpiredDisplay &&
+              (status === 'FILE_READY' || status === 'REQUESTED')
+            "
+            class="flex items-center gap-2.5"
+          >
+            <a :href="zimPathFor()">
+              <button
+                id="download"
+                type="button"
+                class="wp1r-btn-primary h-8 px-3.5"
+                :disabled="status !== 'FILE_READY'"
+              >
+                Download ZIM
+              </button>
+            </a>
+            <span v-if="status === 'REQUESTED'" class="text-[12.5px] text-ink-3"
+              >Building…</span
             >
-              Request ZIM file
-            </button>
-            <pulse-loader
-              id="loader"
-              class="loader"
-              :loading="processing || showLoader"
-              :color="loaderColor"
-              :size="loaderSize"
-            ></pulse-loader>
           </div>
         </div>
       </div>
-      <div
-        v-else-if="
-          !forceExpiredDisplay &&
-          (status === 'FILE_READY' || status === 'REQUESTED')
-        "
-        class="row"
-      >
-        <div class="col-lg-6 col-md-9 mx-4">
-          <a :href="zimPathFor()"
-            ><button
-              id="download"
-              type="button"
-              class="btn btn-primary"
-              :disabled="status !== 'FILE_READY'"
-            >
-              Download ZIM
-            </button></a
-          >
-          <pulse-loader
-            id="loader"
-            class="loader"
-            :loading="processing || showLoader"
-            :color="loaderColor"
-            :size="loaderSize"
-          ></pulse-loader>
-        </div>
-      </div>
     </div>
-  </div>
-  <div v-else>
-    <LoginRequired></LoginRequired>
   </div>
 </template>
 
 <script>
 import { byGrapheme } from 'split-by-grapheme';
-import PulseLoader from './PulseLoader.vue';
 
-import LoginRequired from './LoginRequired.vue';
-import SecondaryNav from './SecondaryNav.vue';
-import { loginStore } from '../store.js';
+import SelectionsNullState from './SelectionsNullState.vue';
+import { loginStore } from '../../store.js';
 
 export default {
-  name: 'ZimFile',
-  components: { SecondaryNav, LoginRequired, PulseLoader },
+  name: 'ZimPage',
+  components: { SelectionsNullState },
   data: function () {
     return {
+      builder: null,
       zimTitle: '',
       articleCount: null,
       maxArticleCount: null,
       description: '',
       errors: [],
-      errorMessages: [],
       errorUrl: '',
       isDeleted: false,
-      loaderColor: '#007bff',
-      loaderSize: '1rem',
       longDescription: '',
       notFound: false,
       noArticleCount: false,
@@ -398,11 +447,7 @@ export default {
       forceExpiredDisplay: false,
       flavour: '',
       flavourOptions: [
-        {
-          value: '',
-          label: 'All',
-          description: 'Everything including videos',
-        },
+        { value: '', label: 'All', description: 'Everything including videos' },
         {
           value: 'maxi',
           label: 'Maxi',
@@ -429,6 +474,9 @@ export default {
     }
     await this.loadUserEmail();
     this.ready = true;
+  },
+  beforeUnmount: function () {
+    this.stopProgressPolling();
   },
   methods: {
     loadUserEmail: async function () {
@@ -457,7 +505,6 @@ export default {
       } else {
         this.notFound = false;
         this.builder = await response.json();
-        // Set default ZIM title from builder name, truncated to maxTitleLength if necessary
         if (this.builder && this.builder.name) {
           this.zimTitle = this.truncateToLength(
             this.builder.name,
@@ -465,7 +512,6 @@ export default {
           );
         }
         await this.getArticleCount();
-        this.$emit('onBuilderLoaded', this.builder);
       }
     },
     getStatus: async function () {
@@ -476,7 +522,7 @@ export default {
 
       if (!response.ok) {
         this.success = false;
-        this.errors = 'An unknown server error has occurred.';
+        this.errors = ['An unknown server error has occurred.'];
         return;
       }
 
@@ -514,13 +560,30 @@ export default {
       this.maxArticleCount = data.selection.max_article_count;
     },
     onSubmit: async function () {
-      const form = this.$refs.form;
-      if (!form.checkValidity() || !this.isLongDescriptionValid) {
-        this.$refs.form_group.classList.add('was-validated');
-        this.$refs.zimtitle_form_group.classList.add('was-validated');
-        this.$refs.longdesc.classList.add('was-validated');
+      this.errors = [];
+      if (!this.zimTitle) {
+        this.errors.push('Please provide a title');
+      }
+      if (!this.description) {
+        this.errors.push('Please provide a description');
+      }
+      if (!this.isLongDescriptionValid) {
+        this.errors.push(
+          'Long description must differ from description and not be shorter'
+        );
+      }
+      if (
+        this.schedulingEnabled &&
+        this.scheduleEmail &&
+        !this.isValidEmail(this.scheduleEmail)
+      ) {
+        this.errors.push('Please provide a valid email');
+      }
+      if (this.errors.length) {
+        this.success = false;
         return;
       }
+      this.success = true;
 
       const postUrl = `${import.meta.env.VITE_API_URL}/builders/${
         this.builderId
@@ -567,16 +630,15 @@ export default {
         return;
       }
 
+      this.forceExpiredDisplay = false;
       await this.getStatus();
     },
     validateInput: function (field, maxLength) {
-      // If count exceeds maxLength, truncate the input to prevent further graphemes
       if (this.graphemeCount(this[field]) > maxLength) {
         this[field] = this.truncateToLength(this[field], maxLength);
       }
     },
     truncateToLength: function (text, maxLength) {
-      // Split the text into graphemes and truncate to maxLength
       const graphemes = text.split(byGrapheme);
       return graphemes.slice(0, maxLength).join('');
     },
@@ -596,13 +658,7 @@ export default {
     },
     stopProgressPolling: function () {
       clearInterval(this.pollId);
-    },
-    validationOnBlur: function (event) {
-      if (event.target.value) {
-        event.target.classList.remove('is-invalid');
-      } else {
-        event.target.classList.add('is-invalid');
-      }
+      this.pollId = null;
     },
     graphemeCount: function (text) {
       return text.split(byGrapheme).length;
@@ -633,7 +689,6 @@ export default {
 
         if (response.ok) {
           this.activeSchedule = null;
-          // Refresh the status to ensure UI is up to date
           await this.getStatus();
         } else {
           const errorData = await response.json();
@@ -651,20 +706,8 @@ export default {
     },
     formatDate: function (dateString) {
       if (!dateString) return 'Unknown';
-      try {
-        const date = new Date(dateString);
-        // The backend sends a date-only string (YYYY-MM-DD), which parses as
-        // UTC midnight. Format in UTC too, so the date doesn't shift for
-        // viewers in timezones behind UTC.
-        return date.toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          timeZone: 'UTC',
-        });
-      } catch {
-        return dateString;
-      }
+      // Wikipedia-style (ISO) date; the backend already sends YYYY-MM-DD.
+      return String(dateString).slice(0, 10);
     },
   },
   computed: {
@@ -674,11 +717,13 @@ export default {
     builderId: function () {
       return this.$route.params.builder_id;
     },
-    showLoader: function () {
+    showForm: function () {
       return (
-        this.processing ||
-        this.status === 'REQUESTED' ||
-        this.status === 'ENDED'
+        !this.activeSchedule &&
+        (this.forceExpiredDisplay ||
+          this.status === 'NOT_REQUESTED' ||
+          this.status === 'FAILED' ||
+          (this.status != 'REQUESTED' && this.isDeleted))
       );
     },
     isLongDescriptionValid: function () {
@@ -690,20 +735,7 @@ export default {
       );
     },
     isScheduleWarningRequired: function () {
-      // Only show the active schedule warning when there is an active schedule
-      // and there is not currently a ZIM being created (status 'REQUESTED').
       return this.activeSchedule && this.status !== 'REQUESTED';
-    },
-    hasLengthErrors: function () {
-      // Prevent empty required fields and invalid long description
-      const baseInvalid =
-        !this.zimTitle || !this.description || !this.isLongDescriptionValid;
-      // Email is optional — only validate when the user actually provided one
-      const scheduleInvalid =
-        this.schedulingEnabled && this.scheduleEmail
-          ? !this.isValidEmail(this.scheduleEmail)
-          : false;
-      return baseInvalid || scheduleInvalid;
     },
     selectedFlavourDescription: function () {
       const opt = this.flavourOptions.find((o) => o.value === this.flavour);
@@ -717,19 +749,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.errors {
-  color: #dc3545;
-}
-.error-list {
-  background-color: pink;
-}
-.loader {
-  position: relative;
-  top: 5px;
-  display: inline-block;
-  margin: 0 20px;
-  text-align: center;
-}
-</style>

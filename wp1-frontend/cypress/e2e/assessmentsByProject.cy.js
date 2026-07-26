@@ -7,7 +7,7 @@ describe('the assessments by project page', () => {
 
   it('is reachable from the nav bar', () => {
     cy.visit('/');
-    cy.get('.navbar').contains('a', 'Assessments by Project').click();
+    cy.get('header nav').contains('a', 'Assessments by Project').click();
     cy.url().should('include', '/assessments');
   });
 
