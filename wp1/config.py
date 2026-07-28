@@ -25,7 +25,6 @@ else:
 
 
 def _getenv(key, *, default=None, required=False):
-
     value = os.environ.get(key)
     if value is None:
         if required:
@@ -74,7 +73,6 @@ def _resolve_env():
 
 
 class Config:
-
     # --- Environment ---
     ENV = _resolve_env()
     CONF_LANG = _getenv("WP1_CONF_LANG", default="en")
@@ -133,6 +131,8 @@ class Config:
 
     # --- Zimfarm ---
     ZIMFARM_URL = _getenv("ZIMFARM_URL", default="http://localhost:8003/v2")
+    # Authentication mode: 'oauth' or 'local'
+    ZIMFARM_AUTH_MODE = _getenv("ZIMFARM_AUTH_MODE", default="local")
     ZIMFARM_S3_URL = _getenv(
         "ZIMFARM_S3_URL", default="https://localhost:9000/org-kiwix-dev-zims"
     )
@@ -144,6 +144,19 @@ class Config:
     )
     ZIMFARM_DEFINITION_VERSION = _getenv("ZIMFARM_DEFINITION_VERSION")
     ZIMFARM_CACHE_URL = _getenv("ZIMFARM_CACHE_URL")  # production only
+    ZIMFARM_OAUTH_ISSUER = _getenv(
+        "ZIMFARM_OAUTH_ISSUER",
+        default="https://ory.login.kiwix.org",
+    )
+    ZIMFARM_OAUTH_CLIENT_ID = _getenv(
+        "ZIMFARM_OAUTH_CLIENT_ID", required=ZIMFARM_AUTH_MODE == "oauth"
+    )
+    ZIMFARM_OAUTH_CLIENT_SECRET = _getenv(
+        "ZIMFARM_OAUTH_CLIENT_SECRET", required=ZIMFARM_AUTH_MODE == "oauth"
+    )
+    ZIMFARM_OAUTH_AUDIENCE_ID = _getenv(
+        "ZIMFARM_OAUTH_AUDIENCE_ID", required=ZIMFARM_AUTH_MODE == "oauth"
+    )
 
     # --- Mailgun ---
     MAILGUN_URL = _getenv(
