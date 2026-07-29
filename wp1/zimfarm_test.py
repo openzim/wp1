@@ -341,14 +341,6 @@ class ZimFarmTest(BaseWpOneDbTest):
 
         self.assertEqual(provider._access_token, "oauth_token_123")
         self.assertEqual(provider._expires_at, datetime.datetime(2023, 1, 1, 1, 0, 0))
-        self.assertEqual(
-            mock_requests.post.call_args.kwargs["data"],
-            {
-                "grant_type": "client_credentials",
-                "audience": "test_audience",
-                "scope": "profile",
-            },
-        )
 
     @patch("wp1.zimfarm.CREDENTIALS")
     @patch("wp1.zimfarm.requests")

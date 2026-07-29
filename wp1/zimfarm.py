@@ -111,8 +111,6 @@ class ZimfarmClientTokenProvider:
             data={
                 "grant_type": "client_credentials",
                 "audience": self._zimfarm_creds.get("oauth_audience_id"),
-                # The Zimfarm API rejects tokens that lack the 'profile' scope.
-                "scope": "profile",
             },
             auth=HTTPBasicAuth(
                 self._zimfarm_creds.get("oauth_client_id"),
