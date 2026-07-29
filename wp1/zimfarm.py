@@ -74,7 +74,7 @@ class ZimfarmClientTokenProvider:
         self._zimfarm_creds: dict[str, Any] = CREDENTIALS[ENV].get("ZIMFARM", {})
 
     def _validate_creds(self):
-        if self._zimfarm_creds.get("auth_mode", "local") == "local":
+        if self._zimfarm_creds.get("auth_mode") == "local":
             if not (
                 self._zimfarm_creds.get("user") and self._zimfarm_creds.get("password")
             ):

@@ -79,6 +79,7 @@ _active_creds = {
         "bucket": Config.STORAGE_BUCKET,
     },
     "ZIMFARM": {
+        "auth_mode": Config.ZIMFARM_AUTH_MODE,
         "url": Config.ZIMFARM_URL,
         "s3_url": Config.ZIMFARM_S3_URL,
         "user": Config.ZIMFARM_USER,
@@ -95,6 +96,10 @@ _active_creds = {
             if Config.ZIMFARM_CACHE_URL is not None
             else {}
         ),
+        "oauth_issuer": Config.ZIMFARM_OAUTH_ISSUER,
+        "oauth_client_id": Config.ZIMFARM_OAUTH_CLIENT_ID,
+        "oauth_client_secret": Config.ZIMFARM_OAUTH_CLIENT_SECRET,
+        "oauth_audience_id": Config.ZIMFARM_OAUTH_AUDIENCE_ID,
     },
     "MAILGUN": {
         "url": Config.MAILGUN_URL,
