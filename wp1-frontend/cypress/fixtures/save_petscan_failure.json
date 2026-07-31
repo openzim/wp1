@@ -1,0 +1,8 @@
+{
+  "success": false,
+  "items": {
+    "valid": [],
+    "invalid": ["not-a-petscan-url"],
+    "errors": ["Invalid PetScan URL"]
+  }
+}
