@@ -176,6 +176,10 @@ describe('the petscan builder page', () => {
   });
 
   describe('when the user is not logged in', () => {
+    beforeEach(() => {
+      cy.intercept('v1/sites/', { fixture: 'sites.json' });
+    });
+
     it('opens login page', () => {
       cy.visit('/#/selections/petscan');
       cy.contains('Please Log In To Continue');
