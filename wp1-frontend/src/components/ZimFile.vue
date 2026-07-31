@@ -67,9 +67,9 @@
               <h2>Too many articles</h2>
               <p>
                 Oh no! It seems that you have hit the limit for the maximum
-                number of articles ({{ this.articleCount.toLocaleString() }} /
-                {{ this.maxArticleCount.toLocaleString() }}). Could it be that
-                such a big selection could be useful to others? How about
+                number of articles ({{ articleCount.toLocaleString() }} /
+                {{ maxArticleCount.toLocaleString() }}). Could it be that such a
+                big selection could be useful to others? How about
                 <a href="https://github.com/openzim/zim-requests"
                   >opening a zim-request</a
                 >

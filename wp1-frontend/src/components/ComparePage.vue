@@ -20,8 +20,8 @@
         <ArticleTableRatingSelect
           :projectId="projectIdA"
           :layout="'alternate'"
-          :initialQuality="this.$route.query.quality"
-          :initialImportance="this.$route.query.importance"
+          :initialQuality="$route.query.quality"
+          :initialImportance="$route.query.importance"
           v-on:rating-select="onProjectARatingSelect($event)"
         ></ArticleTableRatingSelect>
       </div>
@@ -40,8 +40,8 @@
         <ArticleTableRatingSelect
           :projectId="projectIdB"
           :layout="'alternate'"
-          :initialQuality="this.$route.query.qualityB"
-          :initialImportance="this.$route.query.importanceB"
+          :initialQuality="$route.query.qualityB"
+          :initialImportance="$route.query.importanceB"
           v-on:rating-select="onProjectBRatingSelect($event)"
         ></ArticleTableRatingSelect>
       </div>

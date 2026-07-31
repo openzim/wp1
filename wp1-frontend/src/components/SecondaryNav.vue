@@ -18,7 +18,7 @@
           <li
             :class="
               'nav-item ' +
-              (this.$route.path.startsWith('/selections/user') ? 'active' : '')
+              ($route.path.startsWith('/selections/user') ? 'active' : '')
             "
           >
             <router-link class="nav-link" to="/selections/user"
@@ -28,9 +28,7 @@
           <li
             :class="
               'nav-item ' +
-              (this.$route.path.startsWith('/selections/simple')
-                ? 'active'
-                : '')
+              ($route.path.startsWith('/selections/simple') ? 'active' : '')
             "
           >
             <router-link class="nav-link" to="/selections/simple"
@@ -40,9 +38,7 @@
           <li
             :class="
               'nav-item ' +
-              (this.$route.path.startsWith('/selections/sparql')
-                ? 'active'
-                : '')
+              ($route.path.startsWith('/selections/sparql') ? 'active' : '')
             "
           >
             <router-link class="nav-link" to="/selections/sparql"
@@ -52,9 +48,7 @@
           <li
             :class="
               'nav-item ' +
-              (this.$route.path.startsWith('/selections/petscan')
-                ? 'active'
-                : '')
+              ($route.path.startsWith('/selections/petscan') ? 'active' : '')
             "
           >
             <router-link class="nav-link" to="/selections/petscan"
@@ -64,7 +58,7 @@
           <li
             :class="
               'nav-item ' +
-              (this.$route.path.startsWith('/selections/book') ? 'active' : '')
+              ($route.path.startsWith('/selections/book') ? 'active' : '')
             "
           >
             <router-link class="nav-link" to="/selections/book"
@@ -74,7 +68,7 @@
           <li
             :class="
               'nav-item ' +
-              (this.$route.path.startsWith('/selections/wikiproject')
+              ($route.path.startsWith('/selections/wikiproject')
                 ? 'active'
                 : '')
             "
@@ -86,9 +80,7 @@
           <li
             :class="
               'nav-item ' +
-              (this.$route.path.startsWith('/selections/combinator')
-                ? 'active'
-                : '')
+              ($route.path.startsWith('/selections/combinator') ? 'active' : '')
             "
           >
             <router-link class="nav-link" to="/selections/combinator"

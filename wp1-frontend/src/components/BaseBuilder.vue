@@ -150,13 +150,13 @@
               ></slot>
             </div>
             <div
-              v-if="this.success == false || this.deleteSuccess == false"
+              v-if="success == false || deleteSuccess == false"
               id="invalid_articles"
               class="form-group m-4"
             >
               <div class="errors">{{ errors }}</div>
               <textarea
-                v-if="this.success == false && this.computedInvalidItems"
+                v-if="success == false && computedInvalidItems"
                 class="form-control my-list is-invalid"
                 rows="6"
                 ref="invalid"
