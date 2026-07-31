@@ -218,9 +218,6 @@ router.beforeEach((to, from, next) => {
 });
 
 new Vue({
-  data: {
-    isLoggedIn: false,
-  },
   el: '#app',
   render: (h) => h(App),
   router,

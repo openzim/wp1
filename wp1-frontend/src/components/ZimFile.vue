@@ -360,6 +360,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 
 import LoginRequired from './LoginRequired.vue';
 import SecondaryNav from './SecondaryNav.vue';
+import { loginStore } from '../store.js';
 
 export default {
   name: 'ZimFile',
@@ -668,7 +669,7 @@ export default {
   },
   computed: {
     isLoggedIn: function () {
-      return this.$root.$data.isLoggedIn;
+      return loginStore.isLoggedIn;
     },
     builderId: function () {
       return this.$route.params.builder_id;

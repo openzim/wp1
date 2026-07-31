@@ -113,6 +113,8 @@
 </template>
 
 <script>
+import { loginStore } from './store.js';
+
 export default {
   name: 'app',
   data: function () {
@@ -127,7 +129,7 @@ export default {
         credentials: 'include',
       });
       this.username = null;
-      this.$root.$data.isLoggedIn = false;
+      loginStore.isLoggedIn = false;
       this.$router.push({ path: `/` });
     },
     identify: async function () {
@@ -152,7 +154,7 @@ export default {
         });
       if (data) {
         this.username = data.username;
-        this.$root.$data.isLoggedIn = true;
+        loginStore.isLoggedIn = true;
       }
     },
   },

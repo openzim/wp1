@@ -353,6 +353,7 @@ import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
 
 import SecondaryNav from './SecondaryNav.vue';
 import LoginRequired from './LoginRequired.vue';
+import { loginStore } from '../store.js';
 
 export default {
   components: { SecondaryNav, LoginRequired, PulseLoader },
@@ -391,7 +392,7 @@ export default {
   },
   computed: {
     isLoggedIn: function () {
-      return this.$root.$data.isLoggedIn;
+      return loginStore.isLoggedIn;
     },
     isEditing: function () {
       return !!this.builderId;

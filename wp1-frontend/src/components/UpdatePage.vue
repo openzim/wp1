@@ -69,6 +69,7 @@
 <script>
 import Autocomplete from './Autocomplete.vue';
 import LoginRequired from './LoginRequired.vue';
+import { loginStore } from '../store.js';
 
 export default {
   name: 'update-page',
@@ -120,7 +121,7 @@ export default {
       return null;
     },
     isLoggedIn: function () {
-      return this.$root.$data.isLoggedIn;
+      return loginStore.isLoggedIn;
     },
   },
   watch: {
