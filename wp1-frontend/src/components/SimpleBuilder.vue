@@ -69,7 +69,7 @@ export default {
       }
     },
     onBuilderLoaded: function (builder) {
-      this.articles = (builder.params.list || []).join('\n');
+      this.articles = (builder.params?.list || []).join('\n');
     },
     onBeforeSubmit: function () {
       this.$refs.list.setCustomValidity('');

@@ -214,4 +214,4 @@ router.beforeEach((to, from, next) => {
   next();
 });
 
-createApp(App).use(router).mount('#app');
+createApp(App).use(router).mount('#root');
