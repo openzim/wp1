@@ -292,7 +292,7 @@ export default {
 </script>
 
 <style scoped>
-@import '../cards.scss';
+@import '../cards.css';
 
 .zim-failed a {
   color: #dc3545 !important;

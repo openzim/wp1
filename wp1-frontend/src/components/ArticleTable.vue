@@ -309,7 +309,7 @@ export default {
 </script>
 
 <style scoped>
-@import '../labels.scss';
+@import '../labels.css';
 
 h2 {
   text-align: center;

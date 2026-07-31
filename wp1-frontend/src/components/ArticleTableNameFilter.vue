@@ -58,24 +58,24 @@
 export default {
   name: 'article-table-name-filter',
   props: {
-    filterValue: String
+    filterValue: String,
   },
   methods: {
-    startOpen: function() {
+    startOpen: function () {
       return !!this.filterValue;
     },
-    onButtonClick: function() {
+    onButtonClick: function () {
       const filter = this.$refs.filterInput.value;
       if (filter == this.$route.query.articlePattern) {
         return;
       }
 
       this.$emit('name-filter', this.$refs.filterInput.value);
-    }
-  }
+    },
+  },
 };
 </script>
 
 <style scoped>
-@import '../cards.scss';
+@import '../cards.css';
 </style>

@@ -41,7 +41,7 @@
                     'num-select',
                     'form-control',
                     'm-2',
-                    { 'is-invalid': errorRows }
+                    { 'is-invalid': errorRows },
                   ]"
                   v-model="rows"
                 />
@@ -55,7 +55,7 @@
                     'form-control',
                     'm-2',
                     'mr-4',
-                    { 'is-invalid': errorPage }
+                    { 'is-invalid': errorPage },
                   ]"
                   v-model="page"
                 />
@@ -80,52 +80,52 @@ export default {
   name: 'article-table-page-select',
   props: {
     numRows: Number,
-    startPage: String
+    startPage: String,
   },
-  data: function() {
+  data: function () {
     return {
       rows: this.numRows,
-      page: this.startPage
+      page: this.startPage,
     };
   },
   computed: {
-    errorRows: function() {
+    errorRows: function () {
       return (
         this.rows === '' || isNaN(this.rows) || this.rows > 500 || this.rows < 0
       );
     },
-    errorPage: function() {
+    errorPage: function () {
       return isNaN(this.page) || this.page < 1;
-    }
+    },
   },
   methods: {
-    startOpen: function() {
+    startOpen: function () {
       return this.numRows != 100 || this.startPage > 1;
     },
-    isValid: function() {
+    isValid: function () {
       return !this.errorRows && !this.errorPage;
     },
-    onButtonClick: function() {
+    onButtonClick: function () {
       if (!this.isValid()) {
         return;
       }
       this.$emit('page-select', {
         rows: this.rows,
-        page: this.page
+        page: this.page,
       });
-    }
+    },
   },
   watch: {
-    $route: function(to) {
+    $route: function (to) {
       this.rows = to.query.numRows || 100;
       this.page = to.query.page || 1;
-    }
-  }
+    },
+  },
 };
 </script>
 
 <style scoped>
-@import '../cards.scss';
+@import '../cards.css';
 
 .num-select {
   width: 6rem;

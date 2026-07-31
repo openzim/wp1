@@ -245,7 +245,7 @@ export default {
 </script>
 
 <style scoped>
-@import '../labels.scss';
+@import '../labels.css';
 
 .loader {
   margin: auto;
