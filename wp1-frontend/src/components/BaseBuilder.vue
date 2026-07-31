@@ -591,7 +591,10 @@ export default {
       return this.deleteCombinatorActions[item.id] || '';
     },
     setDeleteCombinatorAction: function (id, action) {
-      this.$set(this.deleteCombinatorActions, id, action);
+      this.deleteCombinatorActions = {
+        ...this.deleteCombinatorActions,
+        [id]: action,
+      };
     },
     onDelete: async function () {
       this.deleteSuccess = true;
