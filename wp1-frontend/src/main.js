@@ -6,8 +6,8 @@ import 'jquery';
 import 'datatables.net';
 import 'datatables.net-dt/css/jquery.dataTables.min.css';
 
-import Vue from 'vue';
-import VueRouter from 'vue-router';
+import { createApp } from 'vue';
+import { createRouter, createWebHashHistory } from 'vue-router';
 
 import App from './App.vue';
 import ArticlePage from './components/ArticlePage.vue';
@@ -24,10 +24,6 @@ import ProjectPage from './components/ProjectPage.vue';
 import UpdatePage from './components/UpdatePage.vue';
 import ZimFile from './components/ZimFile.vue';
 import WikiProjectBuilder from './components/WikiProjectBuilder.vue';
-
-Vue.config.productionTip = false;
-
-Vue.use(VueRouter);
 
 const BASE_TITLE = 'Wikipedia 1.0 Server';
 
@@ -201,13 +197,14 @@ const routes = [
   },
 ];
 
-const router = new VueRouter({
+const router = createRouter({
+  history: createWebHashHistory(),
   routes,
   scrollBehavior(to, from, savedPosition) {
     if (savedPosition) {
       return savedPosition;
     } else {
-      return { x: 0, y: 0 };
+      return { left: 0, top: 0 };
     }
   },
 });
@@ -217,10 +214,4 @@ router.beforeEach((to, from, next) => {
   next();
 });
 
-new Vue({
-  el: '#app',
-  render: (h) => h(App),
-  router,
-  template: '<App/>',
-  components: { App },
-});
+createApp(App).use(router).mount('#app');

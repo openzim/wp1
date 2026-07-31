@@ -15,11 +15,8 @@
     "env": {
       "node": true
     },
-    "parserOptions": {
-      "parser": "@babel/eslint-parser"
-    },
     "extends": [
-      "plugin:vue/essential",
+      "plugin:vue/vue3-essential",
       "eslint:recommended"
     ],
     "rules": {},
@@ -33,11 +30,10 @@
   },
   "dependencies": {
     "@rollup/plugin-inject": "^5.0.2",
-    "@vitejs/plugin-vue2": "^2.3.1",
+    "@vitejs/plugin-vue": "^3.2.0",
     "acorn": "^6.4.1",
     "autoprefixer": "^10.4.13",
     "axios": "^1.18.0",
-    "babel-preset-vue": "^2.0.2",
     "bootstrap": "^4.4.1",
     "bootstrap-icons": "^1.10.2",
     "cli-highlight": "^2.1.5",
@@ -55,9 +51,8 @@
     "serialize-javascript": "^3.1.0",
     "split-by-grapheme": "^1.0.1",
     "vite": "^3.2.11",
-    "vue": "^2.7.14",
-    "vue-router": "^3.1.6",
-    "vue-template-compiler": "^2.7.14",
+    "vue": "^3.5.0",
+    "vue-router": "^4.4.0",
     "webpack": "^5.104.1"
   },
   "postcss": {

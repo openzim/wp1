@@ -7,7 +7,7 @@
 
 <script>
 export default {
-  name: 'stats',
+  name: 'StatsPanel',
   data: function () {
     return {
       numProjects: null,
