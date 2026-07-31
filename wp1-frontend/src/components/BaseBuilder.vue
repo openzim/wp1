@@ -349,7 +349,7 @@
 import $ from 'jquery';
 $.noConflict();
 
-import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
+import PulseLoader from './PulseLoader.vue';
 
 import SecondaryNav from './SecondaryNav.vue';
 import LoginRequired from './LoginRequired.vue';

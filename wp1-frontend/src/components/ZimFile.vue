@@ -356,7 +356,7 @@
 
 <script>
 import { byGrapheme } from 'split-by-grapheme';
-import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
+import PulseLoader from './PulseLoader.vue';
 
 import LoginRequired from './LoginRequired.vue';
 import SecondaryNav from './SecondaryNav.vue';
