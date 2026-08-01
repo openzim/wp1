@@ -119,25 +119,18 @@ jobs:
 
       # Cypress 15 requires Node 20.1+; don't rely on whatever the runner
       # image happens to ship.
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: wp1-frontend/package.json
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - name: Get yarn cache directory path
-        id: yarn-dep-cache-dir-path
-        run: cd wp1-frontend && echo "YARN_CACHE_DIR=$(yarn cache dir)" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache@v4
-        name: Setup Yarn dep cache
-        id: yarn-dep-cache
-        with:
-          path: ${{ steps.yarn-dep-cache-dir-path.outputs.YARN_CACHE_DIR }}
-          key: ${{ runner.os }}-yarn-dep-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-dep-
+          cache: pnpm
+          cache-dependency-path: wp1-frontend/pnpm-lock.yaml
 
       - name: Install Javascript dependencies
-        run: cd wp1-frontend && yarn install --frozen-lockfile
+        run: cd wp1-frontend && pnpm install --frozen-lockfile
 
       # The Cypress tests are hermetic: every API call is stubbed with
       # cy.intercept, so no backend services are needed — just the built
@@ -145,7 +138,7 @@ jobs:
       - name: Build frontend server
         run: |
           cd wp1-frontend
-          yarn build --mode staging
+          pnpm build --mode staging
 
       - name: Start frontend server
         run: |
@@ -160,7 +153,7 @@ jobs:
       - name: Run frontend tests
         run: |
           cd wp1-frontend
-          $(yarn bin)/cypress run
+          pnpm exec cypress run
 
       - uses: actions/upload-artifact@v4
         continue-on-error: true

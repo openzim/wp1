@@ -11,6 +11,8 @@ repos:
     rev: v2.7.1
     hooks:
       - id: prettier
+        # pnpm owns the lockfile format and rewrites it on every install.
+        exclude: ^wp1-frontend/pnpm-lock\.yaml$
         args:
           - --single-quote=true
             --trailing-comma all
