@@ -34,7 +34,7 @@ def cache_assessment_numbers(redis, data):
         return
 
     pkl = pickle.dumps(data)
-    # The warming job (see wp1.queues.schedule_assessment_cache_warming) refreshes
+    # The warming job (registered in cron_config.py) refreshes
     # this once a day at noon UTC. The TTL is a bit over 24h so the entry never
     # expires before the next day's run overwrites it (which would otherwise open
     # a daily window where a web request hits the slow query directly).
@@ -76,8 +76,8 @@ def get_all_assessment_numbers(wp10db, redis: Redis = None):
 def update_assessment_cache():
     """Recompute the assessment numbers and refresh the cache.
 
-    This is the entry point for the recurring cache-warming job (registered by
-    wp1.queues.schedule_assessment_cache_warming). It runs in its own RQ worker,
+    This is the entry point for the recurring cache-warming job (registered in
+    cron_config.py). It runs in its own RQ worker,
     so it opens its own database and Redis connections. The underlying query is
     slow (minutes in production), which is exactly why it runs here on a
     schedule rather than in a web request.

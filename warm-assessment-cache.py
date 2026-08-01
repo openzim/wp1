@@ -9,13 +9,10 @@ logger = logging.getLogger(__name__)
 def main():
     app_logging.configure_logging()
 
-    redis = redis_connect()
-    queues.schedule_assessment_cache_warming(redis)
-    logger.info("Registered recurring assessment-cache warming schedule")
-
-    # Also seed the cache immediately so a fresh deploy / Redis restart doesn't
+    # Seed the cache immediately so a fresh deploy / Redis restart doesn't
     # leave the slow query to run inline on web requests until the next
-    # scheduled run.
+    # scheduled (noon UTC, see cron_config.py) run.
+    redis = redis_connect()
     queues.enqueue_assessment_cache_warming(redis)
     logger.info("Enqueued immediate assessment-cache warming job")
 

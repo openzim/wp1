@@ -1,6 +1,8 @@
 import datetime
 from unittest.mock import patch, MagicMock
 
+from rq import Queue
+from rq.registry import ScheduledJobRegistry
 
 from wp1 import constants, queues
 from wp1.base_db_test import BaseWpOneDbTest
@@ -200,80 +202,85 @@ class QueuesTest(BaseWpOneDbTest):
             failure_ttl=constants.JOB_FAILURE_TTL,
         )
 
-    @patch("wp1.queues.Scheduler")
-    def test_schedule_recurring_zimfarm_task(self, mock_scheduler):
-        mock_scheduler_instance = MagicMock()
-        mock_scheduler_instance.schedule.return_value = "job-id"
-        mock_scheduler.return_value = mock_scheduler_instance
+    def _zimfile_scheduling_registry(self):
+        return ScheduledJobRegistry(
+            queue=Queue("zimfile-scheduling", connection=self.redis)
+        )
 
-        time = datetime.datetime(2026, 12, 25, 4, 44, 44)
-        result = queues.schedule_recurring_zimfarm_task(
+    def test_schedule_recurring_zimfarm_task(self):
+        time = datetime.datetime(2026, 12, 25, 4, 44, 44, tzinfo=datetime.timezone.utc)
+        job = queues.schedule_recurring_zimfarm_task(
             self.redis, ["arg1", "arg2"], time, 42000, 3
         )
 
-        self.assertEqual("job-id", result)
-        mock_scheduler_instance.schedule.assert_called_once_with(
-            scheduled_time=time,
-            func=logic_builder.request_scheduled_zim_file_for_builder,
-            args=["arg1", "arg2"],
-            interval=42000,
-            repeat=3,
-            queue_name="zimfile-scheduling",
+        registry = self._zimfile_scheduling_registry()
+        self.assertIn(job.id, registry)
+        self.assertEqual(time, registry.get_scheduled_time(job))
+        self.assertEqual(3, job.repeats_left)
+        self.assertEqual([42000], job.repeat_intervals)
+        self.assertEqual(
+            "wp1.logic.builder.request_scheduled_zim_file_for_builder",
+            job.func_name,
         )
 
-    @patch("wp1.queues.Scheduler")
-    def test_cancel_scheduled_job_success(self, mock_scheduler):
-        mock_scheduler_instance = MagicMock()
-        mock_scheduler_instance.cancel.return_value = None
-        mock_scheduler.return_value = mock_scheduler_instance
+    def test_schedule_recurring_zimfarm_task_single_run(self):
+        time = datetime.datetime(2026, 12, 25, 4, 44, 44, tzinfo=datetime.timezone.utc)
+        job = queues.schedule_recurring_zimfarm_task(
+            self.redis, ["arg1", "arg2"], time, 42000, 0
+        )
 
-        result = queues.cancel_scheduled_job(self.redis, "test-job-id")
+        self.assertIn(job.id, self._zimfile_scheduling_registry())
+        self.assertIsNone(job.repeats_left)
 
-        self.assertTrue(result)
-        mock_scheduler_instance.cancel.assert_called_once_with("test-job-id")
+    def test_cancel_scheduled_job_success(self):
+        time = datetime.datetime(2026, 12, 25, 4, 44, 44, tzinfo=datetime.timezone.utc)
+        job = queues.schedule_recurring_zimfarm_task(
+            self.redis, ["arg1", "arg2"], time, 42000, 3
+        )
 
-    @patch("wp1.queues.Scheduler")
-    def test_cancel_scheduled_job_with_bytes_id(self, mock_scheduler):
-        mock_scheduler_instance = MagicMock()
-        mock_scheduler_instance.cancel.return_value = None
-        mock_scheduler.return_value = mock_scheduler_instance
-
-        result = queues.cancel_scheduled_job(self.redis, b"test-job-id")
+        result = queues.cancel_scheduled_job(self.redis, job.id)
 
         self.assertTrue(result)
-        mock_scheduler_instance.cancel.assert_called_once_with("test-job-id")
+        self.assertNotIn(job.id, self._zimfile_scheduling_registry())
+        self.assertEqual("canceled", job.get_status())
 
-    @patch("wp1.queues.Scheduler")
-    def test_cancel_scheduled_job_failure(self, mock_scheduler):
-        mock_scheduler_instance = MagicMock()
-        mock_scheduler_instance.cancel.side_effect = Exception("Job not found")
-        mock_scheduler.return_value = mock_scheduler_instance
+    def test_cancel_scheduled_job_with_bytes_id(self):
+        time = datetime.datetime(2026, 12, 25, 4, 44, 44, tzinfo=datetime.timezone.utc)
+        job = queues.schedule_recurring_zimfarm_task(
+            self.redis, ["arg1", "arg2"], time, 42000, 3
+        )
+
+        result = queues.cancel_scheduled_job(self.redis, job.id.encode("utf-8"))
+
+        self.assertTrue(result)
+        self.assertNotIn(job.id, self._zimfile_scheduling_registry())
+
+    def test_cancel_scheduled_job_missing_job(self):
+        # A job that no longer exists means there is nothing left to cancel,
+        # which callers (e.g. deleting a schedule after all repetitions have
+        # run) treat as success.
+        result = queues.cancel_scheduled_job(self.redis, "no-such-job")
+
+        self.assertTrue(result)
+
+    def test_cancel_scheduled_job_already_cancelled(self):
+        time = datetime.datetime(2026, 12, 25, 4, 44, 44, tzinfo=datetime.timezone.utc)
+        job = queues.schedule_recurring_zimfarm_task(
+            self.redis, ["arg1", "arg2"], time, 42000, 3
+        )
+        queues.cancel_scheduled_job(self.redis, job.id)
+
+        result = queues.cancel_scheduled_job(self.redis, job.id)
+
+        self.assertTrue(result)
+
+    @patch("wp1.queues.Job.fetch")
+    def test_cancel_scheduled_job_failure(self, mock_fetch):
+        mock_fetch.side_effect = Exception("Redis unavailable")
 
         result = queues.cancel_scheduled_job(self.redis, "test-job-id")
 
         self.assertFalse(result)
-        mock_scheduler_instance.cancel.assert_called_once_with("test-job-id")
-
-    @patch("wp1.queues.Scheduler")
-    def test_schedule_assessment_cache_warming(self, mock_scheduler):
-        mock_scheduler_instance = MagicMock()
-        mock_scheduler_instance.cron.return_value = "job-id"
-        mock_scheduler.return_value = mock_scheduler_instance
-
-        result = queues.schedule_assessment_cache_warming(self.redis)
-
-        self.assertEqual("job-id", result)
-        # Cancel-then-schedule keeps registration idempotent across reboots.
-        mock_scheduler_instance.cancel.assert_called_once_with(
-            queues.ASSESSMENT_CACHE_JOB_ID
-        )
-        mock_scheduler_instance.cron.assert_called_once_with(
-            queues.ASSESSMENT_CACHE_CRON,
-            func=logic_rating.update_assessment_cache,
-            id=queues.ASSESSMENT_CACHE_JOB_ID,
-            queue_name="assessment-cache",
-            timeout=constants.JOB_TIMEOUT,
-        )
 
     @patch("wp1.queues.Queue")
     def test_enqueue_assessment_cache_warming(self, mock_queue):
