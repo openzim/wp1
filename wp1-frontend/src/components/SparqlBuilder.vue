@@ -174,7 +174,7 @@ export default {
 </script>
 
 <style scoped>
-@import '../cards.scss';
+@import '../cards.css';
 
 .update-input-cont {
   flex: 0 0 82%;

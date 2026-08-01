@@ -184,7 +184,7 @@
 
 <script>
 import WikiLink from './WikiLink.vue';
-import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
+import PulseLoader from './PulseLoader.vue';
 
 import { localDate } from '../lib/util.js';
 
@@ -222,7 +222,7 @@ export default {
 
       this.loading = true;
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/projects/${projectId}/table`,
+        `${import.meta.env.VITE_API_URL}/projects/${projectId}/table`
       );
       const json = await response.json();
       this.loading = false;
@@ -245,7 +245,7 @@ export default {
 </script>
 
 <style scoped>
-@import '../labels.scss';
+@import '../labels.css';
 
 .loader {
   margin: auto;

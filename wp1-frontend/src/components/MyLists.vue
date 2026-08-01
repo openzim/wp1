@@ -147,11 +147,12 @@
 import $ from 'jquery';
 $.noConflict();
 
-import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
+import PulseLoader from './PulseLoader.vue';
 
 import SecondaryNav from './SecondaryNav.vue';
 import LoginRequired from './LoginRequired.vue';
 import { localDate } from '../lib/util.js';
+import { loginStore } from '../store.js';
 
 export default {
   components: { SecondaryNav, LoginRequired, PulseLoader },
@@ -166,7 +167,7 @@ export default {
   },
   computed: {
     isLoggedIn: function () {
-      return this.$root.$data.isLoggedIn;
+      return loginStore.isLoggedIn;
     },
   },
   methods: {
@@ -291,7 +292,7 @@ export default {
 </script>
 
 <style scoped>
-@import '../cards.scss';
+@import '../cards.css';
 
 .zim-failed a {
   color: #dc3545 !important;

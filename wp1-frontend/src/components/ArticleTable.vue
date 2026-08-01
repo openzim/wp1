@@ -140,7 +140,7 @@ import ArticleTablePagination from './ArticleTablePagination.vue';
 import ArticleTablePageSelect from './ArticleTablePageSelect.vue';
 import ArticleTableRatingSelect from './ArticleTableRatingSelect.vue';
 import ArticleTableNameFilter from './ArticleTableNameFilter.vue';
-import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
+import PulseLoader from './PulseLoader.vue';
 
 export default {
   name: 'article-table',
@@ -309,7 +309,7 @@ export default {
 </script>
 
 <style scoped>
-@import '../labels.scss';
+@import '../labels.css';
 
 h2 {
   text-align: center;

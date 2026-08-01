@@ -45,7 +45,7 @@
 import $ from 'jquery';
 $.noConflict();
 
-import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
+import PulseLoader from './PulseLoader.vue';
 
 export default {
   name: 'assessments-by-project',

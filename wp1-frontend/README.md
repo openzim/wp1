@@ -1,29 +1,32 @@
 # wp1-frontend
 
+The frontend for the WP 1.0 server: a [Vue 3](https://vuejs.org/)
+single-page app (Options API) built with [Vite](https://vite.dev/).
+
 ## Project setup
 
-```
-yarn install
-```
+    yarn install
 
-### Compiles and hot-reloads for development
+### Development server (hot reload, port 5173)
 
-```
-yarn serve
-```
+    yarn dev
 
-### Compiles and minifies for production
+### Production build
 
-```
-yarn build
-```
+    yarn build
 
-### Lints and fixes files
+### Preview the production build (port 5173)
 
-```
-yarn lint
-```
+    yarn serve
 
-### Customize configuration
+## End-to-end tests
 
-See [Configuration Reference](https://cli.vuejs.org/config/).
+The Cypress suite is hermetic — every API call is stubbed with
+`cy.intercept`, so no backend is needed. With the dev server (or a
+built bundle served on port 5173) running:
+
+    $(yarn bin)/cypress run
+
+or interactively:
+
+    $(yarn bin)/cypress open

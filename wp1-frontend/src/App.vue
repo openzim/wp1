@@ -29,10 +29,10 @@
           <li
             :class="
               'nav-item ' +
-              (!this.$route.path.startsWith('/update') &&
-              !this.$route.path.startsWith('/compare') &&
-              !this.$route.path.startsWith('/assessments') &&
-              !this.$route.path.startsWith('/selections')
+              (!$route.path.startsWith('/update') &&
+              !$route.path.startsWith('/compare') &&
+              !$route.path.startsWith('/assessments') &&
+              !$route.path.startsWith('/selections')
                 ? 'active'
                 : '')
             "
@@ -42,7 +42,7 @@
           <li
             :class="
               'nav-item ' +
-              (this.$route.path.startsWith('/selections') ? 'active' : '')
+              ($route.path.startsWith('/selections') ? 'active' : '')
             "
           >
             <router-link class="nav-link" to="/selections/user"
@@ -51,8 +51,7 @@
           </li>
           <li
             :class="
-              'nav-item ' +
-              (this.$route.path.startsWith('/update') ? 'active' : '')
+              'nav-item ' + ($route.path.startsWith('/update') ? 'active' : '')
             "
           >
             <router-link class="nav-link" to="/update"
@@ -61,8 +60,7 @@
           </li>
           <li
             :class="
-              'nav-item ' +
-              (this.$route.path.startsWith('/compare') ? 'active' : '')
+              'nav-item ' + ($route.path.startsWith('/compare') ? 'active' : '')
             "
           >
             <router-link class="nav-link" to="/compare"
@@ -72,7 +70,7 @@
           <li
             :class="
               'nav-item ' +
-              (this.$route.path.startsWith('/assessments') ? 'active' : '')
+              ($route.path.startsWith('/assessments') ? 'active' : '')
             "
           >
             <router-link class="nav-link" to="/assessments"
@@ -81,13 +79,13 @@
           </li>
         </ul>
         <div>
-          <div v-if="this.username">
-            <span class="username"> {{ this.username }} </span>
+          <div v-if="username">
+            <span class="username"> {{ username }} </span>
             <button type="button" class="btn btn-secondary" @click="logout">
               Logout
             </button>
           </div>
-          <a v-else :href="this.loginInitiateUrl"
+          <a v-else :href="loginInitiateUrl"
             ><button type="button" class="btn btn-primary">Login</button>
           </a>
         </div>
@@ -113,6 +111,8 @@
 </template>
 
 <script>
+import { loginStore } from './store.js';
+
 export default {
   name: 'app',
   data: function () {
@@ -127,7 +127,7 @@ export default {
         credentials: 'include',
       });
       this.username = null;
-      this.$root.$data.isLoggedIn = false;
+      loginStore.isLoggedIn = false;
       this.$router.push({ path: `/` });
     },
     identify: async function () {
@@ -152,7 +152,7 @@ export default {
         });
       if (data) {
         this.username = data.username;
-        this.$root.$data.isLoggedIn = true;
+        loginStore.isLoggedIn = true;
       }
     },
   },

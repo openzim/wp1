@@ -150,13 +150,13 @@
               ></slot>
             </div>
             <div
-              v-if="this.success == false || this.deleteSuccess == false"
+              v-if="success == false || deleteSuccess == false"
               id="invalid_articles"
               class="form-group m-4"
             >
               <div class="errors">{{ errors }}</div>
               <textarea
-                v-if="this.success == false && this.computedInvalidItems"
+                v-if="success == false && computedInvalidItems"
                 class="form-control my-list is-invalid"
                 rows="6"
                 ref="invalid"
@@ -349,10 +349,11 @@
 import $ from 'jquery';
 $.noConflict();
 
-import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
+import PulseLoader from './PulseLoader.vue';
 
 import SecondaryNav from './SecondaryNav.vue';
 import LoginRequired from './LoginRequired.vue';
+import { loginStore } from '../store.js';
 
 export default {
   components: { SecondaryNav, LoginRequired, PulseLoader },
@@ -391,7 +392,7 @@ export default {
   },
   computed: {
     isLoggedIn: function () {
-      return this.$root.$data.isLoggedIn;
+      return loginStore.isLoggedIn;
     },
     isEditing: function () {
       return !!this.builderId;
@@ -590,7 +591,10 @@ export default {
       return this.deleteCombinatorActions[item.id] || '';
     },
     setDeleteCombinatorAction: function (id, action) {
-      this.$set(this.deleteCombinatorActions, id, action);
+      this.deleteCombinatorActions = {
+        ...this.deleteCombinatorActions,
+        [id]: action,
+      };
     },
     onDelete: async function () {
       this.deleteSuccess = true;

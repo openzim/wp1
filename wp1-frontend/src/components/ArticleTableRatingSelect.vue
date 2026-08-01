@@ -217,7 +217,7 @@ export default {
 </script>
 
 <style scoped>
-@import '../cards.scss';
+@import '../cards.css';
 
 .custom-select {
   margin: 0 0.5rem;

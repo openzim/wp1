@@ -31,9 +31,9 @@
       <div class="col-xl-6">
         <div v-if="currentProject && (updateTime || jobScheduled)">
           <p>
-            Manual update of <b>{{ this.$route.params.projectName }}</b> has
-            been scheduled. It can take anywhere from 2 - 200 minutes, depending
-            on project size. The next update can be performed
+            Manual update of <b>{{ $route.params.projectName }}</b> has been
+            scheduled. It can take anywhere from 2 - 200 minutes, depending on
+            project size. The next update can be performed
             <span v-if="updateTime"
               >at <b>{{ updateTime }}</b
               >.</span
@@ -69,6 +69,7 @@
 <script>
 import Autocomplete from './Autocomplete.vue';
 import LoginRequired from './LoginRequired.vue';
+import { loginStore } from '../store.js';
 
 export default {
   name: 'update-page',
@@ -120,7 +121,7 @@ export default {
       return null;
     },
     isLoggedIn: function () {
-      return this.$root.$data.isLoggedIn;
+      return loginStore.isLoggedIn;
     },
   },
   watch: {

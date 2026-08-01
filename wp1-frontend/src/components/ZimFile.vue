@@ -67,9 +67,9 @@
               <h2>Too many articles</h2>
               <p>
                 Oh no! It seems that you have hit the limit for the maximum
-                number of articles ({{ this.articleCount.toLocaleString() }} /
-                {{ this.maxArticleCount.toLocaleString() }}). Could it be that
-                such a big selection could be useful to others? How about
+                number of articles ({{ articleCount.toLocaleString() }} /
+                {{ maxArticleCount.toLocaleString() }}). Could it be that such a
+                big selection could be useful to others? How about
                 <a href="https://github.com/openzim/zim-requests"
                   >opening a zim-request</a
                 >
@@ -356,10 +356,11 @@
 
 <script>
 import { byGrapheme } from 'split-by-grapheme';
-import PulseLoader from 'vue-spinner/src/PulseLoader.vue';
+import PulseLoader from './PulseLoader.vue';
 
 import LoginRequired from './LoginRequired.vue';
 import SecondaryNav from './SecondaryNav.vue';
+import { loginStore } from '../store.js';
 
 export default {
   name: 'ZimFile',
@@ -668,7 +669,7 @@ export default {
   },
   computed: {
     isLoggedIn: function () {
-      return this.$root.$data.isLoggedIn;
+      return loginStore.isLoggedIn;
     },
     builderId: function () {
       return this.$route.params.builder_id;

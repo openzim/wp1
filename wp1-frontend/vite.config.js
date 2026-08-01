@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue2';
+import vue from '@vitejs/plugin-vue';
 import inject from '@rollup/plugin-inject';
 
-const path = require('path');
+import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({

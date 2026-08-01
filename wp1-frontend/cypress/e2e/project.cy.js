@@ -65,7 +65,7 @@ describe('the project page', () => {
 
     cy.get('h4').should(
       'contain.text',
-      ' Alien articles  - Top importance / FA quality'
+      'Alien articles  - Top importance / FA quality'
     );
 
     cy.get('tr')
