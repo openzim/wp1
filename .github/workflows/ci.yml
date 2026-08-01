@@ -117,6 +117,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Cypress 15 requires Node 20.1+; don't rely on whatever the runner
+      # image happens to ship.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Get yarn cache directory path
         id: yarn-dep-cache-dir-path
         run: cd wp1-frontend && echo "YARN_CACHE_DIR=$(yarn cache dir)" >> $GITHUB_OUTPUT
