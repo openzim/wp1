@@ -1,0 +1,13 @@
+{
+  "params": { "url": "https://en.wikipedia.org/wiki/Book:Example" },
+  "name": "Book Builder",
+  "model": "wp1.selection.models.book",
+  "project": "en.wikipedia.org",
+  "selection_errors": [
+    {
+      "error_messages": ["The book could not be fetched."],
+      "ext": "tsv",
+      "status": "FAILED"
+    }
+  ]
+}
