@@ -106,7 +106,7 @@ a Docker container with hot-reload support. See the "Starting the web frontend"
 section below.
 
 If you prefer to run the frontend locally without Docker, it requires
-[Node.js](https://nodejs.org/) version 18 to build and run. Once node is
+[Node.js](https://nodejs.org/) version 22 to build and run. Once node is
 installed, to install the requirements for the frontend server, cd into
 `wp1-frontend` and use:
 
