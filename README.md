@@ -111,13 +111,13 @@ installed, to install the requirements for the frontend server, cd into
 `wp1-frontend` and use:
 
 ```bash
-yarn install
+pnpm install
 ```
 
-If you do not have yarn, it can be installed with:
+If you do not have pnpm, it can be enabled with:
 
 ```bash
-npm i -g yarn
+corepack enable
 ```
 
 ### Docker
@@ -185,14 +185,14 @@ either use the Vite dev server:
 
 ```bash
 cd wp1-frontend
-yarn dev
+pnpm dev
 ```
 
 or, to match CI exactly, the built bundle:
 
 ```bash
 cd wp1-frontend
-yarn build --mode staging
+pnpm build --mode staging
 python3 -m http.server 5173 --directory dist/
 ```
 
@@ -200,10 +200,10 @@ Then, in another terminal, run the tests:
 
 ```bash
 cd wp1-frontend
-$(yarn bin)/cypress run
+pnpm exec cypress run
 ```
 
-Or use `$(yarn bin)/cypress open` for the interactive GUI, where you can
+Or use `pnpm exec cypress open` for the interactive GUI, where you can
 follow the prompts to run "Electron E2E tests".
 
 # Development
@@ -323,8 +323,8 @@ Node.js installed. Then install the dependencies and start the dev server:
 
 ```bash
 cd wp1-frontend
-yarn install
-yarn dev
+pnpm install
+pnpm dev
 ```
 
 ## Development credentials.py
