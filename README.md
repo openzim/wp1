@@ -269,7 +269,11 @@ You may need to install the `jq` tool with [these instructions](https://github.c
   ./create_worker.sh
   ```
 
-  This registers a worker with username `test_worker` and generates SSH keys for it to authenticate with the Zimfarm API. The worker is configured with 3 CPU, 20GB RAM and 20GB disk.
+  This generates an SSH key pair, registers a worker named `test-worker` with the Zimfarm API using the public key, and grants it the `wikimedia` context.
+
+  The context grant matters: WP1 creates all of its recipes with the `wikimedia` context, and the Zimfarm scheduler only offers those tasks to workers holding that context. If your ZIM tasks sit forever in "requested" with an online worker, a missing context grant is the usual cause.
+
+  The worker's resources (3 CPU, 20GB RAM, 20GB disk) and supported offliners are reported by the worker-manager container itself when it checks in — see the `ZIMFARM_*` environment variables in `docker-compose-dev.yml`. There is no worker user account: the current Zimfarm API authenticates workers purely by their SSH key.
 
 - Restart the dev stack with a Zimfarm worker now
   ```sh
