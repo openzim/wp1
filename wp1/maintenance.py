@@ -11,6 +11,7 @@ import time
 
 from redis import Redis
 from rq import Queue
+from rq.command import send_stop_job_command
 from rq.registry import StartedJobRegistry
 from rq.suspension import resume, suspend
 
@@ -24,17 +25,18 @@ from wp1.wp10_db import connect as wp10_connect
 
 logger = logging.getLogger(__name__)
 
-# How long update_global_articles waits for in-flight update jobs to finish
-# after suspending the workers, before giving up (and trying again tomorrow).
-DRAIN_TIMEOUT_SECONDS = 60 * 60 * 3
-DRAIN_POLL_SECONDS = 30
+# How long update_global_articles waits for the stopped in-flight update jobs
+# to actually die after being sent the stop command, before giving up (and
+# trying again tomorrow).
+DRAIN_TIMEOUT_SECONDS = 60 * 10
+DRAIN_POLL_SECONDS = 5
 
 # Backstop TTL on the Redis suspension key: if the job dies without reaching
 # resume() (OOM-kill, container restart), workers un-suspend themselves after
 # this long instead of staying paused forever.
 SUSPEND_TTL_SECONDS = 60 * 60 * 8
 
-# Must cover a full drain wait plus the global articles rebuild itself.
+# Must cover the global articles rebuild itself.
 UPDATE_GLOBAL_JOB_TIMEOUT = 60 * 60 * 6
 
 # The queues whose in-flight jobs write project ratings data and therefore
@@ -54,14 +56,16 @@ def update_global_articles():
     """Daily (04:00 UTC): rebuild the global articles table.
 
     The rebuild needs the update workers quiet so that project updates aren't
-    writing ratings data while it runs. Where the old cron script stopped the
-    update workers outright (killing in-flight jobs after 10 seconds), this
-    suspends dequeueing on all RQ workers, waits for in-flight update jobs to
-    drain, rebuilds, and resumes.
+    writing ratings data while it runs, and it supersedes any per-project
+    update jobs that are still in flight — so those are stopped rather than
+    waited on (equivalent to the old cron script's supervisorctl stop, which
+    killed them after 10 seconds). Suspends dequeueing on all RQ workers,
+    stops in-flight update jobs, rebuilds, and resumes.
     """
     redis = redis_connect()
     suspend(redis, ttl=SUSPEND_TTL_SECONDS)
     try:
+        _stop_inflight_update_jobs(redis)
         _wait_for_update_jobs_to_drain(redis)
         rebuild_global_articles()
     finally:
@@ -95,6 +99,19 @@ def rebuild_global_articles():
 
     for project_name in logic_project.project_names_to_update(wikidb):
         logic_project.update_global_articles_for_project_name(wp10db, project_name)
+
+
+def _stop_inflight_update_jobs(redis: Redis):
+    """Tell the workers to kill any currently-executing update jobs."""
+    for queue_name in _UPDATE_QUEUE_NAMES:
+        registry = StartedJobRegistry(queue=Queue(queue_name, connection=redis))
+        for job_id in registry.get_job_ids():
+            try:
+                send_stop_job_command(redis, job_id)
+                logger.info("Stopped in-flight update job %s", job_id)
+            except Exception as e:
+                # Typically the job finished between listing and stopping.
+                logger.info("Could not stop update job %s: %s", job_id, e)
 
 
 def _wait_for_update_jobs_to_drain(redis: Redis):

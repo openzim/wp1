@@ -72,13 +72,14 @@ class MaintenanceTest(BaseWpOneDbTest):
 
         self.assertFalse(is_suspended(self.redis))
 
+    @patch("wp1.maintenance.send_stop_job_command")
     @patch("wp1.maintenance.rebuild_global_articles")
     @patch("wp1.maintenance.redis_connect")
     def test_update_global_articles_times_out_when_update_jobs_stuck(
-        self, mock_redis_connect, mock_rebuild
+        self, mock_redis_connect, mock_rebuild, mock_send_stop
     ):
         mock_redis_connect.return_value = self.redis
-        # Simulate an in-flight update job that never finishes.
+        # Simulate an in-flight update job that survives the stop command.
         registry = StartedJobRegistry(queue=Queue("update", connection=self.redis))
         self.redis.zadd(registry.key, {"in-flight-job:execution": time.time() + 3600})
 
@@ -89,6 +90,7 @@ class MaintenanceTest(BaseWpOneDbTest):
             with self.assertRaises(TimeoutError):
                 maintenance.update_global_articles()
 
+        mock_send_stop.assert_called_once_with(self.redis, "in-flight-job")
         mock_rebuild.assert_not_called()
         self.assertFalse(is_suspended(self.redis))
 
