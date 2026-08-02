@@ -91,8 +91,7 @@ def rebuild_global_articles():
     """Update the global articles table for every project, with no locking.
 
     Callers are responsible for quiescing the update workers first if needed
-    (see update_global_articles). Also runnable standalone via
-    update-global-articles.py.
+    (see update_global_articles).
     """
     wikidb = wiki_connect()
     wp10db = wp10_connect()
