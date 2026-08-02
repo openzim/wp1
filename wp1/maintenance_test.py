@@ -1,9 +1,8 @@
 import time
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from rq import Queue
 from rq.registry import StartedJobRegistry
-from rq.suspension import is_suspended
 
 from wp1 import maintenance
 from wp1.base_db_test import BaseWpOneDbTest
@@ -43,26 +42,33 @@ class MaintenanceTest(BaseWpOneDbTest):
         # Only the global project count; the table upload is production-only.
         self.assertEqual(1, Queue("upload", connection=self.redis).count)
 
+    @patch("wp1.maintenance._supervisorctl")
     @patch("wp1.maintenance.rebuild_global_articles")
     @patch("wp1.maintenance.redis_connect")
-    def test_update_global_articles_suspends_workers_during_rebuild(
-        self, mock_redis_connect, mock_rebuild
+    def test_update_global_articles_stops_workers_during_rebuild(
+        self, mock_redis_connect, mock_rebuild, mock_supervisorctl
     ):
         mock_redis_connect.return_value = self.redis
-        suspended_during_rebuild = []
-        mock_rebuild.side_effect = lambda: suspended_during_rebuild.append(
-            is_suspended(self.redis)
-        )
+        events = []
+        mock_supervisorctl.side_effect = lambda *args: events.append(args)
+        mock_rebuild.side_effect = lambda: events.append("rebuild")
 
         maintenance.update_global_articles()
 
-        self.assertEqual([True], suspended_during_rebuild)
-        self.assertFalse(is_suspended(self.redis))
+        self.assertEqual(
+            [
+                ("stop", maintenance.UPDATE_WORKER_GROUP),
+                "rebuild",
+                ("start", maintenance.UPDATE_WORKER_GROUP),
+            ],
+            events,
+        )
 
+    @patch("wp1.maintenance._supervisorctl")
     @patch("wp1.maintenance.rebuild_global_articles")
     @patch("wp1.maintenance.redis_connect")
-    def test_update_global_articles_resumes_after_failure(
-        self, mock_redis_connect, mock_rebuild
+    def test_update_global_articles_restarts_workers_after_failure(
+        self, mock_redis_connect, mock_rebuild, mock_supervisorctl
     ):
         mock_redis_connect.return_value = self.redis
         mock_rebuild.side_effect = RuntimeError("rebuild blew up")
@@ -70,42 +76,54 @@ class MaintenanceTest(BaseWpOneDbTest):
         with self.assertRaises(RuntimeError):
             maintenance.update_global_articles()
 
-        self.assertFalse(is_suspended(self.redis))
+        mock_supervisorctl.assert_has_calls(
+            [call("start", maintenance.UPDATE_WORKER_GROUP)]
+        )
 
-    @patch("wp1.maintenance.send_stop_job_command")
+    @patch("wp1.maintenance._supervisorctl")
     @patch("wp1.maintenance.rebuild_global_articles")
     @patch("wp1.maintenance.redis_connect")
-    def test_update_global_articles_times_out_when_update_jobs_stuck(
-        self, mock_redis_connect, mock_rebuild, mock_send_stop
+    def test_update_global_articles_aborts_if_workers_cannot_be_stopped(
+        self, mock_redis_connect, mock_rebuild, mock_supervisorctl
     ):
         mock_redis_connect.return_value = self.redis
-        # Simulate an in-flight update job that survives the stop command.
+        mock_supervisorctl.side_effect = OSError("no supervisord")
+
+        with self.assertRaises(OSError):
+            maintenance.update_global_articles()
+
+        mock_rebuild.assert_not_called()
+
+    @patch("wp1.maintenance.send_stop_job_command")
+    @patch("wp1.maintenance._supervisorctl")
+    @patch("wp1.maintenance.rebuild_global_articles")
+    @patch("wp1.maintenance.redis_connect")
+    def test_update_global_articles_stops_inflight_jobs(
+        self, mock_redis_connect, mock_rebuild, mock_supervisorctl, mock_send_stop
+    ):
+        mock_redis_connect.return_value = self.redis
         registry = StartedJobRegistry(queue=Queue("update", connection=self.redis))
         self.redis.zadd(registry.key, {"in-flight-job:execution": time.time() + 3600})
 
-        with (
-            patch.object(maintenance, "DRAIN_POLL_SECONDS", 0.01),
-            patch.object(maintenance, "DRAIN_TIMEOUT_SECONDS", 0.05),
-        ):
-            with self.assertRaises(TimeoutError):
-                maintenance.update_global_articles()
+        maintenance.update_global_articles()
 
         mock_send_stop.assert_called_once_with(self.redis, "in-flight-job")
-        mock_rebuild.assert_not_called()
-        self.assertFalse(is_suspended(self.redis))
+        mock_rebuild.assert_called_once_with()
 
+    @patch("wp1.maintenance.send_stop_job_command")
+    @patch("wp1.maintenance._supervisorctl")
     @patch("wp1.maintenance.rebuild_global_articles")
     @patch("wp1.maintenance.redis_connect")
-    def test_update_global_articles_proceeds_once_update_jobs_finish(
-        self, mock_redis_connect, mock_rebuild
+    def test_update_global_articles_survives_stop_command_failure(
+        self, mock_redis_connect, mock_rebuild, mock_supervisorctl, mock_send_stop
     ):
         mock_redis_connect.return_value = self.redis
-        # An in-flight job whose registry entry has already expired is cleaned
-        # up by the drain check rather than blocking it.
         registry = StartedJobRegistry(queue=Queue("update", connection=self.redis))
-        self.redis.zadd(registry.key, {"finished-job:execution": time.time() - 10})
+        self.redis.zadd(registry.key, {"finished-job:execution": time.time() + 3600})
+        # The job finished between listing and stopping; the rebuild proceeds
+        # because the worker processes get stopped regardless.
+        mock_send_stop.side_effect = Exception("job not currently executing")
 
         maintenance.update_global_articles()
 
         mock_rebuild.assert_called_once_with()
-        self.assertFalse(is_suspended(self.redis))

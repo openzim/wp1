@@ -3,8 +3,9 @@ import logging
 
 from redis import Redis
 from rq import Queue
+from rq.command import send_stop_job_command
 import rq.exceptions
-from rq.job import Job
+from rq.job import Job, JobStatus
 from rq.repeat import Repeat
 
 from wp1 import constants
@@ -255,10 +256,21 @@ def cancel_scheduled_job(redis: Redis, job_id: str):
         return False
 
     try:
-        job.cancel()
-        logger.info("Successfully cancelled scheduled job: %s", job_id)
+        if job.get_status() == JobStatus.STARTED:
+            # cancel() on an executing job doesn't stop the run, and the
+            # worker would still schedule the next repetition when it
+            # completes (Repeat only checks repeats_left). Stop the run
+            # instead: stopped jobs take the failure path, which never
+            # repeats.
+            send_stop_job_command(redis, job_id)
+            logger.info("Stopped executing scheduled job: %s", job_id)
+        else:
+            job.cancel()
+            logger.info("Successfully cancelled scheduled job: %s", job_id)
         return True
     except rq.exceptions.InvalidJobOperation:
+        # Already cancelled, or it finished between the status check and the
+        # stop command; either way there is nothing left to cancel.
         logger.info("Scheduled job %s already finished or cancelled", job_id)
         return True
     except Exception as e:

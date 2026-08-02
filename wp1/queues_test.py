@@ -255,6 +255,21 @@ class QueuesTest(BaseWpOneDbTest):
         self.assertTrue(result)
         self.assertNotIn(job.id, self._zimfile_scheduling_registry())
 
+    @patch("wp1.queues.send_stop_job_command")
+    def test_cancel_scheduled_job_executing(self, mock_send_stop):
+        time = datetime.datetime(2026, 12, 25, 4, 44, 44, tzinfo=datetime.timezone.utc)
+        job = queues.schedule_recurring_zimfarm_task(
+            self.redis, ["arg1", "arg2"], time, 42000, 3
+        )
+        job.set_status("started")
+
+        result = queues.cancel_scheduled_job(self.redis, job.id)
+
+        # An executing job is stopped (which prevents further repetitions),
+        # not cancelled.
+        self.assertTrue(result)
+        mock_send_stop.assert_called_once_with(self.redis, job.id)
+
     def test_cancel_scheduled_job_missing_job(self):
         # A job that no longer exists means there is nothing left to cancel,
         # which callers (e.g. deleting a schedule after all repetitions have
