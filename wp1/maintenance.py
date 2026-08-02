@@ -30,10 +30,11 @@ UPDATE_GLOBAL_JOB_TIMEOUT = 60 * 60 * 6
 # including the maintenance-queue worker these jobs execute on.
 SUPERVISORD_CONF = "/usr/src/app/supervisord.conf"
 
-# The supervisord group of workers for the 'update' queue. The maintenance
-# worker must never be part of this group, or update_global_articles would
-# kill its own worker.
-UPDATE_WORKER_GROUP = "wp1-update:*"
+# The supervisord groups of workers that execute project update jobs, and the
+# queues they serve. The maintenance worker must never be part of these
+# groups, or update_global_articles would kill its own worker.
+UPDATE_WORKER_GROUPS = ("wp1-update:*", "wp1-manual-update:*")
+_UPDATE_QUEUE_NAMES = ("update", "manual-update")
 
 
 def enqueue_all():
@@ -51,19 +52,19 @@ def update_global_articles():
     writing ratings data while it runs, and it supersedes any per-project
     update jobs that are still in flight. Those jobs are sent a stop command
     (so they die cleanly instead of via supervisord's 10s SIGKILL) and then
-    the update worker processes are stopped for the duration of the rebuild.
-    Only the 'update' workers are touched: all other queues (materializer,
-    manual-update, zimfile-*, upload) keep serving users throughout.
+    the update and manual-update worker processes are stopped for the
+    duration of the rebuild. All other queues (materializer, zimfile-*,
+    upload) keep serving users throughout.
     """
     redis = redis_connect()
     _stop_inflight_update_jobs(redis)
     # If the workers can't be stopped, this raises and the rebuild is
     # aborted: rebuilding while update jobs run risks inconsistent data.
-    _supervisorctl("stop", UPDATE_WORKER_GROUP)
+    _supervisorctl("stop", *UPDATE_WORKER_GROUPS)
     try:
         rebuild_global_articles()
     finally:
-        _supervisorctl("start", UPDATE_WORKER_GROUP)
+        _supervisorctl("start", *UPDATE_WORKER_GROUPS)
 
 
 def enqueue_global():
@@ -96,14 +97,15 @@ def rebuild_global_articles():
 
 def _stop_inflight_update_jobs(redis: Redis):
     """Tell the workers to kill any currently-executing update jobs."""
-    registry = StartedJobRegistry(queue=Queue("update", connection=redis))
-    for job_id in registry.get_job_ids():
-        try:
-            send_stop_job_command(redis, job_id)
-            logger.info("Sent stop command to in-flight update job %s", job_id)
-        except Exception as e:
-            # Typically the job finished between listing and stopping.
-            logger.info("Could not stop update job %s: %s", job_id, e)
+    for queue_name in _UPDATE_QUEUE_NAMES:
+        registry = StartedJobRegistry(queue=Queue(queue_name, connection=redis))
+        for job_id in registry.get_job_ids():
+            try:
+                send_stop_job_command(redis, job_id)
+                logger.info("Sent stop command to in-flight update job %s", job_id)
+            except Exception as e:
+                # Typically the job finished between listing and stopping.
+                logger.info("Could not stop update job %s: %s", job_id, e)
 
 
 def _restart_upload_workers():

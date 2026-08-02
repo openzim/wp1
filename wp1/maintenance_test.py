@@ -57,9 +57,9 @@ class MaintenanceTest(BaseWpOneDbTest):
 
         self.assertEqual(
             [
-                ("stop", maintenance.UPDATE_WORKER_GROUP),
+                ("stop", *maintenance.UPDATE_WORKER_GROUPS),
                 "rebuild",
-                ("start", maintenance.UPDATE_WORKER_GROUP),
+                ("start", *maintenance.UPDATE_WORKER_GROUPS),
             ],
             events,
         )
@@ -77,7 +77,7 @@ class MaintenanceTest(BaseWpOneDbTest):
             maintenance.update_global_articles()
 
         mock_supervisorctl.assert_has_calls(
-            [call("start", maintenance.UPDATE_WORKER_GROUP)]
+            [call("start", *maintenance.UPDATE_WORKER_GROUPS)]
         )
 
     @patch("wp1.maintenance._supervisorctl")
