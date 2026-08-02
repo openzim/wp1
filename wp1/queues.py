@@ -3,9 +3,10 @@ import logging
 
 from redis import Redis
 from rq import Queue
+from rq.command import send_stop_job_command
 import rq.exceptions
-from rq.job import Job
-from rq_scheduler import Scheduler
+from rq.job import Job, JobStatus
+from rq.repeat import Repeat
 
 from wp1 import constants
 from wp1 import custom_tables
@@ -21,15 +22,6 @@ from wp1.timestamp import utcnow
 from wp1.credentials import ENV
 
 logger = logging.getLogger(__name__)
-
-# Recurring job that keeps the (slow) all-projects assessment-numbers query
-# warm in the cache. The underlying ratings data is rebuilt once per day by the
-# update that starts at midnight UTC and takes ~8 hours, so there's no point
-# recomputing more than daily. We run at noon UTC, comfortably after that update
-# finishes. The cache TTL (see logic.rating.cache_assessment_numbers) is a bit
-# over 24h so each day's run refreshes the entry before it can expire.
-ASSESSMENT_CACHE_JOB_ID = "warm-assessment-cache"
-ASSESSMENT_CACHE_CRON = "0 12 * * *"  # noon UTC, daily
 
 
 def _get_queues(redis, manual=False):
@@ -53,36 +45,13 @@ def _get_assessment_cache_queue(redis):
     return Queue("assessment-cache", connection=redis)
 
 
-def schedule_assessment_cache_warming(redis: Redis):
-    """Idempotently (re)register the recurring assessment-cache warming job.
-
-    Safe to call on every deploy/worker boot: any previously registered
-    schedule with the same id is cancelled first, so the schedule never stacks
-    up into duplicates. The job runs once a day at noon UTC (cron times are UTC
-    by default in rq-scheduler).
-    """
-    queue = _get_assessment_cache_queue(redis)
-    scheduler = Scheduler(connection=queue.connection, queue=queue)
-
-    scheduler.cancel(ASSESSMENT_CACHE_JOB_ID)
-    return scheduler.cron(
-        ASSESSMENT_CACHE_CRON,
-        func=logic_rating.update_assessment_cache,
-        id=ASSESSMENT_CACHE_JOB_ID,
-        queue_name="assessment-cache",
-        # Without this, the job inherits RQ's 180s default timeout, but the
-        # query takes minutes in production. Use the repo-wide job timeout.
-        timeout=constants.JOB_TIMEOUT,
-    )
-
-
 def enqueue_assessment_cache_warming(redis: Redis):
     """Enqueue a one-off assessment-cache warming job to run immediately.
 
-    Called on container boot (see schedule-cache-warming.py) alongside
-    registering the recurring schedule, so that a fresh deploy or a Redis
-    restart seeds the cache right away instead of leaving the slow query to run
-    inline on the first web request until the next scheduled (noon UTC) run.
+    Called on container boot (see warm-assessment-cache.py) so that a fresh
+    deploy or a Redis restart seeds the cache right away instead of leaving the
+    slow query to run inline on the first web request until the next scheduled
+    (noon UTC, see cron_config.py) run.
     """
     queue = _get_assessment_cache_queue(redis)
     return queue.enqueue(
@@ -241,35 +210,68 @@ def schedule_recurring_zimfarm_task(
     redis: Redis, args, scheduled_time, interval_seconds, repeat_count
 ):
     """
-    Schedule a recurring zimfarm task using rq-scheduler.
+    Schedule a recurring zimfarm task, first running at scheduled_time and then
+    repeating repeat_count more times, interval_seconds apart. The same job
+    (and job id) is re-scheduled for each repetition, so the returned job's id
+    stays valid for cancellation for the lifetime of the schedule.
+
+    Note that unlike rq-scheduler, RQ's Repeat only re-schedules a job after it
+    completes *successfully*: a failed run ends the remaining repetitions.
     """
     queue = _get_zimfile_scheduling_queue(redis)
-    scheduler = Scheduler(connection=queue.connection, queue=queue)
 
-    job = scheduler.schedule(
-        scheduled_time=scheduled_time,
-        func=logic_builder.request_scheduled_zim_file_for_builder,
+    # Repeat(times=0) is rejected by RQ; a single run is just a plain
+    # scheduled job.
+    repeat = None
+    if repeat_count > 0:
+        repeat = Repeat(times=repeat_count, interval=interval_seconds)
+
+    return queue.enqueue_at(
+        scheduled_time,
+        logic_builder.request_scheduled_zim_file_for_builder,
         args=args,
-        interval=interval_seconds,
-        repeat=repeat_count,
-        queue_name="zimfile-scheduling",
+        repeat=repeat,
+        job_timeout=constants.JOB_TIMEOUT,
+        failure_ttl=constants.JOB_FAILURE_TTL,
     )
-
-    return job
 
 
 def cancel_scheduled_job(redis: Redis, job_id: str):
     """
     Cancel a scheduled RQ job by its job ID.
+
+    Returns True when the job is cancelled or is already gone/finished (there
+    is nothing left to cancel), False on an unexpected error.
     """
     if isinstance(job_id, bytes):
         job_id = job_id.decode("utf-8")
 
     try:
-        queue = _get_zimfile_scheduling_queue(redis)
-        scheduler = Scheduler(connection=queue.connection, queue=queue)
-        scheduler.cancel(job_id)
-        logger.info("Successfully cancelled scheduled job: %s", job_id)
+        job = Job.fetch(job_id, connection=redis)
+    except rq.exceptions.NoSuchJobError:
+        logger.info("Scheduled job %s no longer exists, nothing to cancel", job_id)
+        return True
+    except Exception as e:
+        logger.warning("Failed to fetch scheduled job %s: %s", job_id, str(e))
+        return False
+
+    try:
+        if job.get_status() == JobStatus.STARTED:
+            # cancel() on an executing job doesn't stop the run, and the
+            # worker would still schedule the next repetition when it
+            # completes (Repeat only checks repeats_left). Stop the run
+            # instead: stopped jobs take the failure path, which never
+            # repeats.
+            send_stop_job_command(redis, job_id)
+            logger.info("Stopped executing scheduled job: %s", job_id)
+        else:
+            job.cancel()
+            logger.info("Successfully cancelled scheduled job: %s", job_id)
+        return True
+    except rq.exceptions.InvalidJobOperation:
+        # Already cancelled, or it finished between the status check and the
+        # stop command; either way there is nothing left to cancel.
+        logger.info("Scheduled job %s already finished or cancelled", job_id)
         return True
     except Exception as e:
         logger.warning("Failed to cancel scheduled job %s: %s", job_id, str(e))

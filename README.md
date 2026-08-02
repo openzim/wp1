@@ -25,8 +25,10 @@ Both the `web` and `workers` docker images use the same requirements,
 though [Flask](https://www.palletsprojects.com/p/flask/) and its
 dependencies are not utilized by the worker code.
 
-The `cron` directory contains wrapper scripts for cron jobs that are
-run [inside the workers image](https://github.com/openzim/wp1/blob/master/docker/workers/Dockerfile#L15).
+`cron_config.py` defines the recurring jobs (nightly project update
+enqueues, global articles table rebuild, assessment cache warming) that
+are scheduled by RQ's built-in cron scheduler, run via supervisord inside
+the workers image.
 
 The `setup` directory contains a historical record of the database
 schema used by the tool for what is referred to in code as the `wp10`
