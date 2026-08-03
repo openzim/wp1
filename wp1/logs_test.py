@@ -861,6 +861,7 @@ class LogsTest(BaseCombinedDbTest):
     def test_upload_log_page_for_project(
         self, patched_api, patched_wp10, patched_wiki, patched_redis
     ):
+        patched_api.get_page.return_value.text.return_value = ""
         logs.update_log_page_for_project(b"Catholicism")
         call = patched_api.save_page.call_args[0]
         self.assertEqual("Update logs for past 7 days", call[2])
@@ -874,6 +875,7 @@ class LogsTest(BaseCombinedDbTest):
         self, patched_datetime, patched_api, patched_wp10, patched_wiki, patched_redis
     ):
         project_name = b"Catholicism"
+        patched_api.get_page.return_value.text.return_value = ""
         header = "<noinclude>{{Log}}\n{{Automatically generated}}</noinclude>\n"
         no_logs_msg = (
             "'''There were no logs for this project from December 21, "
@@ -887,11 +889,117 @@ class LogsTest(BaseCombinedDbTest):
     @patch("wp1.logs.wiki_connect")
     @patch("wp1.logs.wp10_connect")
     @patch("wp1.logs.api")
+    @patch("wp1.logs.get_current_datetime", return_value=datetime(2018, 12, 28, 12))
+    def test_upload_log_page_no_logs_live_page_has_recent_sections_skips(
+        self, patched_datetime, patched_api, patched_wp10, patched_wiki, patched_redis
+    ):
+        patched_api.get_page.return_value.text.return_value = (
+            "<noinclude>{{Log}}\n{{Automatically generated}}</noinclude>\n"
+            "=== December 26, 2018 ===\n"
+            "==== Assessed ====\n"
+            "* '''[[Test results]]''' assessed.\n"
+        )
+        logs.update_log_page_for_project(b"Catholicism")
+        patched_api.save_page.assert_not_called()
+
+    @patch("wp1.logs.redis_connect")
+    @patch("wp1.logs.wiki_connect")
+    @patch("wp1.logs.wp10_connect")
+    @patch("wp1.logs.api")
+    @patch("wp1.logs.get_current_datetime", return_value=datetime(2018, 12, 28, 12))
+    def test_upload_log_page_no_logs_live_page_only_old_sections_saves(
+        self, patched_datetime, patched_api, patched_wp10, patched_wiki, patched_redis
+    ):
+        patched_api.get_page.return_value.text.return_value = (
+            "<noinclude>{{Log}}\n{{Automatically generated}}</noinclude>\n"
+            "=== December 20, 2018 ===\n"
+            "==== Assessed ====\n"
+            "* '''[[Test results]]''' assessed.\n"
+        )
+        header = "<noinclude>{{Log}}\n{{Automatically generated}}</noinclude>\n"
+        no_logs_msg = (
+            "'''There were no logs for this project from December 21, "
+            "2018 - December 28, 2018.'''"
+        )
+        logs.update_log_page_for_project(b"Catholicism")
+        call = patched_api.save_page.call_args[0]
+        self.assertEqual(header + no_logs_msg, call[1])
+
+    @patch("wp1.logs.redis_connect")
+    @patch("wp1.logs.wiki_connect")
+    @patch("wp1.logs.wp10_connect")
+    @patch("wp1.logs.api")
+    @patch("wp1.logs.generate_log_edits")
+    @patch("wp1.logs.calculate_logs_to_update")
+    @patch("wp1.logs.get_current_datetime", return_value=datetime(2018, 12, 28, 12))
+    def test_upload_log_page_live_page_date_missing_from_logs_skips(
+        self,
+        patched_datetime,
+        patched_calculate,
+        patched_generate,
+        patched_api,
+        patched_wp10,
+        patched_wiki,
+        patched_redis,
+    ):
+        patched_calculate.return_value = {datetime(2018, 12, 27).date(): ["some log"]}
+        patched_generate.return_value = ["=== December 27, 2018 ===\ncontent"]
+        patched_api.get_page.return_value.text.return_value = (
+            "<noinclude>{{Log}}\n{{Automatically generated}}</noinclude>\n"
+            "=== December 27, 2018 ===\n"
+            "==== Assessed ====\n"
+            "* '''[[Test results]]''' assessed.\n"
+            "=== December 26, 2018 ===\n"
+            "==== Assessed ====\n"
+            "* '''[[Testing tools]]''' assessed.\n"
+        )
+        logs.update_log_page_for_project(b"Catholicism")
+        patched_api.save_page.assert_not_called()
+
+    @patch("wp1.logs.redis_connect")
+    @patch("wp1.logs.wiki_connect")
+    @patch("wp1.logs.wp10_connect")
+    @patch("wp1.logs.api")
+    @patch("wp1.logs.generate_log_edits")
+    @patch("wp1.logs.calculate_logs_to_update")
+    @patch("wp1.logs.get_current_datetime", return_value=datetime(2018, 12, 28, 12))
+    def test_upload_log_page_live_page_dates_all_in_logs_saves(
+        self,
+        patched_datetime,
+        patched_calculate,
+        patched_generate,
+        patched_api,
+        patched_wp10,
+        patched_wiki,
+        patched_redis,
+    ):
+        patched_calculate.return_value = {
+            datetime(2018, 12, 26).date(): ["some log"],
+            datetime(2018, 12, 27).date(): ["other log"],
+        }
+        patched_generate.return_value = ["=== December 27, 2018 ===\ncontent"]
+        patched_api.get_page.return_value.text.return_value = (
+            "<noinclude>{{Log}}\n{{Automatically generated}}</noinclude>\n"
+            "=== December 27, 2018 ===\n"
+            "==== Assessed ====\n"
+            "* '''[[Test results]]''' assessed.\n"
+            "=== December 20, 2018 ===\n"
+            "==== Assessed ====\n"
+            "* '''[[Testing tools]]''' assessed.\n"
+        )
+        logs.update_log_page_for_project(b"Catholicism")
+        patched_api.save_page.assert_called_once()
+
+    @patch("wp1.logs.redis_connect")
+    @patch("wp1.logs.wiki_connect")
+    @patch("wp1.logs.wp10_connect")
+    @patch("wp1.logs.api")
     @patch("wp1.logs.generate_log_edits")
     def test_upload_log_page_for_project_huge_text(
         self, patched_generate, patched_api, patched_wp10, patched_wiki, patched_redis
     ):
         project_name = b"Catholicism"
+        patched_api.get_page.return_value.text.return_value = ""
         header = "<noinclude>{{Log}}\n{{Automatically generated}}</noinclude>\n"
         text = "a" * 1000 * 1024
         patched_generate.return_value = [text, text, text]
@@ -908,6 +1016,7 @@ class LogsTest(BaseCombinedDbTest):
         self, patched_generate, patched_api, patched_wp10, patched_wiki, patched_redis
     ):
         project_name = b"Catholicism"
+        patched_api.get_page.return_value.text.return_value = ""
         sorry_msg = "Sorry, all of the logs for this date were too large to " "upload."
         header = "<noinclude>{{Log}}\n{{Automatically generated}}</noinclude>\n"
         text = "a" * 3000 * 1024
