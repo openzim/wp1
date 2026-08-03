@@ -28,6 +28,12 @@ NOT_A_CLASS = config["NOT_A_CLASS"].encode("utf-8")
 
 RE_EXTRACT_TIME = re.compile(r"Log for ([^(]+)")
 
+RE_SECTION_DATE = re.compile(r"^===\s*([^=\n]+?)\s*===\s*$", re.MULTILINE)
+
+# LOG_DATE_FORMAT uses %-d, which strftime supports but strptime does not;
+# %d parses both padded and unpadded day numbers.
+LOG_DATE_PARSE_FORMAT = "%B %d, %Y"
+
 
 def log_page_name(project_name):
     return (
@@ -204,6 +210,27 @@ def generate_log_edits(wikidb, wp10db, project_name, log_map):
     return sorted_sections
 
 
+def live_page_dates_missing_from_logs(page_text, log_dates, from_dt):
+    """Dates of log sections on the live page that are inside the 7-day window
+    but absent from the logs read from Redis.
+
+    Under normal operation this is empty: a section still inside the window
+    was rendered from Redis keys whose 7-day TTL cannot have expired yet. A
+    non-empty result means Redis lost the log data (e.g. the container was
+    recreated without persistence), and regenerating the page would destroy
+    real log history. See https://github.com/openzim/wp1/issues/1244.
+    """
+    missing = []
+    for match in RE_SECTION_DATE.finditer(page_text):
+        try:
+            dt = datetime.strptime(match.group(1), LOG_DATE_PARSE_FORMAT).date()
+        except ValueError:
+            continue
+        if dt > from_dt.date() and dt not in log_dates:
+            missing.append(dt)
+    return missing
+
+
 def update_log_page_for_project(project_name):
     wikidb = wiki_connect()
     wp10db = wp10_connect()
@@ -216,11 +243,25 @@ def update_log_page_for_project(project_name):
 
         p = api.get_page(log_page_name(project_name))
 
+        today = get_current_datetime()
+        from_dt = today - timedelta(days=7)
+
+        page_text = p.text() if p is not None else ""
+        missing = live_page_dates_missing_from_logs(page_text, set(log_map), from_dt)
+        if missing:
+            logger.error(
+                "Skipping log page update for %s: the live page has log "
+                "sections for %s but Redis has no logs for those dates. "
+                "This means the Redis log data was lost; updating the page "
+                "would overwrite real log history.",
+                project_name,
+                ", ".join(str(dt) for dt in missing),
+            )
+            return
+
         header = "<noinclude>{{Log}}\n{{Automatically generated}}</noinclude>\n"
 
         if len(edits) == 0:
-            today = get_current_datetime()
-            from_dt = get_current_datetime() - timedelta(days=7)
             update = "%s'''There were no logs for this project from %s - %s.'''" % (
                 header,
                 from_dt.strftime(LOG_DATE_FORMAT),
