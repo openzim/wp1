@@ -1,10 +1,19 @@
 version: '3.5'
 services:
   redis:
-    image: redis
+    # Pin the minor version: an unpinned `redis` tag caused the container to
+    # be recreated on a routine deploy pull (2026-08-01), which destroyed all
+    # data because it had no volume. See
+    # https://github.com/openzim/wp1/issues/1244. Upgrade deliberately by
+    # bumping this tag.
+    image: redis:8.10
     container_name: wp1bot-redis
     expose:
       - 6379
+    volumes:
+      # RQ queue state and the 7-day article assessment log history live only
+      # in Redis. This volume makes them survive container recreation.
+      - redis-data:/data
     restart: always
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
@@ -122,3 +131,6 @@ services:
 networks:
   default:
     name: openzim.org
+
+volumes:
+  redis-data:

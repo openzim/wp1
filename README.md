@@ -412,6 +412,20 @@ The `serve` command should print out the port to view the docs at, likely localh
 - Run the production database migrations in the worker container:
   - `sudo docker exec -ti -e PYTHONPATH=. wp1bot-workers yoyo -c /usr/src/app/db/production/yoyo.ini apply`
 
+## Redis persistence
+
+Redis holds the RQ queue state and the only copy of the rolling 7-day
+article assessment log history (used to generate the on-wiki log pages).
+The `redis` service therefore stores its data in the `redis-data` volume
+and its image tag is pinned in `docker-compose.yml`. To upgrade Redis,
+bump the tag deliberately and deploy normally; the volume preserves the
+data across the container recreation. Do not deploy with an unpinned
+`redis` image: a surprise upstream image update recreates the container,
+and before the volume existed that meant losing the entire keyspace
+(this happened on 2026-08-01 and overwrote hundreds of on-wiki log pages
+with false "no logs" notices; see
+[issue #1244](https://github.com/openzim/wp1/issues/1244)).
+
 # Rolling back production
 
 In addition to the moving `release` tag, every push to the `release`
