@@ -83,7 +83,10 @@ def create_app(session_type="redis"):
     @app.teardown_request
     def close_dbs(ex):
         if has_db("wp10db"):
-            conn = get_db("wp10db")
+            # Pop rather than get: Flask runs teardown a second time when a
+            # test client's preserved request context is finally popped, and
+            # pymysql raises if the connection is closed twice.
+            conn = flask.g.pop("wp10db")
             conn.close()
 
     @app.route("/")
