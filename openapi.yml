@@ -14,35 +14,69 @@ info:
   license:
     name: 'GPL v2 or greater'
     url: 'https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html'
+tags:
+  - name: Projects
+    description: 'WikiProjects that the WP 1.0 bot tracks, and their article ratings.'
+  - name: Articles
+    description: 'Utilities for linking to articles on Wikipedia.'
+  - name: Sites
+    description: 'The list of MediaWiki sites that Selections can be built against.'
+  - name: Builders
+    description: 'Builders are the user-owned specifications that produce Selections (article lists) and ZIM files.'
+  - name: Selections
+    description: 'Materialized article lists belonging to a Builder.'
+  - name: ZIM
+    description: 'ZIM file generation via the Zimfarm, and the email notifications for it.'
+  - name: OAuth
+    description: 'Login/logout via MediaWiki OAuth. Sessions are held in a cookie.'
+  - name: Meta
+    description: 'Endpoints describing the API itself.'
 paths:
-  /articles/{articleName}/{timestamp}/redirect:
+  /openapi.yml:
     get:
-      summary: 'Redirect to the given Wikipedia article at the revision indicated by the timestamp'
-      operationId: articleRedirect
+      summary: 'This OpenAPI document, which is rendered by the swagger-ui frontend hosted at the root of this server.'
+      operationId: openapiSpec
+      tags:
+        - Meta
       responses:
-        302:
+        '200':
           description: 'Successful operation'
-        404:
-          description: 'The article with that name could not be found'
+          content:
+            application/yaml:
+              schema:
+                type: string
+  /articles/redirect:
+    get:
+      summary: 'Redirect to the given Wikipedia article at the revision that was current at the given timestamp'
+      operationId: articleRedirect
+      tags:
+        - Articles
+      responses:
+        '302':
+          description: 'Successful operation, redirect to the article revision on Wikipedia'
+        '404':
+          description: 'No revision of that article could be found for that timestamp'
       parameters:
-        - name: timestamp
-          in: path
-          required: true
-          description: 'A timestamp like 2020-06-22T10:55:10Z which represents the time of the revision to be redirected to'
-          schema:
-            type: string
-        - name: articleName
-          in: path
+        - name: name
+          in: query
           required: true
           description: 'The name of the article, with namespace if required, as it appears on Wikipedia'
           schema:
             type: string
-  /projects:
+        - name: timestamp
+          in: query
+          required: true
+          description: 'A timestamp like 2020-06-22T10:55:10Z which represents the time of the revision to be redirected to'
+          schema:
+            type: string
+  /projects/:
     get:
       summary: 'List all projects that the WP 1.0 bot updates'
       operationId: listProjects
+      tags:
+        - Projects
       responses:
-        200:
+        '200':
           description: 'Successful operation'
           content:
             application/json:
@@ -50,14 +84,14 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Project'
-        404:
-          description: 'No project with that projectId was found'
   /projects/count:
     get:
       summary: 'Count of the total number of projects'
       operationId: countProjects
+      tags:
+        - Projects
       responses:
-        200:
+        '200':
           description: 'Successful operation'
           content:
             application/json:
@@ -66,17 +100,44 @@ paths:
                 properties:
                   count:
                     type: integer
+  /projects/assessments:
+    get:
+      summary: 'The number of assessed and unassessed articles in every project, ordered by number of unassessed articles descending.'
+      description: 'This data is expensive to compute and is served from a cache that is warmed by a recurring job, so it may lag behind the ratings tables by up to a day.'
+      operationId: projectAssessments
+      tags:
+        - Projects
+      responses:
+        '200':
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: array
+                description: 'Each entry is a fixed length triple of [project name, unassessed count, assessed count].'
+                items:
+                  type: array
+                  minItems: 3
+                  maxItems: 3
+                  items:
+                    oneOf:
+                      - type: string
+                      - type: integer
   /projects/{projectId}:
     get:
       summary: 'Retrieve the entry for a specific project'
       operationId: getProject
+      tags:
+        - Projects
       responses:
-        200:
+        '200':
           description: 'Successful operation'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Project'
+        '404':
+          description: 'No project with that projectId was found'
     parameters:
       - name: projectId
         in: path
@@ -88,8 +149,10 @@ paths:
     get:
       summary: 'Data for building a summary table for a given project'
       operationId: projectTable
+      tags:
+        - Projects
       responses:
-        200:
+        '200':
           description: 'Successful operation'
           content:
             application/json:
@@ -99,7 +162,7 @@ paths:
                   table_data:
                     type: object
                     description: 'The various data needed to construct the table'
-        404:
+        '404':
           description: 'No project with that projectId was found'
     parameters:
       - name: projectId
@@ -111,9 +174,12 @@ paths:
   /projects/{projectId}/articles:
     get:
       summary: 'List of articles for a project, optionally filtered by quality/importance'
+      description: 'If the projectB parameter is provided, this endpoint instead compares two projects, and each entry of the returned articles array is a two element array of the matching article in project A and project B.'
       operationId: projectArticles
+      tags:
+        - Projects
       responses:
-        200:
+        '200':
           description: 'Successful operation'
           content:
             application/json:
@@ -124,14 +190,16 @@ paths:
                     type: object
                     properties:
                       page:
-                        type: number
-                        description: 'The current page of results. Will be 1 if no page is specified'
+                        description: 'The current page of results. This echoes back the page query parameter verbatim, as a string, or is the number 1 if no page was specified.'
+                        oneOf:
+                          - type: string
+                          - type: integer
                       total:
                         type: number
                         description: 'The total number of results for the query'
                       total_pages:
                         type: number
-                        description: 'The total number of pages of results, by 100'
+                        description: 'The total number of pages of results, given the current page size'
                       display:
                         type: object
                         properties:
@@ -141,14 +209,24 @@ paths:
                           end:
                             type: number
                             description: 'The article number at which the returned page of results ends'
+                          num_rows:
+                            type: number
+                            description: 'The page size that was applied to this query. Defaults to 100 and is capped at 500.'
                   articles:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Article'
-        400:
-          description: 'The page parameter was either not a number, or a negative number'
-        404:
-          description: 'No project with that projectId was found'
+                      oneOf:
+                        - $ref: '#/components/schemas/Article'
+                        - type: array
+                          description: 'Returned when projectB is specified: the article in project A followed by the article in project B.'
+                          minItems: 2
+                          maxItems: 2
+                          items:
+                            $ref: '#/components/schemas/Article'
+        '400':
+          description: 'The page or numRows parameter was either not a number, or less than 1'
+        '404':
+          description: 'No project with that projectId (or projectB) was found'
     parameters:
       - name: projectId
         in: path
@@ -177,7 +255,7 @@ paths:
       - name: numRows
         in: query
         required: false
-        description: 'The number of rows (results) to return.'
+        description: 'The number of rows (results) to return. Defaults to 100, values above 500 are clamped to 500.'
         schema:
           type: number
       - name: articlePattern
@@ -185,22 +263,42 @@ paths:
         required: false
         description: 'A string to match the article name against. If the article title is LIKE "%articlePattern%", the article is returned.'
         schema:
-          type: number
+          type: string
+      - name: projectB
+        in: query
+        required: false
+        description: 'The name of a second project to compare against. When given, only articles that appear in both projects are returned, and each entry of the articles array is a two element array.'
+        schema:
+          type: string
+      - name: qualityB
+        in: query
+        required: false
+        description: 'The quality class used to filter the projectB side of a comparison. Ignored unless projectB is given.'
+        schema:
+          type: string
+      - name: importanceB
+        in: query
+        required: false
+        description: 'The importance class used to filter the projectB side of a comparison. Ignored unless projectB is given.'
+        schema:
+          type: string
   /projects/{projectId}/articles/random:
     get:
       summary: 'Get a random article for a project, optionally filtered by quality/importance'
       operationId: projectRandomArticle
+      tags:
+        - Projects
       responses:
-        200:
+        '200':
           description: 'Successful operation'
           content:
             application/json:
               schema:
                 type: string
                 description: 'A URL to the random article on Wikipedia'
-        204:
+        '204':
           description: 'No article could be found matching the given criteria'
-        404:
+        '404':
           description: 'No project with that projectId was found'
       parameters:
         - name: projectId
@@ -225,15 +323,16 @@ paths:
     get:
       summary: 'Get a mapping of category names (such as "A-Class") to an href on Wikipedia to link to and the text of such a link. The mapping can also be to simply a string which means no link is possible and the string itself should be displayed.'
       operationId: projectCategoryLinks
+      tags:
+        - Projects
       responses:
-        200:
+        '200':
           description: 'Successful operation'
           content:
             application/json:
               schema:
-                type: object
-                additionalProperties: true
-        404:
+                $ref: '#/components/schemas/CategoryLinkMap'
+        '404':
           description: 'No project with that projectId was found'
       parameters:
         - name: projectId
@@ -246,15 +345,21 @@ paths:
     get:
       summary: 'The same as category_links, but the result is sorted into quality/importance designations.'
       operationId: projectCategoryLinksSorted
+      tags:
+        - Projects
       responses:
-        200:
+        '200':
           description: 'Successful operation'
           content:
             application/json:
               schema:
                 type: object
-                additionalProperties: true
-        404:
+                properties:
+                  quality:
+                    $ref: '#/components/schemas/CategoryLinkMap'
+                  importance:
+                    $ref: '#/components/schemas/CategoryLinkMap'
+        '404':
           description: 'No project with that projectId was found'
       parameters:
         - name: projectId
@@ -267,30 +372,26 @@ paths:
     post:
       summary: 'Schedule a manual update of a project. This includes fetching new assessments from Wikipedia, and updating Wikipedia with assessment and log tables. This can only be done once per hour.'
       operationId: projectUpdate
+      tags:
+        - Projects
+      security:
+        - sessionCookie: []
       responses:
-        200:
+        '200':
           description: 'Successful operation'
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  next_update_time:
-                    type: string
-                    description: 'A string representing the UTC timestamp of when the next manual update can be performed.'
-        400:
+                $ref: '#/components/schemas/NextUpdateTime'
+        '400':
           description: 'The update could not be performed because it is too soon after another update. Check the next_update_time value in the returned response.'
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  next_update_time:
-                    type: string
-                    description: 'A string representing the UTC timestamp of when the next manual update can be performed.'
-        401:
+                $ref: '#/components/schemas/NextUpdateTime'
+        '401':
           description: 'Unauthorized. You must be logged in to perform a project update.'
-        404:
+        '404':
           description: 'No project with that projectId was found'
     parameters:
       - name: projectId
@@ -303,18 +404,16 @@ paths:
     get:
       summary: 'Get the time at which the given project can next be scheduled for a manual update, or null if the project is currently eligible for a manual update.'
       operationId: projectNextUpdateTime
+      tags:
+        - Projects
       responses:
-        200:
+        '200':
           description: 'Successful operation'
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  next_update_time:
-                    type: string
-                    description: 'A string representing the UTC timestamp of when the next manual update can be performed.'
-        404:
+                $ref: '#/components/schemas/NextUpdateTime'
+        '404':
           description: 'No project with that projectId was found'
     parameters:
       - name: projectId
@@ -327,8 +426,10 @@ paths:
     get:
       summary: 'Get the status/progress of a manual update job. If there is no manual update job, or if its status has expired, the "queue" and "job" keys will have null values.'
       operationId: projectUpdateProgress
+      tags:
+        - Projects
       responses:
-        200:
+        '200':
           description: 'Successful operation'
           content:
             application/json:
@@ -337,6 +438,7 @@ paths:
                 properties:
                   queue:
                     type: object
+                    nullable: true
                     properties:
                       status:
                         type: string
@@ -346,6 +448,8 @@ paths:
                         description: 'A datetime string representing when this job finished. Only available if the status key has a value of "finished"'
                   job:
                     type: object
+                    nullable: true
+                    description: 'The progress of the update job, or null if no progress has been reported.'
                     properties:
                       progress:
                         type: integer
@@ -353,8 +457,7 @@ paths:
                       total:
                         type: integer
                         description: 'An abstract number representing the total amount of progress that must be made for this job to be considered complete. Note that it is considered reasonable for the progress number to reach a value higher than this total.'
-                    description: 'A string representing the UTC timestamp of when the next manual update can be performed.'
-        404:
+        '404':
           description: 'No project with that projectId was found'
     parameters:
       - name: projectId
@@ -363,12 +466,14 @@ paths:
         description: 'The name of the project, with spaces replaced by "_"'
         schema:
           type: string
-  /sites:
+  /sites/:
     get:
       summary: 'Get lists of mediawiki projects through mediawiki API'
       operationId: getWikiProjects
+      tags:
+        - Sites
       responses:
-        200:
+        '200':
           description: 'Successful operation'
           content:
             application/json:
@@ -379,51 +484,50 @@ paths:
                     type: array
                     items:
                       type: string
-  /builders:
+  /builders/:
     post:
       summary: 'Save a new Builder, validating it first and returning invalid items if they exist'
       operationId: createBuilder
+      tags:
+        - Builders
+      security:
+        - sessionCookie: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                model:
-                  type: string
-                params:
-                  type: object
-                name:
-                  type: string
-                project:
-                  type: string
+              $ref: '#/components/schemas/BuilderSpec'
       responses:
-        200:
+        '200':
           description: 'Successful operation'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreateOrUpdateListResponse'
-        401:
+        '400':
+          description: 'The request was missing a name, project, model or params, or the model could not be resolved.'
+        '401':
           description: 'Unauthorized. You must be logged in to save a list.'
-        400:
-          description: 'Request with either empty list_name or project or articles'
   /builders/{builderId}:
     get:
       summary: 'Return the builder with the given id'
-      operationId: getSimpleList
+      operationId: getBuilder
+      tags:
+        - Builders
+      security:
+        - sessionCookie: []
       responses:
-        200:
+        '200':
           description: 'Successful operation'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BuilderSpec'
-        401:
-          description: 'Unauthorized. You must be logged in to retrieve Builders.'
-        404:
-          description: 'Not found. The logged in user does not own a Builder with the given ID.'
+        '401':
+          description: 'Unauthorized. You must be logged in, and the Builder must belong to you.'
+        '404':
+          description: 'Not found. No Builder with the given ID exists.'
       parameters:
         - name: builderId
           in: path
@@ -433,7 +537,11 @@ paths:
             type: string
     post:
       summary: 'Update the Builder with the given id'
-      operationId: updateSimpleList
+      operationId: updateBuilder
+      tags:
+        - Builders
+      security:
+        - sessionCookie: []
       requestBody:
         required: true
         content:
@@ -441,16 +549,18 @@ paths:
             schema:
               $ref: '#/components/schemas/BuilderSpec'
       responses:
-        401:
-          description: 'Unauthorized. You must be logged in to update a Builder.'
-        404:
-          description: 'Not found. No Builder with the given ID was found for the logged in user.'
-        200:
+        '200':
           description: 'Successful operation'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreateOrUpdateListResponse'
+        '400':
+          description: 'The request was missing a name, project, model or params, or the model could not be resolved.'
+        '401':
+          description: 'Unauthorized. You must be logged in to update a Builder.'
+        '404':
+          description: 'Not found. No Builder with the given ID was found for the logged in user.'
       parameters:
         - name: builderId
           in: path
@@ -458,13 +568,137 @@ paths:
           description: 'The id of the builder to update.'
           schema:
             type: string
+  /builders/{builderId}/delete-impact:
+    get:
+      summary: 'Describe what else would be deleted or changed if the given Builder were deleted.'
+      description: 'Combinator Builders can reference other Builders. This endpoint reports which Combinators reference this Builder, and which of them would be deleted outright because this Builder is their only remaining input.'
+      operationId: builderDeleteImpact
+      tags:
+        - Builders
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  builder:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                      project:
+                        type: string
+                      model:
+                        type: string
+                  affected_combinators:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        project:
+                          type: string
+                        referenced_in:
+                          type: string
+                          description: 'The param of the Combinator that references the Builder being deleted.'
+                        remaining_include_builder_count:
+                          type: integer
+                          description: 'How many input Builders this Combinator would have left after the deletion.'
+                        will_be_auto_deleted:
+                          type: boolean
+                          description: 'True when the Combinator would be deleted along with this Builder, because it would have no inputs left.'
+        '401':
+          description: 'Unauthorized. You must be logged in.'
+        '403':
+          description: 'The logged in user does not own the given Builder.'
+        '404':
+          description: 'No Builder with the given ID exists.'
+      parameters:
+        - name: builderId
+          in: path
+          required: true
+          description: 'The id of the Builder that would be deleted.'
+          schema:
+            type: string
+  /builders/{builderId}/delete:
+    post:
+      summary: 'Delete a Builder, its Selections and its ZIM files.'
+      operationId: deleteBuilder
+      tags:
+        - Builders
+      security:
+        - sessionCookie: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                confirm_builder_name:
+                  type: string
+                  description: 'The name of the Builder, which must be provided and match when the deletion would cascade to Combinators. See /builders/{builderId}/delete-impact.'
+                delete_combinator_ids:
+                  type: array
+                  description: 'The ids of the Combinator Builders that the caller has agreed to delete along with this one.'
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: 'Always the string "204".'
+        '400':
+          description: 'delete_combinator_ids was not an array of strings, or the confirmation of the Builder name was missing or did not match.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessages'
+        '401':
+          description: 'Unauthorized. You must be logged in.'
+        '403':
+          description: 'The logged in user does not own the given Builder.'
+        '404':
+          description: 'No Builder with the given ID exists.'
+        '500':
+          description: 'The Builder could not be deleted from the database.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessages'
+      parameters:
+        - name: builderId
+          in: path
+          required: true
+          description: 'The id of the Builder to delete.'
+          schema:
+            type: string
   /builders/{builderId}/selection/latest.{ext}:
     get:
       summary: 'Return a redirect to the Selection (latest materialization) of the given Builder in the given format.'
       operationId: getBuilderSelectionLatest
+      tags:
+        - Selections
       responses:
-        302:
+        '302':
           description: 'Successful operation, redirect to the Selection in the s3-like storage.'
+        '404':
+          description: 'No Selection with that extension exists for that Builder.'
       parameters:
         - name: builderId
           in: path
@@ -475,20 +709,116 @@ paths:
         - name: ext
           in: path
           required: true
-          description: 'The requested extension of the Selection list to be redirected to.'
+          description: 'The requested extension of the Selection list to be redirected to. One of "tsv" or "xls".'
+          schema:
+            type: string
+            enum: ['tsv', 'xls']
+  /builders/{builderId}/selection/zimfarm/latest.{ext}:
+    get:
+      summary: 'The same as selection/latest.{ext}, but redirects to the URL that the Zimfarm uses to fetch the Selection.'
+      operationId: getBuilderZimfarmSelectionLatest
+      tags:
+        - Selections
+      responses:
+        '302':
+          description: 'Successful operation, redirect to the Selection in the s3-like storage.'
+        '404':
+          description: 'No Selection with that extension exists for that Builder.'
+      parameters:
+        - name: builderId
+          in: path
+          required: true
+          description: 'The id of the Builder whose latest Selection should be retrieved.'
+          schema:
+            type: string
+        - name: ext
+          in: path
+          required: true
+          description: 'The requested extension of the Selection list to be redirected to. One of "tsv" or "xls".'
+          schema:
+            type: string
+            enum: ['tsv', 'xls']
+  /builders/{builderId}/selection/latest/article_count:
+    get:
+      summary: 'The number of articles in the latest Selection of a Builder, and the maximum number that can be turned into a ZIM file.'
+      operationId: getBuilderSelectionArticleCount
+      tags:
+        - Selections
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  selection:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      article_count:
+                        type: integer
+                        nullable: true
+                      max_article_count:
+                        type: integer
+                        description: 'The maximum number of articles the Zimfarm will accept for a single ZIM file.'
+        '401':
+          description: 'Unauthorized. You must be logged in.'
+        '403':
+          description: 'The logged in user does not own the given Builder.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessages'
+        '404':
+          description: 'The Builder has no materialized Selection.'
+      parameters:
+        - name: builderId
+          in: path
+          required: true
+          description: 'The id of the Builder whose latest Selection should be measured.'
           schema:
             type: string
   /builders/{builderId}/zim:
     post:
       summary: 'Request a ZIM file for the latest Selection of a Builder from the Zimfarm.'
       operationId: builderCreateZim
+      tags:
+        - ZIM
+      security:
+        - sessionCookie: []
       responses:
-        204:
+        '204':
           description: 'ZIM file successfully requested from Zimfarm.'
-        404:
-          description: 'Builder not found with that id.'
-        403:
+        '400':
+          description: 'The title or description was missing or invalid, the flavour was not recognized, scheduled_repetitions was malformed, or the Selection has too many articles.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessages'
+        '401':
+          description: 'Unauthorized. You must be logged in to request a ZIM file.'
+        '403':
           description: 'Logged in user is not authorized to request ZIM for given Builder.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessages'
+        '404':
+          description: 'Builder not found with that id.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessages'
+        '500':
+          description: 'The Zimfarm rejected the request or was unreachable.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessages'
       parameters:
         - name: builderId
           in: path
@@ -502,17 +832,44 @@ paths:
           application/json:
             schema:
               type: object
+              required:
+                - title
+                - description
               properties:
+                title:
+                  type: string
                 description:
                   type: string
                 long_description:
                   type: string
+                flavour:
+                  type: string
+                  description: 'The MediaWiki scraper flavour to use. Omit or leave empty for the default, full content.'
+                  enum: ['mini', 'nopic', 'maxi']
+                scheduled_repetitions:
+                  type: object
+                  description: 'When present, the ZIM file is regenerated on a recurring schedule. Omit, or send an empty object, for a one off ZIM file.'
+                  required:
+                    - repetition_period_in_months
+                    - number_of_repetitions
+                  properties:
+                    repetition_period_in_months:
+                      type: integer
+                      description: 'The number of months between regenerations.'
+                    number_of_repetitions:
+                      type: integer
+                      description: 'The total number of generations, including the one being requested now.'
+                    email:
+                      type: string
+                      description: 'An optional address to notify when each scheduled ZIM file is ready. A confirmation email is sent to addresses that have not been confirmed before.'
   /builders/{builderId}/zim/status:
     get:
       summary: 'Get the status of the currently requested ZIM file for a Builder.'
       operationId: builderZimStatus
+      tags:
+        - ZIM
       responses:
-        200:
+        '200':
           description: 'Successful operation.'
           content:
             application/json:
@@ -521,39 +878,151 @@ paths:
                 properties:
                   status:
                     type: string
-                    description: 'One of: NOT_REQUESTED, REQUESTED, FILE_READY, CANCELLED, or FAILED.'
+                    nullable: true
+                    description: 'One of: NOT_REQUESTED, REQUESTED, FILE_READY, CANCELLED, or FAILED. Null if the Builder has never had a ZIM file requested.'
                   error_url:
                     type: string
+                    nullable: true
                     description: 'The URL of a resource on the Zimfarm that may provide more context for a failed ZIM.'
+                  is_deleted:
+                    type: boolean
+                    nullable: true
+                    description: 'True once the ZIM file is old enough that the Zimfarm has deleted it.'
+                  title:
+                    type: string
+                    nullable: true
+                  description:
+                    type: string
+                    nullable: true
+                  long_description:
+                    type: string
+                    nullable: true
+                  flavour:
+                    type: string
+                    nullable: true
+                  active_schedule:
+                    $ref: '#/components/schemas/ActiveSchedule'
       parameters:
         - name: builderId
           in: path
           required: true
-          description: 'The id of the Builder to request as ZIM file for.'
+          description: 'The id of the Builder to get the ZIM status for.'
           schema:
             type: string
   /builders/{builderId}/zim/latest:
     get:
       summary: 'Get the actual ZIM file for a Builder.'
       operationId: builderLatestZim
+      tags:
+        - ZIM
       responses:
-        302:
+        '302':
           description: 'Successful operation, redirect to the URL of the ZIM file.'
-        404:
+        '404':
           description: 'Builder or ZIM file not found.'
+        '410':
+          description: 'The ZIM file existed but has since been deleted from storage.'
       parameters:
         - name: builderId
           in: path
           required: true
-          description: 'The id of the Builder to request as ZIM file for.'
+          description: 'The id of the Builder to get the ZIM file for.'
+          schema:
+            type: string
+  /builders/zim/status:
+    post:
+      summary: 'Webhook called by the Zimfarm when the status of a requested ZIM task changes.'
+      description: 'This endpoint is not intended for general use. It is registered with the Zimfarm when a task is requested, and is authenticated with a shared secret in the token query parameter.'
+      operationId: updateZimfarmStatus
+      tags:
+        - ZIM
+      responses:
+        '204':
+          description: 'The status was recorded.'
+        '400':
+          description: 'The request body did not contain a task id.'
+        '403':
+          description: 'The token query parameter did not match the configured Zimfarm hook token.'
+        '500':
+          description: 'No ZIM schedule could be found for the given task id.'
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: 'The shared secret configured for the Zimfarm webhook.'
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  description: 'The id of the Zimfarm task.'
+                status:
+                  type: string
+                  description: 'The Zimfarm task status. The values "failed", "cancelled" and null all mark the ZIM file as FAILED.'
+                files:
+                  type: object
+                  description: 'A mapping of file name to file info. A file whose name ends in ".zim" and whose status is "uploaded" marks the ZIM file as FILE_READY.'
+                  additionalProperties:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+  /builders/{builderId}/schedule:
+    delete:
+      summary: 'Cancel the active recurring ZIM generation schedule for a Builder.'
+      operationId: deleteBuilderSchedule
+      tags:
+        - ZIM
+      security:
+        - sessionCookie: []
+      responses:
+        '204':
+          description: 'The schedule was deleted.'
+        '401':
+          description: 'Unauthorized. You must be logged in.'
+        '403':
+          description: 'The logged in user does not own the given Builder.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessages'
+        '404':
+          description: 'The Builder was not found, or it has no active recurring schedule.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessages'
+        '500':
+          description: 'The schedule could not be deleted.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessages'
+      parameters:
+        - name: builderId
+          in: path
+          required: true
+          description: 'The id of the Builder whose schedule should be cancelled.'
           schema:
             type: string
   /selection/lists:
     get:
       summary: 'Return list details from database'
       operationId: getLists
+      tags:
+        - Selections
+      security:
+        - sessionCookie: []
       responses:
-        200:
+        '200':
           description: 'Successful operation'
           content:
             application/json:
@@ -563,62 +1032,269 @@ paths:
                   builders:
                     type: array
                     items:
-                      type: object
-                      description: 'Each item in this array represents a Selection, with the corresponding Builder data destructured and included as well.'
-                      properties:
-                        id:
-                          type: string
-                        created_at:
-                          type: number
-                          description: 'Unix timestamp when the Builder was created.'
-                        updated_at:
-                          type: number
-                          description: 'Unix timestamp when the Builder was last updated.'
-                        name:
-                          type: string
-                        project:
-                          type: string
-                        model:
-                          type: string
-                        s_id:
-                          type: string
-                          description: 'The id of the latest materialized selection of this content_type.'
-                        s_created_at:
-                          type: number
-                          description: 'Unix timestamp when the Selection was created.'
-                        s_updated_at:
-                          type: number
-                          description: 'Unix timestamp when the Selection was last updated.'
-                        s_content_type:
-                          type: string
-                          description: 'MIME type of the content of this selection. A builder can have multiple selections with different content_types.'
-                        s_extension:
-                          type: string
-                          description: 'The three letter extension that corresponds to the content type.'
-                        s_url:
-                          type: string
-                          description: 'The URL for the data of this selection. This will likely be a redirect.'
-                        s_status:
-                          type: string
-                          description: 'An enum-like value that is either null (there is no meaningful status to report), FAILED (building the selection failed permanently), or CAN_RETRY (building the selection failed but can be retried).'
+                      $ref: '#/components/schemas/BuilderWithSelection'
+        '401':
+          description: 'Unauthorized. You must be logged in to list your Builders.'
   /selection/simple/lists:
     get:
       summary: 'Deprecated alias for /selection/lists'
       description: 'Deprecated: despite the name, this returns builders of every model, not just simple ones. Use /selection/lists instead.'
       operationId: getListsDeprecated
+      tags:
+        - Selections
       deprecated: true
+      security:
+        - sessionCookie: []
       responses:
-        200:
+        '200':
           description: 'Successful operation. See /selection/lists for the response schema.'
+        '401':
+          description: 'Unauthorized. You must be logged in to list your Builders.'
+  /zim/confirm-email:
+    get:
+      summary: 'Confirm an email address for ZIM file generation notifications.'
+      description: 'The link containing this URL is emailed to the address given when a recurring ZIM schedule is created. The response is an HTML page intended to be viewed in a browser, not JSON.'
+      operationId: confirmZimEmail
+      tags:
+        - ZIM
+      responses:
+        '200':
+          description: 'The email address was confirmed.'
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          description: 'The token parameter was missing, or the confirmation failed.'
+          content:
+            text/html:
+              schema:
+                type: string
+        '404':
+          description: 'The token is invalid, expired, or has already been used.'
+          content:
+            text/html:
+              schema:
+                type: string
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: 'The confirmation token from the email.'
+          schema:
+            type: string
+  /zim/unsubscribe-email:
+    get:
+      summary: 'Unsubscribe from ZIM file generation notifications, using a confirmation token.'
+      description: 'The response is an HTML page intended to be viewed in a browser, not JSON.'
+      operationId: unsubscribeZimEmail
+      tags:
+        - ZIM
+      responses:
+        '200':
+          description: 'The email address was unsubscribed.'
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          description: 'The token parameter was missing, or the unsubscribe failed.'
+          content:
+            text/html:
+              schema:
+                type: string
+        '404':
+          description: 'The token is invalid, expired, or has already been used.'
+          content:
+            text/html:
+              schema:
+                type: string
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: 'The token from the email.'
+          schema:
+            type: string
+  /zim/unsubscribe-notification:
+    get:
+      summary: 'Unsubscribe from ZIM file generation notifications, using a schedule id.'
+      description: 'The response is an HTML page intended to be viewed in a browser, not JSON.'
+      operationId: unsubscribeZimNotification
+      tags:
+        - ZIM
+      responses:
+        '200':
+          description: 'The email address was unsubscribed.'
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          description: 'The schedule_id parameter was missing, or the unsubscribe failed.'
+          content:
+            text/html:
+              schema:
+                type: string
+        '404':
+          description: 'No such schedule, or it has no email address subscribed.'
+          content:
+            text/html:
+              schema:
+                type: string
+      parameters:
+        - name: schedule_id
+          in: query
+          required: true
+          description: 'The id of the ZIM schedule to unsubscribe from.'
+          schema:
+            type: string
+  /oauth/initiate:
+    get:
+      summary: 'Begin the MediaWiki OAuth handshake.'
+      operationId: oauthInitiate
+      tags:
+        - OAuth
+      responses:
+        '302':
+          description: 'Redirect to Wikipedia to authorize the application, or straight back to the frontend if the user is already logged in.'
+      parameters:
+        - name: next
+          in: query
+          required: false
+          description: 'A path on the frontend to return to once login completes.'
+          schema:
+            type: string
+  /oauth/complete:
+    get:
+      summary: 'Complete the MediaWiki OAuth handshake and establish a session.'
+      description: 'Wikipedia redirects the user here with the OAuth query parameters. On success, a session cookie is set and the user is redirected back to the frontend.'
+      operationId: oauthComplete
+      tags:
+        - OAuth
+      responses:
+        '302':
+          description: 'Successful login, redirect to the frontend.'
+        '404':
+          description: 'There is no OAuth handshake in progress for this session.'
+      parameters:
+        - name: oauth_token
+          in: query
+          required: true
+          description: 'The request token, supplied by Wikipedia.'
+          schema:
+            type: string
+        - name: oauth_verifier
+          in: query
+          required: true
+          description: 'The verifier, supplied by Wikipedia.'
+          schema:
+            type: string
+  /oauth/identify:
+    get:
+      summary: 'Get the username of the currently logged in user.'
+      operationId: oauthIdentify
+      tags:
+        - OAuth
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  username:
+                    type: string
+        '401':
+          description: 'Unauthorized. There is no logged in user.'
+  /oauth/email:
+    get:
+      summary: 'Get the email address of the currently logged in user, if one is known.'
+      operationId: oauthEmail
+      tags:
+        - OAuth
+      security:
+        - sessionCookie: []
+      responses:
+        '200':
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email:
+                    type: string
+                    nullable: true
+        '401':
+          description: 'Unauthorized. There is no logged in user.'
+  /oauth/logout:
+    get:
+      summary: 'Log out, clearing the user from the session.'
+      operationId: oauthLogout
+      tags:
+        - OAuth
+      responses:
+        '200':
+          description: 'Successful operation'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: 'Always the string "204".'
+        '404':
+          description: 'There is no logged in user.'
 
 components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: session
+      description: 'The session cookie set by /oauth/complete. Requests must be made with credentials included so that this cookie is sent.'
   schemas:
+    ErrorMessages:
+      type: object
+      properties:
+        error_messages:
+          type: array
+          description: 'Human readable messages describing what went wrong.'
+          items:
+            type: string
+    NextUpdateTime:
+      type: object
+      properties:
+        next_update_time:
+          type: string
+          nullable: true
+          description: 'A string like "2024-05-05 17:30 UTC" representing when the next manual update can be performed, or null if an update can be performed now.'
+    CategoryLinkMap:
+      type: object
+      description: 'Maps a category name such as "A-Class" either to a link object, or to a plain string when no link is possible and the string itself should be displayed.'
+      additionalProperties:
+        oneOf:
+          - type: string
+          - type: object
+            properties:
+              href:
+                type: string
+              text:
+                type: string
     CreateOrUpdateListResponse:
       type: object
       properties:
         success:
           type: boolean
           description: True when article name does not contain forbidden chars {"#", "<", ">", "[", "]", "{", "}", "|"}, false otherwise.
+        id:
+          type: string
+          description: The id of the created or updated Builder. Only present when success is true.
         items:
           type: object
           description: Empty in case of success being true
@@ -640,6 +1316,11 @@ components:
                 type: string
     BuilderSpec:
       type: object
+      required:
+        - model
+        - name
+        - project
+        - params
       properties:
         model:
           type: string
@@ -653,7 +1334,7 @@ components:
           description: 'The parameters of the Builder that are used to materialize the Selection. This varies depending on the model.'
         selection_errors:
           type: array
-          description: 'Any errors that occurred while materializing the Builder, and whether they are retryable'
+          description: 'Any errors that occurred while materializing the Builder, and whether they are retryable. Present on responses only.'
           items:
             type: object
             properties:
@@ -668,7 +1349,92 @@ components:
               status:
                 type: string
                 description: 'Either "CAN_RETRY" if the error is retryable, or "FATAL" if not'
-
+    ActiveSchedule:
+      type: object
+      nullable: true
+      description: 'The recurring ZIM generation schedule for a Builder, or null if there is not one.'
+      properties:
+        schedule_id:
+          type: string
+        interval_months:
+          type: integer
+          description: 'The number of months between generations.'
+        remaining_generations:
+          type: integer
+          description: 'How many generations are left on this schedule.'
+        last_updated_at:
+          type: string
+          description: 'A timestamp in the wp10 format YYYYMMDDhhmmss.'
+        next_generation_date:
+          type: string
+          nullable: true
+          description: 'The date of the next generation, in YYYY-MM-DD format.'
+        email:
+          type: string
+          nullable: true
+          description: 'The address notified when each generation completes.'
+    BuilderWithSelection:
+      type: object
+      description: 'A Builder with the data of its latest Selection and ZIM file destructured and included as well.'
+      properties:
+        id:
+          type: string
+        created_at:
+          type: number
+          description: 'Unix timestamp when the Builder was created.'
+        updated_at:
+          type: number
+          description: 'Unix timestamp when the Builder was last updated.'
+        name:
+          type: string
+        project:
+          type: string
+        model:
+          type: string
+        s_id:
+          type: string
+          nullable: true
+          description: 'The id of the latest materialized selection of this content_type.'
+        s_updated_at:
+          type: number
+          nullable: true
+          description: 'Unix timestamp when the Selection was last updated.'
+        s_content_type:
+          type: string
+          nullable: true
+          description: 'MIME type of the content of this selection. A builder can have multiple selections with different content_types.'
+        s_extension:
+          type: string
+          nullable: true
+          description: 'The three letter extension that corresponds to the content type.'
+        s_url:
+          type: string
+          nullable: true
+          description: 'The URL for the data of this selection. This will likely be a redirect.'
+        s_status:
+          type: string
+          nullable: true
+          description: 'An enum-like value that is either null (there is no meaningful status to report), FAILED (building the selection failed permanently), or CAN_RETRY (building the selection failed but can be retried).'
+        z_status:
+          type: string
+          nullable: true
+          description: 'The status of the ZIM file for this Builder. One of NOT_REQUESTED, REQUESTED, FILE_READY, CANCELLED or FAILED, or null if the Builder has no Selection.'
+        z_updated_at:
+          type: number
+          nullable: true
+          description: 'Unix timestamp when the ZIM file was last updated.'
+        z_url:
+          type: string
+          nullable: true
+          description: 'The URL for downloading the ZIM file. Only set once the file is ready.'
+        z_is_deleted:
+          type: boolean
+          nullable: true
+          description: 'True once the ZIM file is old enough that the Zimfarm has deleted it.'
+        active_schedule:
+          type: boolean
+          nullable: true
+          description: 'True if this Builder has a recurring ZIM generation schedule with generations remaining, null otherwise. See /builders/{builderId}/zim/status for the details of that schedule.'
     Project:
       type: object
       properties:
@@ -685,13 +1451,13 @@ components:
           description: 'The name of the article, as it appears on Wikipedia, with its namespace prefix included'
         article_talk:
           type: string
-          description: 'The name of fthe article, with the appropriate talk namespace prepended'
+          description: 'The name of the article, with the appropriate talk namespace prepended'
         article_link:
           type: string
           description: 'A link to the article on Wikipedia'
         article_talk_link:
           type: string
-          description: 'A link to the talk page o the article on Wikipedia'
+          description: 'A link to the talk page of the article on Wikipedia'
         article_history_link:
           type: string
           description: 'A link to the history listing of the article on Wikipedia'
@@ -704,8 +1470,10 @@ components:
         importance_updated:
           type: string
           format: date
+          nullable: true
           description: 'The date on which the article importance classification was updated, the format is 2020-01-30T15:55:55Z'
         quality_updated:
           type: string
           format: date
+          nullable: true
           description: 'The date on which the article quality classification was updated, the format is 2020-01-30T15:55:55Z'
