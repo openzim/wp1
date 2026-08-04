@@ -42,7 +42,6 @@
     "path-to-regexp": "^3.3.0",
     "popper.js": "^1.16.0",
     "postcss": "^8.5.18",
-    "serialize-javascript": "^3.1.0",
     "split-by-grapheme": "^1.0.1",
     "vite": "^6.0.0",
     "vue": "^3.5.0",
