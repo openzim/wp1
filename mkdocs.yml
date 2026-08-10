@@ -9,3 +9,4 @@ nav:
       - ZIM files: 'user/zim_files.md'
   - 'For Developers':
       - Overview: 'developer/index.md'
+  - 'Architectural Reference (AI-generated)': 'wiki/index.md'
