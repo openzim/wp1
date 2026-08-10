@@ -27,3 +27,6 @@ log/**
 id_ed25519
 id_rsa
 *.pub
+
+# Local git worktrees
+.worktrees/
