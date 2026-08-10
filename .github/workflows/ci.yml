@@ -51,6 +51,28 @@ jobs:
       - name: Run ty
         run: ./check_types.sh
 
+  docs-build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Mirrors the Python version in .readthedocs.yaml, so a dependency
+      # conflict here is the same one Read the Docs would hit.
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install docs dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r docs/requirements.txt
+
+      - name: Build the docs
+        # --strict fails the build on broken nav entries and bad links.
+        run: mkdocs build --strict
+
   python-tests:
     runs-on: ubuntu-24.04
 

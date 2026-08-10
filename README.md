@@ -372,7 +372,9 @@ to something like:
 
 Documentation lives at [Read the Docs](https://wp1.readthedocs.io/en/latest/). It is
 built using [mkdocs](https://www.mkdocs.org/). The Read the Docs site automatically
-monitors the WP1 github HEAD and re-builds the documentation on every push.
+monitors the WP1 github HEAD and re-builds the documentation on every push. CI also
+runs `mkdocs build --strict` on every pull request, so a broken docs build fails the
+build before it reaches Read the Docs.
 
 ## Local docs
 
