@@ -1,6 +1,8 @@
 import unittest
 from unittest.mock import Mock, patch
 
+from mwoauth import RequestToken
+
 from wp1.credentials import CREDENTIALS
 from wp1.environment import Environment
 from wp1.web.app import create_app
@@ -121,6 +123,23 @@ class IdentifyTest(BaseWebTestcase):
                 row = cursor.fetchone()
                 self.assertIsNotNone(row)
                 self.assertEqual("wp1user@email.ch", row["u_email"].decode("utf-8"))
+
+    @patch("wp1.web.oauth.CREDENTIALS", TEST_OAUTH_CREDS)
+    @patch("wp1.web.oauth.get_handshaker", lambda: handshaker)
+    def test_complete_coerces_deserialized_request_token(self):
+        # flask-session >= 0.6 serializes sessions as JSON (msgspec), so the
+        # RequestToken namedtuple stored by /initiate round-trips as a plain
+        # list. /complete must rebuild a RequestToken before calling mwoauth,
+        # which does request_token.key.
+        self.app = create_app()
+        with self.override_db(self.app), self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["request_token"] = ["request_token", "request_token_secret"]
+            rv = client.get("/v1/oauth/complete?query_string")
+            self.assertEqual("302 FOUND", rv.status)
+            token = handshaker.complete.call_args[0][0]
+            self.assertIsInstance(token, RequestToken)
+            self.assertEqual("request_token", token.key)
 
     @patch("wp1.web.oauth.CREDENTIALS", TEST_OAUTH_CREDS)
     @patch("wp1.web.oauth.get_handshaker", lambda: handshaker)

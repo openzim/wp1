@@ -1,7 +1,7 @@
 import attr
 import flask
 from flask import jsonify, session
-from mwoauth import ConsumerToken, Handshaker
+from mwoauth import ConsumerToken, Handshaker, RequestToken
 
 from wp1 import environment
 from wp1.credentials import CREDENTIALS, ENV
@@ -96,7 +96,11 @@ def complete():
 
     handshaker = get_handshaker()
     query_string = str(flask.request.query_string.decode("utf-8"))
-    access_token = handshaker.complete(session["request_token"], query_string)
+    # flask-session serializes the session as JSON, so the RequestToken
+    # namedtuple stored by /initiate comes back as a plain list. Rebuild it
+    # before handing it to mwoauth, which accesses request_token.key.
+    request_token = RequestToken(*session["request_token"])
+    access_token = handshaker.complete(request_token, query_string)
     session.pop("request_token")
     identity = handshaker.identify(access_token)
 
