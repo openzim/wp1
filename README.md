@@ -287,6 +287,21 @@ You may need to install the `jq` tool with [these instructions](https://github.c
 
 See the instructions in the associated [README file](https://github.com/openzim/wp1/blob/main/docker/dev-db/README.md)
 
+## Seeding test Selection data
+
+To populate the Selections screens in development, run:
+
+```bash
+pipenv run python seed-dev-selections.py
+```
+
+This inserts builders for the fake dev user covering every selection/ZIM
+status the UI can display (processing, failed, building, up to date, stale,
+expired, no ZIM) across all builder models. The script talks directly to the
+dev database from `docker-compose-dev.yml` and is idempotent — re-running it
+resets the seeded rows. After running it, click "Login" on the frontend and
+visit http://localhost:5173/#/selections/user.
+
 ## Starting the API server
 
 The API server is included in the docker-compose-dev.yml graph and starts
