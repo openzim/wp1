@@ -287,35 +287,6 @@ You may need to install the `jq` tool with [these instructions](https://github.c
 
 See the instructions in the associated [README file](https://github.com/openzim/wp1/blob/main/docker/dev-db/README.md)
 
-## Seeding test Selection data
-
-The dev database dump ships with test Selection data for the fake dev user
-(`dev_user_12345`) that the dev environment logs you in as when no MWOAUTH
-credentials are configured: builders covering every selection/ZIM status the
-UI can display (processing, failed, building, up to date, stale, expired, no
-ZIM) across all builder models. Click "Login" on the frontend and visit
-http://localhost:5173/#/selections/user.
-
-The time-relative statuses (up to date, stale, expired) drift as the baked-in
-timestamps age. To refresh them, or to re-create the rows after changing
-them, run:
-
-```bash
-pipenv run python seed-dev-selections.py
-```
-
-The script talks directly to the dev database from `docker-compose-dev.yml`
-and is idempotent — re-running it resets the seeded rows.
-
-If your `credentials.py.dev` has real MWOAUTH credentials, you log in as your
-actual Wikipedia user and won't see the fake dev user's data. Seed the same
-rows for your own user instead (find your id with
-`SELECT u_id, u_username FROM users`):
-
-```bash
-pipenv run python seed-dev-selections.py --user-id <your u_id> --username <your username>
-```
-
 ## Starting the API server
 
 The API server is included in the docker-compose-dev.yml graph and starts
