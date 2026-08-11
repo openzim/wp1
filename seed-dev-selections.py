@@ -4,12 +4,19 @@ Inserts a set of builders/selections/zim_tasks covering every status that
 the Selections screens can render (processing, failed, building, up to
 date, stale, expired, no ZIM), across all builder models. The rows belong
 to the fake development user (``dev_user_12345``) that the dev environment
-logs you in as, so after running this script the data is visible at
-http://localhost:5173/#/selections/user after clicking "Login".
+logs you in as when no OAuth credentials are configured, so after running
+this script the data is visible at http://localhost:5173/#/selections/user
+after clicking "Login".
+
+If your credentials.py.dev has real MWOAUTH credentials, you log in as your
+actual Wikipedia user instead; pass that user's id to seed the same data for
+it (find it with ``SELECT u_id, u_username FROM users``):
+
+    pipenv run python seed-dev-selections.py --user-id 12345678 --username You
 
 The script connects directly to the dev database from docker-compose-dev.yml
 and is idempotent: seeded rows all have ids prefixed with ``dev-seed-`` and
-are deleted and re-created on every run.
+the target user's seeded rows are deleted and re-created on every run.
 
 Usage:
 
@@ -53,13 +60,14 @@ def days_ago(days, minutes=0):
 
 # Each entry becomes one builder row, plus optionally a selection row, a
 # zim_tasks row and a zim_schedules row. Timestamps are datetimes; None
-# means "no row". The b_id/s_id values are stable so that re-running the
-# script replaces the same rows.
+# means "no row". The "id" slugs become stable per-user row ids
+# (dev-seed-<user_id>-<slug>), so re-running the script replaces the same
+# rows; combinator params reference other entries by slug.
 SEED_BUILDERS = [
     {
         # Selection OK, recent ZIM file -> "Up to date". Also has an active
         # schedule, so the detail pane shows the recurring generation info.
-        "id": "dev-seed-simple-uptodate",
+        "id": "simple-uptodate",
         "name": "US national parks",
         "project": "en.wikipedia.org",
         "model": SIMPLE,
@@ -85,7 +93,7 @@ SEED_BUILDERS = [
     },
     {
         # Selection OK, ZIM never requested -> "No ZIM".
-        "id": "dev-seed-sparql-nozim",
+        "id": "sparql-nozim",
         "name": "Women Nobel laureates",
         "project": "en.wikipedia.org",
         "model": SPARQL,
@@ -106,7 +114,7 @@ SEED_BUILDERS = [
     },
     {
         # ZIM file older than the current selection -> "Stale".
-        "id": "dev-seed-petscan-stale",
+        "id": "petscan-stale",
         "name": "Films set in Paris",
         "project": "en.wikipedia.org",
         "model": PETSCAN,
@@ -118,7 +126,7 @@ SEED_BUILDERS = [
     },
     {
         # ZIM file past the two week retention window -> "Expired".
-        "id": "dev-seed-book-expired",
+        "id": "book-expired",
         "name": "Solar System reader",
         "project": "en.wikipedia.org",
         "model": BOOK,
@@ -130,7 +138,7 @@ SEED_BUILDERS = [
     },
     {
         # ZIM requested and still in the Zimfarm queue -> "Building".
-        "id": "dev-seed-wikiproject-building",
+        "id": "wikiproject-building",
         "name": "Chemistry articles",
         "project": "en.wikipedia.org",
         "model": WIKIPROJECT,
@@ -143,17 +151,17 @@ SEED_BUILDERS = [
     {
         # Combinator over two of the other seeded selections, with a recent
         # ZIM -> "Up to date". Exercises the include/exclude recipe UI.
-        "id": "dev-seed-combinator-uptodate",
+        "id": "combinator-uptodate",
         "name": "Parks and Paris films",
         "project": "en.wikipedia.org",
         "model": COMBINATOR,
         "params": {
             "include": {
-                "builders": ["dev-seed-simple-uptodate", "dev-seed-petscan-stale"],
+                "builders": ["simple-uptodate", "petscan-stale"],
                 "operation": "union",
             },
             "exclude": {
-                "builders": ["dev-seed-sparql-nozim"],
+                "builders": ["sparql-nozim"],
                 "operation": "union",
             },
         },
@@ -165,7 +173,7 @@ SEED_BUILDERS = [
     {
         # Builder saved but the selection list has not materialized yet
         # -> "Processing".
-        "id": "dev-seed-simple-processing",
+        "id": "simple-processing",
         "name": "Basic English vocabulary",
         "project": "en.wiktionary.org",
         "model": SIMPLE,
@@ -176,7 +184,7 @@ SEED_BUILDERS = [
     {
         # Materialization failed with a retryable error -> "Failed", with
         # a Retry button in the detail pane.
-        "id": "dev-seed-sparql-retryable",
+        "id": "sparql-retryable",
         "name": "Paintings in the Louvre",
         "project": "en.wikipedia.org",
         "model": SPARQL,
@@ -202,7 +210,7 @@ SEED_BUILDERS = [
     },
     {
         # Materialization failed permanently -> "Failed", no Retry button.
-        "id": "dev-seed-petscan-fatal",
+        "id": "petscan-fatal",
         "name": "Deleted Petscan query",
         "project": "en.wikipedia.org",
         "model": PETSCAN,
@@ -220,7 +228,7 @@ SEED_BUILDERS = [
     },
     {
         # The Zimfarm build failed -> "Failed" (ZIM error, selection OK).
-        "id": "dev-seed-simple-zimfailed",
+        "id": "simple-zimfailed",
         "name": "Endangered languages",
         "project": "en.wikipedia.org",
         "model": SIMPLE,
@@ -240,23 +248,62 @@ SEED_BUILDERS = [
 ]
 
 
-def delete_existing(cursor):
-    cursor.execute("DELETE FROM zim_tasks WHERE z_selection_id LIKE 'dev-seed-%'")
-    cursor.execute("DELETE FROM zim_schedules WHERE s_builder_id LIKE 'dev-seed-%'")
-    cursor.execute("DELETE FROM selections WHERE s_builder_id LIKE 'dev-seed-%'")
-    cursor.execute("DELETE FROM builders WHERE b_id LIKE 'dev-seed-%'")
+def full_id(user_id, slug):
+    return "dev-seed-%s-%s" % (user_id, slug)
 
 
-def insert_user(cursor):
+def delete_existing(cursor, user_id):
+    cursor.execute(
+        """DELETE z FROM zim_tasks z
+           JOIN selections s ON z.z_selection_id = s.s_id
+           JOIN builders b ON s.s_builder_id = b.b_id
+           WHERE b.b_user_id = %s AND b.b_id LIKE 'dev-seed-%%'""",
+        (user_id,),
+    )
+    cursor.execute(
+        """DELETE zs FROM zim_schedules zs
+           JOIN builders b ON zs.s_builder_id = b.b_id
+           WHERE b.b_user_id = %s AND b.b_id LIKE 'dev-seed-%%'""",
+        (user_id,),
+    )
+    cursor.execute(
+        """DELETE s FROM selections s
+           JOIN builders b ON s.s_builder_id = b.b_id
+           WHERE b.b_user_id = %s AND b.b_id LIKE 'dev-seed-%%'""",
+        (user_id,),
+    )
+    cursor.execute(
+        "DELETE FROM builders WHERE b_user_id = %s AND b_id LIKE 'dev-seed-%%'",
+        (user_id,),
+    )
+
+
+def insert_user(cursor, user_id, username):
+    email = "dev_user@example.com" if user_id == DEV_USER_ID else None
     cursor.execute(
         """INSERT INTO users (u_id, u_username, u_email)
            VALUES (%s, %s, %s)
            ON DUPLICATE KEY UPDATE u_username = VALUES(u_username)""",
-        (DEV_USER_ID, DEV_USERNAME, "dev_user@example.com"),
+        (user_id, username, email),
     )
 
 
-def insert_builder(cursor, spec):
+def builder_params(spec, user_id):
+    if spec["model"] != COMBINATOR:
+        return spec["params"]
+    # Combinator params reference other seed entries by slug; expand them
+    # to the full per-user builder ids.
+    params = {}
+    for group_name, group in spec["params"].items():
+        params[group_name] = {
+            "builders": [full_id(user_id, slug) for slug in group["builders"]],
+            "operation": group["operation"],
+        }
+    return params
+
+
+def insert_builder(cursor, spec, user_id):
+    builder_id = full_id(user_id, spec["id"])
     selection = spec.get("selection")
     # Builders whose materialization failed never get a ZIM-able version.
     selection_ok = selection is not None and "status" not in selection
@@ -267,12 +314,12 @@ def insert_builder(cursor, spec):
             b_selection_zim_version)
            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
         (
-            spec["id"].encode("utf-8"),
+            builder_id.encode("utf-8"),
             spec["name"].encode("utf-8"),
-            DEV_USER_ID,
+            user_id,
             spec["project"].encode("utf-8"),
             spec["model"].encode("utf-8"),
-            json.dumps(spec["params"]).encode("utf-8"),
+            json.dumps(builder_params(spec, user_id)).encode("utf-8"),
             ts(spec["created_at"]),
             ts(spec["updated_at"]),
             1 if selection else 0,
@@ -283,7 +330,7 @@ def insert_builder(cursor, spec):
     if selection is None:
         return
 
-    selection_id = "%s-sel" % spec["id"]
+    selection_id = "%s-sel" % builder_id
     error_messages = None
     if "error_messages" in selection:
         error_messages = json.dumps(
@@ -296,11 +343,11 @@ def insert_builder(cursor, spec):
            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
         (
             selection_id.encode("utf-8"),
-            spec["id"].encode("utf-8"),
+            builder_id.encode("utf-8"),
             TSV.encode("utf-8"),
             ts(selection["updated_at"]),
             1,
-            ("selections/%s/1/%s.tsv" % (spec["model"], spec["id"])).encode("utf-8"),
+            ("selections/%s/1/%s.tsv" % (spec["model"], builder_id)).encode("utf-8"),
             selection.get("status", "OK").encode("utf-8"),
             error_messages,
             selection.get("article_count"),
@@ -331,8 +378,10 @@ def insert_builder(cursor, spec):
                 s_last_updated_at, s_title, s_description)
                VALUES (%s, %s, %s, %s, %s, %s, %s)""",
             (
-                ("%s-sched" % spec["id"]).encode("utf-8")[:36],
-                spec["id"].encode("utf-8"),
+                # zim_schedules ids are varbinary(36), sized for a UUID, so
+                # a stable readable id does not fit here.
+                str(uuid.uuid4()).encode("utf-8"),
+                builder_id.encode("utf-8"),
                 schedule["interval"],
                 schedule["remaining_generations"],
                 ts(spec["updated_at"]),
@@ -353,7 +402,23 @@ def main():
     parser.add_argument("--user", default="root")
     parser.add_argument("--password", default="wikipedia")
     parser.add_argument("--database", default="enwp10_dev")
+    parser.add_argument(
+        "--user-id",
+        default=DEV_USER_ID,
+        help="The users.u_id to attach the seeded selections to. Defaults to "
+        "the fake dev user that the dev environment logs you in as when no "
+        "OAuth credentials are configured.",
+    )
+    parser.add_argument(
+        "--username",
+        default=None,
+        help="The username for --user-id. Required when --user-id is given.",
+    )
     args = parser.parse_args()
+
+    if args.user_id != DEV_USER_ID and args.username is None:
+        parser.error("--username is required when --user-id is given")
+    username = args.username or DEV_USERNAME
 
     wp10db = pymysql.connect(
         host=args.host,
@@ -367,18 +432,22 @@ def main():
 
     try:
         with wp10db.cursor() as cursor:
-            delete_existing(cursor)
-            insert_user(cursor)
+            delete_existing(cursor, args.user_id)
+            insert_user(cursor, args.user_id, username)
             for spec in SEED_BUILDERS:
-                logger.info("Seeding builder %s (%s)", spec["id"], spec["name"])
-                insert_builder(cursor, spec)
+                logger.info(
+                    "Seeding builder %s (%s)",
+                    full_id(args.user_id, spec["id"]),
+                    spec["name"],
+                )
+                insert_builder(cursor, spec, args.user_id)
         wp10db.commit()
     finally:
         wp10db.close()
 
     logger.info(
-        "Done. Log in as the dev user and visit "
-        "http://localhost:5173/#/selections/user"
+        "Done. Log in as %s and visit http://localhost:5173/#/selections/user",
+        username,
     )
 
 
