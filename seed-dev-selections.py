@@ -171,6 +171,24 @@ SEED_BUILDERS = [
         "zim": {"status": "FILE_READY", "updated_at": days_ago(5)},
     },
     {
+        # A second combinator sharing "petscan-stale" with the first one
+        # (Comb 1 -> A+B, Comb 2 -> B+C), so deleting the shared selection
+        # shows delete-impact warnings for both combinators. No ZIM.
+        "id": "combinator-nozim",
+        "name": "Paris films plus Solar System",
+        "project": "en.wikipedia.org",
+        "model": COMBINATOR,
+        "params": {
+            "include": {
+                "builders": ["petscan-stale", "book-expired"],
+                "operation": "union",
+            },
+        },
+        "created_at": days_ago(9),
+        "updated_at": days_ago(2, minutes=15),
+        "selection": {"updated_at": days_ago(2, minutes=5), "article_count": 356},
+    },
+    {
         # Builder saved but the selection list has not materialized yet
         # -> "Processing".
         "id": "simple-processing",
