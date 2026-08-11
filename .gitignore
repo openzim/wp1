@@ -30,3 +30,6 @@ id_rsa
 
 # Local git worktrees
 .worktrees/
+
+# Flask session
+flask_session/
