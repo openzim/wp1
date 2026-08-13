@@ -171,7 +171,7 @@
             v-else
             class="flex items-center justify-center p-8 text-[13px] text-ink-4"
           >
-            Select a selection to see its details.
+            Choose a selection from the list to view its details.
           </section>
         </div>
 
