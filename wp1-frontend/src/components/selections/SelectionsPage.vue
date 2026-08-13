@@ -43,7 +43,7 @@
                 >
               </div>
               <label
-                class="flex h-7 cursor-text items-center gap-1.5 rounded border border-border px-2"
+                class="flex h-7 cursor-text items-center gap-1.5 rounded border border-border px-2 focus-within:border-accent focus-within:ring-1 focus-within:ring-accent-border-2"
               >
                 <span aria-hidden="true" class="font-mono text-xs text-ink-4"
                   >/</span
@@ -209,7 +209,7 @@
             </div>
             <div class="border-b border-border-subtle px-3 py-2.5">
               <label
-                class="flex h-[30px] cursor-text items-center gap-1.5 rounded border border-border px-2"
+                class="flex h-[30px] cursor-text items-center gap-1.5 rounded border border-border px-2 focus-within:border-accent focus-within:ring-1 focus-within:ring-accent-border-2"
               >
                 <span aria-hidden="true" class="font-mono text-xs text-ink-4"
                   >/</span
@@ -218,7 +218,7 @@
                   v-model="query"
                   type="text"
                   placeholder="Filter…"
-                  class="w-full border-0 bg-transparent p-0 text-[13px] outline-none"
+                  class="w-full border-0 bg-transparent p-0 text-[13px] outline-none focus:!outline-none"
                   aria-label="Filter selections"
                 />
               </label>

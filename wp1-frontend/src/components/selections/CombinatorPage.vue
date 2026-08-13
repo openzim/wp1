@@ -80,7 +80,7 @@
                 >
               </div>
               <label
-                class="flex h-7 cursor-text items-center gap-1.5 rounded border border-border px-2"
+                class="flex h-7 cursor-text items-center gap-1.5 rounded border border-border px-2 focus-within:border-accent focus-within:ring-1 focus-within:ring-accent-border-2"
               >
                 <span aria-hidden="true" class="font-mono text-xs text-ink-4"
                   >/</span
@@ -89,7 +89,7 @@
                   v-model="libQuery"
                   type="text"
                   placeholder="Filter…"
-                  class="w-full border-0 bg-transparent p-0 text-[13px] outline-none"
+                  class="w-full border-0 bg-transparent p-0 text-[13px] outline-none focus:!outline-none"
                   aria-label="Filter your selections"
                 />
               </label>
