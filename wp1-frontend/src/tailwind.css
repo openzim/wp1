@@ -105,9 +105,11 @@
     @apply inline-block rounded-[3px] border border-border-strong px-[5px] py-px font-mono text-[10px] uppercase tracking-[0.04em] text-ink-2;
   }
 
-  /* Buttons. Heights vary per context; set them with h-* utilities. */
+  /* Buttons. Heights vary per context; set them with h-* utilities.
+     border-solid is required: preflight is disabled, so without it anchors
+     render no border at all and native buttons fall back to UA outset. */
   .wp1r-btn {
-    @apply inline-flex cursor-pointer items-center justify-center gap-1 whitespace-nowrap rounded border bg-surface text-[12.5px] font-medium text-ink no-underline transition-colors duration-100;
+    @apply inline-flex cursor-pointer items-center justify-center gap-1 whitespace-nowrap rounded border border-solid bg-surface text-[12.5px] font-medium text-ink no-underline transition-colors duration-100;
   }
 
   .wp1r-btn-primary {
@@ -115,7 +117,7 @@
   }
 
   .wp1r-btn-secondary {
-    @apply wp1r-btn border-border hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50;
+    @apply wp1r-btn border-border-strong hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .wp1r-btn-danger {
