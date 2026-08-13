@@ -80,6 +80,22 @@ describe('the selections page', () => {
       cy.contains('No ZIM file yet');
     });
 
+    it('shows an error with retry when the builder fetch fails', () => {
+      cy.intercept('GET', 'v1/builders/1', { statusCode: 500, body: {} }).as(
+        'builderFail'
+      );
+      cy.reload();
+      cy.wait('@builderFail');
+      cy.get('#builder-load-error').contains("Couldn't load this selection.");
+      cy.intercept('GET', 'v1/builders/1', {
+        fixture: 'simple_builder.json',
+      }).as('builderRetry');
+      cy.get('#retry-load-builder').click();
+      cy.wait('@builderRetry');
+      cy.get('#definition').should('contain.text', 'Eiffel_Tower');
+      cy.get('#builder-load-error').should('not.exist');
+    });
+
     it('shows the stat strip with selection and ZIM statuses', () => {
       cy.contains('.wp1r-stat', 'Selection').contains('Ready');
       cy.contains('.wp1r-stat', 'ZIM').contains('No ZIM');

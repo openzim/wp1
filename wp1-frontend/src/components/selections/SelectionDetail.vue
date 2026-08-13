@@ -239,6 +239,22 @@
 
     <!-- ============ Edit mode: field rows ============ -->
     <div v-if="editing" id="field-rows" class="flex flex-1 flex-col">
+      <div
+        v-if="!builder"
+        class="flex flex-wrap items-center gap-2 px-[18px] py-4 text-[13px]"
+      >
+        <template v-if="builderLoadError">
+          <span class="text-danger">Couldn't load this selection.</span>
+          <button
+            type="button"
+            class="wp1r-btn-secondary h-6 px-2 text-xs"
+            @click="fetchBuilder"
+          >
+            Retry
+          </button>
+        </template>
+        <span v-else class="text-ink-4">Loading…</span>
+      </div>
       <template v-for="row in fieldRows">
         <!-- Editing state -->
         <div
@@ -449,6 +465,21 @@
           class="m-0 max-h-72 overflow-auto whitespace-pre-wrap rounded border border-border-strong bg-surface-muted px-3 py-[11px] font-mono text-xs leading-[1.6] text-ink"
           >{{ definition }}</pre
         >
+        <div
+          v-else-if="builderLoadError"
+          id="builder-load-error"
+          class="flex flex-wrap items-center gap-2 text-[13px]"
+        >
+          <span class="text-danger">Couldn't load this selection.</span>
+          <button
+            id="retry-load-builder"
+            type="button"
+            class="wp1r-btn-secondary h-6 px-2 text-xs"
+            @click="fetchBuilder"
+          >
+            Retry
+          </button>
+        </div>
         <div v-else class="text-[13px] text-ink-4">Loading…</div>
         <p
           v-if="builder"
@@ -537,6 +568,7 @@ export default {
   data: function () {
     return {
       builder: null,
+      builderLoadError: false,
       zimStatus: null,
       articleCount: null,
       usedBy: [],
@@ -839,6 +871,7 @@ export default {
     },
     resetAndFetch: function () {
       this.builder = null;
+      this.builderLoadError = false;
       this.zimStatus = null;
       this.articleCount = null;
       this.usedBy = [];
@@ -856,15 +889,25 @@ export default {
       }
     },
     fetchBuilder: async function () {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/builders/${this.item.id}`,
-        {
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-        }
-      );
+      this.builderLoadError = false;
+      let response = null;
+      try {
+        response = await fetch(
+          `${import.meta.env.VITE_API_URL}/builders/${this.item.id}`,
+          {
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+          }
+        );
+      } catch (e) {
+        this.builderLoadError = true;
+        return;
+      }
       if (response.ok) {
         this.builder = await response.json();
+      } else {
+        // Without this the definition/edit panes sit on "Loading…" forever.
+        this.builderLoadError = true;
       }
     },
     fetchZimStatus: async function () {
