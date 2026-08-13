@@ -59,7 +59,7 @@
               </label>
               <div class="flex flex-wrap gap-1">
                 <button
-                  v-for="chip in countChips"
+                  v-for="chip in statusFilters"
                   :key="chip.key"
                   type="button"
                   class="cursor-pointer rounded-[3px] border-0 px-1.5 py-0.5 font-mono text-[10.5px]"
@@ -224,7 +224,7 @@
               </label>
               <div class="mt-2 flex gap-1.5 overflow-x-auto whitespace-nowrap">
                 <button
-                  v-for="pill in mobilePills"
+                  v-for="pill in statusFilters"
                   :key="pill.key"
                   type="button"
                   class="h-[26px] shrink-0 cursor-pointer rounded-[13px] border px-3 text-xs"
@@ -382,33 +382,33 @@ export default {
         }
       });
     },
-    countChips: function () {
+    // One filter vocabulary for both layouts: desktop renders it as count
+    // chips, mobile as pills.
+    statusFilters: function () {
       return [
+        { key: 'all', label: 'All', count: this.list.length },
         {
           key: 'attention',
-          label: 'needs attention',
+          label: 'Needs attention',
           count: this.list.filter((item) => deriveStatus(item).attention)
             .length,
         },
         {
-          key: 'scheduled',
-          label: 'scheduled',
-          count: this.list.filter((item) => !!item.active_schedule).length,
+          key: 'ready',
+          label: 'Up to date',
+          count: this.list.filter((item) => deriveStatus(item).key === 'ready')
+            .length,
         },
         {
           key: 'nozim',
-          label: 'no zim',
+          label: 'No ZIM',
           count: this.list.filter((item) => !hasZim(item)).length,
         },
-      ];
-    },
-    mobilePills: function () {
-      return [
-        { key: 'all', label: 'All' },
-        { key: 'attention', label: 'Needs attention' },
-        { key: 'ready', label: 'Up to date' },
-        { key: 'nozim', label: 'No ZIM' },
-        { key: 'scheduled', label: 'Scheduled' },
+        {
+          key: 'scheduled',
+          label: 'Scheduled',
+          count: this.list.filter((item) => !!item.active_schedule).length,
+        },
       ];
     },
   },

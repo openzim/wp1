@@ -55,9 +55,11 @@ describe('the selections page', () => {
     });
 
     it('shows the count chips', () => {
-      cy.contains('button', 'needs attention 6');
-      cy.contains('button', 'scheduled 1');
-      cy.contains('button', 'no zim 9');
+      cy.contains('button', 'All 14');
+      cy.contains('button', 'Needs attention 6');
+      cy.contains('button', 'Up to date 1');
+      cy.contains('button', 'No ZIM 9');
+      cy.contains('button', 'Scheduled 1');
     });
 
     it('auto-selects the first selection on desktop', () => {
@@ -127,11 +129,11 @@ describe('the selections page', () => {
     });
 
     it('filters by status when a chip is clicked', () => {
-      cy.contains('button', 'needs attention 6').click();
+      cy.contains('button', 'Needs attention 6').click();
       cy.contains('.wp1r-railrow', 'permanent error');
       cy.contains('.wp1r-railrow', 'simple list').should('not.exist');
       // Clicking again clears the filter.
-      cy.contains('button', 'needs attention 6').click();
+      cy.contains('button', 'Needs attention 6').click();
       cy.contains('.wp1r-railrow', 'simple list');
     });
 
