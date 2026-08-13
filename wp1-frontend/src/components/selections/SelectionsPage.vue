@@ -286,10 +286,20 @@
                 </div>
                 <div class="flex gap-1.5">
                   <router-link
+                    v-if="canRequestZim(item)"
                     :to="zimPagePath(item.id)"
                     class="wp1r-btn-secondary h-9 flex-1 font-medium !text-accent-hover"
                     >Build ZIM</router-link
                   >
+                  <button
+                    v-else
+                    type="button"
+                    class="wp1r-btn-secondary h-9 flex-1 font-medium"
+                    disabled
+                    title="Available once the selection has materialized cleanly."
+                  >
+                    Build ZIM
+                  </button>
                   <a
                     v-if="tsvReady(item)"
                     :href="item.s_url"
@@ -332,6 +342,7 @@ import SelectionsNullState from './SelectionsNullState.vue';
 import { loginStore } from '../../store.js';
 import StatusDot from './StatusDot.vue';
 import {
+  canRequestZim,
   deriveStatus,
   hasZim,
   modelLabel,
@@ -459,6 +470,7 @@ export default {
     },
   },
   methods: {
+    canRequestZim,
     modelLabel,
     tsvReady,
     zimPagePath,

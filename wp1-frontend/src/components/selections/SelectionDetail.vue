@@ -48,11 +48,22 @@
           {{ saveIndicatorText }}
         </span>
         <router-link
+          v-if="zimRequestable"
           id="create-zim-button"
           :to="zimPagePath"
           class="wp1r-btn-primary h-7 px-2.5"
           >Create ZIM</router-link
         >
+        <button
+          v-else
+          id="create-zim-button"
+          type="button"
+          class="wp1r-btn-primary h-7 px-2.5"
+          disabled
+          :title="zimDisabledReason"
+        >
+          Create ZIM
+        </button>
         <router-link
           v-if="!editing"
           id="edit-button"
@@ -536,10 +547,12 @@ import StatusDot from './StatusDot.vue';
 import TypeBadge from './TypeBadge.vue';
 import { isoDateTime } from '../../lib/util.js';
 import {
+  canRequestZim,
   deriveSelectionStatus,
   deriveStatus,
   deriveZimStatus,
   definitionText,
+  selectionHasError,
   tsvReady,
   definitionNote,
   describeSchedule,
@@ -605,6 +618,14 @@ export default {
     },
     zimPagePath: function () {
       return zimPagePath(this.item.id);
+    },
+    zimRequestable: function () {
+      return canRequestZim(this.item);
+    },
+    zimDisabledReason: function () {
+      return selectionHasError(this.item)
+        ? 'Fix the selection error before creating a ZIM.'
+        : 'Available once the selection has finished processing.';
     },
     editTarget: function () {
       if (this.fragment === 'combinator') {

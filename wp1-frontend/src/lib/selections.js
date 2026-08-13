@@ -186,6 +186,13 @@ export function tsvReady(item) {
   return !!item.s_url && !selectionIsPending(item) && !selectionHasError(item);
 }
 
+// A ZIM can only be requested once the selection has materialized cleanly;
+// a failed or never-materialized selection has nothing to build from (the
+// ZIM page's article-count fetch would just error out).
+export function canRequestZim(item) {
+  return !!item.s_url && !selectionHasError(item);
+}
+
 export function zimDownloadUrl(builderId) {
   return apiUrl(`/builders/${builderId}/zim/latest`);
 }

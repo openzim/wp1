@@ -80,6 +80,22 @@ describe('the selections page', () => {
       cy.contains('No ZIM file yet');
     });
 
+    it('disables Create ZIM when the selection failed to materialize', () => {
+      stubDetailFor(
+        '7368f534-27f5-4350-bfe3-23b90363df7b',
+        'simple_builder_fatal_error.json'
+      );
+      cy.contains('.wp1r-railrow', 'permanent error').click();
+      cy.get('#create-zim-button')
+        .should('match', 'button')
+        .and('have.attr', 'disabled');
+      // A cleanly materialized selection keeps the real link.
+      cy.contains('.wp1r-railrow', 'simple list').click();
+      cy.get('#create-zim-button')
+        .should('match', 'a')
+        .and('have.attr', 'href', '#/selections/1/zim');
+    });
+
     it('shows an error with retry when the builder fetch fails', () => {
       cy.intercept('GET', 'v1/builders/1', { statusCode: 500, body: {} }).as(
         'builderFail'
