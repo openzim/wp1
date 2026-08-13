@@ -89,7 +89,7 @@ describe('the combinator builder page', () => {
         cy.get('#include-items')
           .get('button[aria-label="Remove Simple Ready"]')
           .click();
-        cy.get('#include-items').contains('Add selections from the left');
+        cy.get('#include-items').contains('Add selections from your library');
         cy.contains('Simple Ready');
       });
 

@@ -218,7 +218,7 @@
               >
                 {{
                   group === 'include'
-                    ? 'Add selections from the left'
+                    ? 'Add selections from your library'
                     : 'Nothing excluded'
                 }}
               </div>
