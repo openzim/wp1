@@ -110,7 +110,7 @@
                     'wp1r-railrow-collapsed-selected':
                       editing && isSelected(item),
                   }"
-                  :aria-current="isSelected(item) ? 'true' : 'false'"
+                  :aria-current="isSelected(item) ? 'true' : undefined"
                   @click="select(item)"
                 >
                   <span class="flex min-w-0 items-center gap-1.5">
