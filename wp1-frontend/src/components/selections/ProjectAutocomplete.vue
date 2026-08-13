@@ -1,5 +1,5 @@
 <template>
-  <div class="relative">
+  <div ref="root" class="relative" @focusout="onFocusOut">
     <input
       ref="input"
       v-model="search"
@@ -10,6 +10,7 @@
       @input="onChange"
       @keydown.down.prevent="focusList"
       @keydown.enter.prevent="onEnter"
+      @keydown.esc="isOpen = false"
     />
     <ul
       v-show="isOpen && results.length"
@@ -23,6 +24,7 @@
         class="cursor-pointer px-[9px] py-1.5 text-[13px] hover:bg-surface-muted focus:bg-accent-tint focus:outline-none"
         @click="selectResult(result.name)"
         @keydown.enter.prevent="selectResult(result.name)"
+        @keydown.esc="closeAndRefocus"
         @keydown.down.prevent="focusNext"
         @keydown.up.prevent="focusPrev"
       >
@@ -68,9 +70,22 @@ export default {
       this.isOpen = this.search !== '';
     },
     onEnter: function () {
-      if (this.results.length >= 1) {
+      if (this.isOpen && this.results.length >= 1) {
         this.selectResult(this.results[0].name);
+      } else if (this.search.trim()) {
+        // Allow submitting a name that isn't in the suggestion list (close
+        // the list with Escape first); the backend validates it.
+        this.selectResult(this.search.trim());
       }
+    },
+    onFocusOut: function (event) {
+      if (!this.$refs.root.contains(event.relatedTarget)) {
+        this.isOpen = false;
+      }
+    },
+    closeAndRefocus: function () {
+      this.isOpen = false;
+      this.$refs.input.focus();
     },
     selectResult: function (name) {
       this.search = '';
