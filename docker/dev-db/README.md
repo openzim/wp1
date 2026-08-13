@@ -27,6 +27,35 @@ you will be prompted to confirm. If there are none, there will be no output.
 More information on YoYo Migrations is available
 [here](https://ollycope.com/software/yoyo/latest/).
 
+## Seeding test Selection data
+
+The dev database dump ships with test Selection data for the fake dev user
+(`dev_user_12345`) that the dev environment logs you in as when no MWOAUTH
+credentials are configured: builders covering every selection/ZIM status the
+UI can display (processing, failed, building, up to date, stale, expired, no
+ZIM) across all builder models. Click "Login" on the frontend and visit
+http://localhost:5173/#/selections/user.
+
+The time-relative statuses (up to date, stale, expired) drift as the baked-in
+timestamps age. To refresh them, or to re-create the rows after changing them,
+run (from the repository root):
+
+```bash
+pipenv run python seed-dev-selections.py
+```
+
+The script talks directly to the dev database from `docker-compose-dev.yml`
+and is idempotent — re-running it resets the seeded rows.
+
+If your `credentials.py.dev` has real MWOAUTH credentials, you log in as your
+actual Wikipedia user and won't see the fake dev user's data. Seed the same
+rows for your own user instead (find your id with
+`SELECT u_id, u_username FROM users`):
+
+```bash
+pipenv run python seed-dev-selections.py --user-id <your u_id> --username <your username>
+```
+
 ## Updating the dev database dump
 
 After migrations have been applied to production and are stable, it makes sense
@@ -85,7 +114,7 @@ docker-compose -f docker-compose-dev.yml up -d --build
 
 Next, apply the migrations using the steps above.
 
-After that, cd into this directory and  create a new dump:
+After that, cd into this directory and create a new dump:
 
 ```bash
 cd docker/dev-db
@@ -99,7 +128,12 @@ Finally, we must add CREATE and USE database commands to the top of the dump so 
 actual database is created when the dev db server starts.
 
 ```bash
-echo -e "CREATE DATABASE \`enwp10_dev\` CHARACTER SET = \"utf8mb4\" COLLATE = \"utf8mb4_unicode_ci\";\nUSE enwp10_dev;\n\n$(cat enwp10_dev.dump.sql)" > enwp10_dev.dump.sql
+printf 'CREATE DATABASE `enwp10_dev` CHARACTER SET = "utf8mb4" COLLATE = "utf8mb4_unicode_ci";\nUSE enwp10_dev;\n\n' | cat - enwp10_dev.dump.sql > enwp10_dev.dump.sql.tmp && mv enwp10_dev.dump.sql.tmp enwp10_dev.dump.sql
 ```
+
+Do NOT use `echo -e "...$(cat enwp10_dev.dump.sql)"` for this step: `echo -e`
+interprets backslash escapes in the entire dump, which corrupts escaped data
+(for example, `\\n` inside JSON columns collapses to a raw newline and the
+restored JSON becomes invalid).
 
 Once you're done, commit the file and push it to Github as normal.
