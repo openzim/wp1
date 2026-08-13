@@ -53,7 +53,9 @@
     </div>
     <footer class="wp1r border-t border-chrome-edge bg-chrome">
       <div class="flex h-12 items-center gap-1 px-3">
-        <span class="px-[9px] text-sm text-ink-3">All times are local.</span>
+        <span v-if="isSelectionsRoute" class="px-[9px] text-sm text-ink-3"
+          >All times are local.</span
+        >
         <span class="ml-auto"></span>
         <a
           href="https://en.wikipedia.org/wiki/Wikipedia_talk:Version_1.0_Editorial_Team/Index"
