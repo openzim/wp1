@@ -10,6 +10,8 @@
         <!-- ============ Source picker ============ -->
         <div
           class="flex flex-col gap-1 border-b border-border-strong px-3.5 pb-3.5 pt-6 md:border-b-0 md:border-r"
+          role="radiogroup"
+          aria-label="Selection source"
         >
           <div class="wp1r-microlabel mb-1">Source</div>
           <button
@@ -17,6 +19,8 @@
             :key="option.key"
             :id="'source-' + option.key"
             type="button"
+            role="radio"
+            :aria-checked="source === option.key ? 'true' : 'false'"
             class="flex w-full cursor-pointer flex-col items-start gap-0.5 rounded border border-solid px-2.5 py-2 text-left"
             :class="
               source === option.key
