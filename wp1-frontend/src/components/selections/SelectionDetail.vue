@@ -542,6 +542,9 @@ export default {
       editingField: null,
       draft: '',
       draftList: [],
+      // Snapshots taken when a field opens, to detect unsaved changes.
+      originalDraft: '',
+      originalDraftList: [],
       fieldErrors: '',
       // null until the first save attempt: claiming "all changes saved"
       // before anything was touched is a lie.
@@ -631,6 +634,16 @@ export default {
         return "Couldn't save";
       }
       return 'All changes saved';
+    },
+    fieldDirty: function () {
+      if (!this.editingField) {
+        return false;
+      }
+      return (
+        this.draft !== this.originalDraft ||
+        JSON.stringify(this.draftList) !==
+          JSON.stringify(this.originalDraftList)
+      );
     },
     fieldRows: function () {
       if (!this.builder) {
@@ -744,6 +757,11 @@ export default {
     },
   },
   watch: {
+    fieldDirty: function (val) {
+      // Lets the parent guard rail clicks against silently discarding an
+      // in-progress field edit.
+      this.$emit('dirty', val);
+    },
     'item.id': function () {
       this.resetAndFetch();
     },
@@ -932,6 +950,8 @@ export default {
           this.draftList = [...(params.exclude || [])];
           break;
       }
+      this.originalDraft = this.draft;
+      this.originalDraftList = [...this.draftList];
       this.$nextTick(() => {
         const control = this.$refs.editControl;
         const el = Array.isArray(control) ? control[0] : control;

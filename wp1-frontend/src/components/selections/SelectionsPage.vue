@@ -166,6 +166,7 @@
             :not-found="selectedNotFound"
             @refresh="getLists"
             @deleted="onDeleted"
+            @dirty="dirtyEdit = $event"
           />
           <section
             v-else
@@ -192,6 +193,7 @@
               :not-found="selectedNotFound"
               @refresh="getLists"
               @deleted="onDeleted"
+              @dirty="dirtyEdit = $event"
             />
           </div>
 
@@ -332,6 +334,8 @@ export default {
       query: '',
       statusFilter: 'all',
       pollId: null,
+      // True while the detail pane has an open field with unsaved changes.
+      dirtyEdit: false,
       // Tracks the md breakpoint (Tailwind's 768px) so the desktop pane's
       // auto-select follows resizes/rotations instead of a load-time bet.
       mdQuery: window.matchMedia('(min-width: 768px)'),
@@ -450,6 +454,13 @@ export default {
       if (this.isSelected(item) && !this.editing) {
         return;
       }
+      if (
+        this.dirtyEdit &&
+        !window.confirm('Discard unsaved changes to this field?')
+      ) {
+        return;
+      }
+      this.dirtyEdit = false;
       this.$router.push(`/selections/user/${item.id}`);
     },
     // Auto-select the first row on desktop so the pane is never empty. Also
