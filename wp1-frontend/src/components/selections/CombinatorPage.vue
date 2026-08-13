@@ -26,7 +26,7 @@
         </p>
       </div>
 
-      <div v-else class="flex-1">
+      <div v-else class="flex flex-1 flex-col">
         <!-- ============ Header ============ -->
         <div
           class="flex flex-wrap items-center gap-2.5 border-b border-border-subtle px-[18px] pb-3.5 pt-6"
@@ -67,7 +67,7 @@
           </button>
         </div>
 
-        <div class="grid min-h-[460px] md:grid-cols-[1fr_1.15fr]">
+        <div class="grid min-h-[460px] flex-1 md:grid-cols-[1fr_1.15fr]">
           <!-- ============ Library ============ -->
           <div class="order-2 flex min-h-0 flex-col md:order-1">
             <div
