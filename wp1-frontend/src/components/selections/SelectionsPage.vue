@@ -7,6 +7,23 @@
         <SelectionsNullState mode="signed-out" />
       </div>
 
+      <!-- A fetch failure must not render the onboarding empty state. -->
+      <div
+        v-else-if="loadError"
+        id="list-load-error"
+        class="mx-auto flex w-full max-w-[760px] flex-wrap items-center justify-center gap-2 px-6 py-10 text-[13px]"
+      >
+        <span class="text-danger">Couldn't load your selections.</span>
+        <button
+          id="retry-load-lists"
+          type="button"
+          class="wp1r-btn-secondary h-6 px-2 text-xs"
+          @click="getLists"
+        >
+          Retry
+        </button>
+      </div>
+
       <div
         v-else-if="loaded && list.length === 0"
         class="mx-auto w-full max-w-[760px]"
@@ -334,6 +351,7 @@ export default {
       query: '',
       statusFilter: 'all',
       pollId: null,
+      loadError: false,
       // True while the detail pane has an open field with unsaved changes.
       dirtyEdit: false,
       // Tracks the md breakpoint (Tailwind's 768px) so the desktop pane's
@@ -522,14 +540,23 @@ export default {
       }
     },
     getLists: async function () {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/selection/lists`,
-        {
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-        }
-      );
+      this.loadError = false;
+      let response = null;
+      try {
+        response = await fetch(
+          `${import.meta.env.VITE_API_URL}/selection/lists`,
+          {
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+          }
+        );
+      } catch (e) {
+        this.loadError = true;
+        this.loaded = true;
+        return;
+      }
       if (!response.ok) {
+        this.loadError = true;
         this.loaded = true;
         return;
       }

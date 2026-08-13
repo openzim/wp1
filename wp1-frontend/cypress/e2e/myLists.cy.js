@@ -283,6 +283,26 @@ describe('the selections page', () => {
     });
   });
 
+  describe('when the list fetch fails', () => {
+    it('shows an error with retry instead of the empty state', () => {
+      cy.intercept('v1/oauth/identify', { fixture: 'identity.json' });
+      cy.intercept('v1/selection/lists', { statusCode: 500, body: {} }).as(
+        'listFail'
+      );
+      cy.visit('/#/selections/user');
+      cy.wait('@listFail');
+      cy.get('#list-load-error').contains("Couldn't load your selections.");
+      // The onboarding empty state must not appear on a server error.
+      cy.contains('What you can build').should('not.exist');
+      cy.intercept('v1/selection/lists', { fixture: 'list_data.json' }).as(
+        'listRetry'
+      );
+      cy.get('#retry-load-lists').click();
+      cy.wait('@listRetry');
+      cy.contains('.wp1r-railrow', 'simple list');
+    });
+  });
+
   describe('when the user is not logged in', () => {
     it('shows the signed-out explanation with sign in', () => {
       cy.visit('/#/selections/user');
