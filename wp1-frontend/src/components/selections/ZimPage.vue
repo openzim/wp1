@@ -209,7 +209,7 @@
                 ref="desc"
                 v-model="description"
                 class="wp1r-input h-8 w-full"
-                placeholder="ZIM file created from a WP1 Selection"
+                placeholder="Describe this ZIM in a sentence"
                 @input="validateInput('description', maxDescriptionLength)"
               />
               <small
@@ -239,7 +239,7 @@
                 class="wp1r-input w-full py-2"
                 :class="{ '!border-danger-border': !isLongDescriptionValid }"
                 style="resize: vertical"
-                placeholder="ZIM file created from a WP1 Selection"
+                placeholder="Optionally describe it in more detail"
                 @input="
                   validateInput('longDescription', maxLongDescriptionLength)
                 "
