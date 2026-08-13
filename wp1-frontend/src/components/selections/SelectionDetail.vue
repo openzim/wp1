@@ -58,29 +58,39 @@
           class="wp1r-btn-secondary h-7 px-2.5"
           >Edit</router-link
         >
-        <div v-if="!editing" class="relative">
+        <div
+          v-if="!editing"
+          ref="menuWrap"
+          class="relative"
+          @keydown.esc.stop="closeMenu(true)"
+          @focusout="onMenuFocusOut"
+        >
           <button
             id="overflow-button"
+            ref="overflowButton"
             type="button"
             class="wp1r-btn-secondary h-7 w-7"
             aria-label="More actions"
             aria-haspopup="true"
             :aria-expanded="menuOpen ? 'true' : 'false'"
-            @click="menuOpen = !menuOpen"
+            @click="toggleMenu"
           >
             ⋯
           </button>
           <div
             v-if="menuOpen"
+            ref="menu"
             class="absolute right-0 top-8 z-20 w-44 overflow-hidden rounded border border-border bg-surface py-1 shadow-card"
             role="menu"
+            @keydown.down.prevent="moveMenuFocus(1)"
+            @keydown.up.prevent="moveMenuFocus(-1)"
           >
             <a
               v-if="tsvUrl"
               :href="tsvUrl"
               role="menuitem"
               class="wp1r-menuitem"
-              @click="menuOpen = false"
+              @click="closeMenu()"
               >Download TSV</a
             >
             <a
@@ -88,7 +98,10 @@
               href="#"
               role="menuitem"
               class="wp1r-menuitem"
-              @click.prevent="downloadZim"
+              @click.prevent="
+                closeMenu();
+                downloadZim();
+              "
               >Download ZIM</a
             >
             <button
@@ -97,7 +110,7 @@
               role="menuitem"
               class="wp1r-menuitem w-full border-0 bg-transparent text-left !text-danger"
               @click="
-                menuOpen = false;
+                closeMenu();
                 showDeleteDialog = true;
               "
             >
@@ -683,8 +696,64 @@ export default {
   created: function () {
     this.resetAndFetch();
   },
+  mounted: function () {
+    document.addEventListener('pointerdown', this.onDocumentPointerDown);
+  },
+  beforeUnmount: function () {
+    document.removeEventListener('pointerdown', this.onDocumentPointerDown);
+  },
   methods: {
     isoDateTime,
+    // ---- Overflow menu ----
+    toggleMenu: function () {
+      this.menuOpen = !this.menuOpen;
+      if (this.menuOpen) {
+        this.$nextTick(() => this.moveMenuFocus(1));
+      }
+    },
+    closeMenu: function (focusButton) {
+      this.menuOpen = false;
+      if (focusButton && this.$refs.overflowButton) {
+        this.$refs.overflowButton.focus();
+      }
+    },
+    onDocumentPointerDown: function (event) {
+      if (
+        this.menuOpen &&
+        this.$refs.menuWrap &&
+        !this.$refs.menuWrap.contains(event.target)
+      ) {
+        this.menuOpen = false;
+      }
+    },
+    onMenuFocusOut: function (event) {
+      // Tabbing (or programmatic focus) out of the button + menu closes it.
+      if (
+        this.menuOpen &&
+        this.$refs.menuWrap &&
+        !this.$refs.menuWrap.contains(event.relatedTarget)
+      ) {
+        this.menuOpen = false;
+      }
+    },
+    moveMenuFocus: function (delta) {
+      const menu = this.$refs.menu;
+      if (!menu) {
+        return;
+      }
+      const items = Array.prototype.slice.call(
+        menu.querySelectorAll('[role="menuitem"]')
+      );
+      if (!items.length) {
+        return;
+      }
+      const index = items.indexOf(document.activeElement);
+      const next =
+        index === -1
+          ? items[delta > 0 ? 0 : items.length - 1]
+          : items[(index + delta + items.length) % items.length];
+      next.focus();
+    },
     resetAndFetch: function () {
       this.builder = null;
       this.zimStatus = null;
