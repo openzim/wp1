@@ -3,13 +3,17 @@
     <div id="replag-embed" data-wiki="en.wikipedia.org"></div>
     <header class="wp1r border-b border-chrome-edge bg-chrome">
       <nav
-        class="flex h-12 items-center gap-2 overflow-x-auto px-3"
+        class="flex h-12 items-center gap-2 px-3"
         aria-label="Main navigation"
       >
         <router-link to="/" class="wp1r-brand flex shrink-0 items-center gap-2">
           <span class="text-[15px] font-semibold">WP1</span>
         </router-link>
-        <div class="ml-2 flex items-center gap-0.5">
+        <!-- Only the nav links scroll on narrow screens; the account
+             controls stay reachable outside the scroller. -->
+        <div
+          class="ml-2 flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto"
+        >
           <router-link
             v-for="item in navItems"
             :key="item.to"
@@ -19,9 +23,12 @@
             >{{ item.label }}</router-link
           >
         </div>
-        <div class="ml-auto flex shrink-0 items-center gap-2.5 pl-2">
+        <div class="flex shrink-0 items-center gap-2.5 pl-2">
           <template v-if="username">
-            <span class="text-sm text-ink">{{ username }}</span>
+            <span
+              class="hidden max-w-[160px] truncate text-sm text-ink sm:block"
+              >{{ username }}</span
+            >
             <span
               aria-hidden="true"
               class="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-[#e9edf6] text-[11px] font-medium text-ink-2"
