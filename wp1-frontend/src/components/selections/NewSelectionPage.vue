@@ -30,7 +30,7 @@
             @click="pickSource(option.key)"
           >
             <span
-              class="text-[13.5px]"
+              class="text-[14px]"
               :class="
                 source === option.key
                   ? 'font-semibold text-accent-hover'
@@ -55,7 +55,7 @@
             <h1 class="m-0 text-[19px] font-semibold tracking-[-0.015em]">
               {{ title }}
             </h1>
-            <p class="mb-0 mt-1.5 text-[13.5px] leading-[1.5] text-ink-2">
+            <p class="mb-0 mt-1.5 text-[14px] leading-[1.5] text-ink-2">
               {{ currentSource.description }}
               <a
                 href="https://wp1.readthedocs.io/en/latest/user/selections/"
@@ -113,7 +113,7 @@
               id="articles"
               v-model="articles"
               rows="9"
-              class="wp1r-input w-full py-2 font-mono text-[12.5px] leading-[1.6]"
+              class="wp1r-input w-full py-2 font-mono text-[13px] leading-[1.6]"
               style="resize: vertical"
               :placeholder="simplePlaceholder"
             ></textarea>
@@ -130,7 +130,7 @@
               id="query"
               v-model="query"
               rows="9"
-              class="wp1r-input w-full py-2 font-mono text-[12.5px] leading-[1.6]"
+              class="wp1r-input w-full py-2 font-mono text-[13px] leading-[1.6]"
               style="resize: vertical"
               :placeholder="sparqlPlaceholder"
             ></textarea>
@@ -138,7 +138,7 @@
               <button
                 id="toggleUpdateQuery"
                 type="button"
-                class="cursor-pointer border-0 bg-transparent p-0 text-[12.5px] text-accent"
+                class="cursor-pointer border-0 bg-transparent p-0 text-[13px] text-accent"
                 @click="showSparqlImport = !showSparqlImport"
               >
                 {{ showSparqlImport ? '▾' : '▸' }} Import from a Wikidata Query
@@ -163,7 +163,7 @@
               </div>
               <p
                 v-if="sparqlImportError"
-                class="mb-0 mt-1.5 text-[12.5px] text-danger"
+                class="mb-0 mt-1.5 text-[13px] text-danger"
               >
                 Could not extract a SPARQL query from that URL. Make sure it is
                 a URL from query.wikidata.org.
@@ -184,7 +184,7 @@
               id="petscan-url"
               v-model="url"
               type="text"
-              class="wp1r-input h-8 w-full font-mono text-[12.5px]"
+              class="wp1r-input h-8 w-full font-mono text-[13px]"
               placeholder="https://petscan.wmcloud.org/?psid=28104512"
             />
           </div>
@@ -202,7 +202,7 @@
               id="book-url"
               v-model="url"
               type="text"
-              class="wp1r-input h-8 w-full font-mono text-[12.5px]"
+              class="wp1r-input h-8 w-full font-mono text-[13px]"
               placeholder="https://en.wikipedia.org/wiki/Book:Trees_of_the_World"
             />
           </div>
@@ -227,7 +227,7 @@
                 <span
                   v-for="(wikiproject, i) in wpInclude"
                   :key="'include-' + i"
-                  class="inline-flex items-center gap-1.5 rounded-[3px] border border-ok-border bg-ok-tint px-2 py-1 text-[12.5px]"
+                  class="inline-flex items-center gap-1.5 rounded-[3px] border border-ok-border bg-ok-tint px-2 py-1 text-[13px]"
                 >
                   {{ wikiproject }}
                   <button
@@ -257,7 +257,7 @@
                 <span
                   v-for="(wikiproject, i) in wpExclude"
                   :key="'exclude-' + i"
-                  class="inline-flex items-center gap-1.5 rounded-[3px] border border-danger-border bg-danger-tint px-2 py-1 text-[12.5px]"
+                  class="inline-flex items-center gap-1.5 rounded-[3px] border border-danger-border bg-danger-tint px-2 py-1 text-[13px]"
                 >
                   {{ wikiproject }}
                   <button
@@ -278,7 +278,7 @@
             <div class="text-[13px] text-danger">{{ errors }}</div>
             <textarea
               v-if="invalidItems"
-              class="wp1r-input mt-2 w-full !border-danger-border bg-danger-tint py-2 font-mono text-[12.5px]"
+              class="wp1r-input mt-2 w-full !border-danger-border bg-danger-tint py-2 font-mono text-[13px]"
               rows="5"
               readonly
               :value="invalidItems"
@@ -295,7 +295,7 @@
             >
               {{ processing ? 'Saving…' : 'Save selection' }}
             </button>
-            <span v-if="liveNote" class="text-[12.5px] text-ink-3">{{
+            <span v-if="liveNote" class="text-[13px] text-ink-3">{{
               liveNote
             }}</span>
           </div>

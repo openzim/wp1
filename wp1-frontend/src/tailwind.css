@@ -109,7 +109,7 @@
      border-solid is required: preflight is disabled, so without it anchors
      render no border at all and native buttons fall back to UA outset. */
   .wp1r-btn {
-    @apply inline-flex cursor-pointer items-center justify-center gap-1 whitespace-nowrap rounded border border-solid bg-surface text-[12.5px] font-medium text-ink no-underline transition-colors duration-100;
+    @apply inline-flex cursor-pointer items-center justify-center gap-1 whitespace-nowrap rounded border border-solid bg-surface text-[13px] font-medium text-ink no-underline transition-colors duration-100;
   }
 
   .wp1r-btn-primary {

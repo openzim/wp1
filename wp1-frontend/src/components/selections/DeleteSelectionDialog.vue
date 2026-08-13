@@ -20,7 +20,7 @@
         {{ loadError }}
       </div>
       <div v-else class="flex flex-col gap-3.5 px-[18px] py-4">
-        <p class="m-0 text-[13.5px] leading-[1.5] text-ink-2">
+        <p class="m-0 text-[14px] leading-[1.5] text-ink-2">
           Deleting
           <strong class="font-semibold text-ink">{{ builderName }}</strong>
           permanently removes this selection and all of its downloadable article
@@ -67,7 +67,7 @@
                 >*</span
               >
               {{ item.name }}
-              <span class="font-mono text-[11.5px] text-ink-3">{{
+              <span class="font-mono text-[12px] text-ink-3">{{
                 item.project
               }}</span>
             </div>

@@ -9,7 +9,7 @@
 
       <div v-else-if="notFound" class="mx-auto w-full max-w-[760px] p-[22px]">
         <h1 class="m-0 mb-2 text-xl font-semibold">404 Not Found</h1>
-        <p class="m-0 text-[13.5px] text-ink-2">
+        <p class="m-0 text-[14px] text-ink-2">
           Sorry, the selection with that ID either doesn't exist or isn't owned
           by you.
         </p>
@@ -20,7 +20,7 @@
         class="mx-auto w-full max-w-[760px] p-[22px]"
       >
         <h1 class="m-0 mb-2 text-xl font-semibold">500 Server error</h1>
-        <p class="m-0 text-[13.5px] text-ink-2">
+        <p class="m-0 text-[14px] text-ink-2">
           Something went wrong and we couldn't retrieve that selection. You
           might try again later.
         </p>
@@ -98,7 +98,7 @@
                   v-for="pill in typePills"
                   :key="pill.key"
                   type="button"
-                  class="h-7 cursor-pointer rounded-full border border-solid px-2.5 text-[11.5px]"
+                  class="h-7 cursor-pointer rounded-full border border-solid px-2.5 text-[12px]"
                   :class="
                     libType === pill.key
                       ? 'border-ink bg-ink text-white'
@@ -114,13 +114,13 @@
             <div class="min-h-0 flex-1 overflow-y-auto">
               <div
                 v-if="!buildersFetchFinished"
-                class="px-3.5 py-4 text-[12.5px] text-ink-4"
+                class="px-3.5 py-4 text-[13px] text-ink-4"
               >
                 Loading selections…
               </div>
               <div
                 v-else-if="buildersLoadError"
-                class="px-3.5 py-4 text-[12.5px] text-danger"
+                class="px-3.5 py-4 text-[13px] text-danger"
               >
                 {{ buildersLoadError }}
               </div>
@@ -134,19 +134,19 @@
                     item.name
                   }}</span>
                   <span
-                    class="shrink-0 font-mono text-[10.5px] uppercase text-ink-4"
+                    class="shrink-0 font-mono text-[11px] uppercase text-ink-4"
                     >{{ modelLabel(item.model) }}</span
                   >
                   <button
                     type="button"
-                    class="wp1r-btn h-7 shrink-0 border-ok-border px-1.5 text-[11.5px] font-medium text-ok hover:bg-ok-tint"
+                    class="wp1r-btn h-7 shrink-0 border-ok-border px-1.5 text-[12px] font-medium text-ok hover:bg-ok-tint"
                     @click="addTo('include', item.id)"
                   >
                     include
                   </button>
                   <button
                     type="button"
-                    class="wp1r-btn h-7 shrink-0 border-danger-border px-1.5 text-[11.5px] font-medium text-danger hover:bg-danger-tint"
+                    class="wp1r-btn h-7 shrink-0 border-danger-border px-1.5 text-[12px] font-medium text-danger hover:bg-danger-tint"
                     @click="addTo('exclude', item.id)"
                   >
                     exclude
@@ -154,7 +154,7 @@
                 </div>
                 <div
                   v-if="filteredLibrary.length === 0"
-                  class="px-3.5 py-4 text-[12.5px] text-ink-4"
+                  class="px-3.5 py-4 text-[13px] text-ink-4"
                 >
                   <span v-if="library.length === 0"
                     >No eligible selections for {{ project }}. Combinators
@@ -182,13 +182,13 @@
                   class="h-[7px] w-[7px] rounded-full"
                   :class="group === 'include' ? 'bg-ok' : 'bg-danger'"
                 ></span>
-                <span class="text-[13.5px] font-semibold">{{
+                <span class="text-[14px] font-semibold">{{
                   group === 'include' ? 'Include' : 'Exclude'
                 }}</span>
                 <button
                   :id="group + '-operation'"
                   type="button"
-                  class="ml-auto h-6 cursor-pointer rounded border border-solid px-2 font-mono text-[11.5px]"
+                  class="ml-auto h-6 cursor-pointer rounded border border-solid px-2 font-mono text-[12px]"
                   :class="
                     operations[group] === 'intersection'
                       ? 'border-ink bg-ink text-white'
@@ -214,7 +214,7 @@
 
               <div
                 v-if="groups[group].length === 0"
-                class="rounded border border-dashed border-border bg-surface px-4 py-4 text-center text-[12.5px] text-ink-4"
+                class="rounded border border-dashed border-border bg-surface px-4 py-4 text-center text-[13px] text-ink-4"
               >
                 {{
                   group === 'include'
@@ -234,7 +234,7 @@
                 }}</span>
                 <button
                   type="button"
-                  class="wp1r-btn-secondary h-7 px-1.5 text-[11.5px]"
+                  class="wp1r-btn-secondary h-7 px-1.5 text-[12px]"
                   @click="moveBetween(group, builderId)"
                 >
                   Move to {{ group === 'include' ? 'exclude' : 'include' }}
@@ -264,11 +264,11 @@
               </div>
               <div
                 v-if="footerProblem"
-                class="mt-1.5 text-[12.5px] text-warn-text"
+                class="mt-1.5 text-[13px] text-warn-text"
               >
                 {{ footerProblem }}
               </div>
-              <div v-if="errors" class="mt-1.5 text-[12.5px] text-danger">
+              <div v-if="errors" class="mt-1.5 text-[13px] text-danger">
                 {{ errors }}
               </div>
             </div>

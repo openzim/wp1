@@ -3,7 +3,7 @@
     <h2 class="m-0 mb-2 text-[19px] font-semibold tracking-[-0.015em]">
       Not found
     </h2>
-    <p class="m-0 text-[13.5px] text-ink-2">
+    <p class="m-0 text-[14px] text-ink-2">
       This selection either doesn't exist or isn't owned by you.
     </p>
   </section>
@@ -25,7 +25,7 @@
           {{ item.name }}
         </h2>
         <div
-          class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-mono text-[11.5px] text-ink-3"
+          class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-mono text-[12px] text-ink-3"
         >
           <TypeBadge :model="item.model" />
           <span aria-hidden="true" class="text-ink-5">·</span>
@@ -42,7 +42,7 @@
         <span
           v-if="editing && saveState"
           id="save-indicator"
-          class="mr-1 text-[11.5px]"
+          class="mr-1 text-[12px]"
           :class="saveState === 'error' ? 'text-danger' : 'text-ink-4'"
         >
           {{ saveIndicatorText }}
@@ -128,14 +128,14 @@
       <div class="wp1r-stat border-r border-border-row">
         <div class="wp1r-microlabel">Selection</div>
         <StatusDot :status="selectionStatusInfo" class="text-sm" />
-        <div class="truncate font-mono text-[11.5px] text-ink-3">
+        <div class="truncate font-mono text-[12px] text-ink-3">
           {{ isoDateTime(item.s_updated_at || item.updated_at) }}
         </div>
       </div>
       <div class="wp1r-stat sm:border-r sm:border-border-row">
         <div class="wp1r-microlabel">ZIM</div>
         <StatusDot :status="zimStatusInfo" class="text-sm" />
-        <div class="truncate font-mono text-[11.5px] text-ink-3">
+        <div class="truncate font-mono text-[12px] text-ink-3">
           {{ item.z_updated_at ? isoDateTime(item.z_updated_at) : '—' }}
         </div>
       </div>
@@ -209,7 +209,7 @@
         >
           {{ retryProcessing ? 'Retrying…' : 'Retry' }}
         </button>
-        <span v-else class="text-[12.5px] text-ink-3">
+        <span v-else class="text-[13px] text-ink-3">
           This error can't be retried — update the definition instead.
           <a
             href="https://wp1.readthedocs.io/en/latest/user/selections/"
@@ -256,7 +256,7 @@
               ref="editControl"
               v-model="draft"
               rows="8"
-              class="wp1r-input w-full !border-accent-border-2 py-2 font-mono text-[12.5px] leading-[1.6]"
+              class="wp1r-input w-full !border-accent-border-2 py-2 font-mono text-[13px] leading-[1.6]"
               style="resize: vertical"
               @keydown.esc="cancelField"
             ></textarea>
@@ -267,7 +267,7 @@
               v-model="draft"
               type="text"
               class="wp1r-input h-8 w-full !border-accent-border-2"
-              :class="{ 'font-mono text-[12.5px]': row.mono }"
+              :class="{ 'font-mono text-[13px]': row.mono }"
               @keydown.esc="cancelField"
               @keydown.enter.prevent="saveField(row)"
             />
@@ -280,7 +280,7 @@
                 <span
                   v-for="(project, i) in draftList"
                   :key="row.key + '-' + i"
-                  class="inline-flex items-center gap-1.5 rounded-[3px] border border-border-strong bg-surface px-2 py-1 text-[12.5px]"
+                  class="inline-flex items-center gap-1.5 rounded-[3px] border border-border-strong bg-surface px-2 py-1 text-[13px]"
                 >
                   {{ project }}
                   <button
@@ -293,12 +293,12 @@
                   </button>
                 </span>
               </div>
-              <div v-else class="text-[12.5px] text-ink-4">
+              <div v-else class="text-[13px] text-ink-4">
                 Nothing selected yet.
               </div>
             </div>
 
-            <div v-if="fieldErrors" class="text-[12.5px] text-danger">
+            <div v-if="fieldErrors" class="text-[13px] text-danger">
               {{ fieldErrors }}
             </div>
             <div class="flex items-center gap-2">
@@ -389,8 +389,8 @@
         >
           <span class="text-[13px] text-ink-3">{{ row.label }}</span>
           <span
-            class="min-w-0 truncate text-left text-[13.5px] text-ink"
-            :class="{ 'font-mono text-[12.5px]': row.mono }"
+            class="min-w-0 truncate text-left text-[14px] text-ink"
+            :class="{ 'font-mono text-[13px]': row.mono }"
             >{{ row.display() }}</span
           >
           <button
@@ -416,13 +416,13 @@
       <footer
         class="mt-auto flex items-center gap-4 border-t border-border-strong bg-surface-muted px-[18px] py-3"
       >
-        <a v-if="tsvUrl" :href="tsvUrl" class="text-[12.5px]"
+        <a v-if="tsvUrl" :href="tsvUrl" class="text-[13px]"
           >Article list (TSV)</a
         >
         <a
           v-if="zimReady"
           href="#"
-          class="text-[12.5px]"
+          class="text-[13px]"
           @click.prevent="downloadZim"
           >Latest ZIM</a
         >

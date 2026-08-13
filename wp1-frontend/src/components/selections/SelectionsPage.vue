@@ -62,7 +62,7 @@
                   v-for="chip in statusFilters"
                   :key="chip.key"
                   type="button"
-                  class="min-h-6 cursor-pointer rounded-[3px] border-0 px-1.5 py-0.5 text-[10.5px]"
+                  class="min-h-6 cursor-pointer rounded-[3px] border-0 px-1.5 py-0.5 text-[11px]"
                   :class="
                     statusFilter === chip.key
                       ? 'bg-ink text-white'
@@ -120,7 +120,7 @@
                       class="h-1.5 w-1.5 shrink-0 rounded-full bg-warn"
                     ></span>
                     <span
-                      class="truncate text-[13.5px]"
+                      class="truncate text-[14px]"
                       :class="[
                         isSelected(item) || !editing
                           ? 'text-ink'
@@ -132,7 +132,7 @@
                   </span>
                   <span
                     v-if="!editing"
-                    class="mt-0.5 block truncate text-[11.5px]"
+                    class="mt-0.5 block truncate text-[12px]"
                     :class="isSelected(item) ? 'text-ink-3' : 'text-ink-4'"
                     >{{ modelLabel(item.model) }} ·
                     {{ statusOf(item).label }}</span
@@ -141,12 +141,12 @@
 
                 <div
                   v-if="filtered.length === 0"
-                  class="px-3 py-6 text-center text-[12.5px] text-ink-4"
+                  class="px-3 py-6 text-center text-[13px] text-ink-4"
                 >
                   No selections match.
                   <button
                     type="button"
-                    class="cursor-pointer border-0 bg-transparent p-0 text-[12.5px] text-accent"
+                    class="cursor-pointer border-0 bg-transparent p-0 text-[13px] text-accent"
                     @click="clearFilters"
                   >
                     Clear filters
@@ -260,10 +260,10 @@
                     item.name
                   }}</span>
                 </button>
-                <div class="flex items-center gap-1.5 text-[12.5px]">
+                <div class="flex items-center gap-1.5 text-[13px]">
                   <StatusDot :status="statusOf(item)" />
                   <span aria-hidden="true" class="text-ink-5">·</span>
-                  <span class="text-[11.5px] text-ink-3">{{
+                  <span class="text-[12px] text-ink-3">{{
                     modelLabel(item.model)
                   }}</span>
                 </div>
@@ -281,7 +281,7 @@
                   >
                   <span
                     v-else
-                    class="flex h-9 flex-1 items-center justify-center text-[12.5px] text-ink-4"
+                    class="flex h-9 flex-1 items-center justify-center text-[13px] text-ink-4"
                     title="The article list becomes downloadable once the selection has finished processing."
                     >TSV not ready</span
                   >
@@ -297,7 +297,7 @@
               </div>
               <div
                 v-if="filtered.length === 0"
-                class="px-3 py-6 text-center text-[12.5px] text-ink-4"
+                class="px-3 py-6 text-center text-[13px] text-ink-4"
               >
                 No selections match.
               </div>

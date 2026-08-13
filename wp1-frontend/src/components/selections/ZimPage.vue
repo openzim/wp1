@@ -9,7 +9,7 @@
 
       <div v-else-if="notFound" class="mx-auto w-full max-w-[760px] p-[22px]">
         <h1 class="m-0 mb-2 text-xl font-semibold">404 Not Found</h1>
-        <p class="m-0 text-[13.5px] text-ink-2">
+        <p class="m-0 text-[14px] text-ink-2">
           Sorry, the selection with that ID either doesn't exist or isn't owned
           by you.
         </p>
@@ -20,7 +20,7 @@
         class="mx-auto w-full max-w-[760px] p-[22px]"
       >
         <h1 class="m-0 mb-2 text-xl font-semibold">500 Server error</h1>
-        <p class="m-0 text-[13.5px] text-ink-2">
+        <p class="m-0 text-[14px] text-ink-2">
           Something went wrong and we couldn't retrieve the selection with that
           ID. You might try again later.
         </p>
@@ -31,7 +31,7 @@
           <router-link
             v-if="builder"
             :to="`/selections/user/${builderId}`"
-            class="text-[12.5px]"
+            class="text-[13px]"
             >← {{ builder.name }}</router-link
           >
           <h1 class="m-0 mt-1 text-[19px] font-semibold tracking-[-0.015em]">
@@ -39,7 +39,7 @@
           </h1>
           <p
             v-if="articleCount !== null"
-            class="mb-0 mt-1 font-mono text-[11.5px] text-ink-3"
+            class="mb-0 mt-1 font-mono text-[12px] text-ink-3"
           >
             {{ articleCount.toLocaleString() }} articles in the latest selection
           </p>
@@ -52,7 +52,7 @@
             class="rounded border border-warn-border bg-warn-tint px-3.5 py-3"
             role="alert"
           >
-            <div class="text-[13.5px] font-semibold text-warn-text-strong">
+            <div class="text-[14px] font-semibold text-warn-text-strong">
               Active schedule found
             </div>
             <p
@@ -85,7 +85,7 @@
           </div>
 
           <div v-else-if="status === 'NOT_REQUESTED'">
-            <p class="m-0 text-[13.5px] leading-[1.55] text-ink-2">
+            <p class="m-0 text-[14px] leading-[1.55] text-ink-2">
               Use this form to create a ZIM file from your selection, so that
               you can browse the articles it contains offline.
             </p>
@@ -93,7 +93,7 @@
               v-if="tooManyArticles()"
               class="article-limit-exceeded mt-3 rounded border border-danger-border bg-danger-tint px-3.5 py-3"
             >
-              <div class="text-[13.5px] font-semibold text-danger">
+              <div class="text-[14px] font-semibold text-danger">
                 Too many articles
               </div>
               <p class="mb-0 mt-1 text-[13px] leading-[1.5] text-ink-2">
@@ -109,7 +109,7 @@
               </p>
             </div>
           </div>
-          <p v-else class="m-0 text-[13.5px] leading-[1.55] text-ink-2">
+          <p v-else class="m-0 text-[14px] leading-[1.55] text-ink-2">
             Once you request a ZIM file, it will be queued for creation. This
             page and the Selections page will automatically update with a URL to
             download your ZIM file once it is ready.
@@ -261,7 +261,7 @@
               </small>
               <div
                 v-if="!isLongDescriptionValid"
-                class="mt-1 text-[12.5px] text-danger"
+                class="mt-1 text-[13px] text-danger"
               >
                 Long description must differ from description and not be shorter
               </div>
@@ -349,7 +349,7 @@
                   class="wp1r-input h-8 w-full"
                   placeholder="you@example.org"
                 />
-                <small class="mt-1 block text-[11.5px] text-ink-4"
+                <small class="mt-1 block text-[12px] text-ink-4"
                   >We'll notify you when each scheduled ZIM is ready.</small
                 >
               </div>
@@ -403,7 +403,7 @@
             >
               Download ZIM
             </button>
-            <span v-if="status === 'REQUESTED'" class="text-[12.5px] text-ink-3"
+            <span v-if="status === 'REQUESTED'" class="text-[13px] text-ink-3"
               >Building…</span
             >
           </div>

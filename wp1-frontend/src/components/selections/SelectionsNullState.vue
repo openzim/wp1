@@ -1,12 +1,12 @@
 <template>
   <div class="flex flex-col gap-4 p-[22px]">
     <h1 class="m-0 text-xl font-semibold tracking-[-0.015em]">Selections</h1>
-    <p v-if="signedOut" class="m-0 text-[13.5px] leading-[1.55] text-ink-2">
+    <p v-if="signedOut" class="m-0 text-[14px] leading-[1.55] text-ink-2">
       Selections are lists of Wikipedia articles you can turn into an offline
       ZIM file. They're tied to your Wikipedia account, so sign in to see and
       create them.
     </p>
-    <p v-else class="m-0 text-[13.5px] leading-[1.55] text-ink-2">
+    <p v-else class="m-0 text-[14px] leading-[1.55] text-ink-2">
       You haven't created a selection yet. Selections are lists of Wikipedia
       articles you can turn into an offline ZIM file.
     </p>
