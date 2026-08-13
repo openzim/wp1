@@ -224,7 +224,7 @@
                   aria-label="Filter selections"
                 />
               </label>
-              <div class="mt-2 flex gap-1.5 overflow-x-auto whitespace-nowrap">
+              <div class="mt-2 flex flex-wrap gap-1.5">
                 <button
                   v-for="pill in statusFilters"
                   :key="pill.key"
