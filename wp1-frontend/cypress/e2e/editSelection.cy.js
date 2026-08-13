@@ -25,7 +25,8 @@ describe('the selection detail editor', () => {
       cy.get('#row-list').contains('2 titles');
       cy.get('#row-project').contains('en.wiktionary.org');
       cy.get('#row-schedule').contains('None — set one up when creating a ZIM');
-      cy.get('#save-indicator').contains('all changes saved');
+      // No save has happened yet, so no save state is claimed.
+      cy.get('#save-indicator').should('not.exist');
     });
 
     it('opens a field for editing on click and cancels with Escape', () => {
@@ -54,7 +55,7 @@ describe('the selection detail editor', () => {
       cy.get('#edit-name').type('Renamed Builder');
       cy.get('#save-name').click();
       cy.wait('@save');
-      cy.get('#save-indicator').contains('all changes saved');
+      cy.get('#save-indicator').contains('All changes saved');
       cy.get('#edit-name').should('not.exist');
     });
 
@@ -96,7 +97,7 @@ describe('the selection detail editor', () => {
       cy.get('#edit-list').type('\nStatue of#Liberty');
       cy.get('#save-list').click();
       cy.wait('@save');
-      cy.get('#save-indicator').contains("couldn't save");
+      cy.get('#save-indicator').contains("Couldn't save");
       cy.contains('The list contained the following invalid characters: #');
       cy.get('#edit-list').should('be.visible');
     });

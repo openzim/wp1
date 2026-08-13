@@ -38,7 +38,7 @@
       </div>
       <div class="flex shrink-0 items-center gap-1.5">
         <span
-          v-if="editing"
+          v-if="editing && saveState"
           id="save-indicator"
           class="mr-1 font-mono text-[11.5px]"
           :class="saveState === 'error' ? 'text-danger' : 'text-ink-4'"
@@ -539,7 +539,9 @@ export default {
       draft: '',
       draftList: [],
       fieldErrors: '',
-      saveState: 'saved',
+      // null until the first save attempt: claiming "all changes saved"
+      // before anything was touched is a lie.
+      saveState: null,
       confirmingScheduleRemoval: false,
       showDeleteDialog: false,
       retryProcessing: false,
@@ -619,12 +621,12 @@ export default {
     },
     saveIndicatorText: function () {
       if (this.saveState === 'saving') {
-        return 'saving…';
+        return 'Saving…';
       }
       if (this.saveState === 'error') {
-        return "couldn't save";
+        return "Couldn't save";
       }
-      return 'all changes saved';
+      return 'All changes saved';
     },
     fieldRows: function () {
       if (!this.builder) {
@@ -820,7 +822,7 @@ export default {
       this.editingField = null;
       this.fieldErrors = '';
       this.confirmingScheduleRemoval = false;
-      this.saveState = 'saved';
+      this.saveState = null;
       this.justEditedDefinition = false;
       if (this.item) {
         this.fetchBuilder();
