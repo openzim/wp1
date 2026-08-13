@@ -66,7 +66,7 @@
                   :class="
                     statusFilter === chip.key
                       ? 'bg-ink text-white'
-                      : 'bg-border-row-light text-ink-3 hover:bg-border-row'
+                      : 'bg-border-row-light text-ink-3 hover:bg-border'
                   "
                   @click="toggleFilter(chip.key)"
                 >

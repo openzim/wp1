@@ -28,12 +28,18 @@ module.exports = {
           DEFAULT: '#ffffff',
           muted: '#fafbfb',
         },
+        // Two effective border weights: DEFAULT for standard control/card
+        // edges, strong for emphasized structure (genuinely darker than
+        // DEFAULT). The subtle/row/row-light names are kept as aliases of a
+        // single hairline tint so templates don't churn, but they are one
+        // color on purpose — the old ~4-hex-step distinctions were
+        // invisible.
         border: {
           DEFAULT: '#dfe3e6',
-          strong: '#e2e5e8',
-          subtle: '#eaedef',
-          row: '#f0f2f3',
-          'row-light': '#f4f5f6',
+          strong: '#ced3d7',
+          subtle: '#eef0f2',
+          row: '#eef0f2',
+          'row-light': '#eef0f2',
         },
         // Text tiers. Every tier used for text must hold WCAG AA (>= 4.5:1)
         // on both surface.DEFAULT and surface.muted; ink-5 is reserved for
