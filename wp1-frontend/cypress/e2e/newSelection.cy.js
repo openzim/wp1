@@ -28,7 +28,8 @@ describe('the new selection page', () => {
     });
 
     it('counts titles as they are typed', () => {
-      cy.contains('0 titles detected');
+      // The counter stays hidden until the textarea has content.
+      cy.contains('titles detected').should('not.exist');
       cy.get('#articles').type('Eiffel_Tower\nStatue_of_Liberty\n\n# comment');
       cy.contains('2 titles detected');
     });

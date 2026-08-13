@@ -404,6 +404,11 @@ export default {
     },
     liveNote: function () {
       if (this.source === 'simple') {
+        // Quiet until typing starts; "0 titles detected" on an untouched
+        // form is noise.
+        if (!this.articles.trim()) {
+          return '';
+        }
         const n = this.articles
           .split('\n')
           .filter((line) => line.trim() && !line.trim().startsWith('#')).length;
