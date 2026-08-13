@@ -137,7 +137,9 @@
           {{ item.z_updated_at ? isoDateTime(item.z_updated_at) : '—' }}
         </div>
       </div>
-      <div class="wp1r-stat">
+      <div
+        class="wp1r-stat col-span-2 border-t border-border-row sm:col-span-1 sm:border-t-0"
+      >
         <div class="wp1r-microlabel">Schedule</div>
         <div class="truncate text-sm">{{ scheduleText || 'None' }}</div>
       </div>
