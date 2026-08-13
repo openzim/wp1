@@ -97,7 +97,8 @@ export const STATUSES = {
   none: {
     key: 'none',
     label: 'No ZIM',
-    dot: 'bg-white border border-ink-5',
+    // Filled muted dot: the hollow variant read as an empty radio button.
+    dot: 'bg-ink-5',
     attention: false,
   },
 };
