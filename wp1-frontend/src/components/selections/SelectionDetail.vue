@@ -25,14 +25,16 @@
           {{ item.name }}
         </h2>
         <div
-          class="mt-1 flex items-center gap-1.5 font-mono text-[11.5px] text-ink-3"
+          class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 font-mono text-[11.5px] text-ink-3"
         >
           <TypeBadge :model="item.model" />
           <span aria-hidden="true" class="text-ink-5">·</span>
           <span class="truncate">{{ item.project }}</span>
           <template v-if="articleCount !== null">
             <span aria-hidden="true" class="text-ink-5">·</span>
-            <span>{{ articleCount.toLocaleString() }} articles</span>
+            <span class="whitespace-nowrap"
+              >{{ articleCount.toLocaleString() }} articles</span
+            >
           </template>
         </div>
       </div>
