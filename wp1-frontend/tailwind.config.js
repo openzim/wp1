@@ -21,8 +21,8 @@ module.exports = {
         // Header/footer chrome bands: a step darker than the page grey so
         // the white content column reads between them.
         chrome: {
-          DEFAULT: '#dfe3e6',
-          edge: '#ced3d7',
+          DEFAULT: '#d8dde1',
+          edge: '#bfc6cc',
         },
         surface: {
           DEFAULT: '#ffffff',
