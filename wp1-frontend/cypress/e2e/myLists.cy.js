@@ -41,17 +41,17 @@ describe('the selections page', () => {
     });
 
     it('derives the status vocabulary for each row', () => {
-      cy.contains('.wp1r-railrow', 'zim ready').contains('up to date');
-      cy.contains('.wp1r-railrow', 'outdated zim').contains('stale');
-      cy.contains('.wp1r-railrow', 'deleted zim').contains('expired');
-      cy.contains('.wp1r-railrow', 'zim requested').contains('building');
-      cy.contains('.wp1r-railrow', 'updated list').contains('processing');
-      cy.contains('.wp1r-railrow', 'permanent error').contains('failed');
-      cy.contains('.wp1r-railrow', 'zim failed').contains('failed');
+      cy.contains('.wp1r-railrow', 'zim ready').contains('Up to date');
+      cy.contains('.wp1r-railrow', 'outdated zim').contains('Stale');
+      cy.contains('.wp1r-railrow', 'deleted zim').contains('Expired');
+      cy.contains('.wp1r-railrow', 'zim requested').contains('Building');
+      cy.contains('.wp1r-railrow', 'updated list').contains('Processing');
+      cy.contains('.wp1r-railrow', 'permanent error').contains('Failed');
+      cy.contains('.wp1r-railrow', 'zim failed').contains('Failed');
       cy.contains('.wp1r-railrow', 'selection ready, no zim').contains(
-        'no zim'
+        'No ZIM'
       );
-      cy.contains('.wp1r-railrow', 'simple list').contains('no zim');
+      cy.contains('.wp1r-railrow', 'simple list').contains('No ZIM');
     });
 
     it('shows the count chips', () => {

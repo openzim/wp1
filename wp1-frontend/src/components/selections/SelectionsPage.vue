@@ -62,7 +62,7 @@
                   v-for="chip in statusFilters"
                   :key="chip.key"
                   type="button"
-                  class="min-h-6 cursor-pointer rounded-[3px] border-0 px-1.5 py-0.5 font-mono text-[10.5px]"
+                  class="min-h-6 cursor-pointer rounded-[3px] border-0 px-1.5 py-0.5 text-[10.5px]"
                   :class="
                     statusFilter === chip.key
                       ? 'bg-ink text-white'
@@ -132,10 +132,10 @@
                   </span>
                   <span
                     v-if="!editing"
-                    class="mt-0.5 block truncate font-mono text-[11.5px] lowercase"
+                    class="mt-0.5 block truncate text-[11.5px]"
                     :class="isSelected(item) ? 'text-ink-3' : 'text-ink-4'"
-                    >{{ modelLabel(item.model).toLowerCase() }} ·
-                    {{ statusOf(item).label.toLowerCase() }}</span
+                    >{{ modelLabel(item.model) }} ·
+                    {{ statusOf(item).label }}</span
                   >
                 </button>
 
@@ -261,7 +261,7 @@
                 <div class="flex items-center gap-1.5 text-[12.5px]">
                   <StatusDot :status="statusOf(item)" />
                   <span aria-hidden="true" class="text-ink-5">·</span>
-                  <span class="font-mono text-[11.5px] text-ink-3">{{
+                  <span class="text-[11.5px] text-ink-3">{{
                     modelLabel(item.model)
                   }}</span>
                 </div>

@@ -40,7 +40,7 @@
         <span
           v-if="editing && saveState"
           id="save-indicator"
-          class="mr-1 font-mono text-[11.5px]"
+          class="mr-1 text-[11.5px]"
           :class="saveState === 'error' ? 'text-danger' : 'text-ink-4'"
         >
           {{ saveIndicatorText }}
