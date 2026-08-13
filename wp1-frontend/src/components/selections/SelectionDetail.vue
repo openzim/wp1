@@ -322,14 +322,25 @@
           </div>
         </div>
 
-        <!-- Read state -->
+        <!-- Read state. Non-interactive rows (static) render as a plain div
+             so nothing announces as a button that can't activate. -->
         <component
-          :is="row.control === 'link' ? 'router-link' : 'button'"
+          :is="
+            row.control === 'link'
+              ? 'router-link'
+              : row.control === 'static'
+              ? 'div'
+              : 'button'
+          "
           v-else
           :key="row.key"
           :id="'row-' + row.key"
           :to="row.control === 'link' ? combinatorEditPath : undefined"
-          type="button"
+          :type="
+            row.control === 'link' || row.control === 'static'
+              ? undefined
+              : 'button'
+          "
           class="wp1r-fieldrow"
           :class="{
             '!cursor-default hover:!bg-transparent': row.control === 'static',

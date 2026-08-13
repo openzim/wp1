@@ -279,8 +279,9 @@
                   >
                   <span
                     v-else
-                    class="wp1r-btn h-9 flex-1 cursor-default border-border text-ink-4"
-                    >TSV</span
+                    class="flex h-9 flex-1 items-center justify-center text-[12.5px] text-ink-4"
+                    title="The article list becomes downloadable once the selection has finished processing."
+                    >TSV not ready</span
                   >
                   <button
                     type="button"
