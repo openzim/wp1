@@ -102,14 +102,18 @@ describe('the selections page', () => {
       );
       cy.reload();
       cy.wait('@builderFail');
-      cy.get('#builder-load-error').contains("Couldn't load this selection.");
+      // Scope to the desktop pane: the hidden mobile detail instance
+      // renders its own copy of the error element.
+      cy.get('.md\\:grid')
+        .find('#builder-load-error')
+        .contains("Couldn't load this selection.");
       cy.intercept('GET', 'v1/builders/1', {
         fixture: 'simple_builder.json',
       }).as('builderRetry');
-      cy.get('#retry-load-builder').click();
+      cy.get('.md\\:grid').find('#retry-load-builder').click();
       cy.wait('@builderRetry');
       cy.get('#definition').should('contain.text', 'Eiffel_Tower');
-      cy.get('#builder-load-error').should('not.exist');
+      cy.get('.md\\:grid').find('#builder-load-error').should('not.exist');
     });
 
     it('shows the stat strip with selection and ZIM statuses', () => {
