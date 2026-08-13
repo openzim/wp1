@@ -35,11 +35,14 @@ module.exports = {
           row: '#f0f2f3',
           'row-light': '#f4f5f6',
         },
+        // Text tiers. Every tier used for text must hold WCAG AA (>= 4.5:1)
+        // on both surface.DEFAULT and surface.muted; ink-5 is reserved for
+        // decorative, aria-hidden glyphs only.
         ink: {
           DEFAULT: '#14171a',
           2: '#4c545c',
-          3: '#6b7480',
-          4: '#9aa2ab',
+          3: '#5d6670',
+          4: '#697380',
           5: '#c3c9cf',
         },
         accent: {
