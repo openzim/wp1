@@ -332,6 +332,9 @@ export default {
       query: '',
       statusFilter: 'all',
       pollId: null,
+      // Tracks the md breakpoint (Tailwind's 768px) so the desktop pane's
+      // auto-select follows resizes/rotations instead of a load-time bet.
+      mdQuery: window.matchMedia('(min-width: 768px)'),
     };
   },
   computed: {
@@ -419,9 +422,11 @@ export default {
   },
   mounted: function () {
     document.addEventListener('keydown', this.onKeydown);
+    this.mdQuery.addEventListener('change', this.autoSelectFirst);
   },
   beforeUnmount: function () {
     document.removeEventListener('keydown', this.onKeydown);
+    this.mdQuery.removeEventListener('change', this.autoSelectFirst);
     this.stopProgressPolling();
   },
   watch: {
@@ -446,6 +451,18 @@ export default {
         return;
       }
       this.$router.push(`/selections/user/${item.id}`);
+    },
+    // Auto-select the first row on desktop so the pane is never empty. Also
+    // runs when the viewport crosses the md breakpoint (resize/rotation).
+    autoSelectFirst: function () {
+      if (
+        !this.selectedId &&
+        this.list.length > 0 &&
+        this.mdQuery.matches &&
+        this.$route.path === '/selections/user'
+      ) {
+        this.$router.replace(`/selections/user/${this.list[0].id}`);
+      }
     },
     toggleFilter: function (key) {
       this.statusFilter = this.statusFilter === key ? 'all' : key;
@@ -499,15 +516,7 @@ export default {
       this.list = data.builders;
       this.loaded = true;
 
-      // Auto-select the first row on desktop so the pane is never empty.
-      if (
-        !this.selectedId &&
-        this.list.length > 0 &&
-        window.innerWidth >= 768 &&
-        this.$route.path === '/selections/user'
-      ) {
-        this.$router.replace(`/selections/user/${this.list[0].id}`);
-      }
+      this.autoSelectFirst();
 
       // Poll while anything is in flight: materializing selections every
       // 20s, pending/outdated ZIMs every 5 minutes (parity with the old
