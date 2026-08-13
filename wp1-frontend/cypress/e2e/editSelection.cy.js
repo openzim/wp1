@@ -113,10 +113,22 @@ describe('the selection detail editor', () => {
       // URL is a hash-only navigation and would not refetch.)
       cy.reload();
       cy.get('#row-schedule').contains('Every 3 months');
-      cy.get('#row-schedule').contains('Remove');
-      cy.on('window:confirm', () => true);
-      cy.get('#row-schedule').click();
+      cy.get('#remove-schedule').click();
+      // Clicking elsewhere on the row must not remove the schedule; an
+      // inline confirm strip appears instead of a native dialog.
+      cy.get('#confirm-remove-schedule').click();
       cy.wait('@deleteSchedule');
+    });
+
+    it('cancels schedule removal from the confirm strip', () => {
+      cy.intercept('v1/builders/1/zim/status', {
+        fixture: 'zim_status_with_schedule.json',
+      });
+      cy.reload();
+      cy.get('#remove-schedule').click();
+      cy.get('#cancel-remove-schedule').click();
+      cy.get('#confirm-remove-schedule').should('not.exist');
+      cy.get('#row-schedule').contains('Every 3 months');
     });
 
     it('deletes the selection from the footer', () => {

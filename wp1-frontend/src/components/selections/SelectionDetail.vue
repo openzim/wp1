@@ -322,13 +322,46 @@
           </div>
         </div>
 
-        <!-- Read state. Non-interactive rows (static) render as a plain div
-             so nothing announces as a button that can't activate. -->
+        <!-- Schedule removal confirm strip -->
+        <div
+          v-else-if="row.key === 'schedule' && confirmingScheduleRemoval"
+          :key="row.key"
+          class="grid gap-3 border-b border-border-row-light bg-danger-tint px-[18px] py-3 sm:grid-cols-[180px_minmax(0,1fr)]"
+        >
+          <div class="pt-[3px] text-[13px] font-medium text-ink-2">
+            {{ row.label }}
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-[13px] text-ink-2"
+              >Remove the recurring ZIM schedule for this selection?</span
+            >
+            <button
+              id="confirm-remove-schedule"
+              type="button"
+              class="wp1r-btn-danger h-[26px] px-2.5"
+              @click="removeSchedule"
+            >
+              Remove schedule
+            </button>
+            <button
+              id="cancel-remove-schedule"
+              type="button"
+              class="wp1r-btn-secondary h-[26px] px-2.5"
+              @click="confirmingScheduleRemoval = false"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+
+        <!-- Read state. Non-interactive rows (static, schedule) render as a
+             plain div so nothing announces as a button that can't activate;
+             the schedule's destructive action is its own explicit button. -->
         <component
           :is="
             row.control === 'link'
               ? 'router-link'
-              : row.control === 'static'
+              : row.control === 'static' || row.control === 'schedule'
               ? 'div'
               : 'button'
           "
@@ -337,13 +370,16 @@
           :id="'row-' + row.key"
           :to="row.control === 'link' ? combinatorEditPath : undefined"
           :type="
-            row.control === 'link' || row.control === 'static'
-              ? undefined
-              : 'button'
+            row.control === 'text' ||
+            row.control === 'textarea' ||
+            row.control === 'projects'
+              ? 'button'
+              : undefined
           "
           class="wp1r-fieldrow"
           :class="{
-            '!cursor-default hover:!bg-transparent': row.control === 'static',
+            '!cursor-default hover:!bg-transparent':
+              row.control === 'static' || row.control === 'schedule',
           }"
           @click="row.control === 'link' ? null : openField(row)"
         >
@@ -353,7 +389,16 @@
             :class="{ 'font-mono text-[12.5px]': row.mono }"
             >{{ row.display() }}</span
           >
-          <span class="text-right text-xs text-ink-4">{{
+          <button
+            v-if="row.control === 'schedule' && scheduleText"
+            id="remove-schedule"
+            type="button"
+            class="wp1r-btn-secondary h-6 justify-self-end px-2 text-xs"
+            @click="confirmingScheduleRemoval = true"
+          >
+            Remove
+          </button>
+          <span v-else class="text-right text-xs text-ink-4">{{
             row.control === 'link'
               ? 'Open'
               : row.action === undefined
@@ -495,6 +540,7 @@ export default {
       draftList: [],
       fieldErrors: '',
       saveState: 'saved',
+      confirmingScheduleRemoval: false,
       showDeleteDialog: false,
       retryProcessing: false,
       justEditedDefinition: false,
@@ -773,6 +819,7 @@ export default {
       this.menuOpen = false;
       this.editingField = null;
       this.fieldErrors = '';
+      this.confirmingScheduleRemoval = false;
       this.saveState = 'saved';
       this.justEditedDefinition = false;
       if (this.item) {
@@ -853,13 +900,7 @@ export default {
     },
     // ---- Edit mode ----
     openField: function (row) {
-      if (row.control === 'static') {
-        return;
-      }
-      if (row.control === 'schedule') {
-        if (this.scheduleText) {
-          this.removeSchedule();
-        }
+      if (row.control === 'static' || row.control === 'schedule') {
         return;
       }
       this.editingField = row.key;
@@ -1022,11 +1063,7 @@ export default {
       this.$emit('refresh');
     },
     removeSchedule: async function () {
-      if (
-        !window.confirm('Remove the recurring ZIM schedule for this selection?')
-      ) {
-        return;
-      }
+      this.confirmingScheduleRemoval = false;
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/builders/${this.item.id}/schedule`,
         {
