@@ -387,16 +387,22 @@
             "
             class="flex items-center gap-2.5"
           >
-            <a :href="zimPathFor()">
-              <button
-                id="download"
-                type="button"
-                class="wp1r-btn-primary h-8 px-3.5"
-                :disabled="status !== 'FILE_READY'"
-              >
-                Download ZIM
-              </button>
-            </a>
+            <a
+              v-if="status === 'FILE_READY'"
+              id="download"
+              :href="zimPathFor()"
+              class="wp1r-btn-primary h-8 px-3.5"
+              >Download ZIM</a
+            >
+            <button
+              v-else
+              id="download"
+              type="button"
+              class="wp1r-btn-primary h-8 px-3.5"
+              disabled
+            >
+              Download ZIM
+            </button>
             <span v-if="status === 'REQUESTED'" class="text-[12.5px] text-ink-3"
               >Building…</span
             >
