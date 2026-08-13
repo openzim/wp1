@@ -128,7 +128,12 @@ Finally, we must add CREATE and USE database commands to the top of the dump so 
 actual database is created when the dev db server starts.
 
 ```bash
-echo -e "CREATE DATABASE \`enwp10_dev\` CHARACTER SET = \"utf8mb4\" COLLATE = \"utf8mb4_unicode_ci\";\nUSE enwp10_dev;\n\n$(cat enwp10_dev.dump.sql)" > enwp10_dev.dump.sql
+printf 'CREATE DATABASE `enwp10_dev` CHARACTER SET = "utf8mb4" COLLATE = "utf8mb4_unicode_ci";\nUSE enwp10_dev;\n\n' | cat - enwp10_dev.dump.sql > enwp10_dev.dump.sql.tmp && mv enwp10_dev.dump.sql.tmp enwp10_dev.dump.sql
 ```
+
+Do NOT use `echo -e "...$(cat enwp10_dev.dump.sql)"` for this step: `echo -e`
+interprets backslash escapes in the entire dump, which corrupts escaped data
+(for example, `\\n` inside JSON columns collapses to a raw newline and the
+restored JSON becomes invalid).
 
 Once you're done, commit the file and push it to Github as normal.
