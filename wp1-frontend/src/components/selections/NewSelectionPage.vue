@@ -286,7 +286,7 @@
           </div>
 
           <!-- Action row -->
-          <div class="mt-auto flex items-center gap-2.5">
+          <div class="flex items-center gap-2.5">
             <button
               id="saveListButton"
               type="submit"
