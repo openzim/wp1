@@ -27,6 +27,19 @@
           lists.
         </p>
 
+        <ul
+          v-if="hasZim || scheduleText"
+          id="delete-consequences"
+          class="m-0 list-disc pl-5 text-[13px] leading-[1.5] text-ink-2"
+        >
+          <li v-if="hasZim">
+            Its latest ZIM file will no longer be downloadable.
+          </li>
+          <li v-if="scheduleText">
+            Its recurring ZIM schedule ({{ scheduleText }}) will be cancelled.
+          </li>
+        </ul>
+
         <div
           v-if="affectedCombinators.length > 0"
           id="affected-combinators"
@@ -141,6 +154,10 @@ export default {
   props: {
     builderId: { type: String, required: true },
     fallbackName: { type: String, default: '' },
+    // Whether a downloadable ZIM file currently exists for this selection.
+    hasZim: { type: Boolean, default: false },
+    // Human description of an active recurring schedule, if any.
+    scheduleText: { type: String, default: null },
   },
   data: function () {
     return {
@@ -167,7 +184,11 @@ export default {
       return this.fallbackName;
     },
     requiresConfirmation: function () {
-      return this.affectedCombinators.length > 0;
+      // Deleting is riskier when other selections depend on this one or a
+      // recurring compute job would be cancelled; those cases need the name
+      // typed back. A merely-downloadable ZIM is called out in the copy but
+      // doesn't escalate the confirmation.
+      return this.affectedCombinators.length > 0 || !!this.scheduleText;
     },
     allActionsSelected: function () {
       return this.affectedCombinators.every(

@@ -486,6 +486,8 @@
       v-if="showDeleteDialog"
       :builder-id="item.id"
       :fallback-name="item.name"
+      :has-zim="zimReady"
+      :schedule-text="scheduleText"
       @cancel="showDeleteDialog = false"
       @deleted="onDeleted"
     />

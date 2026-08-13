@@ -132,6 +132,21 @@ describe('the selection detail editor', () => {
       cy.get('#row-schedule').contains('Every 3 months');
     });
 
+    it('requires a typed confirmation to delete a scheduled selection', () => {
+      cy.intercept('v1/builders/1/zim/status', {
+        fixture: 'zim_status_with_schedule.json',
+      });
+      cy.intercept('v1/builders/1/delete-impact', {
+        fixture: 'delete_impact_none.json',
+      });
+      cy.reload();
+      cy.get('#delete-button').click();
+      cy.get('#delete-consequences').contains('schedule');
+      cy.get('#confirmDeleteButton').should('have.attr', 'disabled');
+      cy.get('#delete-confirm-name').type('Builder 1');
+      cy.get('#confirmDeleteButton').should('not.have.attr', 'disabled');
+    });
+
     it('deletes the selection from the footer', () => {
       cy.intercept('v1/builders/1/delete-impact', {
         fixture: 'delete_impact_none.json',
