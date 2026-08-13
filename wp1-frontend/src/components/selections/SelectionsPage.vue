@@ -100,8 +100,8 @@
 
               <template v-else>
                 <button
-                  v-for="(item, index) in filtered"
-                  :key="index + '-' + item.id"
+                  v-for="item in filtered"
+                  :key="item.id"
                   type="button"
                   class="wp1r-railrow"
                   :class="{
@@ -245,8 +245,8 @@
             </div>
             <template v-else>
               <div
-                v-for="(item, index) in filtered"
-                :key="'m-' + index + '-' + item.id"
+                v-for="item in filtered"
+                :key="'m-' + item.id"
                 class="flex flex-col gap-1.5 border-b border-border-row px-3 py-[11px]"
               >
                 <button
