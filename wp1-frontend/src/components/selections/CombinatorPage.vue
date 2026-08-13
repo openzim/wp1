@@ -98,7 +98,7 @@
                   v-for="pill in typePills"
                   :key="pill.key"
                   type="button"
-                  class="h-[22px] cursor-pointer rounded-[11px] border border-solid px-2.5 text-[11.5px]"
+                  class="h-7 cursor-pointer rounded-full border border-solid px-2.5 text-[11.5px]"
                   :class="
                     libType === pill.key
                       ? 'border-ink bg-ink text-white'
@@ -139,14 +139,14 @@
                   >
                   <button
                     type="button"
-                    class="wp1r-btn h-[22px] shrink-0 border-ok-border px-1.5 text-[11.5px] font-medium text-ok hover:bg-ok-tint"
+                    class="wp1r-btn h-7 shrink-0 border-ok-border px-1.5 text-[11.5px] font-medium text-ok hover:bg-ok-tint"
                     @click="addTo('include', item.id)"
                   >
                     include
                   </button>
                   <button
                     type="button"
-                    class="wp1r-btn h-[22px] shrink-0 border-danger-border px-1.5 text-[11.5px] font-medium text-danger hover:bg-danger-tint"
+                    class="wp1r-btn h-7 shrink-0 border-danger-border px-1.5 text-[11.5px] font-medium text-danger hover:bg-danger-tint"
                     @click="addTo('exclude', item.id)"
                   >
                     exclude
@@ -234,14 +234,14 @@
                 }}</span>
                 <button
                   type="button"
-                  class="wp1r-btn-secondary h-[22px] px-1.5 text-[11.5px]"
+                  class="wp1r-btn-secondary h-7 px-1.5 text-[11.5px]"
                   @click="moveBetween(group, builderId)"
                 >
                   → {{ group === 'include' ? 'exclude' : 'include' }}
                 </button>
                 <button
                   type="button"
-                  class="h-5 w-5 cursor-pointer border-0 bg-transparent p-0 text-sm leading-none text-ink-4 hover:text-danger"
+                  class="h-6 w-6 cursor-pointer border-0 bg-transparent p-0 text-sm leading-none text-ink-4 hover:text-danger"
                   :aria-label="'Remove ' + nameForId(builderId)"
                   @click="removeFrom(group, builderId)"
                 >

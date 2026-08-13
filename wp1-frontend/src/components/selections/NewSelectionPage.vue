@@ -228,7 +228,7 @@
                   {{ wikiproject }}
                   <button
                     type="button"
-                    class="cursor-pointer border-0 bg-transparent p-0 leading-none text-ink-4 hover:text-danger"
+                    class="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0 leading-none text-ink-4 hover:text-danger"
                     :aria-label="'Remove ' + wikiproject"
                     @click="wpInclude.splice(i, 1)"
                   >
@@ -258,7 +258,7 @@
                   {{ wikiproject }}
                   <button
                     type="button"
-                    class="cursor-pointer border-0 bg-transparent p-0 leading-none text-ink-4 hover:text-danger"
+                    class="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0 leading-none text-ink-4 hover:text-danger"
                     :aria-label="'Remove ' + wikiproject"
                     @click="wpExclude.splice(i, 1)"
                   >

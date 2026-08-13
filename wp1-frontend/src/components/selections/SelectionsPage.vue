@@ -38,7 +38,7 @@
                 <router-link
                   id="new-selection-button"
                   to="/selections/new"
-                  class="wp1r-btn-primary h-[26px] px-[9px] text-xs"
+                  class="wp1r-btn-primary h-7 px-[9px] text-xs"
                   >New</router-link
                 >
               </div>
@@ -62,7 +62,7 @@
                   v-for="chip in statusFilters"
                   :key="chip.key"
                   type="button"
-                  class="cursor-pointer rounded-[3px] border-0 px-1.5 py-0.5 font-mono text-[10.5px]"
+                  class="min-h-6 cursor-pointer rounded-[3px] border-0 px-1.5 py-0.5 font-mono text-[10.5px]"
                   :class="
                     statusFilter === chip.key
                       ? 'bg-ink text-white'
@@ -227,7 +227,7 @@
                   v-for="pill in statusFilters"
                   :key="pill.key"
                   type="button"
-                  class="h-[26px] shrink-0 cursor-pointer rounded-[13px] border px-3 text-xs"
+                  class="h-7 shrink-0 cursor-pointer rounded-full border px-3 text-xs"
                   :class="
                     statusFilter === pill.key
                       ? 'border-ink bg-ink text-white'

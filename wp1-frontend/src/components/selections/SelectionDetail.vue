@@ -281,7 +281,7 @@
                   {{ project }}
                   <button
                     type="button"
-                    class="cursor-pointer border-0 bg-transparent p-0 leading-none text-ink-4 hover:text-danger"
+                    class="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0 leading-none text-ink-4 hover:text-danger"
                     :aria-label="'Remove ' + project"
                     @click="removeDraftProject(i)"
                   >
@@ -301,7 +301,7 @@
               <button
                 :id="'save-' + row.key"
                 type="button"
-                class="wp1r-btn-primary h-[26px] px-2.5"
+                class="wp1r-btn-primary h-7 px-2.5"
                 :disabled="saveState === 'saving'"
                 @click="saveField(row)"
               >
@@ -309,7 +309,7 @@
               </button>
               <button
                 type="button"
-                class="wp1r-btn-secondary h-[26px] px-2.5"
+                class="wp1r-btn-secondary h-7 px-2.5"
                 :disabled="saveState === 'saving'"
                 @click="cancelField"
               >
@@ -338,7 +338,7 @@
             <button
               id="confirm-remove-schedule"
               type="button"
-              class="wp1r-btn-danger h-[26px] px-2.5"
+              class="wp1r-btn-danger h-7 px-2.5"
               @click="removeSchedule"
             >
               Remove schedule
@@ -346,7 +346,7 @@
             <button
               id="cancel-remove-schedule"
               type="button"
-              class="wp1r-btn-secondary h-[26px] px-2.5"
+              class="wp1r-btn-secondary h-7 px-2.5"
               @click="confirmingScheduleRemoval = false"
             >
               Cancel
@@ -425,7 +425,7 @@
         <button
           id="delete-button"
           type="button"
-          class="wp1r-btn-danger ml-auto h-[26px] px-2.5"
+          class="wp1r-btn-danger ml-auto h-7 px-2.5"
           @click="showDeleteDialog = true"
         >
           Delete
