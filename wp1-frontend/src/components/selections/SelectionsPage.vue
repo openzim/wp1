@@ -493,11 +493,21 @@ export default {
         rail.querySelectorAll('button.wp1r-railrow')
       );
       const index = rows.indexOf(document.activeElement);
-      const next = rows[index + delta];
-      if (next) {
-        next.focus();
-      } else if (index === -1 && rows.length) {
-        rows[0].focus();
+      let nextIndex = null;
+      if (index === -1 && rows.length) {
+        nextIndex = 0;
+      } else if (rows[index + delta]) {
+        nextIndex = index + delta;
+      }
+      if (nextIndex === null) {
+        return;
+      }
+      rows[nextIndex].focus();
+      // Selection follows focus, like the rest of the arrow-key pattern;
+      // replace instead of push so arrowing doesn't pile up history.
+      const item = this.filtered[nextIndex];
+      if (item && !this.isSelected(item) && !this.editing) {
+        this.$router.replace(`/selections/user/${item.id}`);
       }
     },
     getLists: async function () {
