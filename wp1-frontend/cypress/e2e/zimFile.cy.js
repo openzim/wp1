@@ -15,6 +15,43 @@ describe('the zim file creation page', () => {
         }).as('builder');
       });
 
+      describe('and the article count fetch fails', () => {
+        it('shows the server error page with the HTTP status', () => {
+          cy.intercept('GET', 'v1/builders/1/selection/latest/article_count', {
+            statusCode: 502,
+            body: {},
+          }).as('article_count_fail');
+          cy.intercept('v1/builders/1/zim/status', {
+            fixture: 'zim_status_not_requested.json',
+          }).as('status');
+          cy.visit('/#/selections/1/zim');
+          cy.wait('@article_count_fail');
+          cy.contains('Server error');
+          cy.get('#error-http-status').contains(
+            'The server responded with HTTP 502.'
+          );
+        });
+      });
+
+      describe('and the zim status fetch fails', () => {
+        it('surfaces the HTTP status in the error list', () => {
+          cy.intercept('GET', 'v1/builders/1/selection/latest/article_count', {
+            selection: {
+              id: '1',
+              article_count: 1000,
+              max_article_count: 50000,
+            },
+          }).as('article_count');
+          cy.intercept('v1/builders/1/zim/status', {
+            statusCode: 503,
+            body: {},
+          }).as('status_fail');
+          cy.visit('/#/selections/1/zim');
+          cy.wait('@status_fail');
+          cy.contains('The ZIM status could not be loaded (HTTP 503).');
+        });
+      });
+
       describe('and the selection is under the article limit', () => {
         beforeEach(() => {
           cy.intercept('GET', 'v1/builders/1/selection/latest/article_count', {

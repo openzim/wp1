@@ -19,10 +19,17 @@
         v-else-if="serverError || noArticleCount"
         class="mx-auto w-full max-w-[760px] p-[22px]"
       >
-        <h1 class="m-0 mb-2 text-xl font-semibold">500 Server error</h1>
+        <h1 class="m-0 mb-2 text-xl font-semibold">Server error</h1>
         <p class="m-0 text-[14px] text-ink-2">
           Something went wrong and we couldn't retrieve the selection with that
           ID. You might try again later.
+        </p>
+        <p
+          v-if="errorHttpStatus"
+          id="error-http-status"
+          class="mb-0 mt-2 font-mono text-[12px] text-ink-3"
+        >
+          The server responded with HTTP {{ errorHttpStatus }}.
         </p>
       </div>
 
@@ -355,18 +362,6 @@
               </div>
             </div>
 
-            <div
-              v-if="!success"
-              class="error-list rounded border border-danger-border bg-danger-tint px-3.5 py-3"
-            >
-              <p class="m-0 text-[13px] font-medium text-danger">
-                The following errors occurred:
-              </p>
-              <ul class="mb-0 mt-1 list-disc pl-5 text-[13px] text-ink-2">
-                <li v-for="msg in errors" :key="msg">{{ msg }}</li>
-              </ul>
-            </div>
-
             <div class="flex items-center gap-2.5">
               <button
                 id="request"
@@ -407,6 +402,20 @@
               >Building…</span
             >
           </div>
+
+          <!-- Page-level so status/schedule failures show even when the
+               request form itself is hidden. -->
+          <div
+            v-if="!success"
+            class="error-list rounded border border-danger-border bg-danger-tint px-3.5 py-3"
+          >
+            <p class="m-0 text-[13px] font-medium text-danger">
+              The following errors occurred:
+            </p>
+            <ul class="mb-0 mt-1 list-disc pl-5 text-[13px] text-ink-2">
+              <li v-for="msg in errors" :key="msg">{{ msg }}</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -435,6 +444,8 @@ export default {
       longDescription: '',
       notFound: false,
       noArticleCount: false,
+      // HTTP status of the fetch that put the page in its error state.
+      errorHttpStatus: null,
       pollId: null,
       processing: false,
       ready: false,
@@ -508,6 +519,7 @@ export default {
         this.notFound = true;
       } else if (!response.ok) {
         this.serverError = true;
+        this.errorHttpStatus = response.status;
       } else {
         this.notFound = false;
         this.builder = await response.json();
@@ -528,7 +540,9 @@ export default {
 
       if (!response.ok) {
         this.success = false;
-        this.errors = ['An unknown server error has occurred.'];
+        this.errors = [
+          `The ZIM status could not be loaded (HTTP ${response.status}).`,
+        ];
         return;
       }
 
@@ -558,6 +572,7 @@ export default {
 
       if (!response.ok) {
         this.noArticleCount = true;
+        this.errorHttpStatus = response.status;
         return;
       }
       const data = await response.json();
@@ -626,12 +641,12 @@ export default {
 
       if (!response.ok) {
         this.success = false;
+        const fallback = `Request failed (HTTP ${response.status})`;
         try {
           const data = await response.json();
-          this.errors = data.error_messages || [data.error || 'Request failed'];
+          this.errors = data.error_messages || [data.error || fallback];
         } catch (e) {
-          const text = await response.text();
-          this.errors = [text || 'Request failed'];
+          this.errors = [fallback];
         }
         return;
       }
@@ -699,7 +714,7 @@ export default {
         } else {
           const errorData = await response.json();
           this.errors = errorData.error_messages || [
-            'Failed to delete schedule',
+            `Failed to delete schedule (HTTP ${response.status})`,
           ];
           this.success = false;
         }
