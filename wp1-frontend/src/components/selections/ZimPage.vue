@@ -671,8 +671,8 @@ export default {
     },
     displayGraphemeLimitText: function (text, maxLength) {
       const count = this.graphemeCount(text);
-      return `${count}/${maxLength} graphemes${
-        count === maxLength ? ' (max reached)' : ''
+      return `${count}/${maxLength} characters (graphemes)${
+        count === maxLength ? ' — max reached' : ''
       }`;
     },
     isValidEmail: function (email) {
