@@ -92,7 +92,9 @@ module.exports = {
         ],
       },
       boxShadow: {
-        card: '0 1px 2px rgba(20,23,26,0.04)',
+        // Used by floating surfaces (overflow menu, autocomplete, dialog);
+        // strong enough to read as elevation on a white page.
+        card: '0 1px 2px rgba(20,23,26,0.06), 0 4px 12px rgba(20,23,26,0.10)',
       },
     },
   },
