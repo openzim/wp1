@@ -237,7 +237,7 @@
                   class="wp1r-btn-secondary h-7 px-1.5 text-[11.5px]"
                   @click="moveBetween(group, builderId)"
                 >
-                  → {{ group === 'include' ? 'exclude' : 'include' }}
+                  Move to {{ group === 'include' ? 'exclude' : 'include' }}
                 </button>
                 <button
                   type="button"

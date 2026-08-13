@@ -78,7 +78,7 @@ describe('the combinator builder page', () => {
         cy.contains('Simple Ready')
           .parent()
           .within(() => cy.contains('button', 'include').click());
-        cy.get('#include-items').contains('button', '→ exclude').click();
+        cy.get('#include-items').contains('button', 'Move to exclude').click();
         cy.get('#exclude-items').contains('Simple Ready');
       });
 
