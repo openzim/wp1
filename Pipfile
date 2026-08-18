@@ -32,9 +32,9 @@ supervisor = "~=4.2"
 pysocks = "*"
 regex = "==2024.11.6"
 # Versions required for dependabot
-sqlparse = "~=0.5.0"
 idna = "~=3.7"
 yoyo-migrations = "==9.0.0"
+sqlparse = "*"
 
 [dev-packages]
 pre-commit = "==2.21.0"
