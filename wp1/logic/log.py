@@ -2,8 +2,9 @@ import datetime
 
 import attr
 from redis import Redis
-from wp1.redis_db import gen_redis_log_key
+
 from wp1.models.wp10.log import Log
+from wp1.redis_db import gen_redis_log_key
 
 # Redis does not allow None types. However if a log to be stored has a None
 # we convert it to this value while storing on Redis and back to None
@@ -12,11 +13,7 @@ REDIS_NULL = b"__redis__none__"
 
 
 def insert_or_update(redis: Redis, log: Log):
-    # The date component keeps each day's log for an article in its own key:
-    # a later re-log of the same article (e.g. a reassessment the next day)
-    # must not overwrite an earlier day's entry, or that date would vanish
-    # from Redis while still listed on the live log page (issue behind the
-    # stalled log uploads of 2026-08-15). Same-day repeats still dedupe.
+    # The date component keeps each day's log for an article in its own key.
     log_key = gen_redis_log_key(
         project=log.l_project,
         namespace=log.l_namespace,

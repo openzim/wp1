@@ -5,8 +5,8 @@ from unittest.mock import patch
 import attr
 
 from wp1 import logs
-from wp1.logic import log as logic_log
 from wp1.base_db_test import BaseCombinedDbTest
+from wp1.logic import log as logic_log
 from wp1.models.wp10.log import Log
 
 
@@ -1093,7 +1093,7 @@ class LogsTest(BaseCombinedDbTest):
     ):
         project_name = b"Catholicism"
         patched_api.get_page.return_value.text.return_value = ""
-        sorry_msg = "Sorry, all of the logs for this date were too large to " "upload."
+        sorry_msg = "Sorry, all of the logs for this date were too large to upload."
         header = "<noinclude>{{Log}}\n{{Automatically generated}}</noinclude>\n"
         text = "a" * 3000 * 1024
         patched_generate.return_value = [text, text, text]

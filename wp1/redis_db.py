@@ -1,7 +1,8 @@
 import logging
 
 from redis import Redis
-from wp1.credentials import ENV, CREDENTIALS
+
+from wp1.credentials import CREDENTIALS, ENV
 
 logger = logging.getLogger(__name__)
 
