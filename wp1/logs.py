@@ -214,11 +214,13 @@ def live_page_dates_missing_from_logs(page_text, log_dates, from_dt):
     """Dates of log sections on the live page that are inside the 7-day window
     but absent from the logs read from Redis.
 
-    Under normal operation this is empty: a section still inside the window
-    was rendered from Redis keys whose 7-day TTL cannot have expired yet. A
-    non-empty result means Redis lost the log data (e.g. the container was
-    recreated without persistence), and regenerating the page would destroy
-    real log history. See https://github.com/openzim/wp1/issues/1244.
+    Under normal operation this is empty: log keys are stored per (article,
+    date), so a section still inside the window was rendered from keys whose
+    7-day TTL cannot have expired yet and which no later re-log can
+    overwrite. A non-empty result means Redis lost the log data (e.g. the
+    container was recreated without persistence), and regenerating the page
+    would destroy real log history. See
+    https://github.com/openzim/wp1/issues/1244.
     """
     missing = []
     for match in RE_SECTION_DATE.finditer(page_text):
