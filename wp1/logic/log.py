@@ -2,8 +2,9 @@ import datetime
 
 import attr
 from redis import Redis
-from wp1.redis_db import gen_redis_log_key
+
 from wp1.models.wp10.log import Log
+from wp1.redis_db import gen_redis_log_key
 
 # Redis does not allow None types. However if a log to be stored has a None
 # we convert it to this value while storing on Redis and back to None
@@ -12,11 +13,13 @@ REDIS_NULL = b"__redis__none__"
 
 
 def insert_or_update(redis: Redis, log: Log):
+    # The date component keeps each day's log for an article in its own key.
     log_key = gen_redis_log_key(
         project=log.l_project,
         namespace=log.l_namespace,
         action=log.l_action,
         article=log.l_article,
+        date=log.l_timestamp[:8],
     )
     with redis.pipeline() as pipe:
         mapping = {
@@ -37,8 +40,17 @@ def get_logs(
     start_dt: datetime.datetime | None = None,
 ) -> list[Log]:
     """Retrieve logs from Redis matching the given filters."""
+    # Keys written since the date suffix was added end in :YYYYMMDD; keys
+    # written before it do not. A wildcard article already matches both
+    # forms with no suffix; an exact article needs the ':*' to match dated
+    # keys (legacy keys expire within 7 days of the transition).
+    exact_article = article not in ("*", b"*")
     key = gen_redis_log_key(
-        project=project, namespace=namespace, action=action, article=article
+        project=project,
+        namespace=namespace,
+        action=action,
+        article=article,
+        date="*" if exact_article else None,
     )
     logs: list[Log] = []
     for log_key in redis.scan_iter(match=key, _type="HASH"):

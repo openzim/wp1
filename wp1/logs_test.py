@@ -5,8 +5,8 @@ from unittest.mock import patch
 import attr
 
 from wp1 import logs
-from wp1.logic import log as logic_log
 from wp1.base_db_test import BaseCombinedDbTest
+from wp1.logic import log as logic_log
 from wp1.models.wp10.log import Log
 
 
@@ -541,6 +541,82 @@ class LogsTest(BaseCombinedDbTest):
         actual = list(attr.astuple(a) for a in actual)
         self.assertEqual(sorted(expected), sorted(actual))
 
+    def test_insert_or_update_preserves_earlier_dates(self):
+        # Regression: re-logging the same article on a later day must not
+        # overwrite the earlier day's log, or that date vanishes from Redis
+        # while still present on the live log page (stalled uploads of
+        # 2026-08-15).
+        day_one = Log(
+            l_project=self.project,
+            l_article=b"Repeat offender",
+            l_action=b"quality",
+            l_old=b"NotA-Class",
+            l_new=b"Stub-Class",
+            l_namespace=0,
+            l_timestamp=b"20181225112233",
+            l_revision_timestamp=b"2018-12-25T08:22:33Z",
+        )
+        day_two = attr.evolve(
+            day_one,
+            l_old=b"Stub-Class",
+            l_new=b"C-Class",
+            l_timestamp=b"20181226101010",
+            l_revision_timestamp=b"2018-12-26T05:10:10Z",
+        )
+        logic_log.insert_or_update(self.redis, day_one)
+        logic_log.insert_or_update(self.redis, day_two)
+
+        actual = logic_log.get_logs(self.redis, article=b"Repeat offender")
+        self.assertEqual(sorted([day_one, day_two]), sorted(actual))
+
+    def test_insert_or_update_dedupes_same_day(self):
+        first = Log(
+            l_project=self.project,
+            l_article=b"Same day",
+            l_action=b"quality",
+            l_old=b"NotA-Class",
+            l_new=b"Stub-Class",
+            l_namespace=0,
+            l_timestamp=b"20181225112233",
+            l_revision_timestamp=b"2018-12-25T08:22:33Z",
+        )
+        second = attr.evolve(
+            first,
+            l_old=b"Stub-Class",
+            l_new=b"B-Class",
+            l_timestamp=b"20181225180000",
+        )
+        logic_log.insert_or_update(self.redis, first)
+        logic_log.insert_or_update(self.redis, second)
+
+        actual = logic_log.get_logs(self.redis, article=b"Same day")
+        self.assertEqual([second], actual)
+
+    def test_get_logs_matches_legacy_undated_keys(self):
+        # Keys written before the :YYYYMMDD suffix existed must still be
+        # returned by wildcard-article reads until their TTL expires.
+        legacy = Log(
+            l_project=self.project,
+            l_article=b"Legacy article",
+            l_action=b"quality",
+            l_old=b"NotA-Class",
+            l_new=b"GA-Class",
+            l_namespace=0,
+            l_timestamp=b"20181227130000",
+            l_revision_timestamp=b"2018-12-27T08:00:00Z",
+        )
+        mapping = {
+            k: b"__redis__none__" if v is None else v
+            for k, v in attr.asdict(legacy).items()
+        }
+        self.redis.hset(
+            "wp1:logs:%s:0:quality:Legacy article" % self.project.decode("utf-8"),
+            mapping=mapping,
+        )
+
+        actual = logic_log.get_logs(self.redis, project=self.project)
+        self.assertIn(legacy, actual)
+
     def test_move_target(self):
         for i, m in enumerate(self.moves):
             actual = logs.move_target(
@@ -1017,7 +1093,7 @@ class LogsTest(BaseCombinedDbTest):
     ):
         project_name = b"Catholicism"
         patched_api.get_page.return_value.text.return_value = ""
-        sorry_msg = "Sorry, all of the logs for this date were too large to " "upload."
+        sorry_msg = "Sorry, all of the logs for this date were too large to upload."
         header = "<noinclude>{{Log}}\n{{Automatically generated}}</noinclude>\n"
         text = "a" * 3000 * 1024
         patched_generate.return_value = [text, text, text]
