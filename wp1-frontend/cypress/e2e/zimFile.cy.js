@@ -496,6 +496,38 @@ describe('the zim file creation page', () => {
             cy.contains('Building…').should('be.visible');
           });
         });
+
+        describe('when there is an active schedule and the zim file is expired', () => {
+          beforeEach(() => {
+            cy.intercept('v1/builders/1/zim/status', {
+              fixture: 'zim_status_with_schedule_deleted.json',
+            }).as('status');
+            cy.visit('/#/selections/1/zim');
+            cy.wait('@identity');
+            cy.wait('@builder');
+            cy.wait('@status');
+          });
+
+          it('displays the active schedule warning', () => {
+            cy.contains('Active schedule found').should('be.visible');
+          });
+
+          it('displays the expired message referring to the schedule', () => {
+            cy.contains('Your ZIM file has expired');
+            cy.contains('re-created on the next scheduled run').should(
+              'be.visible'
+            );
+            cy.contains('with the button below').should('not.exist');
+          });
+
+          it('does not show the Download ZIM button', () => {
+            cy.get('#download').should('not.exist');
+          });
+
+          it('does not show the request form', () => {
+            cy.get('#request').should('not.exist');
+          });
+        });
       });
 
       describe('and the selection is over the article limit', () => {

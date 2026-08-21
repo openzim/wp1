@@ -127,8 +127,14 @@
             class="m-0 text-[13px] text-danger"
           >
             Your ZIM file has expired and needs to be re-created. ZIM file
-            download links are only valid for 2 weeks. You can re-create your
-            ZIM file with the button below.
+            download links are only valid for 2 weeks.
+            <span v-if="showForm"
+              >You can re-create your ZIM file with the button below.</span
+            >
+            <span v-else
+              >It will be re-created on the next scheduled run, or you can
+              delete the schedule above and request a new ZIM immediately.</span
+            >
           </p>
           <p
             v-else-if="status === 'REQUESTED'"
@@ -378,7 +384,8 @@
           <div
             v-else-if="
               !forceExpiredDisplay &&
-              (status === 'FILE_READY' || status === 'REQUESTED')
+              (status === 'REQUESTED' ||
+                (status === 'FILE_READY' && !isDeleted))
             "
             class="flex items-center gap-2.5"
           >
