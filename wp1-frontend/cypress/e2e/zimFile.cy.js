@@ -15,12 +15,49 @@ describe('the zim file creation page', () => {
         }).as('builder');
       });
 
+      describe('and the article count fetch fails', () => {
+        it('shows the server error page with the HTTP status', () => {
+          cy.intercept('GET', 'v1/builders/1/selection/latest/article_count', {
+            statusCode: 502,
+            body: {},
+          }).as('article_count_fail');
+          cy.intercept('v1/builders/1/zim/status', {
+            fixture: 'zim_status_not_requested.json',
+          }).as('status');
+          cy.visit('/#/selections/1/zim');
+          cy.wait('@article_count_fail');
+          cy.contains('Server error');
+          cy.get('#error-http-status').contains(
+            'The server responded with HTTP 502.'
+          );
+        });
+      });
+
+      describe('and the zim status fetch fails', () => {
+        it('surfaces the HTTP status in the error list', () => {
+          cy.intercept('GET', 'v1/builders/1/selection/latest/article_count', {
+            selection: {
+              id: '1',
+              article_count: 1000,
+              max_article_count: 50000,
+            },
+          }).as('article_count');
+          cy.intercept('v1/builders/1/zim/status', {
+            statusCode: 503,
+            body: {},
+          }).as('status_fail');
+          cy.visit('/#/selections/1/zim');
+          cy.wait('@status_fail');
+          cy.contains('The ZIM status could not be loaded (HTTP 503).');
+        });
+      });
+
       describe('and the selection is under the article limit', () => {
         beforeEach(() => {
           cy.intercept('GET', 'v1/builders/1/selection/latest/article_count', {
             selection: {
               id: '1',
-              aricle_count: 1000,
+              article_count: 1000,
               max_article_count: 50000,
             },
           }).as('article_count');
@@ -45,16 +82,31 @@ describe('the zim file creation page', () => {
             cy.get('#longdesc').should('be.visible');
           });
 
-          it('validates the title input on losing focus', () => {
-            cy.get('#zimtitle').click();
+          it('pre-fills the title from the builder name', () => {
+            cy.get('#zimtitle').should('have.value', 'Builder 1');
+          });
+
+          it('links back to the selection detail pane', () => {
+            cy.contains('a', 'Builder 1').should(
+              'have.attr',
+              'href',
+              '#/selections/user/1'
+            );
+          });
+
+          it('requires a title on submit', () => {
             cy.get('#zimtitle').clear();
-            cy.get('#longdesc').click();
-            cy.get('#zimtitle-group > .invalid-feedback').should('be.visible');
+            cy.get('#desc').type('The description');
+            cy.get('#request').click();
+            cy.contains('Please provide a title');
+            cy.wait(400);
+            cy.get('@create.all').then((interceptions) => {
+              expect(interceptions).to.have.length(0);
+            });
           });
 
           it('validates the title input to have max 30 graphemes', () => {
             const longTitle = 'A'.repeat(31);
-            cy.get('#zimtitle').click();
             cy.get('#zimtitle').clear();
             cy.get('#zimtitle').type(longTitle);
             cy.get('#zimtitle').should(
@@ -65,31 +117,26 @@ describe('the zim file creation page', () => {
 
           it('handles graphemes correctly', () => {
             const longTitle = 'में'.repeat(30);
-            cy.get('#zimtitle').click();
             cy.get('#zimtitle').clear();
             cy.get('#zimtitle').type(longTitle);
             cy.get('#zimtitle').should('have.value', 'में'.repeat(30));
           });
 
-          it('does not show the long description invalid feedback if it is empty', () => {
+          it('does not show long description feedback when it is empty', () => {
             cy.get('#desc').click();
             cy.get('#longdesc').click();
-            cy.get('#long-desc-group > .invalid-feedback').should(
-              'not.be.visible'
-            );
+            cy.contains(
+              'Long description must differ from description and not be shorter'
+            ).should('not.exist');
           });
 
           it('does not allow submission if the long desc is shorter than the desc', () => {
-            cy.get('#zimtitle').click();
-            cy.get('#zimtitle').clear();
-            cy.get('#zimtitle').type('Title from user');
-            cy.get('#desc').click();
-            cy.get('#desc').clear();
             cy.get('#desc').type('The description, which is longer');
-            cy.get('#longdesc').click();
             cy.get('#longdesc').type('Shorter desc');
             cy.get('#request').click();
-            cy.get('#long-desc-group > .invalid-feedback').should('be.visible');
+            cy.contains(
+              'Long description must differ from description and not be shorter'
+            ).should('be.visible');
             cy.wait(400);
             cy.get('@create.all').then((interceptions) => {
               expect(interceptions).to.have.length(0);
@@ -97,16 +144,12 @@ describe('the zim file creation page', () => {
           });
 
           it('does not allow submission if the long desc equals the desc', () => {
-            cy.get('#zimtitle').click();
-            cy.get('#zimtitle').clear();
-            cy.get('#zimtitle').type('Title from user');
-            cy.get('#desc').click();
-            cy.get('#desc').clear();
             cy.get('#desc').type('The description');
-            cy.get('#longdesc').click();
             cy.get('#longdesc').type('The description');
             cy.get('#request').click();
-            cy.get('#long-desc-group > .invalid-feedback').should('be.visible');
+            cy.contains(
+              'Long description must differ from description and not be shorter'
+            ).should('be.visible');
             cy.wait(400);
             cy.get('@create.all').then((interceptions) => {
               expect(interceptions).to.have.length(0);
@@ -114,14 +157,7 @@ describe('the zim file creation page', () => {
           });
 
           it('allows submission if the long desc is empty', () => {
-            cy.get('#zimtitle').click();
-            cy.get('#zimtitle').clear();
-            cy.get('#zimtitle').type('Title from user');
-            cy.get('#desc').click();
-            cy.get('#desc').clear();
             cy.get('#desc').type('The description');
-            cy.get('#longdesc').click();
-            cy.get('#longdesc').clear();
             cy.get('#request').click();
             cy.wait('@create');
           });
@@ -148,8 +184,8 @@ describe('the zim file creation page', () => {
             cy.get('#download').should('have.attr', 'disabled');
           });
 
-          it('shows the spinner', () => {
-            cy.get('#loader').should('be.visible');
+          it('shows the building indicator', () => {
+            cy.contains('Building…').should('be.visible');
           });
         });
 
@@ -174,8 +210,8 @@ describe('the zim file creation page', () => {
             cy.get('#download').should('not.have.attr', 'disabled');
           });
 
-          it('does not show the spinner', () => {
-            cy.get('#loader').should('not.be.visible');
+          it('does not show the building indicator', () => {
+            cy.contains('Building…').should('not.exist');
           });
         });
 
@@ -195,17 +231,13 @@ describe('the zim file creation page', () => {
             cy.get('#longdesc').should('be.visible');
           });
 
-          it('does not show the spinner', () => {
-            cy.get('#loader').should('not.be.visible');
-          });
-
-          it('displays the Request ZIM file button', () => {
-            cy.get('#zimtitle').click();
-            cy.get('#zimtitle').type('Title from user');
-            cy.get('#desc').click();
-            cy.get('#desc').type('Description from user');
-            cy.get('#request').should('be.visible');
-            cy.get('#request').should('not.have.attr', 'disabled');
+          it('displays the error message with the zimfarm link', () => {
+            cy.contains('There was an error creating your ZIM file');
+            cy.contains('a', 'via the Zimfarm API').should(
+              'have.attr',
+              'href',
+              'https://example.fake/failed'
+            );
           });
 
           describe('when the Request ZIM file button is clicked', () => {
@@ -214,7 +246,6 @@ describe('the zim file creation page', () => {
                 statusCode: 204,
               }).as('request');
 
-              cy.get('#desc').click();
               cy.get('#desc').type('Description from user');
               cy.get('#request').click();
             });
@@ -236,22 +267,11 @@ describe('the zim file creation page', () => {
             cy.wait('@status');
           });
 
-          it('displays the form for entering descriptions', () => {
+          it('displays the expired message and the request form', () => {
+            cy.contains('Your ZIM file has expired');
             cy.get('#desc').should('be.visible');
             cy.get('#longdesc').should('be.visible');
-          });
-
-          it('does not show the spinner', () => {
-            cy.get('#loader').should('not.be.visible');
-          });
-
-          it('displays the Request ZIM file button', () => {
-            cy.get('#zimtitle').click();
-            cy.get('#zimtitle').type('Title from user');
-            cy.get('#desc').click();
-            cy.get('#desc').type('Description from user');
             cy.get('#request').should('be.visible');
-            cy.get('#request').should('not.have.attr', 'disabled');
           });
         });
 
@@ -333,11 +353,8 @@ describe('the zim file creation page', () => {
           });
 
           it('includes scheduled_repetitions in the request body', () => {
-            cy.get('#zimtitle').click();
             cy.get('#zimtitle').clear();
             cy.get('#zimtitle').type('Scheduled Title');
-            cy.get('#desc').click();
-            cy.get('#desc').clear();
             cy.get('#desc').type('Test description');
             cy.get('#enableScheduling').check();
             cy.get('#repetitionPeriod').select('3');
@@ -360,11 +377,8 @@ describe('the zim file creation page', () => {
           });
 
           it('submits without email when email is empty', () => {
-            cy.get('#zimtitle').click();
             cy.get('#zimtitle').clear();
             cy.get('#zimtitle').type('Scheduled Title');
-            cy.get('#desc').click();
-            cy.get('#desc').clear();
             cy.get('#desc').type('Test description');
             cy.get('#enableScheduling').check();
             cy.get('#repetitionPeriod').select('1');
@@ -382,11 +396,8 @@ describe('the zim file creation page', () => {
           });
 
           it('does not include scheduled_repetitions when scheduling is disabled', () => {
-            cy.get('#zimtitle').click();
             cy.get('#zimtitle').clear();
             cy.get('#zimtitle').type('No Schedule Title');
-            cy.get('#desc').click();
-            cy.get('#desc').clear();
             cy.get('#desc').type('Test description');
             cy.get('#request').click();
             cy.wait('@create').then((interception) => {
@@ -409,7 +420,7 @@ describe('the zim file creation page', () => {
           });
 
           it('displays the active schedule warning', () => {
-            cy.contains('Active Schedule Found').should('be.visible');
+            cy.contains('Active schedule found').should('be.visible');
           });
 
           it('shows the correct interval in the warning', () => {
@@ -417,12 +428,12 @@ describe('the zim file creation page', () => {
           });
 
           it('shows the next generation date', () => {
-            cy.contains('June 1, 2026').should('be.visible');
+            cy.contains('2026-06-01').should('be.visible');
           });
 
-          it('shows the Delete Schedule button', () => {
-            cy.contains('button', 'Delete Schedule').should('be.visible');
-            cy.contains('button', 'Delete Schedule').should(
+          it('shows the Delete schedule button', () => {
+            cy.contains('button', 'Delete schedule').should('be.visible');
+            cy.contains('button', 'Delete schedule').should(
               'not.have.attr',
               'disabled'
             );
@@ -434,7 +445,7 @@ describe('the zim file creation page', () => {
             cy.get('#request').should('not.exist');
           });
 
-          describe('when the Delete Schedule button is clicked', () => {
+          describe('when the Delete schedule button is clicked', () => {
             beforeEach(() => {
               cy.intercept('DELETE', 'v1/builders/1/schedule', {
                 statusCode: 200,
@@ -447,12 +458,12 @@ describe('the zim file creation page', () => {
             });
 
             it('sends the DELETE request', () => {
-              cy.contains('button', 'Delete Schedule').click();
+              cy.contains('button', 'Delete schedule').click();
               cy.wait('@deleteSchedule');
             });
 
             it('shows the request form after deletion', () => {
-              cy.contains('button', 'Delete Schedule').click();
+              cy.contains('button', 'Delete schedule').click();
               cy.wait('@deleteSchedule');
               cy.wait('@statusAfterDelete');
               cy.get('#desc').should('be.visible');
@@ -473,7 +484,7 @@ describe('the zim file creation page', () => {
           });
 
           it('does not show the active schedule warning', () => {
-            cy.contains('Active Schedule Found').should('not.exist');
+            cy.contains('Active schedule found').should('not.exist');
           });
 
           it('shows the Download ZIM button disabled', () => {
@@ -481,8 +492,8 @@ describe('the zim file creation page', () => {
             cy.get('#download').should('have.attr', 'disabled');
           });
 
-          it('shows the spinner', () => {
-            cy.get('#loader').should('be.visible');
+          it('shows the building indicator', () => {
+            cy.contains('Building…').should('be.visible');
           });
         });
       });
@@ -501,11 +512,13 @@ describe('the zim file creation page', () => {
           }).as('status');
         });
 
-        it('displays the article error message', () => {
+        it('displays the article error message and disables the request', () => {
           cy.visit('/#/selections/1/zim');
           cy.wait('@identity');
           cy.wait('@builder');
           cy.wait('@status');
+          cy.contains('Too many articles');
+          cy.get('#request').should('have.attr', 'disabled');
         });
       });
     });
@@ -520,8 +533,15 @@ describe('the zim file creation page', () => {
       });
 
       it('displays the 404 text', () => {
-        cy.get('#404').should('be.visible');
+        cy.contains('404 Not Found').should('be.visible');
       });
+    });
+  });
+
+  describe('when the user is not logged in', () => {
+    it('shows the signed-out explanation', () => {
+      cy.visit('/#/selections/1/zim');
+      cy.contains('a', 'Sign in with Wikipedia');
     });
   });
 });

@@ -13,18 +13,19 @@ the site. Simply click on "Selections".
 
 ![Screenshot of WP 1.0 website with navigation highlighted](img/header.png)
 
-Once you're there, you will see the Selections **sub-navigation** which contains
-options for:
+Once you're there, you will see your selections in a list on the left (this
+will be empty when you first start out), with the details of the currently
+selected one — its status, definition and downloads — in a pane on the right.
 
-![Screenshot of WP 1.0 website with selection header
-highlighted](img/selections_header.png)
+From this screen you can:
 
-1. My Selections: Viewing your own selections (this will be empty when you first
-   start out)
-1. Simple Selection: Creating or editing a [Simple
-   Selection](/user/selections/#simple-selection)
-1. SPARQL Selection: Creating or editing a [SPARQL
-   Selection](<(/user/selections/#sparql-selection)>)
+1. Filter your selections by name or type, or by status using the count chips.
+1. Click a selection to inspect it, edit its fields, create a ZIM file from
+   it, or delete it.
+1. Click the **New** button to create a new selection of any type, including
+   [Simple](/user/selections/#simple-selection) and
+   [SPARQL](/user/selections/#sparql-selection) selections. The New Selection
+   screen has a source picker on the left that explains each type.
 
 # Simple Selection
 
@@ -38,9 +39,9 @@ is the same as the list you specify when creating it. So, you might create a
 Simple Selection with three items: 'Statue_of_Liberty', 'Eiffel Tower', and
 'Gateway_of_India'. The final output of the selection is the same list.
 
-Let's see that in action. Go to the Selections link in the main navigation, then
-choose 'Simple Selection'. You will be presented with an empty form to fill out
-to create your selection.
+Let's see that in action. Go to the Selections link in the main navigation,
+click **New**, and choose the 'Simple' source in the picker on the left. You
+will be presented with an empty form to fill out to create your selection.
 
 ![Screenshot of form in WP 1.0 website for creating a Simple
 selection](img/simple_selection_create.png)
@@ -64,12 +65,13 @@ selection](img/simple_selection_create.png)
    the form field, whitespace (spaces, tabs, newlines) and comments starting
    with \*#\_ are ignored. You can use those characters to group your articles
    together.
-4. Once you have entered this information, click _Save List_ to save your
+4. Once you have entered this information, click _Save selection_ to save your
    selection. You will be notified if there are any problems you need to
    correct.
 
-Once you've saved your selection/list, you will be returned to the "My
-Selections" tab, where you should see an entry for your newly created selection.
+Once you've saved your selection/list, you will be taken to its detail pane on
+the Selections screen, where you can watch its status, download the article
+list once it's ready, and create a ZIM file from it.
 
 # Selection lifecycle
 
@@ -117,19 +119,19 @@ a SPARQL selection are largely the same. There are two main differences:
 
 ## Input your query
 
-Use the [secondary navigation](http://localhost:8000/user/selections/#getting-to-the-selections-page) under "Selections" to choose "SPARQL Selection". You should see the following form:
+On the [Selections page](/user/selections/#getting-to-the-selections-page), click **New** and choose the "SPARQL" source. You should see the following form:
 
 ![Screenshot of form in WP 1.0 website for creating a SPARQL
 selection](img/sparql_selection_create.png)
 
 1. The first item is the Wikimedia project this query applies to. In general this, works the same as for Simple selections, except that for SPARQL, the project URL must appear in the query. We'll discuss that more below.
 2. Next is the name of the selection, which works exactly the same as Simple selections.
-3. For SPARQL selections, you can click the "Option: Update the query using a WikiData Query URL" link to expand that section. Then, you will be able to populate your query field using a URL taken from the [WikiData Query Service](https://query.wikidata.org/). For example, suppose you have this URL: `https://query.wikidata.org/#%23Goats%0ASELECT%20%3Fitem%20%3FitemLabel%20%0AWHERE%20%0A%7B%0A%20%20%3Fitem%20wdt%3AP31%20wd%3AQ2934.%0A%20%20SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20%22%5BAUTO_LANGUAGE%5D%2Cen%22.%20%7D%0A%7D`.
-   1. Click on the "Optional..." link, and the input is revealed:
-      ![Screenshot of section that appears when the Optional link is clicked](img/sparql_wdqs_url.png)
+3. For SPARQL selections, you can click the "Import from a Wikidata Query URL" link to expand that section. Then, you will be able to populate your query field using a URL taken from the [WikiData Query Service](https://query.wikidata.org/). For example, suppose you have this URL: `https://query.wikidata.org/#%23Goats%0ASELECT%20%3Fitem%20%3FitemLabel%20%0AWHERE%20%0A%7B%0A%20%20%3Fitem%20wdt%3AP31%20wd%3AQ2934.%0A%20%20SERVICE%20wikibase%3Alabel%20%7B%20bd%3AserviceParam%20wikibase%3Alanguage%20%22%5BAUTO_LANGUAGE%5D%2Cen%22.%20%7D%0A%7D`.
+   1. Click on the "Import..." link, and the input is revealed:
+      ![Screenshot of section that appears when the Import link is clicked](img/sparql_wdqs_url.png)
    2. If you then paste in the URL given above and click "Update", the query embedded in that URL (about "Goats") will appear in the Query field
-4. In the actual Query field, you can type your own query, or paste it in from somewhere. You can also use a query from WikiData Query Service that you have a link to buy using the inputs in option (3) above.
-5. Finally, you can click "Save list" to save your selection. This will cause it to be immediately sent to the WikiData Query Service to be processed.
+4. In the actual Query field, you can type your own query, or paste it in from somewhere. You can also use a query from WikiData Query Service that you have a link to by using the inputs in option (3) above.
+5. Finally, you can click "Save selection" to save your selection. This will cause it to be immediately sent to the WikiData Query Service to be processed.
 
 ## Selecting URLs in your query
 

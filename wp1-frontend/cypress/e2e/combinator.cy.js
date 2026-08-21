@@ -3,421 +3,229 @@
 describe('the combinator builder page', () => {
   describe('when the user is logged in', () => {
     beforeEach(() => {
-      cy.intercept('v1/sites/', { fixture: 'sites.json' }).as('sites');
       cy.intercept('v1/oauth/identify', { fixture: 'identity.json' }).as(
-        'identity'
+        'login'
       );
       cy.intercept('v1/selection/lists', {
         fixture: 'combinator_lists.json',
-      }).as('lists');
+      }).as('list');
     });
 
-    it('loads create form with eligible builders only', () => {
-      cy.visit('/#/selections/combinator');
-      cy.wait('@lists');
-
-      cy.get('#include-builder-select').should('contain', 'Simple Ready');
-      cy.get('#include-builder-select').should('contain', 'SPARQL Ready');
-      cy.get('#include-builder-select').should('not.contain', 'German Simple');
-      cy.get('#include-builder-select').should(
-        'not.contain',
-        'Existing Combinator'
-      );
-      cy.get('#exclude-builder-select').should('contain', 'Simple Ready');
-      cy.get('#exclude-builder-select').should('contain', 'SPARQL Ready');
-      cy.get('#exclude-builder-select').should('not.contain', 'German Simple');
-      cy.get('#exclude-builder-select').should(
-        'not.contain',
-        'Existing Combinator'
-      );
-    });
-
-    it('sorts builders alphabetically in add dropdowns', () => {
-      cy.intercept('v1/selection/lists', {
-        body: {
-          builders: [
-            {
-              id: 'zeta-ready',
-              name: 'Zeta Ready',
-              project: 'en.wikipedia.org',
-              model: 'wp1.selection.models.simple',
-              s_status: 'OK',
-              s_url: 'https://www.example.fake/zeta-ready.tsv',
-            },
-            {
-              id: 'alpha-ready',
-              name: 'Alpha Ready',
-              project: 'en.wikipedia.org',
-              model: 'wp1.selection.models.simple',
-              s_status: 'OK',
-              s_url: 'https://www.example.fake/alpha-ready.tsv',
-            },
-            {
-              id: 'beta-ready',
-              name: 'Beta Ready',
-              project: 'en.wikipedia.org',
-              model: 'wp1.selection.models.sparql',
-              s_status: 'OK',
-              s_url: 'https://www.example.fake/beta-ready.tsv',
-            },
-          ],
-        },
-      }).as('sortedLists');
-
-      cy.visit('/#/selections/combinator');
-      cy.wait('@sortedLists');
-
-      cy.get('#include-builder-select option').then((options) => {
-        const labels = [...options]
-          .map((option) => option.text.trim())
-          .filter((label) => label !== 'Select a builder to add');
-        expect(labels).to.deep.equal([
-          'Alpha Ready (Simple, ready)',
-          'Beta Ready (SPARQL, ready)',
-          'Zeta Ready (Simple, ready)',
-        ]);
-      });
-      cy.get('#exclude-builder-select option').then((options) => {
-        const labels = [...options]
-          .map((option) => option.text.trim())
-          .filter((label) => label !== 'Select a builder to add');
-        expect(labels).to.deep.equal([
-          'Alpha Ready (Simple, ready)',
-          'Beta Ready (SPARQL, ready)',
-          'Zeta Ready (Simple, ready)',
-        ]);
-      });
-    });
-
-    it('does not offer builders already selected in the other group', () => {
-      cy.visit('/#/selections/combinator');
-      cy.wait('@lists');
-
-      cy.get('#include-builder-select').select('simple-ready');
-      cy.get('#add-include-builder').click();
-      cy.get('#exclude-builder-select option').should(
-        'not.contain',
-        'Simple Ready'
-      );
-
-      cy.get('#exclude-builder-select').select('sparql-ready');
-      cy.get('#add-exclude-builder').click();
-      cy.get('#include-builder-select option').should(
-        'not.contain',
-        'SPARQL Ready'
-      );
-    });
-
-    it('hides no eligible builders message after adding all include builders', () => {
-      cy.visit('/#/selections/combinator');
-      cy.wait('@lists');
-
-      cy.get('#include-builder-select').select('simple-ready');
-      cy.get('#add-include-builder').click();
-      cy.get('#include-builder-select').select('sparql-ready');
-      cy.get('#add-include-builder').click();
-
-      cy.get('#include-items .alert-warning').should('not.exist');
-      cy.get('#include-builder-select').should('be.disabled');
-      cy.get('#exclude-builder-select').should('be.disabled');
-    });
-
-    it('displays builder loading errors', () => {
-      cy.intercept('v1/selection/lists', {
-        statusCode: 500,
-        body: {},
-      }).as('listsFailure');
-
-      cy.visit('/#/selections/combinator');
-      cy.wait('@listsFailure');
-
-      cy.get('.alert-danger')
-        .should('be.visible')
-        .and('contain', 'Unable to load builders. Please try again later.');
-      cy.contains('No builders are available').should('not.exist');
-    });
-
-    it('displays a separate message when no eligible builders are available', () => {
-      cy.intercept('v1/selection/lists', {
-        body: {
-          builders: [
-            {
-              id: 'german-simple',
-              name: 'German Simple',
-              project: 'de.wikipedia.org',
-              model: 'wp1.selection.models.simple',
-            },
-            {
-              id: 'combo-1',
-              name: 'Existing Combinator',
-              project: 'en.wikipedia.org',
-              model: 'wp1.selection.models.combinator',
-            },
-          ],
-        },
-      }).as('listsNoEligible');
-
-      cy.visit('/#/selections/combinator');
-      cy.wait('@listsNoEligible');
-
-      cy.get('#include-items .alert-warning')
-        .should('be.visible')
-        .and(
-          'contain',
-          'No eligible builders are available for en.wikipedia.org.'
-        );
-      cy.get('#include-items .alert-danger').should('not.exist');
-      cy.get('#include-builder-select').should('be.disabled');
-      cy.get('#exclude-builder-select').should('be.disabled');
-      cy.contains('Unable to load builders. Please try again later.').should(
-        'not.exist'
-      );
-    });
-
-    it('validates that at least one include builder is selected', () => {
-      cy.visit('/#/selections/combinator');
-      cy.wait('@lists');
-
-      cy.get('#listName > .form-control').click().type('Combined List');
-      cy.get('#saveListButton').click();
-
-      cy.get('#include-items .invalid-feedback').should('be.visible');
-    });
-
-    it('validates selected builders belong to the selected project', () => {
-      cy.visit('/#/selections/combinator');
-      cy.wait('@lists');
-
-      cy.get('#listName > .form-control').click().type('Combined List');
-      cy.get('#include-builder-select').select('simple-ready');
-      cy.get('#add-include-builder').click();
-      cy.get('#project > select').select('en.wiktionary.org');
-      cy.get('#saveListButton').click();
-
-      cy.get('#include-items .invalid-feedback')
-        .should('be.visible')
-        .and('contain', 'Simple Ready (en.wikipedia.org)');
-    });
-
-    it('displays backend validation errors', () => {
-      cy.visit('/#/selections/combinator');
-      cy.wait('@lists');
-
-      cy.get('#listName > .form-control').click().type('Combined List');
-      cy.get('#include-builder-select').select('simple-ready');
-      cy.get('#add-include-builder').click();
-      cy.intercept('POST', 'v1/builders/', {
-        fixture: 'save_combinator_failure.json',
-      }).as('createBuilderFailure');
-      cy.get('#saveListButton').click();
-
-      cy.wait('@createBuilderFailure');
-      cy.get('.errors').contains(
-        "Builder 'missing-builder' no longer exists. Please remove it from this combinator."
-      );
-      cy.contains('Combinator configuration is not valid').should('not.exist');
-    });
-
-    it('clears backend validation errors before frontend validation', () => {
-      cy.visit('/#/selections/combinator');
-      cy.wait('@lists');
-
-      cy.get('#listName > .form-control').click().type('Combined List');
-      cy.get('#include-builder-select').select('simple-ready');
-      cy.get('#add-include-builder').click();
-      cy.intercept('POST', 'v1/builders/', {
-        fixture: 'save_combinator_failure.json',
-      }).as('createBuilderFailure');
-      cy.get('#saveListButton').click();
-
-      cy.wait('@createBuilderFailure');
-      cy.get('.errors').contains(
-        "Builder 'missing-builder' no longer exists. Please remove it from this combinator."
-      );
-
-      cy.get('#include-builders .remove-builder').click();
-      cy.get('#saveListButton').click();
-
-      cy.contains(
-        '.errors',
-        "Builder 'missing-builder' no longer exists. Please remove it from this combinator."
-      ).should('not.exist');
-      cy.get('#include-items .invalid-feedback').should('be.visible');
-    });
-
-    it('sends correct create payload to the API', () => {
-      cy.visit('/#/selections/combinator');
-      cy.wait('@lists');
-
-      cy.get('#listName > .form-control').click().type('Combined List');
-      cy.get('#include-operation').select('intersection');
-      cy.get('#include-builder-select').select('simple-ready');
-      cy.get('#add-include-builder').click();
-      cy.get('#exclude-operation').select('union');
-      cy.get('#exclude-builder-select').select('sparql-ready');
-      cy.get('#add-exclude-builder').click();
-
-      cy.intercept('POST', 'v1/builders/', {
-        fixture: 'save_list_success.json',
-      }).as('createBuilderSuccess');
-      cy.get('#saveListButton').click();
-
-      cy.wait('@createBuilderSuccess').then((interception) => {
-        expect(interception.request.body.model).to.equal(
-          'wp1.selection.models.combinator'
-        );
-        expect(interception.request.body.params.include).to.deep.equal({
-          builders: ['simple-ready'],
-          operation: 'intersection',
-        });
-        expect(interception.request.body.params.exclude).to.deep.equal({
-          builders: ['sparql-ready'],
-          operation: 'union',
-        });
-      });
-    });
-
-    it('loads and updates an existing combinator', () => {
-      cy.intercept('GET', 'v1/builders/combo-1', {
-        fixture: 'combinator_builder.json',
-      }).as('builder');
-      cy.visit('/#/selections/combinator/combo-1');
-      cy.wait('@builder');
-      cy.wait('@lists');
-
-      cy.get('#listName > .form-control').should(
-        'have.value',
-        'Combinator Builder'
-      );
-      cy.get('#include-builders').should('contain', 'Simple Ready');
-      cy.get('#exclude-builders').should('contain', 'SPARQL Ready');
-      cy.get('#include-operation').should('have.value', 'intersection');
-      cy.get('#exclude-operation').should('have.value', 'union');
-      cy.get('#include-builder-select').should(
-        'not.contain',
-        'Existing Combinator'
-      );
-
-      cy.intercept('POST', 'v1/builders/combo-1', {
-        fixture: 'save_list_success.json',
-      }).as('updateBuilderSuccess');
-      cy.get('#updateListButton').click();
-
-      cy.wait('@updateBuilderSuccess').then((interception) => {
-        expect(interception.request.body.params.include).to.deep.equal({
-          builders: ['simple-ready'],
-          operation: 'intersection',
-        });
-        expect(interception.request.body.params.exclude).to.deep.equal({
-          builders: ['sparql-ready'],
-          operation: 'union',
-        });
-      });
-    });
-
-    describe('when save button clicked', () => {
+    describe('creating a new combinator', () => {
       beforeEach(() => {
         cy.visit('/#/selections/combinator');
-        cy.wait('@lists');
-        cy.get('#listName > .form-control').click().type('Combined List');
-        cy.get('#include-builder-select').select('simple-ready');
-        cy.get('#add-include-builder').click();
-        cy.intercept('POST', 'v1/builders/', {
-          delay: 4000,
-          fixture: 'save_list_success.json',
-        }).as('createBuilderSuccess');
+        cy.wait('@login');
+        cy.wait('@list');
       });
 
-      it('shows spinner', () => {
-        cy.get('#saveListButton').click();
-        cy.get('#saveLoader').should('be.visible');
+      it('successfully loads', () => {
+        cy.contains('h1', 'New combinator selection');
       });
 
-      it('disables save button', () => {
-        cy.get('#saveListButton').click();
+      it('shows eligible selections in the library', () => {
+        cy.contains('Simple Ready');
+        cy.contains('SPARQL Ready');
+        // Combinators can't be nested.
+        cy.contains('Existing Combinator').should('not.exist');
+        // Other-project selections are excluded.
+        cy.contains('German Simple').should('not.exist');
+      });
+
+      it('shows the library count', () => {
+        cy.contains('2 total');
+      });
+
+      it('filters the library by search', () => {
+        cy.get('input[aria-label="Filter your selections"]').type('sparql');
+        cy.contains('SPARQL Ready');
+        cy.contains('Simple Ready').should('not.exist');
+      });
+
+      it('filters the library by type pill', () => {
+        cy.contains('button', 'Simple').click();
+        cy.contains('Simple Ready');
+        cy.contains('SPARQL Ready').should('not.exist');
+        cy.contains('button', 'All types').click();
+        cy.contains('SPARQL Ready');
+      });
+
+      it('shows German selections when the project changes', () => {
+        cy.intercept('v1/sites/', {
+          body: {
+            sites: ['de.wikipedia.org', 'en.wikipedia.org'],
+          },
+        });
+        // Reload so the new sites list is fetched.
+        cy.reload();
+        cy.get('#combinator-project').select('de.wikipedia.org');
+        cy.contains('German Simple');
+        cy.contains('Simple Ready').should('not.exist');
+      });
+
+      it('adds selections to include and exclude groups', () => {
+        cy.contains('Simple Ready')
+          .parent()
+          .within(() => cy.contains('button', 'include').click());
+        cy.get('#include-items').contains('Simple Ready');
+
+        cy.contains('SPARQL Ready')
+          .parent()
+          .within(() => cy.contains('button', 'exclude').click());
+        cy.get('#exclude-items').contains('SPARQL Ready');
+      });
+
+      it('moves a selection between groups', () => {
+        cy.contains('Simple Ready')
+          .parent()
+          .within(() => cy.contains('button', 'include').click());
+        cy.get('#include-items').contains('button', 'Move to exclude').click();
+        cy.get('#exclude-items').contains('Simple Ready');
+      });
+
+      it('removes a selection and returns it to the library', () => {
+        cy.contains('Simple Ready')
+          .parent()
+          .within(() => cy.contains('button', 'include').click());
+        cy.get('#include-items')
+          .get('button[aria-label="Remove Simple Ready"]')
+          .click();
+        cy.get('#include-items').contains('Add selections from your library');
+        cy.contains('Simple Ready');
+      });
+
+      it('builds the expression and sentence', () => {
+        cy.contains('Add at least one selection to include.');
+        cy.contains('Simple Ready')
+          .parent()
+          .within(() => cy.contains('button', 'include').click());
+        cy.contains('Take every article from 1 included selection.');
+        cy.get('#expression-preview').contains('Simple Ready');
+
+        cy.contains('SPARQL Ready')
+          .parent()
+          .within(() => cy.contains('button', 'exclude').click());
+        cy.get('#expression-preview').contains('Simple Ready NOT SPARQL Ready');
+      });
+
+      it('toggles OR/AND logic per group', () => {
+        cy.contains('Simple Ready')
+          .parent()
+          .within(() => cy.contains('button', 'include').click());
+        cy.get('#include-operation').contains('OR · any article');
+        cy.contains('Take every article from 1 included selection.');
+        cy.get('#include-operation').click();
+        cy.get('#include-operation').contains('AND · only shared');
+        cy.contains(
+          'Take the articles that appear in every one of 1 included selection.'
+        );
+      });
+
+      it('disables save until a name and an included selection exist', () => {
         cy.get('#saveListButton').should('have.attr', 'disabled');
+        cy.contains(
+          'Name the selection and add at least one selection to include'
+        );
+        cy.get('#combinator-name').type('My Combinator');
+        cy.contains('Add at least one selection to include before saving.');
+        cy.contains('Simple Ready')
+          .parent()
+          .within(() => cy.contains('button', 'include').click());
+        cy.get('#saveListButton').should('not.have.attr', 'disabled');
+      });
+
+      it('saves the combinator and redirects to its detail pane', () => {
+        cy.intercept('POST', 'v1/builders/', (req) => {
+          expect(req.body.model).to.equal('wp1.selection.models.combinator');
+          expect(req.body.params.include.builders).to.deep.equal([
+            'simple-ready',
+          ]);
+          expect(req.body.params.include.operation).to.equal('union');
+          expect(req.body.params.exclude.builders).to.deep.equal([
+            'sparql-ready',
+          ]);
+          req.reply({
+            statusCode: 200,
+            body: { success: true, id: 'combo-new', items: {} },
+          });
+        }).as('save');
+
+        cy.get('#combinator-name').type('My Combinator');
+        cy.contains('Simple Ready')
+          .parent()
+          .within(() => cy.contains('button', 'include').click());
+        cy.contains('SPARQL Ready')
+          .parent()
+          .within(() => cy.contains('button', 'exclude').click());
+        cy.get('#saveListButton').click();
+        cy.wait('@save');
+        cy.url().should('include', '/selections/user/combo-new');
+      });
+
+      it('shows API errors on save failure', () => {
+        cy.intercept('POST', 'v1/builders/', {
+          fixture: 'save_combinator_failure.json',
+        }).as('save');
+        cy.get('#combinator-name').type('My Combinator');
+        cy.contains('Simple Ready')
+          .parent()
+          .within(() => cy.contains('button', 'include').click());
+        cy.get('#saveListButton').click();
+        cy.wait('@save');
+        cy.get('#saveListButton').should('not.have.attr', 'disabled');
       });
     });
 
-    describe('when the builder has fatal errors', () => {
+    describe('editing an existing combinator', () => {
       beforeEach(() => {
         cy.intercept('GET', 'v1/builders/combo-1', {
-          fixture: 'combinator_builder_fatal_error.json',
+          fixture: 'combinator_builder.json',
         }).as('builder');
         cy.visit('/#/selections/combinator/combo-1');
+        cy.wait('@login');
+        cy.wait('@list');
         cy.wait('@builder');
       });
 
-      it('displays the error div', () => {
-        cy.get('.materialize-error').should('be.visible');
+      it('loads the recipe from the builder params', () => {
+        cy.contains('h1', 'Edit combinator selection');
+        cy.get('#combinator-name').should('have.value', 'Combinator Builder');
+        cy.get('#include-items').contains('Simple Ready');
+        cy.get('#exclude-items').contains('SPARQL Ready');
+        cy.get('#include-operation').contains('AND · only shared');
+        cy.get('#exclude-operation').contains('OR · any article');
       });
 
-      it('disables the retry button', () => {
-        cy.get('.materialize-error .btn').should('have.attr', 'disabled');
-      });
-
-      it('links to the failed referenced builder', () => {
-        cy.get('.materialize-error').contains(
-          'This Combinator could not be created because one or more referenced lists need attention.'
-        );
-        cy.get('.materialize-error a')
-          .contains('Failed Builder (failed-builder)')
-          .should('have.attr', 'href', '#/selections/simple/failed-builder');
-        cy.get('.materialize-error').contains(
-          'Open this list, fix the failed selection, then update this Combinator.'
-        );
-      });
-    });
-
-    describe('when the builder has retryable errors', () => {
-      beforeEach(() => {
-        cy.intercept('GET', 'v1/builders/combo-1', {
-          fixture: 'combinator_builder_retryable_error.json',
-        }).as('builder');
-        cy.visit('/#/selections/combinator/combo-1');
-        cy.wait('@builder');
-      });
-
-      it('displays the error div', () => {
-        cy.get('.materialize-error').should('be.visible');
-      });
-
-      it('enables the retry button', () => {
-        cy.get('.materialize-error .btn').should('not.have.attr', 'disabled');
+      it('saves updates to the same builder', () => {
+        cy.intercept('POST', 'v1/builders/combo-1', (req) => {
+          expect(req.body.params.include.operation).to.equal('union');
+          req.reply({
+            statusCode: 200,
+            body: { success: true, id: 'combo-1', items: {} },
+          });
+        }).as('save');
+        cy.get('#include-operation').click();
+        cy.get('#saveListButton').click();
+        cy.wait('@save');
+        cy.url().should('include', '/selections/user/combo-1');
       });
     });
 
     describe('when the builder is not found', () => {
-      beforeEach(() => {
-        cy.intercept('GET', 'v1/builders/missing-combo', {
+      it('shows the 404 message', () => {
+        cy.intercept('GET', 'v1/builders/missing', {
           statusCode: 404,
           body: '404 NOT FOUND',
-        }).as('builder');
-        cy.visit('/#/selections/combinator/missing-combo');
-        cy.wait('@builder');
-      });
-
-      it('displays the 404 text', () => {
-        cy.get('#404').should('be.visible');
+        });
+        cy.visit('/#/selections/combinator/missing');
+        cy.contains('404 Not Found');
       });
     });
   });
 
   describe('when the user is not logged in', () => {
-    beforeEach(() => {
-      cy.intercept('v1/sites/', { fixture: 'sites.json' });
-    });
-
-    it('opens login page for create', () => {
+    it('shows the signed-out explanation', () => {
       cy.visit('/#/selections/combinator');
-      cy.contains('Please Log In To Continue');
-      cy.get('.pt-2 > .btn');
-    });
-
-    it('opens login page for edit', () => {
-      cy.visit('/#/selections/combinator/combo-1');
-      cy.contains('Please Log In To Continue');
-      cy.get('.pt-2 > .btn');
+      cy.contains('a', 'Sign in with Wikipedia');
     });
   });
 });

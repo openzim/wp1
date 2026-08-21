@@ -1,110 +1,85 @@
 <template>
   <div id="app">
-    <div class="alert alert-info my-0" role="alert">
-      Welcome to the latest version of WP 1.0! Documentation is on
-      <a href="https://wp1.readthedocs.io/en/latest/">read the docs</a>. Please
-      provide all feedback on
-      <a
-        href="https://en.wikipedia.org/wiki/Wikipedia_talk:Version_1.0_Editorial_Team/Index"
-        >English Wikipedia</a
-      >.
-    </div>
     <div id="replag-embed" data-wiki="en.wikipedia.org"></div>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-      <a class="navbar-brand" href="/">Wikipedia 1.0 Server</a>
-      <button
-        class="navbar-toggler"
-        type="button"
-        data-toggle="collapse"
-        data-target="#navbarSupportedContent"
-        aria-controls="navbarSupportedContent"
-        aria-expanded="false"
-        aria-label="Toggle navigation"
+    <header class="wp1r border-b border-chrome-edge bg-chrome">
+      <nav
+        class="flex h-12 items-center gap-2 px-3"
+        aria-label="Main navigation"
       >
-        <span class="navbar-toggler-icon"></span>
-      </button>
-
-      <div class="collapse navbar-collapse" id="navbarSupportedContent">
-        <ul class="navbar-nav mr-auto">
-          <li
-            :class="
-              'nav-item ' +
-              (!$route.path.startsWith('/update') &&
-              !$route.path.startsWith('/compare') &&
-              !$route.path.startsWith('/assessments') &&
-              !$route.path.startsWith('/selections')
-                ? 'active'
-                : '')
-            "
+        <router-link to="/" class="wp1r-brand flex shrink-0 items-center gap-2">
+          <span class="text-[15px] font-semibold">WP1</span>
+        </router-link>
+        <!-- Only the nav links scroll on narrow screens; the account
+             controls stay reachable outside the scroller. -->
+        <div
+          class="ml-2 flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto"
+        >
+          <router-link
+            v-for="item in navItems"
+            :key="item.to"
+            :to="item.to"
+            class="wp1r-navlink"
+            :class="{ 'wp1r-navlink-active': isActiveNav(item) }"
+            >{{ item.label }}</router-link
           >
-            <router-link class="nav-link" to="/">Projects</router-link>
-          </li>
-          <li
-            :class="
-              'nav-item ' +
-              ($route.path.startsWith('/selections') ? 'active' : '')
-            "
-          >
-            <router-link class="nav-link" to="/selections/user"
-              >Selections</router-link
-            >
-          </li>
-          <li
-            :class="
-              'nav-item ' + ($route.path.startsWith('/update') ? 'active' : '')
-            "
-          >
-            <router-link class="nav-link" to="/update"
-              >Manual Update</router-link
-            >
-          </li>
-          <li
-            :class="
-              'nav-item ' + ($route.path.startsWith('/compare') ? 'active' : '')
-            "
-          >
-            <router-link class="nav-link" to="/compare"
-              >Compare Projects</router-link
-            >
-          </li>
-          <li
-            :class="
-              'nav-item ' +
-              ($route.path.startsWith('/assessments') ? 'active' : '')
-            "
-          >
-            <router-link class="nav-link" to="/assessments"
-              >Assessments by Project</router-link
-            >
-          </li>
-        </ul>
-        <div>
-          <div v-if="username">
-            <span class="username"> {{ username }} </span>
-            <button type="button" class="btn btn-secondary" @click="logout">
-              Logout
-            </button>
-          </div>
-          <a v-else :href="loginInitiateUrl"
-            ><button type="button" class="btn btn-primary">Login</button>
-          </a>
         </div>
-      </div>
-    </nav>
-    <div class="main-content">
+        <div class="flex shrink-0 items-center gap-2.5 pl-2">
+          <template v-if="username">
+            <span
+              class="hidden max-w-[160px] truncate text-sm text-ink sm:block"
+              >{{ username }}</span
+            >
+            <span
+              aria-hidden="true"
+              class="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-[#e9edf6] text-[11px] font-medium text-ink-2"
+              >{{ username.charAt(0).toUpperCase() }}</span
+            >
+            <span
+              aria-hidden="true"
+              class="h-[18px] w-px bg-border-strong"
+            ></span>
+            <button
+              type="button"
+              class="cursor-pointer border-0 bg-transparent p-0 text-sm text-ink-2 hover:text-ink"
+              @click="logout"
+            >
+              Log out
+            </button>
+          </template>
+          <a v-else :href="loginInitiateUrl" class="wp1r-btn-primary h-7 px-3"
+            >Login</a
+          >
+        </div>
+      </nav>
+    </header>
+    <div
+      class="main-content"
+      :class="{ 'main-content-flush': isSelectionsRoute }"
+    >
       <router-view></router-view>
     </div>
-    <footer class="footer bg-light border-top">
-      <div class="container-fluid py-3">
-        <div class="text-right">
-          <a
-            href="https://kiwix.org/privacy-policy/"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Privacy Policy
-          </a>
-        </div>
+    <footer class="wp1r border-t border-chrome-edge bg-chrome">
+      <div class="flex h-12 items-center gap-1 px-3">
+        <span v-if="isSelectionsRoute" class="px-[9px] text-sm text-ink-3"
+          >All times are local.</span
+        >
+        <span class="ml-auto"></span>
+        <a
+          href="https://en.wikipedia.org/wiki/Wikipedia_talk:Version_1.0_Editorial_Team/Index"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="wp1r-navlink"
+        >
+          Feedback
+        </a>
+        <a
+          href="https://kiwix.org/privacy-policy/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="wp1r-navlink"
+        >
+          Privacy Policy
+        </a>
       </div>
     </footer>
   </div>
@@ -119,9 +94,36 @@ export default {
     return {
       username: null,
       loginInitiateUrl: `${import.meta.env.VITE_API_URL}/oauth/initiate`,
+      navItems: [
+        { to: '/', label: 'Projects', prefix: null },
+        { to: '/selections/user', label: 'Selections', prefix: '/selections' },
+        { to: '/update', label: 'Manual Update', prefix: '/update' },
+        { to: '/compare', label: 'Compare Projects', prefix: '/compare' },
+        {
+          to: '/assessments',
+          label: 'Assessments by Project',
+          prefix: '/assessments',
+        },
+      ],
     };
   },
+  computed: {
+    // The redesigned Selections pages render as a full-height column that
+    // touches the header and footer; everything else keeps the padded flow.
+    isSelectionsRoute: function () {
+      return this.$route.path.startsWith('/selections');
+    },
+  },
   methods: {
+    isActiveNav: function (item) {
+      if (item.prefix === null) {
+        return !this.navItems.some(
+          (other) =>
+            other.prefix !== null && this.$route.path.startsWith(other.prefix)
+        );
+      }
+      return this.$route.path.startsWith(item.prefix);
+    },
     logout: async function () {
       await fetch(`${import.meta.env.VITE_API_URL}/oauth/logout`, {
         credentials: 'include',
@@ -186,19 +188,10 @@ body {
   padding-bottom: 20px;
 }
 
-.footer {
-  margin-top: auto;
-  background-color: #f8f9fa !important;
-}
-
-.footer a {
-  color: #0063cc;
-  text-decoration: none;
-}
-
-.footer a:hover {
-  color: #000;
-  text-decoration: underline;
+.main-content-flush {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
 }
 
 a {
@@ -217,11 +210,5 @@ a:visited {
 
 .row {
   margin-top: 10px;
-}
-
-.username {
-  /* Center the username vertically */
-  position: relative;
-  top: 2px;
 }
 </style>

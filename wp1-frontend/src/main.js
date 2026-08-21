@@ -2,6 +2,15 @@ import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
+import '@fontsource/ibm-plex-sans/400.css';
+import '@fontsource/ibm-plex-sans/500.css';
+import '@fontsource/ibm-plex-sans/600.css';
+import '@fontsource/ibm-plex-sans/700.css';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
+import '@fontsource/ibm-plex-mono/600.css';
+import './tailwind.css';
+
 import 'jquery';
 import 'datatables.net';
 import 'datatables.net-dt/css/jquery.dataTables.min.css';
@@ -11,19 +20,15 @@ import { createRouter, createWebHashHistory } from 'vue-router';
 
 import App from './App.vue';
 import ArticlePage from './components/ArticlePage.vue';
-import BookBuilder from './components/BookBuilder.vue';
-import CombinatorBuilder from './components/CombinatorBuilder.vue';
-import PetscanBuilder from './components/PetscanBuilder.vue';
-import SimpleBuilder from './components/SimpleBuilder.vue';
-import SparqlBuilder from './components/SparqlBuilder.vue';
 import ComparePage from './components/ComparePage.vue';
 import AssessmentsByProject from './components/AssessmentsByProject.vue';
 import IndexPage from './components/IndexPage.vue';
-import MyLists from './components/MyLists.vue';
 import ProjectPage from './components/ProjectPage.vue';
 import UpdatePage from './components/UpdatePage.vue';
-import ZimFile from './components/ZimFile.vue';
-import WikiProjectBuilder from './components/WikiProjectBuilder.vue';
+import CombinatorPage from './components/selections/CombinatorPage.vue';
+import NewSelectionPage from './components/selections/NewSelectionPage.vue';
+import SelectionsPage from './components/selections/SelectionsPage.vue';
+import ZimPage from './components/selections/ZimPage.vue';
 
 const BASE_TITLE = 'Wikipedia 1.0 Server';
 
@@ -98,99 +103,53 @@ const routes = [
     },
   },
   {
-    path: '/selections/user',
-    component: MyLists,
+    // One route record for list, detail and edit, so that selecting a row
+    // swaps the pane without remounting the whole page.
+    path: '/selections/user/:builder_id?/:mode(edit)?',
+    component: SelectionsPage,
     meta: {
-      title: () => BASE_TITLE + ' - My Selections',
+      title: (route) =>
+        BASE_TITLE +
+        (route.params.mode === 'edit'
+          ? ' - Edit Selection'
+          : ' - My Selections'),
     },
   },
   {
-    path: '/selections/simple',
-    component: SimpleBuilder,
+    path: '/selections/new',
+    component: NewSelectionPage,
     meta: {
-      title: () => BASE_TITLE + ' - Create Simple Selection',
-    },
-  },
-  {
-    path: '/selections/sparql',
-    component: SparqlBuilder,
-    meta: {
-      title: () => BASE_TITLE + ' - Create SPARQL Selection',
-    },
-  },
-  {
-    path: '/selections/petscan',
-    component: PetscanBuilder,
-    meta: {
-      title: () => BASE_TITLE + ' - Create Petscan Selection',
-    },
-  },
-  {
-    path: '/selections/book',
-    component: BookBuilder,
-    meta: {
-      title: () => BASE_TITLE + ' - Create Book Selection',
-    },
-  },
-  {
-    path: '/selections/wikiproject',
-    component: WikiProjectBuilder,
-    meta: {
-      title: () => BASE_TITLE + ' - Edit WikiProject Selection',
+      title: () => BASE_TITLE + ' - New Selection',
     },
   },
   {
     path: '/selections/combinator',
-    component: CombinatorBuilder,
+    component: CombinatorPage,
     meta: {
-      title: () => BASE_TITLE + ' - Create Combinator Selection',
-    },
-  },
-  {
-    path: '/selections/simple/:builder_id',
-    component: SimpleBuilder,
-    meta: {
-      title: () => BASE_TITLE + ' - Edit Simple Selection',
-    },
-  },
-  {
-    path: '/selections/sparql/:builder_id',
-    component: SparqlBuilder,
-    meta: {
-      title: () => BASE_TITLE + ' - Edit SPARQL Selection',
-    },
-  },
-  {
-    path: '/selections/petscan/:builder_id',
-    component: PetscanBuilder,
-    meta: {
-      title: () => BASE_TITLE + ' - Edit Petscan Selection',
-    },
-  },
-  {
-    path: '/selections/book/:builder_id',
-    component: BookBuilder,
-    meta: {
-      title: () => BASE_TITLE + ' - Edit Book Selection',
-    },
-  },
-  {
-    path: '/selections/wikiproject/:builder_id',
-    component: WikiProjectBuilder,
-    meta: {
-      title: () => BASE_TITLE + ' - Edit WikiProject Selection',
+      title: () => BASE_TITLE + ' - New Combinator Selection',
     },
   },
   {
     path: '/selections/combinator/:builder_id',
-    component: CombinatorBuilder,
+    component: CombinatorPage,
     meta: {
       title: () => BASE_TITLE + ' - Edit Combinator Selection',
     },
   },
+  // The per-type create pages were unified into /selections/new; old URLs
+  // redirect with the source preselected.
+  ...['simple', 'sparql', 'petscan', 'book', 'wikiproject'].map((source) => ({
+    path: `/selections/${source}`,
+    redirect: { path: '/selections/new', query: { source } },
+  })),
+  // The per-type edit pages are superseded by the detail pane editor.
+  ...['simple', 'sparql', 'petscan', 'book', 'wikiproject'].map((source) => ({
+    path: `/selections/${source}/:builder_id`,
+    redirect: (to) => `/selections/user/${to.params.builder_id}/edit`,
+  })),
   {
     path: '/selections/:builder_id/zim',
-    component: ZimFile,
+    component: ZimPage,
     meta: {
       title: () => BASE_TITLE + ' - ZIM file',
     },

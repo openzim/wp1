@@ -1,8 +1,275 @@
 /// <reference types="Cypress" />
 
-describe('the user selection list page', () => {
+describe('the selections page', () => {
+  const stubDetailFor = (id, builderFixture) => {
+    cy.intercept('GET', `v1/builders/${id}`, {
+      fixture: builderFixture,
+    }).as('builder');
+    cy.intercept(`v1/builders/${id}/zim/status`, {
+      fixture: 'zim_status_not_requested.json',
+    }).as('zimStatus');
+    cy.intercept(`v1/builders/${id}/selection/latest/article_count`, {
+      body: {
+        selection: { id: 'abcd', article_count: 34, max_article_count: 50000 },
+      },
+    }).as('articleCount');
+    cy.intercept(`v1/builders/${id}/delete-impact`, {
+      fixture: 'delete_impact_none.json',
+    }).as('deleteImpact');
+  };
+
   describe('when the user is logged in', () => {
     beforeEach(() => {
+      cy.intercept('v1/selection/lists', {
+        fixture: 'list_data.json',
+      }).as('list');
+      cy.intercept('v1/oauth/identify', { fixture: 'identity.json' }).as(
+        'login'
+      );
+      stubDetailFor(1, 'simple_builder.json');
+      cy.visit('/#/selections/user');
+      cy.wait('@login');
+      cy.wait('@list');
+    });
+
+    it('successfully loads', () => {});
+
+    it('displays the selection rail with all rows', () => {
+      cy.contains('.wp1r-railrow', 'simple list');
+      cy.contains('.wp1r-railrow', 'sparql list');
+      cy.contains('.wp1r-railrow', 'combinator list');
+    });
+
+    it('derives the status vocabulary for each row', () => {
+      cy.contains('.wp1r-railrow', 'zim ready').contains('Up to date');
+      cy.contains('.wp1r-railrow', 'outdated zim').contains('Stale');
+      cy.contains('.wp1r-railrow', 'deleted zim').contains('Expired');
+      cy.contains('.wp1r-railrow', 'zim requested').contains('Building');
+      cy.contains('.wp1r-railrow', 'updated list').contains('Processing');
+      cy.contains('.wp1r-railrow', 'permanent error').contains('Failed');
+      cy.contains('.wp1r-railrow', 'zim failed').contains('Failed');
+      cy.contains('.wp1r-railrow', 'selection ready, no zim').contains(
+        'No ZIM'
+      );
+      cy.contains('.wp1r-railrow', 'simple list').contains('No ZIM');
+    });
+
+    it('shows the count chips', () => {
+      cy.contains('button', 'All 14');
+      cy.contains('button', 'Needs attention 6');
+      cy.contains('button', 'Up to date 1');
+      cy.contains('button', 'No ZIM 9');
+      cy.contains('button', 'Scheduled 1');
+    });
+
+    it('auto-selects the first selection on desktop', () => {
+      cy.url().should('include', '/selections/user/1');
+      cy.get('#detail-title').should('contain.text', 'simple list');
+    });
+
+    it('shows the detail pane for the selected row', () => {
+      cy.wait('@builder');
+      cy.wait('@articleCount');
+      cy.contains('34 articles');
+      cy.get('#definition').should('contain.text', 'Eiffel_Tower');
+      cy.contains('a', 'Article list (TSV)').should(
+        'have.attr',
+        'href',
+        'https://www.example.fake/abcd-efgh'
+      );
+      cy.contains('No ZIM file yet');
+    });
+
+    it('disables Create ZIM when the selection failed to materialize', () => {
+      stubDetailFor(
+        '7368f534-27f5-4350-bfe3-23b90363df7b',
+        'simple_builder_fatal_error.json'
+      );
+      cy.contains('.wp1r-railrow', 'permanent error').click();
+      cy.get('#create-zim-button')
+        .should('match', 'button')
+        .and('have.attr', 'disabled');
+      // A cleanly materialized selection keeps the real link.
+      cy.contains('.wp1r-railrow', 'simple list').click();
+      cy.get('#create-zim-button')
+        .should('match', 'a')
+        .and('have.attr', 'href', '#/selections/1/zim');
+    });
+
+    it('shows an error with retry when the builder fetch fails', () => {
+      cy.intercept('GET', 'v1/builders/1', { statusCode: 500, body: {} }).as(
+        'builderFail'
+      );
+      cy.reload();
+      cy.wait('@builderFail');
+      // Scope to the desktop pane: the hidden mobile detail instance
+      // renders its own copy of the error element.
+      cy.get('.md\\:grid')
+        .find('#builder-load-error')
+        .contains("Couldn't load this selection.");
+      cy.intercept('GET', 'v1/builders/1', {
+        fixture: 'simple_builder.json',
+      }).as('builderRetry');
+      cy.get('.md\\:grid').find('#retry-load-builder').click();
+      cy.wait('@builderRetry');
+      cy.get('#definition').should('contain.text', 'Eiffel_Tower');
+      cy.get('.md\\:grid').find('#builder-load-error').should('not.exist');
+    });
+
+    it('shows the stat strip with selection and ZIM statuses', () => {
+      cy.contains('.wp1r-stat', 'Selection').contains('Ready');
+      cy.contains('.wp1r-stat', 'ZIM').contains('No ZIM');
+      cy.contains('.wp1r-stat', 'Schedule').contains('None');
+    });
+
+    it('hides the TSV link while the selection is processing', () => {
+      cy.contains('.wp1r-railrow', 'updated list').click();
+      cy.contains('.wp1r-stat', 'Selection').contains('Processing…');
+      cy.contains('Article list not ready yet');
+      cy.contains('a', 'Article list (TSV)').should('not.exist');
+    });
+
+    it('links Create ZIM to the ZIM page', () => {
+      cy.get('#create-zim-button').should(
+        'have.attr',
+        'href',
+        '#/selections/1/zim'
+      );
+    });
+
+    it('links Edit to the detail editor', () => {
+      cy.get('#edit-button').should(
+        'have.attr',
+        'href',
+        '#/selections/user/1/edit'
+      );
+    });
+
+    it('filters rows by name', () => {
+      cy.get('input[placeholder="Filter…"]').first().type('combinator');
+      cy.contains('.wp1r-railrow', 'combinator list');
+      cy.contains('.wp1r-railrow', 'simple list').should('not.exist');
+    });
+
+    it('filters rows by type', () => {
+      cy.get('input[placeholder="Filter…"]').first().type('sparql');
+      cy.contains('.wp1r-railrow', 'permanent error');
+      cy.contains('.wp1r-railrow', 'simple list').should('not.exist');
+    });
+
+    it('shows an empty state when no rows match the filter', () => {
+      cy.get('input[placeholder="Filter…"]').first().type('zzzzz');
+      cy.contains('No selections match.');
+      cy.contains('button', 'Clear filters').click();
+      cy.contains('.wp1r-railrow', 'simple list');
+    });
+
+    it('filters by status when a chip is clicked', () => {
+      cy.contains('button', 'Needs attention 6').click();
+      cy.contains('.wp1r-railrow', 'permanent error');
+      cy.contains('.wp1r-railrow', 'simple list').should('not.exist');
+      // Clicking again clears the filter.
+      cy.contains('button', 'Needs attention 6').click();
+      cy.contains('.wp1r-railrow', 'simple list');
+    });
+
+    it('focuses the filter input when / is pressed', () => {
+      cy.get('body').type('/');
+      cy.get('input[placeholder="Filter…"]').first().should('have.focus');
+    });
+
+    it('navigates to another selection when its row is clicked', () => {
+      stubDetailFor('sched-builder-001', 'simple_builder.json');
+      cy.contains('.wp1r-railrow', 'scheduled zim').click();
+      cy.url().should('include', '/selections/user/sched-builder-001');
+    });
+
+    it('shows the schedule in the stat strip for a scheduled selection', () => {
+      cy.intercept('GET', 'v1/builders/sched-builder-001', {
+        fixture: 'simple_builder.json',
+      });
+      cy.intercept('v1/builders/sched-builder-001/zim/status', {
+        fixture: 'zim_status_with_schedule.json',
+      });
+      cy.contains('.wp1r-railrow', 'scheduled zim').click();
+      cy.contains('Every 3 months');
+    });
+
+    it('shows the stale banner for an outdated zim', () => {
+      stubDetailFor(
+        'dcea7035-cc69-471e-b0e6-08dfbafd5e7c',
+        'simple_builder.json'
+      );
+      cy.contains('.wp1r-railrow', 'outdated zim').click();
+      cy.get('#stale-banner').should('be.visible');
+      cy.contains('Rebuild ZIM');
+    });
+
+    it('shows the selection error banner with retry for retryable errors', () => {
+      cy.intercept('GET', 'v1/builders/7368f534-27f5-4350-bfe3-23b90363df7b', {
+        fixture: 'sparql_builder_retryable_error.json',
+      });
+      cy.contains('.wp1r-railrow', 'permanent error').click();
+      cy.get('#selection-errors').should('be.visible');
+      cy.get('#retry-button').should('be.visible');
+    });
+
+    it('opens the delete dialog from the overflow menu', () => {
+      cy.wait('@builder');
+      cy.get('#overflow-button').click();
+      cy.get('#delete-menuitem').click();
+      cy.get('#delete-impact-dialog').should('be.visible');
+      cy.contains('Deleting');
+      cy.get('#confirmDeleteButton').should('not.have.attr', 'disabled');
+      cy.get('#cancelDeleteButton').click();
+      cy.get('#delete-impact-dialog').should('not.exist');
+    });
+
+    it('deletes the selection and returns to the list', () => {
+      cy.intercept('POST', 'v1/builders/1/delete', {
+        statusCode: 200,
+        body: { status: '204' },
+      }).as('delete');
+      cy.wait('@builder');
+      cy.get('#overflow-button').click();
+      cy.get('#delete-menuitem').click();
+      cy.get('#confirmDeleteButton').click();
+      cy.wait('@delete');
+      cy.get('#delete-impact-dialog').should('not.exist');
+      cy.url().should('include', '/selections/user');
+    });
+
+    it('shows a not-found pane for an unknown id', () => {
+      cy.visit('/#/selections/user/does-not-exist');
+      cy.contains('Not found');
+    });
+  });
+
+  describe('when the list is empty', () => {
+    beforeEach(() => {
+      cy.intercept('v1/selection/lists', { body: { builders: [] } }).as('list');
+      cy.intercept('v1/oauth/identify', { fixture: 'identity.json' }).as(
+        'login'
+      );
+      cy.visit('/#/selections/user');
+      cy.wait('@login');
+      cy.wait('@list');
+    });
+
+    it('shows the empty state with a New selection button', () => {
+      cy.contains("You haven't created a selection yet");
+      cy.contains('What you can build');
+      cy.contains('a', 'New selection').should(
+        'have.attr',
+        'href',
+        '#/selections/new'
+      );
+    });
+  });
+
+  describe('on mobile', () => {
+    beforeEach(() => {
+      cy.viewport(390, 844);
       cy.intercept('v1/selection/lists', {
         fixture: 'list_data.json',
       }).as('list');
@@ -14,282 +281,54 @@ describe('the user selection list page', () => {
       cy.wait('@list');
     });
 
-    it('successfully loads', () => {});
-
-    it('displays the datatables view', () => {
-      cy.get('.dataTables_info').contains('Showing 1 to 14 of 14 entries');
+    it('shows the card list without auto-selecting', () => {
+      cy.url().should('eq', 'http://localhost:5173/#/selections/user');
+      cy.contains('simple list');
+      cy.contains('a', 'Build ZIM')
+        .first()
+        .should('have.attr', 'href', '#/selections/1/zim');
     });
 
-    it('displays list and its contents', () => {
-      const listTd = cy.contains('td', 'simple list');
-      listTd.siblings().contains('td', 'en.wikipedia.org');
-      listTd.siblings().contains('td', '9/5/21');
-      listTd.siblings().contains('.btn-primary', 'Edit');
+    it('shows the status filter pills', () => {
+      cy.contains('button', 'Needs attention');
+      cy.contains('button', 'Up to date');
     });
 
-    it('displays a spinner for download of list with no selection', () => {
-      const listTd = cy.contains('td', 'sparql list');
-      listTd.parent('tr').within(() => {
-        cy.get('td').eq(4).contains('-');
-        cy.get('td').eq(5).get('div').should('have.class', 'loader');
-      });
+    it('opens the detail view when a card is tapped', () => {
+      stubDetailFor(1, 'simple_builder.json');
+      cy.get('.md\\:hidden').contains('button', 'simple list').click();
+      cy.url().should('include', '/selections/user/1');
+      cy.contains('a', '← Selections');
+      cy.get('#detail-title').should('contain.text', 'simple list');
     });
+  });
 
-    it('displays a spinner if the selection is newer than the builder', () => {
-      cy.contains('td', 'updated list')
-        .parent('tr')
-        .within(() => {
-          cy.get('td').eq(5).get('div').should('have.class', 'loader');
-        });
-    });
-
-    it('displays a spinner if the selection has error and is retrying', () => {
-      cy.contains('td', 'in retry')
-        .parent('tr')
-        .within(() => {
-          cy.get('td').eq(5).get('div').should('have.class', 'loader');
-        });
-    });
-
-    it('displays error message for list with permanent error', () => {
-      cy.contains('td', 'permanent error')
-        .parent('tr')
-        .within(() => {
-          cy.get('td').eq(5).get('div').should('contain', 'FAILED');
-        });
-    });
-
-    it('displays error message for list with retryable failure', () => {
-      cy.contains('td', 'retryable error')
-        .parent('tr')
-        .within(() => {
-          cy.get('td').eq(5).get('div').should('contain', 'FAILED');
-        });
-    });
-
-    it('takes the user to the simple edit screen when simple edit is clicked', () => {
-      cy.intercept('GET', 'v1/builders/1', { fixture: 'simple_builder.json' });
-      cy.contains('td', 'simple list')
-        .siblings()
-        .contains('.btn-primary', 'Edit')
-        .click();
-      cy.url().should('eq', 'http://localhost:5173/#/selections/simple/1');
-    });
-
-    it('takes the user to the SPARQL edit screen when SPARQL edit is clicked', () => {
-      cy.intercept('GET', 'v1/builders/1', { fixture: 'sparql_builder.json' });
-      cy.contains('td', 'sparql list')
-        .siblings()
-        .contains('.btn-primary', 'Edit')
-        .click();
-      cy.url().should('eq', 'http://localhost:5173/#/selections/sparql/2');
-    });
-
-    it('takes the user to the combinator edit screen when combinator edit is clicked', () => {
-      cy.intercept('GET', 'v1/builders/combo-list', {
-        fixture: 'combinator_builder.json',
-      });
-      cy.contains('td', 'combinator list')
-        .siblings()
-        .contains('.btn-primary', 'Edit')
-        .click();
-      cy.url().should(
-        'eq',
-        'http://localhost:5173/#/selections/combinator/combo-list'
+  describe('when the list fetch fails', () => {
+    it('shows an error with retry instead of the empty state', () => {
+      cy.intercept('v1/oauth/identify', { fixture: 'identity.json' });
+      cy.intercept('v1/selection/lists', { statusCode: 500, body: {} }).as(
+        'listFail'
       );
-    });
-
-    it('displays a failed link for selection with failed ZIM', () => {
-      cy.contains('td', 'zim failed')
-        .parent('tr')
-        .within(() => {
-          cy.get('td').eq(7).get('span').should('contain', 'Failed');
-        });
-    });
-
-    it('goes to the zim page when the failed link is clicked', () => {
-      cy.contains('td', 'zim failed')
-        .parent('tr')
-        .within(() => {
-          cy.get('td').eq(7).get('span a').click();
-        });
-      cy.url().should('eq', 'http://localhost:5173/#/selections/3a3d4c8e/zim');
-    });
-
-    describe('when the selection has not been materialized', () => {
-      it('does not display the Create Zim button', () => {
-        cy.contains('td', 'in retry')
-          .parent('tr')
-          .within(() => {
-            cy.get('td').eq(7).should('contain', '-');
-          });
-      });
-
-      it('does not display the ZIM updated date', () => {
-        cy.contains('td', 'in retry')
-          .parent('tr')
-          .within(() => {
-            cy.get('td').eq(6).should('contain', '-');
-          });
-      });
-    });
-
-    describe('when the selection is materialized', () => {
-      it('displays the Create Zim button', () => {
-        cy.contains('td', 'selection ready, no zim')
-          .parent('tr')
-          .within(() => {
-            cy.get('td').eq(7).should('contain', 'Create ZIM');
-          });
-      });
-
-      it('does not display the ZIM updated date', () => {
-        cy.contains('td', 'selection ready, no zim')
-          .parent('tr')
-          .within(() => {
-            cy.get('td').eq(6).should('contain', '-');
-          });
-      });
-    });
-
-    describe('when the ZIM file has been requested but is not yet ready', () => {
-      it('displays a spinner', () => {
-        cy.contains('td', 'zim requested')
-          .parent('tr')
-          .within(() => {
-            cy.get('td').eq(7).get('div').should('have.class', 'loader');
-          });
-      });
-
-      it('does not display the ZIM updated date', () => {
-        cy.contains('td', 'zim requested')
-          .parent('tr')
-          .within(() => {
-            cy.get('td').eq(6).should('contain', '-');
-          });
-      });
-    });
-
-    describe('when the ZIM file is ready', () => {
-      beforeEach(() => {
-        cy.clock(1685991600000);
-      });
-
-      it('displays the download ZIM link', () => {
-        cy.contains('td', 'zim ready')
-          .parent('tr')
-          .within(() => {
-            cy.get('td').eq(7).get('a').should('contain', 'Download ZIM');
-          });
-      });
-
-      it('displays the ZIM updated date', () => {
-        cy.contains('td', 'zim ready')
-          .parent('tr')
-          .within(() => {
-            cy.get('td').eq(6).should('contain', '6/1/23');
-          });
-      });
-    });
-
-    describe('when there is an outdated ZIM', () => {
-      it('displays the download ZIM link', () => {
-        cy.contains('td', 'outdated zim')
-          .parent('tr')
-          .within(() => {
-            cy.get('td').eq(7).get('a').should('contain', 'Download ZIM');
-          });
-      });
-
-      it('displays the ZIM updated date', () => {
-        cy.contains('td', 'outdated zim')
-          .parent('tr')
-          .within(() => {
-            cy.get('td').eq(6).should('contain', '6/1/23');
-          });
-      });
-
-      it('shows the info hover', () => {
-        cy.contains('td', 'outdated zim')
-          .parent('tr')
-          .within(() => {
-            cy.get('td').eq(7).get('span').should('exist');
-          });
-      });
-    });
-
-    describe('when there is an deleted ZIM', () => {
-      it('displays the ZIM updated date', () => {
-        cy.contains('td', 'deleted zim')
-          .parent('tr')
-          .within(() => {
-            cy.get('td').eq(6).should('contain', '6/18/23');
-          });
-      });
-
-      it('displays the Create Zim button', () => {
-        cy.contains('td', 'deleted zim')
-          .parent('tr')
-          .within(() => {
-            cy.get('td').eq(7).should('contain', 'Create ZIM');
-          });
-      });
-
-      it('shows the info hover', () => {
-        cy.contains('td', 'deleted zim')
-          .parent('tr')
-          .within(() => {
-            cy.get('td').eq(7).get('span').should('exist');
-          });
-      });
-    });
-
-    describe('when there is a failed ZIM', () => {
-      it('does not display the ZIM updated date', () => {
-        cy.contains('td', 'zim failed')
-          .parent('tr')
-          .within(() => {
-            cy.get('td').eq(6).should('contain', '-');
-          });
-      });
-
-      it('displays a link to the zim creation page', () => {
-        cy.contains('td', 'zim failed')
-          .parent('tr')
-          .within(() => {
-            cy.get('td').eq(7).should('contain', 'Failed');
-          });
-      });
-    });
-
-    describe('when the builder has an active schedule', () => {
-      it('displays the Manage Schedule button', () => {
-        cy.contains('td', 'scheduled zim')
-          .parent('tr')
-          .within(() => {
-            cy.get('td').eq(7).should('contain', 'Manage Schedule');
-          });
-      });
-
-      it('navigates to the zim page when Manage Schedule is clicked', () => {
-        cy.contains('td', 'scheduled zim')
-          .parent('tr')
-          .within(() => {
-            cy.contains('button', 'Manage Schedule').click();
-          });
-        cy.url().should(
-          'eq',
-          'http://localhost:5173/#/selections/sched-builder-001/zim'
-        );
-      });
+      cy.visit('/#/selections/user');
+      cy.wait('@listFail');
+      cy.get('#list-load-error').contains("Couldn't load your selections.");
+      // The onboarding empty state must not appear on a server error.
+      cy.contains('What you can build').should('not.exist');
+      cy.intercept('v1/selection/lists', { fixture: 'list_data.json' }).as(
+        'listRetry'
+      );
+      cy.get('#retry-load-lists').click();
+      cy.wait('@listRetry');
+      cy.contains('.wp1r-railrow', 'simple list');
     });
   });
 
   describe('when the user is not logged in', () => {
-    it('opens login page', () => {
+    it('shows the signed-out explanation with sign in', () => {
       cy.visit('/#/selections/user');
-      cy.contains('Please Log In To Continue');
-      cy.get('.pt-2 > .btn');
+      cy.contains('Selections are lists of Wikipedia articles');
+      cy.contains('What you can build');
+      cy.contains('a', 'Sign in with Wikipedia');
     });
   });
 });
