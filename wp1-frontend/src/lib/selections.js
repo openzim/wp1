@@ -121,7 +121,11 @@ export function selectionIsPending(item) {
 }
 
 export function selectionHasError(item) {
-  return !!item.s_status && item.s_status !== 'OK';
+  // has_failed_references marks a combinator whose referenced selections
+  // are failed even though its own cached selection is still OK.
+  return (
+    (!!item.s_status && item.s_status !== 'OK') || !!item.has_failed_references
+  );
 }
 
 export function deriveSelectionStatus(item) {

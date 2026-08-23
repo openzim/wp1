@@ -35,28 +35,25 @@ class MetaBuilder(AbstractBuilder):
 
         status = logic_util.as_text(selection.s_status)
         if status == "FAILED":
+            failure_info = logic_builder.REFERENCE_FAILURE_INFO["FAILED"]
             raise Wp1FatalMetaSelectionError(
-                f"Referenced builder {label} latest selection failed",
-                code="REFERENCED_SELECTION_FAILED",
-                reason="latest selection failed",
-                action="Open this list, fix the failed selection, then update this Combinator.",
+                f"Referenced builder {label} {failure_info['reason']}",
+                **failure_info,
             )
 
         if status != "OK":
-            if status == "CAN_RETRY":
-                code = "REFERENCED_SELECTION_RETRYABLE_FAILURE"
-                reason = "latest selection failed but can be retried"
-                action = "Open this list and retry it, then retry this Combinator."
-            else:
-                code = "REFERENCED_SELECTION_NOT_READY"
-                reason = "latest selection is not ready yet"
-                action = "Wait for this list to finish processing, then retry this Combinator."
+            failure_info = logic_builder.REFERENCE_FAILURE_INFO.get(
+                status,
+                {
+                    "code": "REFERENCED_SELECTION_NOT_READY",
+                    "reason": "latest selection is not ready yet",
+                    "action": "Wait for this list to finish processing, then retry this Combinator.",
+                },
+            )
 
             raise Wp1RetryableMetaSelectionError(
-                f"Referenced builder {label} {reason}",
-                code=code,
-                reason=reason,
-                action=action,
+                f"Referenced builder {label} {failure_info['reason']}",
+                **failure_info,
             )
 
         # OK selections can have no stored data when materialization produced empty

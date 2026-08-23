@@ -48,6 +48,9 @@ describe('the selections page', () => {
       cy.contains('.wp1r-railrow', 'updated list').contains('Processing');
       cy.contains('.wp1r-railrow', 'permanent error').contains('Failed');
       cy.contains('.wp1r-railrow', 'zim failed').contains('Failed');
+      cy.contains('.wp1r-railrow', 'combinator broken reference').contains(
+        'Failed'
+      );
       cy.contains('.wp1r-railrow', 'selection ready, no zim').contains(
         'No ZIM'
       );
@@ -55,10 +58,10 @@ describe('the selections page', () => {
     });
 
     it('shows the count chips', () => {
-      cy.contains('button', 'All 14');
-      cy.contains('button', 'Needs attention 6');
+      cy.contains('button', 'All 15');
+      cy.contains('button', 'Needs attention 7');
       cy.contains('button', 'Up to date 1');
-      cy.contains('button', 'No ZIM 9');
+      cy.contains('button', 'No ZIM 10');
       cy.contains('button', 'Scheduled 1');
     });
 
@@ -165,11 +168,11 @@ describe('the selections page', () => {
     });
 
     it('filters by status when a chip is clicked', () => {
-      cy.contains('button', 'Needs attention 6').click();
+      cy.contains('button', 'Needs attention 7').click();
       cy.contains('.wp1r-railrow', 'permanent error');
       cy.contains('.wp1r-railrow', 'simple list').should('not.exist');
       // Clicking again clears the filter.
-      cy.contains('button', 'Needs attention 6').click();
+      cy.contains('button', 'Needs attention 7').click();
       cy.contains('.wp1r-railrow', 'simple list');
     });
 

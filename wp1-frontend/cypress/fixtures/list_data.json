@@ -255,6 +255,25 @@
       "z_url": null,
       "z_status": "NOT_REQUESTED",
       "z_is_deleted": null
+    },
+    {
+      "created_at": 1685733000,
+      "id": "combo-broken-ref",
+      "model": "wp1.selection.models.combinator",
+      "name": "combinator broken reference",
+      "project": "en.wikipedia.org",
+      "s_content_type": "text/tab-separated-values",
+      "s_extension": "tsv",
+      "s_id": "combo-selection-002",
+      "s_status": "OK",
+      "s_updated_at": 1685733500,
+      "s_url": "https://www.example.fake/combo-selection-002",
+      "updated_at": 1685733150,
+      "z_updated_at": null,
+      "z_url": null,
+      "z_status": "NOT_REQUESTED",
+      "z_is_deleted": null,
+      "has_failed_references": true
     }
   ]
 }
