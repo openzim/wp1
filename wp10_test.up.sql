@@ -86,6 +86,7 @@ CREATE TABLE `builders` (
   b_name VARBINARY(255) NOT NULL,
   b_user_id VARCHAR(255) NOT NULL,
   b_project VARBINARY(255) NOT NULL,
+  b_dbname VARBINARY(255),
   b_model VARBINARY(255) NOT NULL,
   b_current_version int(11) NOT NULL DEFAULT 0,
   b_params BLOB,

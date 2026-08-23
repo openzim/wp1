@@ -1,10 +1,13 @@
+import json
 from datetime import timedelta
 from unittest.mock import patch
+
+import wp1.logic.sites as logic_sites
 from wp1.web.app import create_app
 from wp1.web.base_web_testcase import BaseWebTestcase
 
 
-class IdentifyTest(BaseWebTestcase):
+class SitesTest(BaseWebTestcase):
 
     result = {
         "sitematrix": {
@@ -52,16 +55,20 @@ class IdentifyTest(BaseWebTestcase):
     }
     sites = ["aa.wikipedia.org", "ab.wikipedia.org"]
 
-    @patch("wp1.web.sites.site")
+    @patch("wp1.logic.sites.mwclient.Site")
     def test_get_cached_sites(self, patched_site):
         self.app = create_app()
         with self.override_db(self.app), self.app.test_client() as client:
-            self.redis.setex("sites", timedelta(days=1), value=",".join(self.sites))
+            self.redis.setex(
+                logic_sites.CACHE_KEY,
+                timedelta(days=1),
+                value=json.dumps({"projects": self.sites, "dbnames": {}}),
+            )
             rv = client.get("/v1/sites/")
             self.assertEqual({"sites": self.sites}, rv.get_json())
             self.assertEqual(patched_site.called, False)
 
-    @patch("wp1.web.sites.mwclient.Site")
+    @patch("wp1.logic.sites.mwclient.Site")
     def test_get_uncached_sites(self, patched_site):
         patched_site.return_value.api.return_value = self.result
         self.app = create_app()
