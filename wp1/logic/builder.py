@@ -48,6 +48,22 @@ logger = logging.getLogger(__name__)
 
 META_BUILDER_MODELS = {"wp1.selection.models.combinator"}
 
+# How a referenced builder's broken TSV selection is described to users, both
+# when a Combinator build hits it (wp1.selection.meta_builder) and when the
+# failure is derived at read time for display.
+REFERENCE_FAILURE_INFO = {
+    "FAILED": {
+        "code": "REFERENCED_SELECTION_FAILED",
+        "reason": "latest selection failed",
+        "action": "Open this list, fix the failed selection, then update this Combinator.",
+    },
+    "CAN_RETRY": {
+        "code": "REFERENCED_SELECTION_RETRYABLE_FAILURE",
+        "reason": "latest selection failed but can be retried",
+        "action": "Open this list and retry it, then retry this Combinator.",
+    },
+}
+
 
 def builder_label_by_id(wp10db: Connection, builder_id: str | bytes) -> str:
     try:
@@ -86,6 +102,22 @@ def _group_builder_ids(params: dict[str, Any], group_name: str) -> list[str]:
     return [builder_id for builder_id in builders if isinstance(builder_id, str)]
 
 
+def _parse_builder_params(raw_params: bytes | None) -> dict[str, Any] | None:
+    try:
+        params = json.loads(raw_params or b"{}")
+    except json.decoder.JSONDecodeError:
+        return None
+    if not isinstance(params, dict):
+        return None
+    return params
+
+
+def _referenced_builder_ids(params: dict[str, Any]) -> list[str]:
+    """All builder ids referenced by meta-builder params, include and exclude."""
+    ids = _group_builder_ids(params, "include") + _group_builder_ids(params, "exclude")
+    return list(dict.fromkeys(ids))
+
+
 def _remove_builder_reference_from_params(
     params: dict[str, Any], target_builder_id: str
 ) -> tuple[dict[str, Any], bool]:
@@ -112,13 +144,9 @@ def _remove_builder_reference_from_params(
 def _combinator_reference_record(
     combinator: Builder, target_builder_id: str
 ) -> dict[str, Any] | None:
-    try:
-        params = json.loads(combinator.b_params or b"{}")
-    except json.decoder.JSONDecodeError:
+    params = _parse_builder_params(combinator.b_params)
+    if params is None:
         logger.warning("Could not parse params for builder id=%s", combinator.id)
-        return None
-
-    if not isinstance(params, dict):
         return None
 
     include_builders = _group_builder_ids(params, "include")
@@ -945,6 +973,92 @@ def latest_selections_with_errors(
     return res
 
 
+def failed_reference_errors(
+    wp10db: Connection, builder: Builder
+) -> list[dict[str, Any]]:
+    """Read-time failure info for selections referenced by a meta builder.
+
+    Returns one entry per referenced builder whose latest TSV selection is
+    FAILED or CAN_RETRY, in the same shape as
+    Wp1MetaBuilderProcessError.to_user_messages().
+    """
+    if not is_meta_builder(builder):
+        return []
+    params = _parse_builder_params(builder.b_params)
+    if params is None:
+        return []
+    reference_ids = _referenced_builder_ids(params)
+    if not reference_ids:
+        return []
+
+    with wp10db.cursor() as cursor:
+        cursor.execute(
+            """SELECT b.b_id, b.b_name, b.b_model, s.s_status
+           FROM builders b
+           LEFT JOIN selections s
+             ON s.s_builder_id = b.b_id
+             AND s.s_version = b.b_current_version
+             AND s.s_content_type = 'text/tab-separated-values'
+           WHERE b.b_id IN ({placeholders})
+        """.format(placeholders=", ".join(["%s"] * len(reference_ids))),
+            tuple(reference_ids),
+        )
+        rows = cursor.fetchall()
+
+    rows_by_id = {logic_util.as_text(row["b_id"]): row for row in rows}
+    errors = []
+    for reference_id in reference_ids:
+        row = rows_by_id.get(reference_id)
+        if row is None:
+            continue
+        status = (
+            logic_util.as_text(row["s_status"]) if row["s_status"] is not None else None
+        )
+        info = REFERENCE_FAILURE_INFO.get(status)
+        if info is None:
+            continue
+        label = (
+            logic_util.as_text(row["b_name"])
+            if row["b_name"] is not None
+            else reference_id
+        )
+        errors.append(
+            {
+                "builder_id": reference_id,
+                "builder_name": label,
+                "builder_model": logic_util.as_text(row["b_model"]),
+                "message": f"Referenced builder {label} {info['reason']}",
+                "status": status,
+                **info,
+            }
+        )
+    return errors
+
+
+def derived_selection_error(
+    wp10db: Connection, builder: Builder
+) -> dict[str, Any] | None:
+    """A synthesized selection error for a meta builder with failed references.
+
+    A Combinator is normally marked errored by its own rebuild after a
+    referenced selection fails. If that rebuild never ran (missed enqueue,
+    manually restored data), the Combinator's stored selection stays OK while
+    its references are broken. This derives the error at read time so the
+    Combinator still reports as errored.
+    """
+    reference_errors = failed_reference_errors(wp10db, builder)
+    if not reference_errors:
+        return None
+
+    has_fatal = any(error["status"] == "FAILED" for error in reference_errors)
+    return {
+        "status": "FAILED" if has_fatal else "CAN_RETRY",
+        "ext": "tsv",
+        "error_messages": [error["message"] for error in reference_errors],
+        "referenced_builder_errors": reference_errors,
+    }
+
+
 def request_zim_file_task_for_builder(
     redis: Redis, wp10db: Connection, builder: Builder, zim_schedule_id: bytes
 ) -> ZimTask | None:
@@ -1286,6 +1400,31 @@ def _get_active_schedule_data(
     return data
 
 
+def _annotate_failed_references(
+    db_rows: list[dict[str, Any]], rows: list[dict[str, Any]]
+) -> None:
+    """Flags meta-builder rows whose referenced TSV selections are failed.
+
+    Referenced builders always belong to the same user (enforced at validate
+    time), so their statuses are already present in the user's own rows.
+    """
+    tsv_status_by_id = {
+        row["id"]: row["s_status"]
+        for db_row, row in zip(db_rows, rows)
+        if db_row["s_content_type"] == b"text/tab-separated-values"
+    }
+    for db_row, row in zip(db_rows, rows):
+        if logic_util.as_text(db_row["b_model"]) not in META_BUILDER_MODELS:
+            continue
+        params = _parse_builder_params(db_row["b_params"])
+        if params is None:
+            continue
+        row["has_failed_references"] = any(
+            tsv_status_by_id.get(reference_id) in REFERENCE_FAILURE_INFO
+            for reference_id in _referenced_builder_ids(params)
+        )
+
+
 def get_builders_with_selections(
     wp10db: Connection, user_id: str | bytes
 ) -> list[dict[str, Any]]:
@@ -1325,6 +1464,9 @@ def get_builders_with_selections(
         builder.update(_get_selection_data(db_builder))
         builder.update(_get_zimfile_data(db_builder))
         builder.update(_get_active_schedule_data(db_builder))
+        builder["has_failed_references"] = False
         result.append(builder)
+
+    _annotate_failed_references(data, result)
 
     return result

@@ -56,6 +56,7 @@ class BuilderTest(BaseWpOneDbTest):
             "z_status": "NOT_REQUESTED",
             "z_is_deleted": None,
             "active_schedule": None,
+            "has_failed_references": False,
         }
     ]
 
@@ -78,6 +79,7 @@ class BuilderTest(BaseWpOneDbTest):
             "z_status": "NOT_REQUESTED",
             "z_is_deleted": None,
             "active_schedule": None,
+            "has_failed_references": False,
         },
         {
             "id": "1a-2b-3c-4d",
@@ -97,6 +99,7 @@ class BuilderTest(BaseWpOneDbTest):
             "z_status": "NOT_REQUESTED",
             "z_is_deleted": None,
             "active_schedule": None,
+            "has_failed_references": False,
         },
     ]
 
@@ -119,6 +122,7 @@ class BuilderTest(BaseWpOneDbTest):
             "z_status": None,
             "z_is_deleted": None,
             "active_schedule": None,
+            "has_failed_references": False,
         }
     ]
 
@@ -141,6 +145,7 @@ class BuilderTest(BaseWpOneDbTest):
             "z_status": "NOT_REQUESTED",
             "z_is_deleted": None,
             "active_schedule": None,
+            "has_failed_references": False,
         }
     ]
 
@@ -163,6 +168,7 @@ class BuilderTest(BaseWpOneDbTest):
             "z_status": "FILE_READY",
             "z_is_deleted": True,
             "active_schedule": None,
+            "has_failed_references": False,
         }
     ]
 
@@ -291,14 +297,16 @@ class BuilderTest(BaseWpOneDbTest):
         zim_task_id="5678",
         skip_zim=False,
         zim_schedule_id=b"schedule_123",
+        status=None,
     ):
-        if has_errors:
-            status = "CAN_RETRY"
-            if error_messages is None:
-                error_messages = '{"error_messages":["There was an error"]}'
-        else:
-            status = "OK"
-            error_messages = None
+        if status is None:
+            if has_errors:
+                status = "CAN_RETRY"
+                if error_messages is None:
+                    error_messages = '{"error_messages":["There was an error"]}'
+            else:
+                status = "OK"
+                error_messages = None
 
         zimfarm_status = b"NOT_REQUESTED"
         zim_file_updated_at = None
@@ -759,6 +767,140 @@ class BuilderTest(BaseWpOneDbTest):
         self.assertObjectListsEqual(
             self.expected_list_with_zimfarm_status, article_data
         )
+
+    def _insert_combinator_scenario(self, exclude_status="FAILED", include_status="OK"):
+        """(ref-a OR ref-b) NOT ref-c, with a stale-OK combinator selection."""
+        self._insert_builder_record("ref-a", "Ref A", current_version=1)
+        self._insert_selection(
+            "sel-a", "text/tab-separated-values", builder_id=b"ref-a", skip_zim=True
+        )
+        self._insert_builder_record("ref-b", "Ref B", current_version=1)
+        self._insert_selection(
+            "sel-b",
+            "text/tab-separated-values",
+            builder_id=b"ref-b",
+            skip_zim=True,
+            status=include_status,
+        )
+        self._insert_builder_record("ref-c", "Ref C", current_version=1)
+        self._insert_selection(
+            "sel-c",
+            "text/tab-separated-values",
+            builder_id=b"ref-c",
+            skip_zim=True,
+            status=exclude_status,
+        )
+        self._insert_builder_record(
+            "combo",
+            "My Combinator",
+            model="wp1.selection.models.combinator",
+            current_version=1,
+            params={
+                "include": {"builders": ["ref-a", "ref-b"], "operation": "union"},
+                "exclude": {"builders": ["ref-c"], "operation": "union"},
+            },
+        )
+        self._insert_selection(
+            "sel-combo", "text/tab-separated-values", builder_id=b"combo", skip_zim=True
+        )
+
+    def test_get_builders_flags_failed_exclude_reference(self):
+        self._insert_combinator_scenario(exclude_status="FAILED")
+
+        article_data = logic_builder.get_builders_with_selections(self.wp10db, "1234")
+
+        by_id = {row["id"]: row for row in article_data}
+        self.assertTrue(by_id["combo"]["has_failed_references"])
+        self.assertFalse(by_id["ref-a"]["has_failed_references"])
+        self.assertFalse(by_id["ref-c"]["has_failed_references"])
+
+    def test_get_builders_flags_retryable_include_reference(self):
+        self._insert_combinator_scenario(
+            exclude_status="OK", include_status="CAN_RETRY"
+        )
+
+        article_data = logic_builder.get_builders_with_selections(self.wp10db, "1234")
+
+        by_id = {row["id"]: row for row in article_data}
+        self.assertTrue(by_id["combo"]["has_failed_references"])
+
+    def test_get_builders_no_flag_when_references_ok(self):
+        self._insert_combinator_scenario(exclude_status="OK")
+
+        article_data = logic_builder.get_builders_with_selections(self.wp10db, "1234")
+
+        by_id = {row["id"]: row for row in article_data}
+        self.assertFalse(by_id["combo"]["has_failed_references"])
+
+    def test_failed_reference_errors_for_exclude_reference(self):
+        self._insert_combinator_scenario(exclude_status="FAILED")
+        builder = logic_builder.get_builder(self.wp10db, b"combo")
+
+        actual = logic_builder.failed_reference_errors(self.wp10db, builder)
+
+        self.assertEqual(
+            [
+                {
+                    "builder_id": "ref-c",
+                    "builder_name": "Ref C",
+                    "builder_model": "wp1.selection.models.simple",
+                    "message": "Referenced builder Ref C latest selection failed",
+                    "status": "FAILED",
+                    "code": "REFERENCED_SELECTION_FAILED",
+                    "reason": "latest selection failed",
+                    "action": "Open this list, fix the failed selection, then update this Combinator.",
+                }
+            ],
+            actual,
+        )
+
+    def test_failed_reference_errors_for_non_meta_builder(self):
+        self._insert_builder()
+        builder = logic_builder.get_builder(self.wp10db, b"1a-2b-3c-4d")
+
+        actual = logic_builder.failed_reference_errors(self.wp10db, builder)
+
+        self.assertEqual([], actual)
+
+    def test_derived_selection_error_fatal(self):
+        self._insert_combinator_scenario(
+            exclude_status="FAILED", include_status="CAN_RETRY"
+        )
+        builder = logic_builder.get_builder(self.wp10db, b"combo")
+
+        actual = logic_builder.derived_selection_error(self.wp10db, builder)
+
+        self.assertEqual("FAILED", actual["status"])
+        self.assertEqual("tsv", actual["ext"])
+        self.assertEqual(
+            ["ref-b", "ref-c"],
+            [error["builder_id"] for error in actual["referenced_builder_errors"]],
+        )
+        self.assertEqual(
+            [
+                "Referenced builder Ref B latest selection failed but can be retried",
+                "Referenced builder Ref C latest selection failed",
+            ],
+            actual["error_messages"],
+        )
+
+    def test_derived_selection_error_retryable(self):
+        self._insert_combinator_scenario(
+            exclude_status="CAN_RETRY", include_status="OK"
+        )
+        builder = logic_builder.get_builder(self.wp10db, b"combo")
+
+        actual = logic_builder.derived_selection_error(self.wp10db, builder)
+
+        self.assertEqual("CAN_RETRY", actual["status"])
+
+    def test_derived_selection_error_none_when_references_ok(self):
+        self._insert_combinator_scenario(exclude_status="OK")
+        builder = logic_builder.get_builder(self.wp10db, b"combo")
+
+        actual = logic_builder.derived_selection_error(self.wp10db, builder)
+
+        self.assertIsNone(actual)
 
     def test_update_builder_doesnt_exist(self):
         actual = logic_builder.update_builder(self.wp10db, self.builder)

@@ -131,6 +131,12 @@ def get_builder(builder_id):
         flask.abort(401, "Unauthorized")
 
     selection_errors = logic_builder.latest_selections_with_errors(wp10db, builder_id)
+    if not selection_errors:
+        # A Combinator whose own selection is stale-OK while a referenced
+        # selection has failed still needs to report as errored.
+        derived_error = logic_builder.derived_selection_error(wp10db, builder)
+        if derived_error is not None:
+            selection_errors = [derived_error]
     res = builder.to_web_dict()
     res.update(selection_errors=selection_errors)
     return flask.jsonify(res)

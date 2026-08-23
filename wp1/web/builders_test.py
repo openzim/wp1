@@ -246,6 +246,50 @@ class BuildersTest(BaseWebTestcase):
 
             self.assertEqual("401 UNAUTHORIZED", rv.status)
 
+    def test_get_builder_derives_failed_reference_errors(self):
+        self.app = create_app()
+        with self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["user"] = self.USER
+            self._insert_builder_record("ref-ok", "Ref OK")
+            self._insert_builder_record("ref-bad", "Ref Bad")
+            self._insert_builder_record(
+                "combo",
+                "My Combinator",
+                model="wp1.selection.models.combinator",
+                params={
+                    "include": {"builders": ["ref-ok"], "operation": "union"},
+                    "exclude": {"builders": ["ref-bad"], "operation": "union"},
+                },
+            )
+            with self.wp10db.cursor() as cursor:
+                cursor.execute("""UPDATE builders SET b_current_version = 1
+               WHERE b_id IN ('ref-ok', 'ref-bad', 'combo')""")
+                cursor.executemany(
+                    """INSERT INTO selections
+                 (s_id, s_builder_id, s_content_type, s_updated_at, s_version,
+                  s_status)
+               VALUES (%s, %s, 'text/tab-separated-values', '20201225105544',
+                       1, %s)""",
+                    [
+                        ("s-ok", "ref-ok", "OK"),
+                        ("s-bad", "ref-bad", "FAILED"),
+                        ("s-combo", "combo", "OK"),
+                    ],
+                )
+            self.wp10db.commit()
+
+            rv = client.get("/v1/builders/combo")
+
+            self.assertEqual("200 OK", rv.status)
+            selection_errors = rv.get_json()["selection_errors"]
+            self.assertEqual(1, len(selection_errors))
+            self.assertEqual("FAILED", selection_errors[0]["status"])
+            self.assertEqual("tsv", selection_errors[0]["ext"])
+            referenced = selection_errors[0]["referenced_builder_errors"]
+            self.assertEqual(["ref-bad"], [e["builder_id"] for e in referenced])
+            self.assertEqual("REFERENCED_SELECTION_FAILED", referenced[0]["code"])
+
     def test_create_unsuccessful(self):
         self.app = create_app()
         with self.app.test_client() as client:

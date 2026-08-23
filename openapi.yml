@@ -1348,7 +1348,33 @@ components:
                 description: 'The extension for the selection for which materialization was attempted'
               status:
                 type: string
-                description: 'Either "CAN_RETRY" if the error is retryable, or "FATAL" if not'
+                description: 'Either "CAN_RETRY" if the error is retryable, or "FAILED" if not'
+              referenced_builder_errors:
+                type: array
+                description: 'For Combinators, details of each referenced Builder whose latest selection is broken. Present both when the Combinator build recorded the failures and when they are derived at read time from the current status of the referenced selections.'
+                items:
+                  type: object
+                  properties:
+                    builder_id:
+                      type: string
+                      nullable: true
+                    builder_name:
+                      type: string
+                      nullable: true
+                    builder_model:
+                      type: string
+                      nullable: true
+                    message:
+                      type: string
+                    reason:
+                      type: string
+                    action:
+                      type: string
+                    status:
+                      type: string
+                      description: 'Either "CAN_RETRY" or "FAILED".'
+                    code:
+                      type: string
     ActiveSchedule:
       type: object
       nullable: true
@@ -1435,6 +1461,9 @@ components:
           type: boolean
           nullable: true
           description: 'True if this Builder has a recurring ZIM generation schedule with generations remaining, null otherwise. See /builders/{builderId}/zim/status for the details of that schedule.'
+        has_failed_references:
+          type: boolean
+          description: 'For Combinators, true when the latest TSV selection of any referenced Builder (include or exclude) is FAILED or CAN_RETRY, so the Combinator needs attention even if its own cached selection is still OK. Always false for non-Combinator Builders.'
     Project:
       type: object
       properties:

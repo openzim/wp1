@@ -32,6 +32,7 @@ class SelectionTest(BaseWebTestcase):
                 "z_status": "NOT_REQUESTED",
                 "z_is_deleted": None,
                 "active_schedule": None,
+                "has_failed_references": False,
             }
         ],
     }
@@ -56,6 +57,7 @@ class SelectionTest(BaseWebTestcase):
                 "z_status": "NOT_REQUESTED",
                 "z_is_deleted": None,
                 "active_schedule": None,
+                "has_failed_references": False,
             },
             {
                 "id": "1a-2b-3c-4d",
@@ -75,6 +77,7 @@ class SelectionTest(BaseWebTestcase):
                 "z_status": "NOT_REQUESTED",
                 "z_is_deleted": None,
                 "active_schedule": None,
+                "has_failed_references": False,
             },
         ]
     }
@@ -99,6 +102,7 @@ class SelectionTest(BaseWebTestcase):
                 "z_status": None,
                 "z_is_deleted": None,
                 "active_schedule": None,
+                "has_failed_references": False,
             }
         ]
     }
