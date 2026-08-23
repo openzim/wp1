@@ -78,7 +78,10 @@ list once it's ready, and create a ZIM file from it.
 The final output of a selection is a **.tsv** file containing the articles in
 the selection. As mentioned before, for Simple Selections, this TSV file
 contains the same content as the list you input (except with space normalized to
-underscores and comments and extraneous whitespace removed).
+underscores and comments and extraneous whitespace removed). The downloaded
+file is named after your selection and the database name of the wiki it applies
+to, eg `MyFunSelection.enwiki.tsv` for a selection named "My Fun Selection" on
+English Wikipedia (`en.wikipedia.org`).
 
 The WP 1.0 tool must generate or **materialize** the final list from the input
 you provided. In the case of a Simple Selection this is, well, simple, but still
