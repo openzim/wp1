@@ -530,7 +530,7 @@ class BuilderTest(BaseWpOneDbTest):
 
     @patch(
         "wp1.logic.builder.logic_sites.dbname_for_project",
-        side_effect=ValueError("sitematrix down"),
+        side_effect=RedisError("sitematrix down"),
     )
     def test_materialize_builder_dbname_resolution_error(self, mock_dbname_for_project):
         TestBuilderClass = MagicMock()

@@ -3,7 +3,10 @@ import logging
 from datetime import timedelta
 
 import mwclient
+import mwclient.errors
+import requests
 from redis import Redis
+from redis.exceptions import RedisError
 
 from wp1.api import MW_USER_AGENT
 
@@ -11,6 +14,14 @@ logger = logging.getLogger(__name__)
 
 CACHE_KEY = "site_data"
 CACHE_TTL = timedelta(days=1)
+
+# The service failures that fetching the site data can raise: redis errors,
+# HTTP/connection errors, and MediaWiki API errors.
+FETCH_ERRORS = (
+    RedisError,
+    requests.exceptions.RequestException,
+    mwclient.errors.MwClientError,
+)
 
 
 def _fetch_site_data() -> dict:

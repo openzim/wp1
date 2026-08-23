@@ -556,7 +556,7 @@ def _refresh_builder_dbname(redis: Redis, wp10db: Connection, builder: Builder) 
         dbname = logic_sites.dbname_for_project(
             redis, builder.b_project.decode("utf-8")
         )
-    except Exception:
+    except logic_sites.FETCH_ERRORS:
         logger.exception("Could not resolve dbname for project=%s", builder.b_project)
         return
     if dbname is None:
