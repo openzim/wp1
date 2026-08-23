@@ -100,6 +100,7 @@ def object_key_for(
     content_type: str,
     model: str,
     name: str | None = None,
+    dbname: str | None = None,
     use_legacy_schema: bool = False,
 ) -> str:
     if not selection_id:
@@ -116,6 +117,11 @@ def object_key_for(
             "ext": ext,
         }
 
+    # Include the dbname of the wiki (eg 'enwiki') in the filename, so that
+    # downloaded selections identify the wiki their articles belong to.
+    if dbname is not None:
+        ext = "%s.%s" % (dbname, ext)
+
     return "selections/%(model)s/%(id)s/%(name)s.%(ext)s" % {
         "model": model,
         "id": selection_id,
@@ -128,6 +134,7 @@ def object_key_for_selection(
     selection: Selection,
     model: str,
     name: str | None = None,
+    dbname: str | None = None,
     use_legacy_schema: bool = False,
 ) -> str:
     if not selection:
@@ -139,6 +146,7 @@ def object_key_for_selection(
         selection.s_content_type.decode("utf-8"),
         model,
         name=name,
+        dbname=dbname,
         use_legacy_schema=use_legacy_schema,
     )
 

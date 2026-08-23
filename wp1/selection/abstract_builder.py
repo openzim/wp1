@@ -29,6 +29,7 @@ class AbstractBuilder:
             selection,
             builder.b_model.decode("utf-8"),
             name=builder.b_name.decode("utf-8"),
+            dbname=builder.dbname,
         )
 
         if selection.data is None:
