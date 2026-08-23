@@ -33,6 +33,9 @@ class Builder:
     b_updated_at: bytes | None = attr.ib(default=None)
     b_current_version: int = attr.ib(default=0)
     b_selection_zim_version: int = attr.ib(default=0)
+    # The database name of the wiki that b_project refers to (eg b'enwiki').
+    # Cached from the sitematrix, may be None if not yet resolved.
+    b_dbname: bytes | None = attr.ib(default=None)
 
     @property
     def id(self) -> str:
@@ -49,6 +52,12 @@ class Builder:
     @property
     def project(self) -> str:
         return logic_util.as_text(self.b_project)
+
+    @property
+    def dbname(self) -> str | None:
+        if self.b_dbname is None:
+            return None
+        return logic_util.as_text(self.b_dbname)
 
     @property
     def model(self) -> str:

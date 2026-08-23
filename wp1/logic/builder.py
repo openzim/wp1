@@ -13,6 +13,7 @@ from pymysql.connections import Connection
 from redis import Redis
 from redis.exceptions import RedisError
 import wp1.logic.selection as logic_selection
+import wp1.logic.sites as logic_sites
 import wp1.logic.util as logic_util
 import wp1.logic.zim_files as logic_zim_tasks
 import wp1.logic.zim_schedules as logic_zim_schedules
@@ -251,10 +252,10 @@ def insert_builder(wp10db: Connection, builder: Builder) -> bytes:
     with wp10db.cursor() as cursor:
         cursor.execute(
             """INSERT INTO builders
-             (b_id, b_name, b_user_id, b_project, b_params, b_model,
+             (b_id, b_name, b_user_id, b_project, b_dbname, b_params, b_model,
               b_created_at, b_updated_at)
            VALUES
-             (%(b_id)s, %(b_name)s, %(b_user_id)s, %(b_project)s,
+             (%(b_id)s, %(b_name)s, %(b_user_id)s, %(b_project)s, %(b_dbname)s,
               %(b_params)s, %(b_model)s, %(b_created_at)s,
               %(b_updated_at)s)
         """,
@@ -544,6 +545,35 @@ def get_builder(wp10db: Connection, id_: str | bytes) -> Builder:
         return Builder(**db_builder)
 
 
+def _refresh_builder_dbname(redis: Redis, wp10db: Connection, builder: Builder) -> None:
+    """Resolves and persists the dbname for the builder's project, if needed.
+
+    The dbname (eg 'enwiki') is looked up in the redis-cached sitematrix. Any
+    failure to resolve it is logged and ignored, so that materialization can
+    proceed without it.
+    """
+    try:
+        dbname = logic_sites.dbname_for_project(
+            redis, builder.b_project.decode("utf-8")
+        )
+    except logic_sites.FETCH_ERRORS:
+        logger.exception("Could not resolve dbname for project=%s", builder.b_project)
+        return
+    if dbname is None:
+        logger.warning("No dbname found for project=%s", builder.b_project)
+        return
+    encoded = dbname.encode("utf-8")
+    if encoded == builder.b_dbname:
+        return
+    builder.b_dbname = encoded
+    with wp10db.cursor() as cursor:
+        cursor.execute(
+            "UPDATE builders SET b_dbname = %(b_dbname)s WHERE b_id = %(b_id)s",
+            {"b_dbname": builder.b_dbname, "b_id": builder.b_id},
+        )
+    wp10db.commit()
+
+
 def materialize_builder(
     builder_cls: type[AbstractBuilder],
     builder: Builder,
@@ -569,6 +599,7 @@ def materialize_builder(
     if builder.b_id is None:
         raise ValueError("Cannot materialize builder without b_id")
 
+    _refresh_builder_dbname(redis, wp10db, builder)
     try:
         materializer = builder_cls()
         next_version = logic_selection.get_next_version(

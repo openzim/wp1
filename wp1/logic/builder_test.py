@@ -28,6 +28,7 @@ class BuilderTest(BaseWpOneDbTest):
         "b_name": b"My Builder",
         "b_user_id": b"1234",
         "b_project": b"en.wikipedia.fake",
+        "b_dbname": None,
         "b_model": b"wp1.selection.models.simple",
         "b_params": b'{"list": ["a", "b", "c"]}',
         "b_created_at": b"20191225044444",
@@ -475,7 +476,8 @@ class BuilderTest(BaseWpOneDbTest):
         self.builder.b_id = id_
         self.assertEqual(self.builder, actual)
 
-    def test_materialize_builder_with_connections(self):
+    @patch("wp1.logic.builder.logic_sites.dbname_for_project", return_value="enwiki")
+    def test_materialize_builder_with_connections(self, mock_dbname_for_project):
         s3 = MagicMock()
         redis = MagicMock()
 
@@ -497,16 +499,63 @@ class BuilderTest(BaseWpOneDbTest):
         materialize_mock.materialize.assert_called_once_with(
             ANY, ANY, self.builder, "text/tab-separated-values", 2
         )
+        mock_dbname_for_project.assert_called_once_with(redis, "en.wikipedia.fake")
+        self.assertEqual(b"enwiki", self.builder.b_dbname)
 
         actual = self._get_builder_by_user_id()
         expected = dict(**self.expected_builder)
         expected["b_current_version"] = 2
         expected["b_selection_zim_version"] = 2
+        expected["b_dbname"] = b"enwiki"
         self.assertEqual(expected, actual)
 
+    @patch("wp1.logic.builder.logic_sites.dbname_for_project", return_value=None)
+    def test_materialize_builder_dbname_not_found(self, mock_dbname_for_project):
+        TestBuilderClass = MagicMock()
+        TestBuilderClass.return_value = MagicMock()
+
+        self._insert_builder()
+        self._insert_selection(1, "text/tab-separated-values")
+
+        logic_builder.materialize_builder(
+            TestBuilderClass,
+            self.builder,
+            "text/tab-separated-values",
+            MagicMock(),
+            MagicMock(),
+            self.wp10db,
+        )
+        self.assertIsNone(self.builder.b_dbname)
+        self.assertIsNone(self._get_builder_by_user_id()["b_dbname"])
+
+    @patch(
+        "wp1.logic.builder.logic_sites.dbname_for_project",
+        side_effect=RedisError("sitematrix down"),
+    )
+    def test_materialize_builder_dbname_resolution_error(self, mock_dbname_for_project):
+        TestBuilderClass = MagicMock()
+        TestBuilderClass.return_value = MagicMock()
+
+        self._insert_builder()
+        self._insert_selection(1, "text/tab-separated-values")
+
+        logic_builder.materialize_builder(
+            TestBuilderClass,
+            self.builder,
+            "text/tab-separated-values",
+            MagicMock(),
+            MagicMock(),
+            self.wp10db,
+        )
+        self.assertIsNone(self.builder.b_dbname)
+        self.assertIsNone(self._get_builder_by_user_id()["b_dbname"])
+
+    @patch("wp1.logic.builder.logic_sites.dbname_for_project", return_value=None)
     @patch("wp1.logic.builder.wp10_connect")
     @patch("wp1.logic.builder.connect_storage")
-    def test_materialize_builder(self, mock_connect_storage, mock_connect_wp10):
+    def test_materialize_builder(
+        self, mock_connect_storage, mock_connect_wp10, mock_dbname_for_project
+    ):
         mock_connect_wp10.return_value = self.wp10db
         TestBuilderClass = MagicMock()
         materialize_mock = MagicMock()
@@ -533,6 +582,7 @@ class BuilderTest(BaseWpOneDbTest):
         expected["b_selection_zim_version"] = 2
         self.assertEqual(expected, actual)
 
+    @patch("wp1.logic.builder.logic_sites.dbname_for_project", return_value=None)
     @patch("wp1.logic.builder.wp10_connect")
     @patch("wp1.logic.builder.redis_connect")
     @patch("wp1.logic.builder.connect_storage")
@@ -543,6 +593,7 @@ class BuilderTest(BaseWpOneDbTest):
         mock_connect_storage,
         mock_redis_connect,
         mock_connect_wp10,
+        mock_dbname_for_project,
     ):
         s3 = MagicMock()
         redis = MagicMock()
