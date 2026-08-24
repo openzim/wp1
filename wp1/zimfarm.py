@@ -482,6 +482,23 @@ def create_or_update_zimfarm_schedule(
             zim_schedule_id_to_set = zim_schedule.s_id.decode("utf-8")
         else:
             r = requests.post("%s/recipes" % base_url, headers=headers, json=params)
+            if r.status_code == 409:
+                # The recipe already exists on the Zimfarm even though there is
+                # no matching local schedule row (e.g. it was orphaned by an
+                # earlier failure between recipe creation and the local
+                # insert). Adopt it: overwrite its config with the current
+                # params and record it locally below, making this operation
+                # idempotent instead of permanently stuck on 409.
+                schedule_name = get_zimfarm_schedule_name(builder_id)
+                logger.info(
+                    "Recipe %s already exists on the Zimfarm, adopting it",
+                    schedule_name,
+                )
+                r = requests.patch(
+                    "%s/recipes/%s" % (base_url, schedule_name),
+                    headers=headers,
+                    json=params,
+                )
             r.raise_for_status()
             zim_schedule_id = str(uuid.uuid4())
             zim_schedule = ZimSchedule(
