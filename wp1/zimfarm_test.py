@@ -823,6 +823,89 @@ class ZimFarmTest(BaseWpOneDbTest):
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.token_provider")
     @patch("wp1.zimfarm._get_params")
+    def test_create_or_update_zimfarm_schedule_adopts_orphaned_recipe(
+        self, get_params_mock, mock_token_provider, mock_requests
+    ):
+        """A 409 on recipe creation adopts the existing recipe via PATCH."""
+        redis = MagicMock()
+        get_params_mock.return_value = {"name": "bar"}
+        mock_token_provider.get_access_token.return_value = "abcdef"
+        post_response = MagicMock()
+        post_response.status_code = 409
+        mock_requests.post.return_value = post_response
+        mock_requests.patch.return_value = MagicMock()
+
+        zimfarm.create_or_update_zimfarm_schedule(
+            redis,
+            self.wp10db,
+            self.builder,
+            "Test Title",
+            "Test Description",
+            None,
+            None,
+        )
+
+        expected_headers = {
+            "Authorization": "Bearer abcdef",
+            "User-Agent": "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>",
+        }
+        mock_requests.post.assert_called_once_with(
+            "https://fake.farm/v2/recipes",
+            headers=expected_headers,
+            json={"name": "bar"},
+        )
+        mock_requests.patch.assert_called_once_with(
+            "https://fake.farm/v2/recipes/wp1_selection_3c4d",
+            headers=expected_headers,
+            json={"name": "bar"},
+        )
+        # The adopted recipe gets a local schedule row.
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM zim_schedules WHERE s_title = %s", (b"Test Title",)
+            )
+            result = cursor.fetchone()
+            self.assertIsNotNone(result)
+            self.assertEqual(self.builder.b_id, result["s_builder_id"])
+
+    @patch("wp1.zimfarm.requests")
+    @patch("wp1.zimfarm.token_provider")
+    @patch("wp1.zimfarm._get_params")
+    def test_create_or_update_zimfarm_schedule_adopt_patch_fails(
+        self, get_params_mock, mock_token_provider, mock_requests
+    ):
+        """If the adopting PATCH fails, the error propagates and no row is inserted."""
+        redis = MagicMock()
+        get_params_mock.return_value = {"name": "bar"}
+        mock_token_provider.get_access_token.return_value = "abcdef"
+        mock_requests.exceptions.HTTPError = requests.exceptions.HTTPError
+        post_response = MagicMock()
+        post_response.status_code = 409
+        mock_requests.post.return_value = post_response
+        patch_response = MagicMock()
+        patch_response.raise_for_status.side_effect = requests.exceptions.HTTPError
+        mock_requests.patch.return_value = patch_response
+
+        with self.assertRaises(ZimFarmError):
+            zimfarm.create_or_update_zimfarm_schedule(
+                redis,
+                self.wp10db,
+                self.builder,
+                "Test Title",
+                "Test Description",
+                None,
+                None,
+            )
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM zim_schedules WHERE s_title = %s", (b"Test Title",)
+            )
+            self.assertIsNone(cursor.fetchone())
+
+    @patch("wp1.zimfarm.requests")
+    @patch("wp1.zimfarm.token_provider")
+    @patch("wp1.zimfarm._get_params")
     def test_create_or_update_zimfarm_schedule_http_error(
         self, get_params_mock, mock_token_provider, mock_requests
     ):
