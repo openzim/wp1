@@ -5,14 +5,13 @@ export const MODEL_LABELS = {
   simple: 'Simple',
   sparql: 'SPARQL',
   petscan: 'Petscan',
-  book: 'Book',
   wikiproject: 'WikiProject',
   combinator: 'Combinator',
 };
 
 export const COMBINATOR_MODEL = 'wp1.selection.models.combinator';
 
-// The six selection sources, in picker order. Blurbs are design-final copy.
+// The five selection sources, in picker order. Blurbs are design-final copy.
 export const SOURCES = [
   { key: 'simple', label: 'Simple', blurb: 'Paste article titles.' },
   {
@@ -21,7 +20,6 @@ export const SOURCES = [
     blurb: 'A Wikidata query returning articles.',
   },
   { key: 'petscan', label: 'Petscan', blurb: 'A saved Petscan URL or PSID.' },
-  { key: 'book', label: 'Book', blurb: 'A Wikipedia book page.' },
   {
     key: 'wikiproject',
     label: 'WikiProject',
@@ -277,7 +275,6 @@ export function definitionText(model, params, nameForId) {
     case 'sparql':
       return params.query || '';
     case 'petscan':
-    case 'book':
       return params.url || '';
     case 'wikiproject': {
       const lines = ['Include:'];
@@ -308,8 +305,6 @@ export function definitionNote(model, params) {
       return 'A Wikidata SPARQL query, re-run on every rebuild.';
     case 'petscan':
       return 'A Petscan query, re-run on every rebuild.';
-    case 'book':
-      return 'Every article in a Wikipedia book page.';
     case 'wikiproject':
       return 'Every article assessed by the listed WikiProjects.';
     case 'combinator':

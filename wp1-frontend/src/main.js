@@ -131,12 +131,12 @@ const routes = [
   },
   // The per-type create pages were unified into /selections/new; old URLs
   // redirect with the source preselected.
-  ...['simple', 'sparql', 'petscan', 'book', 'wikiproject'].map((source) => ({
+  ...['simple', 'sparql', 'petscan', 'wikiproject'].map((source) => ({
     path: `/selections/${source}`,
     redirect: { path: '/selections/new', query: { source } },
   })),
   // The per-type edit pages are superseded by the detail pane editor.
-  ...['simple', 'sparql', 'petscan', 'book', 'wikiproject'].map((source) => ({
+  ...['simple', 'sparql', 'petscan', 'wikiproject'].map((source) => ({
     path: `/selections/${source}/:builder_id`,
     redirect: (to) => `/selections/user/${to.params.builder_id}/edit`,
   })),

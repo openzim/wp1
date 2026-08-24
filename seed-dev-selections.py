@@ -43,7 +43,6 @@ TSV = "text/tab-separated-values"
 SIMPLE = "wp1.selection.models.simple"
 SPARQL = "wp1.selection.models.sparql"
 PETSCAN = "wp1.selection.models.petscan"
-BOOK = "wp1.selection.models.book"
 WIKIPROJECT = "wp1.selection.models.wikiproject"
 COMBINATOR = "wp1.selection.models.combinator"
 
@@ -126,11 +125,24 @@ SEED_BUILDERS = [
     },
     {
         # ZIM file past the two week retention window -> "Expired".
-        "id": "book-expired",
+        "id": "simple-expired",
         "name": "Solar System reader",
         "project": "en.wikipedia.org",
-        "model": BOOK,
-        "params": {"url": "https://en.wikipedia.org/wiki/Book:Solar_System"},
+        "model": SIMPLE,
+        "params": {
+            "list": [
+                "Solar_System",
+                "Sun",
+                "Mercury_(planet)",
+                "Venus",
+                "Earth",
+                "Mars",
+                "Jupiter",
+                "Saturn",
+                "Uranus",
+                "Neptune",
+            ]
+        },
         "created_at": days_ago(90),
         "updated_at": days_ago(30, minutes=10),
         "selection": {"updated_at": days_ago(30), "article_count": 44},
@@ -180,7 +192,7 @@ SEED_BUILDERS = [
         "model": COMBINATOR,
         "params": {
             "include": {
-                "builders": ["petscan-stale", "book-expired"],
+                "builders": ["petscan-stale", "simple-expired"],
                 "operation": "union",
             },
         },

@@ -1,7 +1,0 @@
-{
-  "params": { "url": "https://en.wikipedia.org/wiki/Book:Example" },
-  "name": "Book Builder",
-  "model": "wp1.selection.models.book",
-  "project": "en.wikipedia.org",
-  "selection_errors": []
-}

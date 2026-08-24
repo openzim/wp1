@@ -189,24 +189,6 @@
             />
           </div>
 
-          <div v-else-if="source === 'book'" id="items">
-            <label
-              for="book-url"
-              class="mb-1 block text-xs font-medium text-ink-2"
-              >Book page
-              <span class="ml-1 font-mono text-[11px] font-normal text-ink-4"
-                >Book: namespace URL</span
-              ></label
-            >
-            <input
-              id="book-url"
-              v-model="url"
-              type="text"
-              class="wp1r-input h-8 w-full font-mono text-[13px]"
-              placeholder="https://en.wikipedia.org/wiki/Book:Trees_of_the_World"
-            />
-          </div>
-
           <div
             v-else-if="source === 'wikiproject'"
             class="flex flex-col gap-3.5"
@@ -332,11 +314,6 @@ const SOURCE_CONFIG = {
     description:
       'A saved Petscan query, referenced by its PSID or full URL. The query ' +
       'is re-run every time the selection rebuilds.',
-  },
-  book: {
-    titleNoun: 'book',
-    model: 'wp1.selection.models.book',
-    description: 'Every article listed in a Wikipedia book page.',
   },
   wikiproject: {
     titleNoun: 'WikiProject',
@@ -510,11 +487,6 @@ export default {
             return 'Please provide a Petscan URL.';
           }
           break;
-        case 'book':
-          if (!this.url.trim()) {
-            return 'Please provide a book page URL.';
-          }
-          break;
         case 'wikiproject':
           if (this.wpInclude.length === 0) {
             return 'Please provide at least one WikiProject to include.';
@@ -530,7 +502,6 @@ export default {
         case 'sparql':
           return { query: this.query };
         case 'petscan':
-        case 'book':
           return { url: this.url };
         case 'wikiproject':
           return { include: [...this.wpInclude], exclude: [...this.wpExclude] };
