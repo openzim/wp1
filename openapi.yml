@@ -174,7 +174,7 @@ paths:
   /projects/{projectId}/articles:
     get:
       summary: 'List of articles for a project, optionally filtered by quality/importance'
-      description: 'If the projectB parameter is provided, this endpoint instead compares two projects, and each entry of the returned articles array is a two element array of the matching article in project A and project B.'
+      description: 'If the projectB parameter is provided, this endpoint instead compares two projects, and each entry of the returned articles array is a two element array of the matching article in project A and project B. If format=tsv is given, the full filtered article list (ignoring page and numRows) is returned as a tab-separated-values download instead of JSON; this is not supported together with projectB.'
       operationId: projectArticles
       tags:
         - Projects
@@ -223,8 +223,12 @@ paths:
                           maxItems: 2
                           items:
                             $ref: '#/components/schemas/Article'
+            text/tab-separated-values:
+              schema:
+                type: string
+                description: 'Returned when format=tsv: a TSV document with a header row, containing every article matching the filters (page and numRows are ignored).'
         '400':
-          description: 'The page or numRows parameter was either not a number, or less than 1'
+          description: 'The page or numRows parameter was either not a number or less than 1, the format parameter was not one of "json" or "tsv", or format=tsv was combined with projectB'
         '404':
           description: 'No project with that projectId (or projectB) was found'
     parameters:
@@ -264,6 +268,14 @@ paths:
         description: 'A string to match the article name against. If the article title is LIKE "%articlePattern%", the article is returned.'
         schema:
           type: string
+      - name: format
+        in: query
+        required: false
+        description: 'The response format, either "json" (the default) or "tsv". With "tsv", the full filtered article list is returned as a tab-separated-values download and the page and numRows parameters are ignored. Not supported together with projectB.'
+        schema:
+          type: string
+          enum: [json, tsv]
+          default: json
       - name: projectB
         in: query
         required: false

@@ -35,6 +35,11 @@
           page<span v-if="articleData.pagination.total_pages !== 1">s</span>)
         </p>
       </div>
+      <div v-if="tableData.length > 0 && !projectIdB" class="my-0 row">
+        <p class="pages-cont">
+          <a :href="tsvUrl" download>Download all results as TSV</a>
+        </p>
+      </div>
       <ArticleTablePagination
         v-if="articleData && articleData.pagination.total_pages > 1"
         class="row justify-content-between my-0"
@@ -179,6 +184,11 @@ export default {
       }
       return this.articleData['articles'];
     },
+    tsvUrl: function () {
+      const url = this.articlesUrl(false);
+      url.searchParams.append('format', 'tsv');
+      return url.toString();
+    },
   },
   created: function () {
     this.updateTable();
@@ -229,23 +239,7 @@ export default {
     onUpdatePage: function (page) {
       this.$emit('update-page', page);
     },
-    classLabel: function (qualOrImp) {
-      if (!this.categoryLinks[qualOrImp]) {
-        return '';
-      }
-      return (
-        this.categoryLinks[qualOrImp].text || this.categoryLinks[qualOrImp]
-      );
-    },
-    getCategoryLinks: async function () {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/projects/${
-          this.projectId
-        }/category_links`
-      );
-      this.categoryLinks = await response.json();
-    },
-    updateTable: async function () {
+    articlesUrl: function (includePagination) {
       const url = new URL(
         `${import.meta.env.VITE_API_URL}/projects/${this.projectId}/articles`
       );
@@ -265,18 +259,40 @@ export default {
       if (this.qualityB) {
         params.qualityB = this.qualityB;
       }
-      if (this.page) {
-        params.page = this.page;
-      }
-      if (this.numRows) {
-        params.numRows = this.numRows;
-      }
       if (this.articlePattern) {
         params.articlePattern = this.articlePattern;
+      }
+      if (includePagination) {
+        if (this.page) {
+          params.page = this.page;
+        }
+        if (this.numRows) {
+          params.numRows = this.numRows;
+        }
       }
       Object.keys(params).forEach((key) =>
         url.searchParams.append(key, params[key])
       );
+      return url;
+    },
+    classLabel: function (qualOrImp) {
+      if (!this.categoryLinks[qualOrImp]) {
+        return '';
+      }
+      return (
+        this.categoryLinks[qualOrImp].text || this.categoryLinks[qualOrImp]
+      );
+    },
+    getCategoryLinks: async function () {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/projects/${
+          this.projectId
+        }/category_links`
+      );
+      this.categoryLinks = await response.json();
+    },
+    updateTable: async function () {
+      const url = this.articlesUrl(true);
 
       let finishedRequest = false;
       setTimeout(() => {
