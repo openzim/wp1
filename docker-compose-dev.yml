@@ -2,9 +2,9 @@ name: wp1-dev
 services:
   redis:
     image: redis
-    container_name: wp1bot-redis-dev
+    container_name: wp1bot-redis-dev${WP1_SUFFIX:-}
     ports:
-      - 9736:6379
+      - ${WP1_REDIS_PORT:-9736}:6379
     networks:
       - wp1bot-dev
     restart: always
@@ -16,20 +16,20 @@ services:
 
   dev-database:
     build: docker/dev-db/
-    image: wp1bot-db-dev
-    container_name: wp1bot-db-dev
+    image: wp1bot-db-dev${WP1_SUFFIX:-}
+    container_name: wp1bot-db-dev${WP1_SUFFIX:-}
     ports:
-      - 6300:3306
+      - ${WP1_DB_PORT:-6300}:3306
     networks:
       - wp1bot-dev
     restart: always
 
   minio:
     image: minio/minio
-    container_name: wp1bot-minio-dev
+    container_name: wp1bot-minio-dev${WP1_SUFFIX:-}
     ports:
-      - '9000:9000' #api
-      - '9001:9001' #web console
+      - '${WP1_MINIO_PORT:-9000}:9000' #api
+      - '${WP1_MINIO_CONSOLE_PORT:-9001}:9001' #web console
     environment:
       - MINIO_ROOT_USER=minio_key
       - MINIO_ROOT_PASSWORD=minio_secret
@@ -47,7 +47,7 @@ services:
 
   createbuckets:
     image: minio/mc
-    container_name: wp1bot-minio-setup
+    container_name: wp1bot-minio-setup${WP1_SUFFIX:-}
     depends_on:
       minio:
         condition: service_healthy
@@ -61,8 +61,8 @@ services:
     build:
       context: .
       dockerfile: docker/dev-workers/Dockerfile
-    image: wp1bot-workers-dev
-    container_name: wp1bot-workers-dev
+    image: wp1bot-workers-dev${WP1_SUFFIX:-}
+    container_name: wp1bot-workers-dev${WP1_SUFFIX:-}
     volumes:
       - ./wp1:/usr/src/app/wp1/
       - ./wp1/credentials.py.dev:/usr/src/app/wp1/credentials.py
@@ -82,16 +82,20 @@ services:
     build:
       context: .
       dockerfile: docker/web/Dockerfile
-    image: wp1bot-web-dev
-    container_name: wp1bot-web-dev
+    image: wp1bot-web-dev${WP1_SUFFIX:-}
+    container_name: wp1bot-web-dev${WP1_SUFFIX:-}
     environment:
       - FLASK_DEBUG=1
       - FLASK_RUN_HOST=0.0.0.0
     command: flask --app wp1.web.app run
     networks:
-      - wp1bot-dev
+      wp1bot-dev:
+        aliases:
+          # Stable in-network hostname regardless of WP1_SUFFIX; referenced by
+          # .env.docker and wp1/credentials.py.dev.
+          - wp1bot-web-dev
     ports:
-      - 5000:5000
+      - ${WP1_WEB_PORT:-5000}:5000
     volumes:
       - .:/usr/src/app
       - ./wp1/credentials.py.dev:/usr/src/app/wp1/credentials.py
@@ -106,14 +110,14 @@ services:
     build:
       context: .
       dockerfile: docker/dev-frontend/Dockerfile
-    image: wp1bot-frontend-dev
-    container_name: wp1bot-frontend-dev
+    image: wp1bot-frontend-dev${WP1_SUFFIX:-}
+    container_name: wp1bot-frontend-dev${WP1_SUFFIX:-}
     environment:
-      - VITE_API_URL=http://localhost:5000/v1
+      - VITE_API_URL=http://localhost:${WP1_WEB_PORT:-5000}/v1
     networks:
       - wp1bot-dev
     ports:
-      - 5173:5173
+      - ${WP1_FRONTEND_PORT:-5173}:5173
     volumes:
       - ./wp1-frontend/src:/app/src
       - ./wp1-frontend/index.html:/app/index.html
@@ -126,9 +130,9 @@ services:
 
   zimfarm-db:
     image: postgres:17.3-bookworm
-    container_name: zimfarm-postgresdb
+    container_name: zimfarm-postgresdb${WP1_SUFFIX:-}
     ports:
-      - 127.0.0.1:2345:5432
+      - 127.0.0.1:${WP1_ZIMFARM_DB_PORT:-2345}:5432
     volumes:
       - zimfarm-data:/var/lib/postgresql/data
       - ./docker/zimfarm/postgres-initdb:/docker-entrypoint-initdb.d
@@ -149,9 +153,9 @@ services:
   zimfarm-api:
     image: ghcr.io/openzim/zimfarm-backend:latest
     pull_policy: always
-    container_name: zimfarm-api
+    container_name: zimfarm-api${WP1_SUFFIX:-}
     ports:
-      - 127.0.0.1:8004:80
+      - 127.0.0.1:${WP1_ZIMFARM_API_PORT:-8004}:80
     environment:
       BINDING_HOST: 0.0.0.0
       JWT_SECRET: DH8kSxcflUVfNRdkEiJJCn2dOOKI3qfw
@@ -160,7 +164,7 @@ services:
       DEBUG: true
       INIT_USERNAME: admin
       INIT_PASSWORD: admin
-      ALLOWED_ORIGINS: http://localhost:8003
+      ALLOWED_ORIGINS: http://localhost:${WP1_ZIMFARM_UI_PORT:-8003}
       ARTIFACTS_UPLOAD_URI: s3+http://minio:9000/?keyId=minio_key&secretAccessKey=minio_secret&bucketName=org-kiwix-dev-artifacts
       LOGS_UPLOAD_URI: s3+http://minio:9000/?keyId=minio_key&secretAccessKey=minio_secret&bucketName=org-kiwix-dev-logs
       ZIM_UPLOAD_URI: s3+http://minio:9000/?keyId=minio_key&secretAccessKey=minio_secret&bucketName=org-kiwix-dev-zims
@@ -183,9 +187,9 @@ services:
   zimfarm-ui:
     image: ghcr.io/openzim/zimfarm-ui:latest
     pull_policy: always
-    container_name: zimfarm-ui
+    container_name: zimfarm-ui${WP1_SUFFIX:-}
     ports:
-      - 127.0.0.1:8003:80
+      - 127.0.0.1:${WP1_ZIMFARM_UI_PORT:-8003}:80
     volumes:
       - ./docker/zimfarm/zimfarm_ui_dev/config.json:/usr/share/nginx/html/config.json:ro
     depends_on:
@@ -199,7 +203,7 @@ services:
   zimfarm-worker-manager:
     image: ghcr.io/openzim/zimfarm-worker-manager:latest
     pull_policy: always
-    container_name: zimfarm-worker-manager
+    container_name: zimfarm-worker-manager${WP1_SUFFIX:-}
     depends_on:
       zimfarm-api:
         condition: service_healthy

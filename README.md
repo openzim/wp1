@@ -222,6 +222,51 @@ Before you run the docker-compose command below, you must copy the file
 section for `STORAGE`, if you wish to properly materialize builder lists into
 backend selections.
 
+### Running parallel dev stacks (e.g. from git worktrees)
+
+The easiest way is `./create_worktree.sh <branch>`, which creates the
+worktree under `.worktrees/<branch>`, copies the untracked credentials and
+`.env` files, writes a worktree-local `.env` with a unique project name,
+suffix, and free port set (remapping the port-coupled app config values to
+match), and offers to start the stack ("Start servers now? [Y/n]").
+
+Manually, the mechanism is: all host ports, container names, and built
+image tags in
+`docker-compose-dev.yml` are parameterized with environment variables that
+default to the values above, so a single checkout needs no configuration.
+To run a second, fully independent stack (for example from another git
+worktree), set `COMPOSE_PROJECT_NAME`, `WP1_SUFFIX`, and alternate ports for
+the services you use:
+
+```bash
+export COMPOSE_PROJECT_NAME=wp1-dev-b
+export WP1_SUFFIX=-b            # suffix for container names and image tags
+export WP1_REDIS_PORT=9737      # default 9736
+export WP1_DB_PORT=6301         # default 6300
+export WP1_MINIO_PORT=9002      # default 9000
+export WP1_MINIO_CONSOLE_PORT=9003  # default 9001
+export WP1_WEB_PORT=5001        # default 5000
+export WP1_FRONTEND_PORT=5274   # default 5173
+docker compose -f docker-compose-dev.yml up --build
+```
+
+These can also go in the (gitignored) `.env` file of the worktree, which
+docker compose reads automatically. The zimfarm profile ports are likewise
+configurable via `WP1_ZIMFARM_DB_PORT` (2345), `WP1_ZIMFARM_API_PORT` (8004)
+and `WP1_ZIMFARM_UI_PORT` (8003).
+
+Notes:
+
+- Each stack gets its own network and volumes (`<project>_minio-data`), so
+  minio bucket setup runs per stack, and each stack has its own dev database.
+- `wp1/credentials.py.dev` and `.env.docker` refer to the backend by the
+  in-network hostname `wp1bot-web-dev`; this keeps working in a suffixed
+  stack via a network alias, no changes needed.
+- Caveat: the zimfarm UI config
+  (`docker/zimfarm/zimfarm_ui_dev/config.json`) hardcodes the API URL
+  `http://localhost:8004`, so a second stack's zimfarm UI won't reach its
+  remapped API without editing that file in the worktree.
+
 ### Setting up the development services
 
 The dev stack has various containers which can be activated via various profiles. The `zimfarm` profile sets up a local zimfarm DB, API and UI.
