@@ -364,6 +364,58 @@ class ProjectTest(BaseWebTestcase):
             )
             self.assertEqual("200 OK", rv.status)
 
+    def test_articles_tsv(self):
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.get("/v1/projects/Project 0/articles?format=tsv")
+            self.assertEqual("200 OK", rv.status)
+            self.assertTrue(rv.content_type.startswith("text/tab-separated-values"))
+            self.assertEqual(
+                'attachment; filename="Project0_articles.enwiki.tsv"',
+                rv.headers["Content-Disposition"],
+            )
+
+            lines = rv.data.decode("utf-8").splitlines()
+            self.assertEqual(
+                "article\tarticle_link\timportance\timportance_updated"
+                "\tquality\tquality_updated",
+                lines[0],
+            )
+            # All 150 articles are returned, not just the first page of 100.
+            self.assertEqual(151, len(lines))
+            for line in lines[1:]:
+                self.assertEqual(6, len(line.split("\t")))
+
+    def test_articles_tsv_quality_filter(self):
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.get(
+                "/v1/projects/Project 0/articles?format=tsv&quality=FA-Class"
+            )
+            self.assertEqual("200 OK", rv.status)
+
+            lines = rv.data.decode("utf-8").splitlines()
+            self.assertEqual(51, len(lines))
+            for line in lines[1:]:
+                self.assertEqual("FA-Class", line.split("\t")[4])
+
+    def test_articles_tsv_400_project_b(self):
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.get(
+                "/v1/projects/Project 0/articles?format=tsv&projectB=Project 1"
+            )
+            self.assertEqual("400 BAD REQUEST", rv.status)
+
+    def test_articles_tsv_format_json(self):
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.get("/v1/projects/Project 0/articles?format=json")
+            self.assertEqual("200 OK", rv.status)
+            data = json.loads(rv.data)
+            self.assertEqual(100, len(data["articles"]))
+
+    def test_articles_400_invalid_format(self):
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.get("/v1/projects/Project 0/articles?format=csv")
+            self.assertEqual("400 BAD REQUEST", rv.status)
+
     def test_random_article(self):
         with self.override_db(self.app), self.app.test_client() as client:
             rv = client.get("/v1/projects/Project 0/articles/random")

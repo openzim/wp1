@@ -198,11 +198,49 @@ def _project_rating_query(
     if page is not None:
         page = int(page) - 1
         query += " LIMIT %s,%s" % (page * limit, limit)
-    else:
+    elif limit is not None:
         query += " LIMIT %s" % limit
 
     logger.debug(query)
     return query
+
+
+def _project_rating_params(
+    project_name,
+    quality=None,
+    importance=None,
+    project_b_name=None,
+    quality_b=None,
+    importance_b=None,
+    pattern=None,
+):
+    params = {
+        "r_project": project_name,
+        "r_quality": quality,
+        "r_importance": importance,
+    }
+
+    if pattern is not None:
+        params["article_pattern_compiled"] = "%" + pattern + "%"
+    if project_b_name is not None:
+        params["r_project_b"] = project_b_name
+    if quality_b is not None:
+        params["r_quality_b"] = quality_b
+    if importance_b is not None:
+        params["r_importance_b"] = importance_b
+
+    return params
+
+
+def _rating_pair_from_row(res):
+    rating_b = Rating(
+        r_project=res.pop("rating_b.r_project"),
+        r_article=res.pop("rating_b.r_article"),
+        r_namespace=res.pop("rating_b.r_namespace"),
+        r_quality=res.pop("rating_b.r_quality"),
+        r_importance=res.pop("rating_b.r_importance"),
+    )
+    return (Rating(**res), rating_b)
 
 
 def get_project_rating_count_by_type(
@@ -226,21 +264,15 @@ def get_project_rating_count_by_type(
         count=True,
     )
 
-    params = {
-        "r_project": project_name,
-        "r_quality": quality,
-        "r_importance": importance,
-    }
-
-    if pattern is not None:
-        params["article_pattern_compiled"] = "%" + pattern + "%"
-    if project_b_name is not None:
-        params["r_project_b"] = project_b_name
-    if quality_b is not None:
-        params["r_quality_b"] = quality_b
-    if importance_b is not None:
-        params["r_importance_b"] = importance_b
-
+    params = _project_rating_params(
+        project_name,
+        quality=quality,
+        importance=importance,
+        project_b_name=project_b_name,
+        quality_b=quality_b,
+        importance_b=importance_b,
+        pattern=pattern,
+    )
     with wp10db.cursor() as cursor:
         cursor.execute(query, params)
         res = cursor.fetchone()
@@ -279,38 +311,60 @@ def get_project_rating_by_type(
         page=page,
         limit=limit,
     )
-    params = {
-        "r_project": project_name,
-        "r_quality": quality,
-        "r_importance": importance,
-    }
-
-    if pattern is not None:
-        params["article_pattern_compiled"] = "%" + pattern + "%"
-    if project_b_name is not None:
-        params["r_project_b"] = project_b_name
-    if quality_b is not None:
-        params["r_quality_b"] = quality_b
-    if importance_b is not None:
-        params["r_importance_b"] = importance_b
+    params = _project_rating_params(
+        project_name,
+        quality=quality,
+        importance=importance,
+        project_b_name=project_b_name,
+        quality_b=quality_b,
+        importance_b=importance_b,
+        pattern=pattern,
+    )
 
     with wp10db.cursor() as cursor:
         cursor.execute(query, params)
         if project_b_name is None:
             return [Rating(**db_rating) for db_rating in cursor.fetchall()]
 
-        results = []
-        for res in cursor.fetchall():
-            rating_b = Rating(
-                r_project=res.pop("rating_b.r_project"),
-                r_article=res.pop("rating_b.r_article"),
-                r_namespace=res.pop("rating_b.r_namespace"),
-                r_quality=res.pop("rating_b.r_quality"),
-                r_importance=res.pop("rating_b.r_importance"),
-            )
-            rating_a = Rating(**res)
-            results.append((rating_a, rating_b))
-        return results
+        return [_rating_pair_from_row(res) for res in cursor.fetchall()]
+
+
+def iterate_project_rating_by_type(
+    wp10db,
+    project_name,
+    quality=None,
+    importance=None,
+    pattern=None,
+    batch_size=500,
+):
+    """Yields every Rating matching the filters, without pagination.
+
+    Rows are fetched from the server-side cursor in batches of batch_size,
+    so arbitrarily large result sets can be streamed without buffering them
+    in memory.
+    """
+    query = _project_rating_query(
+        project_name,
+        quality=quality,
+        importance=importance,
+        pattern=pattern,
+        limit=None,
+    )
+    params = _project_rating_params(
+        project_name,
+        quality=quality,
+        importance=importance,
+        pattern=pattern,
+    )
+
+    with wp10db.cursor() as cursor:
+        cursor.execute(query, params)
+        while True:
+            rows = cursor.fetchmany(batch_size)
+            if not rows:
+                return
+            for res in rows:
+                yield Rating(**res)
 
 
 def get_random_article(
