@@ -193,7 +193,7 @@
 - [Updatesparqllist.Cy](Updatesparqllist.Cy.md) — 1 nodes
 - [Updatewikiprojectlist.Cy](Updatewikiprojectlist.Cy.md) — 1 nodes
 - [Zimfile.Cy](Zimfile.Cy.md) — 1 nodes
-- [Index](Index.md) — 1 nodes
+- [Index](Cypress_Plugins_Index.md) — 1 nodes
 - [Postcss.Config](Postcss.Config.md) — 1 nodes
 - [Vite.Config](Vite.Config.md) — 1 nodes
 - [Init](Init.md) — 1 nodes
