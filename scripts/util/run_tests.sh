@@ -7,10 +7,12 @@
 # cleans dirty tables left behind by interrupted runs, then runs pytest.
 #
 # Usage:
-#   ./run_tests.sh                    # run all tests
-#   ./run_tests.sh wp1/tables_test.py # run specific tests
+#   ./scripts/util/run_tests.sh                    # run all tests
+#   ./scripts/util/run_tests.sh wp1/tables_test.py # run specific tests
 
 set -e
+
+cd "$(dirname "$0")/../.."
 
 DOCKER_DB_CONTAINER="wp1bot-test-db"
 DOCKER_REDIS_CONTAINER="wp1bot-test-redis"

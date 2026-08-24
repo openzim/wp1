@@ -2,13 +2,13 @@
 # Deploy WP1 to production, or roll it back.
 #
 # Usage:
-#   ./scripts/deploy.sh                      deploy the current origin/main
-#   ./scripts/deploy.sh --rollback <tag>     roll back to a previous image tag
+#   ./scripts/wp1/deploy.sh                  deploy the current origin/main
+#   ./scripts/wp1/deploy.sh --rollback <tag> roll back to a previous image tag
 #                                            (e.g. release-141 or sha-73ed612)
 #
 # A deploy pushes origin/main to the release branch, which triggers the
 # publish workflow (.github/workflows/publish.yml) to build the three
-# docker images. It then runs scripts/deploy-remote.sh on the production
+# docker images. It then runs scripts/wp1/deploy-remote.sh on the production
 # box, which waits for the images tagged with the pushed commit's sha to
 # appear on ghcr.io, pulls them, restarts the containers and applies
 # database migrations.
@@ -31,7 +31,7 @@ if [[ "${1:-}" == "--rollback" ]]; then
   tag=${2:-}
   [[ -n "$tag" ]] || usage
   exec ssh -t "$REMOTE_HOST" \
-    "cd $REMOTE_DIR && sudo ./scripts/deploy-remote.sh --rollback '$tag'"
+    "cd $REMOTE_DIR && sudo ./scripts/wp1/deploy-remote.sh --rollback '$tag'"
 fi
 
 [[ $# -eq 0 ]] || usage
@@ -48,4 +48,4 @@ git push origin "$sha:refs/heads/release"
 # from the commit being deployed, not a stale copy.
 echo "==> Running remote deploy on $REMOTE_HOST"
 exec ssh -t "$REMOTE_HOST" \
-  "cd $REMOTE_DIR && sudo git pull --ff-only origin main && sudo ./scripts/deploy-remote.sh '$sha'"
+  "cd $REMOTE_DIR && sudo git pull --ff-only origin main && sudo ./scripts/wp1/deploy-remote.sh '$sha'"

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Runs ON the production box (mwcurator), as root, invoked by
-# scripts/deploy.sh. Can also be run by hand from /data/code/wp1.
+# scripts/wp1/deploy.sh. Can also be run by hand from /data/code/wp1.
 #
 # Usage:
 #   deploy-remote.sh <full-git-sha>       deploy the images built from that sha
@@ -138,5 +138,5 @@ verify
 echo "$sha" > "$LAST_DEPLOY_FILE"
 echo "==> Deployed $sha"
 if [[ -n "$prev" ]]; then
-  echo "    Roll back with: ./scripts/deploy.sh --rollback sha-$(git rev-parse --short=7 "$prev" 2>/dev/null || echo "$prev")"
+  echo "    Roll back with: ./scripts/wp1/deploy.sh --rollback sha-$(git rev-parse --short=7 "$prev" 2>/dev/null || echo "$prev")"
 fi

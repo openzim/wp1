@@ -12,7 +12,7 @@ If your credentials.py.dev has real MWOAUTH credentials, you log in as your
 actual Wikipedia user instead; pass that user's id to seed the same data for
 it (find it with ``SELECT u_id, u_username FROM users``):
 
-    pipenv run python seed-dev-selections.py --user-id 12345678 --username You
+    pipenv run python scripts/util/seed-dev-selections.py --user-id 12345678 --username You
 
 The script connects directly to the dev database from docker-compose-dev.yml
 and is idempotent: seeded rows all have ids prefixed with ``dev-seed-`` and
@@ -20,7 +20,7 @@ the target user's seeded rows are deleted and re-created on every run.
 
 Usage:
 
-    pipenv run python seed-dev-selections.py
+    pipenv run python scripts/util/seed-dev-selections.py
 """
 
 import argparse

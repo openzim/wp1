@@ -224,7 +224,7 @@ backend selections.
 
 ### Running parallel dev stacks (e.g. from git worktrees)
 
-The easiest way is `./create_worktree.sh <branch>`, which creates the
+The easiest way is `./scripts/util/create_worktree.sh <branch>`, which creates the
 worktree under `.worktrees/<branch>`, copies the untracked credentials and
 `.env` files, writes a worktree-local `.env` with a unique project name,
 suffix, and free port set (remapping the port-coupled app config values to
@@ -438,10 +438,10 @@ The `serve` command should print out the port to view the docs at, likely localh
 
 # Updating production
 
-Deploys are done with `scripts/deploy.sh`, run from a local checkout:
+Deploys are done with `scripts/wp1/deploy.sh`, run from a local checkout:
 
 ```bash
-./scripts/deploy.sh
+./scripts/wp1/deploy.sh
 ```
 
 This deploys the current `origin/main`. It requires push access to this
@@ -457,7 +457,7 @@ setup). The script:
   [publish workflow](https://github.com/openzim/wp1/actions/workflows/publish.yml),
   which builds and pushes the `wp1-workers`, `wp1-web` and
   `wp1-frontend` docker images.
-- Runs `scripts/deploy-remote.sh` on the production box (after a
+- Runs `scripts/wp1/deploy-remote.sh` on the production box (after a
   `git pull` there, so the remote script is the version being
   deployed), which:
   - Warns and asks for confirmation if `wp1/credentials.py.example`
@@ -479,8 +479,8 @@ setup). The script:
   - Verifies that the containers are running and that
     https://api.wp1.openzim.org and https://wp1.openzim.org respond.
 
-`scripts/deploy-remote.sh` can also be run by hand on the box
-(`cd /data/code/wp1 && sudo ./scripts/deploy-remote.sh <full git sha>`)
+`scripts/wp1/deploy-remote.sh` can also be run by hand on the box
+(`cd /data/code/wp1 && sudo ./scripts/wp1/deploy-remote.sh <full git sha>`)
 if the local half already pushed `release` but the remote half failed
 or was interrupted; it is safe to re-run.
 
@@ -506,7 +506,7 @@ for the full guide):
    ```
 
 Then `ssh mwcurator-b.mwoffliner.eqiad1.wikimedia.cloud` should log you
-in without a password, which is what `scripts/deploy.sh` needs.
+in without a password, which is what `scripts/wp1/deploy.sh` needs.
 
 ## Redis persistence
 
@@ -537,10 +537,10 @@ its GitHub packages page:
 To roll back a bad deploy, run (from a local checkout):
 
 ```bash
-./scripts/deploy.sh --rollback release-141   # or e.g. sha-73ed612
+./scripts/wp1/deploy.sh --rollback release-141   # or e.g. sha-73ed612
 ```
 
-This runs `scripts/deploy-remote.sh --rollback <tag>` on the box, which
+This runs `scripts/wp1/deploy-remote.sh --rollback <tag>` on the box, which
 pulls that version of each image, re-tags it locally as `release` (no
 registry login or push is required, the local tag is what docker
 compose uses), and recreates the containers. A successful deploy prints
