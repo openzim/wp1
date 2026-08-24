@@ -438,26 +438,75 @@ The `serve` command should print out the port to view the docs at, likely localh
 
 # Updating production
 
-- Push to the release branch of the github repository:
-  - `git checkout main`
-  - `git pull origin main`
-  - `git checkout release`
-  - `git merge main`
-  - `git push origin release`
-- Wait for the release images [to be built](https://github.com/openzim/wp1/actions/workflows/publish.yml)
-- Log in to the box that contains the production docker images. It is
-  called mwcurator.
-- `cd /data/code/wp1/`
-- `sudo git pull origin main`
-- Pull the docker images from docker hub:
-  - `sudo docker pull ghcr.io/openzim/wp1-workers:release`
-  - `sudo docker pull ghcr.io/openzim/wp1-web:release`
-  - `sudo docker pull ghcr.io/openzim/wp1-frontend:release`
-- If you've made changes to the format or contents of `credentials.py`, update `/data/wp1bot/credentials.py`.
-- Run docker-compose to bring the production images online.
-  - `sudo docker compose up -d`
-- Run the production database migrations in the worker container:
-  - `sudo docker exec -ti -e PYTHONPATH=. wp1bot-workers yoyo -c /usr/src/app/db/production/yoyo.ini apply`
+Deploys are done with `scripts/deploy.sh`, run from a local checkout:
+
+```bash
+./scripts/deploy.sh
+```
+
+This deploys the current `origin/main`. It requires push access to this
+repository and ssh access (with sudo) to the production box,
+`mwcurator-b.mwoffliner.eqiad1.wikimedia.cloud` (override with the
+`WP1_DEPLOY_HOST` environment variable; see
+[SSH access](#ssh-access-to-the-production-box) below for one-time
+setup). The script:
+
+- Pushes `origin/main` to the `release` branch (a plain, non-forced
+  push: if `release` has diverged from `main` the push is rejected and
+  a human needs to sort it out). This triggers the
+  [publish workflow](https://github.com/openzim/wp1/actions/workflows/publish.yml),
+  which builds and pushes the `wp1-workers`, `wp1-web` and
+  `wp1-frontend` docker images.
+- Runs `scripts/deploy-remote.sh` on the production box (after a
+  `git pull` there, so the remote script is the version being
+  deployed), which:
+  - Warns and asks for confirmation if `wp1/credentials.py.example`
+    changed since the last deploy, since `/data/wp1bot/credentials.py`
+    is managed by hand and probably needs a matching update.
+  - Waits for all three images tagged `sha-<short sha>` for the exact
+    commit being deployed to appear on ghcr.io. Deploying by the
+    immutable sha tag (instead of pulling the moving `release` tag)
+    guarantees a consistent image set; the three build jobs finish at
+    different times, so `release` can briefly point at a mixed set.
+  - Pulls the three images, re-tags them locally as `release` (the tag
+    `docker-compose.yml` uses), and runs `docker compose up -d`. Only
+    those three images are ever pulled -- never `docker compose pull`,
+    which would also refresh infrastructure images like the pinned
+    redis (see [Redis persistence](#redis-persistence) below).
+  - Applies database migrations:
+    `yoyo -c /usr/src/app/db/production/yoyo.ini apply --batch` in the
+    workers container.
+  - Verifies that the containers are running and that
+    https://api.wp1.openzim.org and https://wp1.openzim.org respond.
+
+`scripts/deploy-remote.sh` can also be run by hand on the box
+(`cd /data/code/wp1 && sudo ./scripts/deploy-remote.sh <full git sha>`)
+if the local half already pushed `release` but the remote half failed
+or was interrupted; it is safe to re-run.
+
+## SSH access to the production box
+
+The production box is a [Wikimedia Cloud VPS](https://wikitech.wikimedia.org/wiki/Portal:Cloud_VPS)
+instance in the `mwoffliner` project. It is not reachable directly from
+the internet; ssh goes through the Cloud VPS bastion. One-time setup
+(see [Help:Accessing Cloud VPS instances](https://wikitech.wikimedia.org/wiki/Help:Accessing_Cloud_VPS_instances)
+for the full guide):
+
+1. [Create a Wikimedia developer account](https://idm.wikimedia.org/signup/)
+   and [upload your public SSH key](https://idm.wikimedia.org/keymanagement/).
+2. Ask an existing member to add you to the `mwoffliner` Cloud VPS project.
+3. Add the bastion jump host to your `~/.ssh/config` (use your _shell_
+   username from idm.wikimedia.org, which may differ from your account
+   username):
+
+   ```
+   Host *.wikimedia.cloud
+     User <your-shell-name>
+     ProxyJump bastion.wmcloud.org:22
+   ```
+
+Then `ssh mwcurator-b.mwoffliner.eqiad1.wikimedia.cloud` should log you
+in without a password, which is what `scripts/deploy.sh` needs.
 
 ## Redis persistence
 
@@ -485,19 +534,21 @@ its GitHub packages page:
 - https://github.com/openzim/wp1/pkgs/container/wp1-web/versions
 - https://github.com/openzim/wp1/pkgs/container/wp1-frontend/versions
 
-To roll back a bad deploy, log in to the production machine, then pull
-the previous version of each image and re-tag it locally as `release`
-(no registry login or push is required, the local tag is what
-docker compose uses):
+To roll back a bad deploy, run (from a local checkout):
 
-- `sudo docker pull ghcr.io/openzim/wp1-workers:release-41`
-- `sudo docker tag ghcr.io/openzim/wp1-workers:release-41 ghcr.io/openzim/wp1-workers:release`
-- Repeat for `wp1-web` and `wp1-frontend`, then recreate the containers:
-- `sudo docker compose up -d`
+```bash
+./scripts/deploy.sh --rollback release-141   # or e.g. sha-73ed612
+```
 
-Note that the next normal deploy (`docker pull ... :release`) rolls
-forward again. If the deploy being rolled back included database
-migrations, roll those back too:
+This runs `scripts/deploy-remote.sh --rollback <tag>` on the box, which
+pulls that version of each image, re-tags it locally as `release` (no
+registry login or push is required, the local tag is what docker
+compose uses), and recreates the containers. A successful deploy prints
+the sha tag of the version it replaced, which is the tag to pass here.
+
+Note that the next normal deploy rolls forward again. Rolling back
+database migrations is deliberately not automated; if the deploy being
+rolled back included migrations, roll those back by hand on the box:
 
 - `sudo docker exec -ti -e PYTHONPATH=. wp1bot-workers yoyo -c /usr/src/app/db/production/yoyo.ini rollback`
 

@@ -31,5 +31,8 @@ id_rsa
 # Local git worktrees
 .worktrees/
 
+# Written by scripts/deploy-remote.sh on the production box
+.last-deploy
+
 # Flask session
 flask_session/
