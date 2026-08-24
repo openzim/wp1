@@ -13,8 +13,8 @@ describe('the manual update page', () => {
 
       it('successfully loads', () => {});
 
-      it('displays the manual update instructions', () => {
-        cy.contains('To begin a manual update');
+      it('displays the manual update rate-limit note', () => {
+        cy.contains('once per hour at most');
       });
 
       it('does not show the update button', () => {
@@ -63,7 +63,7 @@ describe('the manual update page', () => {
         it('shows the scheduled message and progress bar', () => {
           cy.wait('@progress');
           cy.contains('has been scheduled');
-          cy.get('.progress-bar').should('be.visible');
+          cy.get('[role="progressbar"]').should('be.visible');
         });
       });
     });
@@ -100,8 +100,8 @@ describe('the manual update page', () => {
   describe('when the user is not logged in', () => {
     it('shows the login required page', () => {
       cy.visit('/#/update');
-      cy.contains('Please Log In To Continue');
-      cy.get('.pt-2 > .btn');
+      cy.contains('Sign in required');
+      cy.contains('a', 'Sign in with Wikipedia');
     });
   });
 });

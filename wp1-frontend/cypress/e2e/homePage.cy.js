@@ -2,6 +2,7 @@
 
 describe('the home page', () => {
   beforeEach(() => {
+    cy.intercept('v1/projects/count', { body: { count: 2187 } });
     cy.intercept('v1/projects/Alien/table', {
       fixture: 'project_table_alien.json',
     });
@@ -9,6 +10,8 @@ describe('the home page', () => {
 
   it('successfully loads', () => {
     cy.visit('/');
+    cy.contains('h2', 'Projects');
+    cy.contains('2,187 projects tracked');
   });
 
   it('autocompletes for Water', () => {
@@ -32,8 +35,11 @@ describe('the home page', () => {
       .should('contain.text', 'Alien')
       .click();
 
+    cy.contains('h2', 'Alien');
     cy.get('table')
       .should('be.visible')
-      .should('contain.text', 'Alien articles by quality and importance');
+      .should('contain.text', 'Quality')
+      .should('contain.text', 'Importance');
+    cy.contains('Last updated');
   });
 });

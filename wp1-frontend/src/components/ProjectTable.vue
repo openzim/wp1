@@ -1,196 +1,163 @@
 <template>
   <div>
     <pulse-loader
-      class="loader"
+      class="mt-6 text-center"
       :loading="loading"
       :color="loaderColor"
       :size="loaderSize"
     ></pulse-loader>
-    <table v-if="tableData">
-      <th :colspan="tableData.total_cols">
-        <a :href="'#/project/' + currentProject + '/articles'">{{
-          tableData.title
-        }}</a>
-      </th>
-      <tr>
-        <th class="quality" rowspan="2">Quality</th>
-        <th
-          v-if="!tableData.is_single_col"
-          class="importance"
-          :colspan="tableData.total_cols - 1"
-        >
-          Importance
-        </th>
-      </tr>
-      <tr>
-        <th
-          v-for="col in tableData.ordered_cols"
-          :class="getClass(tableData.col_labels[col])"
-          :key="col"
-        >
-          <WikiLink
-            v-if="tableData.col_labels[col].href"
-            :href="tableData.col_labels[col].href"
-            :text="tableData.col_labels[col].text"
-          ></WikiLink>
-          <span v-if="!tableData.col_labels[col].href">{{
-            tableData.col_labels[col]
-          }}</span>
-        </th>
-        <th class="total">Total</th>
-      </tr>
+    <!-- The heading block shares the centered table's width so it aligns
+         with the card's left edge. -->
+    <div v-if="tableData" class="mx-auto w-fit max-w-full">
+      <h2 class="mb-1 mt-6 text-[19px] font-semibold tracking-[-0.015em]">
+        {{ currentProject }}
+      </h2>
+      <div class="font-mono text-[12px] text-ink-3">
+        {{ tableData.total.toLocaleString() }} articles
+      </div>
 
-      <tr />
-      <tr v-for="row in tableData.ordered_rows" :key="row">
-        <th :class="getClass(tableData.row_labels[row])">
-          <span v-if="tableData.row_labels[row].text == 'FA'">
-            <img
-              alt="Star icon"
-              data-file-height="180"
-              data-file-width="180"
-              decoding="async"
-              height="16"
-              src="//upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Featured_article_star.svg/20px-Featured_article_star.svg.png"
-              srcset="
-                //upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Featured_article_star.svg/40px-Featured_article_star.svg.png 2.5x,
-                //upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Featured_article_star.svg/60px-Featured_article_star.svg.png 3.75x
-              "
-              style="position: relative; top: -2px"
-              title="Featured article"
-              width="16"
-            />
-          </span>
-          <span v-if="tableData.row_labels[row].text == 'FL'">
-            <img
-              alt="Star icon"
-              data-file-height="180"
-              data-file-width="180"
-              decoding="async"
-              height="16"
-              src="//upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Featured_article_star.svg/20px-Featured_article_star.svg.png"
-              srcset="
-                //upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Featured_article_star.svg/40px-Featured_article_star.svg.png 2.5x,
-                //upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Featured_article_star.svg/60px-Featured_article_star.svg.png 3.75x
-              "
-              style="position: relative; top: -2px"
-              title="Featured list"
-              width="16"
-            />
-          </span>
-          <span v-if="tableData.row_labels[row].text == 'FM'">
-            <img
-              alt="Star icon"
-              data-file-height="180"
-              data-file-width="180"
-              decoding="async"
-              height="16"
-              src="//upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Featured_article_star.svg/20px-Featured_article_star.svg.png"
-              srcset="
-                //upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Featured_article_star.svg/40px-Featured_article_star.svg.png 2.5x,
-                //upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Featured_article_star.svg/60px-Featured_article_star.svg.png 3.75x
-              "
-              style="position: relative; top: -2px"
-              title="Featured media"
-              width="16"
-            />
-          </span>
-          <span v-if="tableData.row_labels[row].text == 'GA'">
-            <img
-              alt="Green plus icon on white circle with green border"
-              data-file-height="185"
-              data-file-width="180"
-              decoding="async"
-              height="16"
-              src="//upload.wikimedia.org/wikipedia/commons/thumb/9/94/Symbol_support_vote.svg/20px-Symbol_support_vote.svg.png"
-              srcset="
-                //upload.wikimedia.org/wikipedia/commons/thumb/9/94/Symbol_support_vote.svg/40px-Symbol_support_vote.svg.png 2.5x,
-                //upload.wikimedia.org/wikipedia/commons/thumb/9/94/Symbol_support_vote.svg/60px-Symbol_support_vote.svg.png 3.75x
-              "
-              style="position: relative; top: -2px"
-              title="Good article"
-              width="16"
-            />
-          </span>
-          <span v-if="tableData.row_labels[row].text == 'A'">
-            <img
-              alt="Light blue capital letter A over pale yellow star icon in white circle with light blue border"
-              data-file-height="185"
-              data-file-width="180"
-              decoding="async"
-              height="16"
-              src="//upload.wikimedia.org/wikipedia/commons/thumb/2/25/Symbol_a_class.svg/20px-Symbol_a_class.svg.png"
-              srcset="
-                //upload.wikimedia.org/wikipedia/commons/thumb/2/25/Symbol_a_class.svg/40px-Symbol_a_class.svg.png 2.5x,
-                //upload.wikimedia.org/wikipedia/commons/thumb/2/25/Symbol_a_class.svg/60px-Symbol_a_class.svg.png 3.75x
-              "
-              style="position: relative; top: -2px"
-              title="A-Class"
-              width="16"
-            />
-          </span>
-          <WikiLink
-            v-if="tableData.row_labels[row].href"
-            :href="tableData.row_labels[row].href"
-            :text="tableData.row_labels[row].text"
-          ></WikiLink>
-          <span v-if="!tableData.row_labels[row].href">
-            {{ tableData.row_labels[row] }}
-          </span>
-        </th>
-        <td v-for="col in tableData.ordered_cols" :key="col">
-          <span v-if="tableData.data[row][col]">
-            <router-link
-              :to="{
-                path: `/project/${currentProject}/articles`,
-                query: { quality: row, importance: col },
-              }"
-              >{{ tableData.data[row][col] }}</router-link
-            >
-          </span>
-        </td>
-        <td>
-          <router-link
-            :to="{
-              path: `/project/${currentProject}/articles`,
-              query: { quality: row },
-            }"
-            >{{ tableData.row_totals[row] }}</router-link
-          >
-        </td>
-      </tr>
-
-      <tr />
-      <tr>
-        <td>Total</td>
-        <td v-for="col in tableData.ordered_cols" :key="col">
-          <router-link
-            :to="{
-              path: `/project/${currentProject}/articles`,
-              query: { importance: col },
-            }"
-            >{{ tableData.col_totals[col] }}</router-link
-          >
-        </td>
-        <td>
-          {{ tableData.total }}
-        </td>
-      </tr>
-    </table>
-    <div v-if="tableData" class="timestamp">
-      Last updated: {{ localDate(tableData.timestamp) }}
+      <!-- Matrix card: the canonical Wikipedia wikitable inside. -->
+      <div
+        class="mt-4 w-fit max-w-full rounded border border-border bg-surface"
+      >
+        <div class="overflow-x-auto">
+          <table class="wt text-[13px]">
+            <thead>
+              <tr>
+                <th
+                  rowspan="2"
+                  class="wt-head px-3 py-1.5 text-center align-bottom font-semibold"
+                >
+                  Quality
+                </th>
+                <th
+                  v-if="!tableData.is_single_col"
+                  :colspan="tableData.ordered_cols.length"
+                  class="wt-head px-3 py-1.5 text-center font-semibold"
+                >
+                  Importance
+                </th>
+                <th
+                  rowspan="2"
+                  class="wt-head px-3 py-1.5 text-center align-bottom font-semibold"
+                >
+                  Total
+                </th>
+              </tr>
+              <tr>
+                <th
+                  v-for="col in tableData.ordered_cols"
+                  :key="col"
+                  class="px-3 py-1 text-center font-semibold"
+                  :class="fillClass(tableData.col_labels[col]) || 'wt-head'"
+                >
+                  <WikiLink
+                    v-if="tableData.col_labels[col].href"
+                    :href="tableData.col_labels[col].href"
+                    :text="tableData.col_labels[col].text"
+                  ></WikiLink>
+                  <span v-else>{{ tableData.col_labels[col] }}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in tableData.ordered_rows" :key="row">
+                <th
+                  class="px-3 py-[4px] text-center"
+                  :class="[
+                    fillClass(tableData.row_labels[row]),
+                    isBoldRow(row) ? 'font-semibold' : 'font-normal',
+                  ]"
+                >
+                  <ClassIcon
+                    :label="labelText(tableData.row_labels[row])"
+                  ></ClassIcon>
+                  <WikiLink
+                    v-if="tableData.row_labels[row].href"
+                    :href="tableData.row_labels[row].href"
+                    :text="tableData.row_labels[row].text"
+                  ></WikiLink>
+                  <span v-else>{{ tableData.row_labels[row] }}</span>
+                </th>
+                <td
+                  v-for="col in tableData.ordered_cols"
+                  :key="col"
+                  class="px-3 py-[4px] text-right"
+                  :class="{ 'font-semibold': isBoldRow(row) }"
+                >
+                  <router-link
+                    v-if="tableData.data[row][col]"
+                    :to="{
+                      path: `/project/${currentProject}/articles`,
+                      query: { quality: row, importance: col },
+                    }"
+                    >{{
+                      tableData.data[row][col].toLocaleString()
+                    }}</router-link
+                  >
+                </td>
+                <td class="px-3 py-[4px] text-right font-semibold">
+                  <router-link
+                    :to="{
+                      path: `/project/${currentProject}/articles`,
+                      query: { quality: row },
+                    }"
+                    >{{
+                      tableData.row_totals[row].toLocaleString()
+                    }}</router-link
+                  >
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <th class="wt-head px-3 py-[4px] text-center font-semibold">
+                  Total
+                </th>
+                <td
+                  v-for="col in tableData.ordered_cols"
+                  :key="col"
+                  class="wt-head px-3 py-[4px] text-right font-semibold"
+                >
+                  <router-link
+                    :to="{
+                      path: `/project/${currentProject}/articles`,
+                      query: { importance: col },
+                    }"
+                    >{{
+                      tableData.col_totals[col].toLocaleString()
+                    }}</router-link
+                  >
+                </td>
+                <td class="wt-head px-3 py-[4px] text-right font-semibold">
+                  {{ tableData.total.toLocaleString() }}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <div
+          class="border-t border-border-subtle px-[14px] py-[9px] font-mono text-[11.5px] text-ink-3"
+        >
+          Last updated {{ localDate(tableData.timestamp) }} · all times local
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
+import ClassIcon from './ClassIcon.vue';
 import WikiLink from './WikiLink.vue';
 import PulseLoader from './PulseLoader.vue';
 
 import { localDate } from '../lib/util.js';
+import { fillClass } from '../lib/labels.js';
 
 export default {
   name: 'project-table',
   components: {
+    ClassIcon,
     WikiLink,
     PulseLoader,
   },
@@ -201,7 +168,7 @@ export default {
     return {
       tableData: null,
       loading: false,
-      loaderColor: '#007bff',
+      loaderColor: '#2456c9',
       loaderSize: '1rem',
     };
   },
@@ -231,11 +198,20 @@ export default {
     },
   },
   methods: {
-    getClass: function (cls) {
-      if (cls.text) {
+    labelText: function (cls) {
+      if (cls && cls.text) {
         return cls.text;
       }
       return cls;
+    },
+    fillClass: function (cls) {
+      return fillClass(this.labelText(cls));
+    },
+    // The synthetic Other/Assessed rows render bold, matching the WP 1.0
+    // bot's table on Wikipedia.
+    isBoldRow: function (row) {
+      const text = this.labelText(this.tableData.row_labels[row]);
+      return text === 'Other' || text === 'Assessed';
     },
     localDate: function (secs) {
       return localDate(secs);
@@ -244,51 +220,6 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
 @import '../labels.css';
-
-.loader {
-  margin: auto;
-  text-align: center;
-}
-
-table {
-  border: 1px solid #aaa;
-  border-collapse: collapse;
-  margin: auto;
-  text-align: right;
-}
-
-th {
-  border: 1px solid #aaa;
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
-  text-align: center;
-}
-
-th a {
-  color: #000;
-}
-
-td {
-  border: 1px solid #aaa;
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
-}
-
-.table-link {
-  color: #006fe6;
-  cursor: pointer;
-}
-
-.quality {
-  vertical-align: bottom;
-}
-
-.timestamp {
-  color: #666;
-  font-size: 0.9rem;
-  margin: 1rem 0;
-  text-align: center;
-}
 </style>

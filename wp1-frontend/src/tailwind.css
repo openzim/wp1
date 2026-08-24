@@ -3,10 +3,9 @@
 @tailwind utilities;
 
 /*
- * Base styles scoped to the redesigned (Tailwind) screens. Everything lives
- * under a .wp1r wrapper so Bootstrap-styled pages are unaffected. The
- * !important flags are needed to beat the global anchor rules in App.vue,
- * which themselves use !important and still apply to Bootstrap pages.
+ * Base styles for the app's screens. Everything lives under a .wp1r
+ * wrapper (page shells and the header/footer chrome), which also gives
+ * these rules enough specificity for the anchor-palette opt-outs below.
  */
 @layer components {
   .wp1r {
@@ -16,43 +15,42 @@
 
   .wp1r a,
   .wp1r a:visited {
-    color: theme('colors.accent.DEFAULT') !important;
+    color: theme('colors.accent.DEFAULT');
     text-decoration: none;
   }
 
   .wp1r a:hover {
-    color: theme('colors.accent.link-hover') !important;
+    color: theme('colors.accent.link-hover');
     text-decoration: underline;
   }
 
-  /* Links that render as buttons or nav pills opt out of the link palette.
-     These need !important to beat both the rules above and the legacy
-     global anchor rules in App.vue. */
+  /* Links that render as buttons or nav pills opt out of the link
+     palette; two class selectors outweigh the .wp1r a rules above. */
   .wp1r a.wp1r-btn-primary,
   .wp1r a.wp1r-btn-primary:visited,
   .wp1r a.wp1r-btn-primary:hover {
-    color: #ffffff !important;
+    color: #ffffff;
     text-decoration: none;
   }
 
   .wp1r a.wp1r-btn-secondary,
   .wp1r a.wp1r-btn-secondary:visited,
   .wp1r a.wp1r-btn-secondary:hover {
-    color: theme('colors.ink.DEFAULT') !important;
+    color: theme('colors.ink.DEFAULT');
     text-decoration: none;
   }
 
   .wp1r a.wp1r-btn-danger,
   .wp1r a.wp1r-btn-danger:visited,
   .wp1r a.wp1r-btn-danger:hover {
-    color: theme('colors.danger.DEFAULT') !important;
+    color: theme('colors.danger.DEFAULT');
     text-decoration: none;
   }
 
   .wp1r a.wp1r-brand,
   .wp1r a.wp1r-brand:visited,
   .wp1r a.wp1r-brand:hover {
-    color: theme('colors.ink.DEFAULT') !important;
+    color: theme('colors.ink.DEFAULT');
     text-decoration: none;
   }
 
@@ -62,12 +60,12 @@
 
   .wp1r a.wp1r-navlink,
   .wp1r a.wp1r-navlink:visited {
-    color: theme('colors.ink.2') !important;
+    color: theme('colors.ink.2');
     text-decoration: none;
   }
 
   .wp1r a.wp1r-navlink:hover {
-    color: theme('colors.ink.DEFAULT') !important;
+    color: theme('colors.ink.DEFAULT');
     text-decoration: none;
     background-color: theme('colors.border.row');
   }
@@ -75,7 +73,7 @@
   .wp1r a.wp1r-navlink-active,
   .wp1r a.wp1r-navlink-active:visited,
   .wp1r a.wp1r-navlink-active:hover {
-    color: theme('colors.accent.DEFAULT') !important;
+    color: theme('colors.accent.DEFAULT');
     background-color: theme('colors.accent.tint-2');
   }
 
@@ -105,9 +103,7 @@
     @apply inline-block rounded-[3px] border border-border-strong px-[5px] py-px font-mono text-[10px] uppercase tracking-[0.04em] text-ink-2;
   }
 
-  /* Buttons. Heights vary per context; set them with h-* utilities.
-     border-solid is required: preflight is disabled, so without it anchors
-     render no border at all and native buttons fall back to UA outset. */
+  /* Buttons. Heights vary per context; set them with h-* utilities. */
   .wp1r-btn {
     @apply inline-flex cursor-pointer items-center justify-center gap-1 whitespace-nowrap rounded border border-solid bg-surface text-[13px] font-medium text-ink no-underline transition-colors duration-100;
   }
@@ -140,13 +136,13 @@
 
   .wp1r a.wp1r-menuitem,
   .wp1r a.wp1r-menuitem:visited {
-    color: theme('colors.ink.DEFAULT') !important;
+    color: theme('colors.ink.DEFAULT');
     text-decoration: none;
   }
 
   .wp1r a.wp1r-menuitem:hover,
   .wp1r .wp1r-menuitem:hover {
-    color: theme('colors.ink.DEFAULT') !important;
+    color: theme('colors.ink.DEFAULT');
     text-decoration: none;
     background-color: theme('colors.surface.muted');
   }
@@ -159,7 +155,7 @@
   .wp1r a.wp1r-fieldrow,
   .wp1r a.wp1r-fieldrow:visited,
   .wp1r a.wp1r-fieldrow:hover {
-    color: inherit !important;
+    color: inherit;
     text-decoration: none;
   }
 
@@ -187,10 +183,26 @@
     background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='none' stroke='%236b7480' stroke-width='1.5' d='m1 1 4 4 4-4'/%3E%3C/svg%3E");
     background-position: right 9px center;
   }
-}
 
-/* Buttons in the chrome and redesigned pages need borderless resets where
-   Bootstrap's reboot styles would otherwise leak in. */
-.wp1r button {
-  font-family: inherit;
+  /* Wikipedia wikitable identity for the assessment tables (project
+     matrix, article-list rating cells, compare table): 1px #a2a9b1 grid,
+     #eaecf0 header band, full-cell class fills from labels.css. These
+     colours are the canonical WP 1.0 bot vocabulary, not design tokens. */
+  .wp1r .wt {
+    border-collapse: collapse;
+  }
+  .wp1r .wt th,
+  .wp1r .wt td {
+    border: 1px solid #a2a9b1;
+  }
+  .wp1r .wt-head {
+    background-color: #eaecf0;
+  }
+  /* Borderless white channel separating the two project column-groups in
+     the compare table, so colour fills never touch across projects. */
+  .wp1r .wt .wt-gap {
+    border: 0;
+    width: 16px;
+    background-color: #ffffff;
+  }
 }

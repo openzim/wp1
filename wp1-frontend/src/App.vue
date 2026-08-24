@@ -52,10 +52,7 @@
         </div>
       </nav>
     </header>
-    <div
-      class="main-content"
-      :class="{ 'main-content-flush': isSelectionsRoute }"
-    >
+    <div class="main-content">
       <router-view></router-view>
     </div>
     <footer class="wp1r border-t border-chrome-edge bg-chrome">
@@ -108,8 +105,8 @@ export default {
     };
   },
   computed: {
-    // The redesigned Selections pages render as a full-height column that
-    // touches the header and footer; everything else keeps the padded flow.
+    // Used by the footer's "All times are local." note, which only applies
+    // to the Selections screens (other pages label times inline).
     isSelectionsRoute: function () {
       return this.$route.path.startsWith('/selections');
     },
@@ -183,32 +180,11 @@ body {
   min-height: 100vh;
 }
 
+/* Every routed page renders as a full-height column (grey canvas + white
+   content column); the old padded Bootstrap flow is gone. */
 .main-content {
-  flex: 1;
-  padding-bottom: 20px;
-}
-
-.main-content-flush {
   display: flex;
+  flex: 1;
   flex-direction: column;
-  padding-bottom: 0;
-}
-
-a {
-  color: #0063cc;
-}
-a:hover {
-  color: #000 !important;
-}
-a:visited {
-  color: #000 !important;
-}
-
-.btn-primary {
-  background-color: #0071eb;
-}
-
-.row {
-  margin-top: 10px;
 }
 </style>

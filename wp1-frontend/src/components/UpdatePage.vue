@@ -1,68 +1,88 @@
 <template>
-  <div class="container" v-if="isLoggedIn">
-    <div class="row">
-      <div class="col-xl-6">
-        <Autocomplete
-          :incomingSearch="incomingSearch || $route.params.projectName"
-          :hideInstructions="true"
-          v-on:select-project="currentProject = $event"
-        ></Autocomplete>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-xl-4">
-        <div v-if="currentProject && !updateTime && !jobScheduled">
-          <label class="mt-2" for="confirm"
-            >Proceed with manual update of <b>{{ currentProject }}</b
-            >?</label
-          >
-          <div class="input-group">
-            <button
-              v-on:click="onUpdateClick()"
-              class="btn-primary form-control"
-            >
-              Manual Update
-            </button>
-          </div>
+  <div class="wp1r flex flex-1 flex-col bg-page">
+    <div
+      class="mx-auto flex w-full max-w-[1200px] flex-1 flex-col border-x border-border bg-surface"
+    >
+      <div v-if="isLoggedIn" class="px-[18px] pb-16 pt-6 max-md:px-3">
+        <h2 class="m-0 text-[19px] font-semibold tracking-[-0.015em]">
+          Manual update
+        </h2>
+        <div
+          class="mt-3 max-w-[720px] rounded border border-warn-border bg-warn-tint px-3 py-2 text-[13px] leading-[1.5] text-warn-text-strong"
+        >
+          This tool can perform a manual update <b>once per hour at most</b>,
+          and not until all pending updates are complete.
         </div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-xl-6">
-        <div v-if="currentProject && (updateTime || jobScheduled)">
-          <p>
-            Manual update of <b>{{ $route.params.projectName }}</b> has been
+        <div class="mt-4 max-w-[560px]">
+          <Autocomplete
+            label="Project"
+            :incomingSearch="incomingSearch || $route.params.projectName"
+            v-on:select-project="currentProject = $event"
+          ></Autocomplete>
+        </div>
+
+        <div
+          v-if="currentProject && !updateTime && !jobScheduled"
+          class="mt-5 max-w-[560px] rounded border border-border p-[14px]"
+        >
+          <p class="m-0 text-[13.5px] text-ink">
+            Proceed with manual update of <b>{{ currentProject }}</b
+            >?
+          </p>
+          <button
+            type="button"
+            class="wp1r-btn-primary mt-3 h-8 px-4"
+            v-on:click="onUpdateClick()"
+          >
+            Manual Update
+          </button>
+        </div>
+
+        <div
+          v-if="currentProject && (updateTime || jobScheduled)"
+          class="mt-5 max-w-[560px] rounded border border-border p-[14px]"
+        >
+          <p class="m-0 text-[13px] leading-[1.55] text-ink-2">
+            Manual update of
+            <b class="text-ink">{{ $route.params.projectName }}</b> has been
             scheduled. It can take anywhere from 2 - 200 minutes, depending on
             project size. The next update can be performed
             <span v-if="updateTime"
-              >at <b>{{ updateTime }}</b
+              >at <b class="font-mono text-[12px] text-ink">{{ updateTime }}</b
               >.</span
             >
             <span v-else>when the current update completes.</span>
           </p>
-          <div>
-            <p>
-              <b>Progress:</b>
-              {{ getProgressString() }}
-            </p>
+          <p class="mb-1 mt-3 text-[13px] text-ink">
+            <b>Progress:</b>
+            {{ getProgressString() }}
+          </p>
 
-            <div v-if="!jobComplete && !jobNotStarted" class="progress">
+          <template v-if="!jobComplete && !jobNotStarted">
+            <div
+              class="h-[6px] overflow-hidden rounded-full bg-border-row"
+              role="progressbar"
+              :aria-valuenow="progressCurrent"
+              aria-valuemin="0"
+              :aria-valuemax="progressTotal"
+            >
               <div
-                class="progress-bar"
-                role="progressbar"
+                class="h-full rounded-full bg-accent"
                 :style="{ width: progressWidth + '%' }"
-                :aria-valuenow="progressCurrent"
-                aria-valuemin="0"
-                :aria-valuemax="progressTotal"
               ></div>
             </div>
-          </div>
+            <div
+              v-if="progressCurrent !== null && progressTotal !== null"
+              class="mt-1.5 font-mono text-[11.5px] text-ink-3"
+            >
+              {{ progressCurrent.toLocaleString() }} /
+              {{ progressTotal.toLocaleString() }} articles
+            </div>
+          </template>
         </div>
       </div>
+      <LoginRequired v-else></LoginRequired>
     </div>
-  </div>
-  <div v-else>
-    <LoginRequired></LoginRequired>
   </div>
 </template>
 
@@ -210,5 +230,3 @@ export default {
   },
 };
 </script>
-
-<style></style>

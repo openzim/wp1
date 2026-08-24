@@ -1,58 +1,67 @@
 <template>
-  <div>
-    <p v-if="!hideInstructions">
-      Use the autocomplete search box below to search for a project in order to
-      display its summary table.
-    </p>
-    <div v-if="$route.path.startsWith('/update')">
-      <p>
-        To begin a manual update, use the autocomplete search box below to find
-        the project you wish to update.
-      </p>
-      <p>
-        <b
-          >Note: This tool can only perform manual updates once per hour at
-          most. It also cannot perform an update until all pending updates are
-          complete.</b
-        >
-      </p>
-    </div>
-    <div class="input-group">
+  <div class="flex items-center gap-2">
+    <span v-if="label" class="wp1r-microlabel shrink-0">{{ label }}</span>
+    <div class="relative min-w-0 flex-1">
       <input
         v-model="search"
         @input="onChange"
         v-on:keyup.down="focusList()"
         ref="input"
-        class="form-control auto-input search"
+        class="search wp1r-input w-full"
+        :class="controlSize"
         type="text"
-        placeholder="Project name"
+        :placeholder="placeholder"
+        :aria-label="label || 'Project name'"
       />
-      <button v-on:click="onButtonClick()" class="btn btn-primary">
-        Select Project
-      </button>
-      <div class="invalid-feedback">Please provide projects</div>
-    </div>
-    <ul tabindex="0" ref="list" class="results" v-show="isOpen">
-      <li
-        v-for="(result, i) of results"
-        :key="i"
-        v-on:click="selectResult"
-        v-on:keyup.enter="selectResult"
-        v-on:keyup.down="focusNext"
-        v-on:keyup.up="focusPrev"
-        class="result"
+      <ul
         tabindex="0"
+        ref="list"
+        v-show="isOpen"
+        class="results absolute left-0 right-0 top-full z-10 m-0 mt-1 max-h-80 list-none overflow-auto rounded border border-border bg-surface p-0 shadow-card"
       >
-        {{ result.name }}
-      </li>
-    </ul>
+        <li
+          v-for="(result, i) of results"
+          :key="i"
+          v-on:click="selectResult"
+          v-on:keyup.enter="selectResult"
+          v-on:keyup.down="focusNext"
+          v-on:keyup.up="focusPrev"
+          class="result cursor-pointer border-b border-border-row px-[10px] py-[7px] text-[13px] last:border-b-0 hover:bg-surface-muted focus:bg-accent-tint focus:outline-none"
+          tabindex="0"
+        >
+          {{ result.name }}
+        </li>
+      </ul>
+    </div>
+    <button
+      type="button"
+      v-on:click="onButtonClick()"
+      class="shrink-0 px-3"
+      :class="[
+        buttonVariant === 'secondary'
+          ? 'wp1r-btn-secondary'
+          : 'wp1r-btn-primary',
+        controlSize,
+      ]"
+    >
+      {{ buttonLabel }}
+    </button>
   </div>
 </template>
 
 <script>
 export default {
   name: 'auto-complete',
-  props: ['incomingSearch', 'hideInstructions'],
+  props: {
+    incomingSearch: String,
+    // Optional inline microlabel rendered before the input (e.g. "Project").
+    label: String,
+    // 'md' (32px, compact pages) or 'lg' (34px, the Index hero search).
+    size: { type: String, default: 'md' },
+    buttonLabel: { type: String, default: 'Select project' },
+    buttonVariant: { type: String, default: 'primary' },
+    placeholder: { type: String, default: 'Project name' },
+  },
   data: function () {
     return {
       isOpen: false,
@@ -60,6 +69,11 @@ export default {
       results: [],
       search: '',
     };
+  },
+  computed: {
+    controlSize: function () {
+      return this.size === 'lg' ? 'h-[34px] text-[14px]' : 'h-8';
+    },
   },
   created: async function () {
     this.projects = await this.getProjects();
@@ -148,44 +162,12 @@ export default {
     incomingSearch: function (val) {
       this.updateFromIncomingSearch(val);
     },
+    // Returning to a bare picker page (index, compare) resets the control.
     $route: function (to) {
-      if (to.path == '/compare') {
+      if (to.path == '/compare' || to.path == '/') {
         this.search = '';
       }
     },
   },
 };
 </script>
-
-<style scoped>
-.auto-input {
-  border-bottom-right-radius: 0;
-  border-bottom-left-radius: 0;
-}
-
-.results {
-  border: 1px solid #ddd;
-  border-top: none;
-  box-sizing: border-box;
-  cursor: pointer;
-  list-style: none;
-  max-height: 20rem;
-  overflow: auto;
-  padding: 0;
-  text-align: left;
-  z-index: 1;
-  background: white;
-  position: absolute;
-  width: 95%;
-}
-
-.result {
-  padding: 0.375rem 0.75rem;
-}
-
-.result:hover,
-.result:focus {
-  background-color: #ddd;
-  outline: none;
-}
-</style>

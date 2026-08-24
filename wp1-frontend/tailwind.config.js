@@ -1,19 +1,10 @@
 /**
- * Tailwind is used only by the redesigned Selections pages (and the global
- * app chrome). The rest of the app is still Bootstrap 4; preflight is
- * disabled so Tailwind never restyles those pages. Design tokens come from
- * the OpenZIM Selections redesign handoff.
+ * Tailwind styles the whole app (Bootstrap was retired with the
+ * non-Selections redesign). Design tokens come from the OpenZIM Selections
+ * redesign handoff.
  */
 module.exports = {
   content: ['./index.html', './src/**/*.{vue,js}'],
-  corePlugins: {
-    preflight: false,
-    container: false,
-  },
-  // Bootstrap markup on the untouched pages uses class="collapse"
-  // (accordions, navbars). Tailwind's .collapse utility (visibility:
-  // collapse) must not be emitted or it breaks them.
-  blocklist: ['collapse'],
   theme: {
     extend: {
       colors: {

@@ -14,20 +14,30 @@ describe('the article page', () => {
       fixture: 'articles_alien_predator.json',
     }).as('predatorArticles');
 
-    cy.contains('a', 'Filter by article name').click();
-
-    cy.get('input').eq(2).type('Predator');
-    cy.get('#updateName').click();
+    cy.get('#updateName').type('Predator');
+    cy.get('#updateRating').click();
 
     // Don't continue until the table has been updated.
     cy.wait('@predatorArticles');
     cy.get('tr').contains('Prometheus').should('not.exist');
 
     cy.get('table')
-      .find('tr')
+      .find('tbody tr')
       .each(($el) => {
         cy.wrap($el).should('contain.text', 'Predator');
       });
+  });
+
+  it('commits the name filter on Enter', () => {
+    cy.visit('/#/project/Alien/articles');
+    cy.intercept('v1/projects/Alien/articles?articlePattern=Predator', {
+      fixture: 'articles_alien_predator.json',
+    }).as('predatorArticles');
+
+    cy.get('#updateName').type('Predator{enter}');
+
+    cy.wait('@predatorArticles');
+    cy.get('tr').contains('Prometheus').should('not.exist');
   });
 
   it('links to a TSV download of the full filtered list', () => {
@@ -36,8 +46,7 @@ describe('the article page', () => {
       fixture: 'articles_alien_top_b.json',
     }).as('BArticles');
 
-    cy.contains('Select Quality/Importance').click();
-    cy.get('.custom-select').eq(0).select('B');
+    cy.get('#qualitySelect').select('B');
     cy.get('#updateRating').click();
     cy.wait('@BArticles');
 
@@ -61,14 +70,14 @@ describe('the article page', () => {
 
     cy.visit('/#/project/Alien/articles');
 
-    cy.get('tr')
+    cy.get('tbody tr')
       .eq(0)
       .find('td')
       .find('a')
       .eq(0)
       .invoke('text')
       .then(($text) => {
-        cy.get('tr').eq(0).find('td').find('a').eq(0).click();
+        cy.get('tbody tr').eq(0).find('td').find('a').eq(0).click();
         cy.get('#firstHeading').should('contain.text', $text);
       });
   });
@@ -80,20 +89,27 @@ describe('the article page', () => {
         fixture: 'articles_alien_page2.json',
       }).as('Pagination');
 
-      cy.contains('Custom pagination').click();
+      cy.get('#row-input').clear().type('50');
 
-      cy.get('input').eq(0).clear().type('50');
+      cy.get('#page-input').clear().type('2');
 
-      cy.get('input').eq(1).clear().type('2');
-
-      cy.get('#updatePagination').click();
+      cy.get('#updateRating').click();
 
       cy.wait('@Pagination');
       cy.get('tr').contains('Prometheus').should('not.exist');
 
-      cy.get('tr').eq(0).find('td').eq(0).should('have.text', '51');
+      cy.get('tbody tr').eq(0).find('td').eq(0).should('have.text', '51');
 
-      cy.get('tr').should('have.length', 50);
+      cy.get('tbody tr').should('have.length', 50);
+    });
+
+    it('blocks the commit on invalid pagination values', () => {
+      cy.visit('/#/project/Alien/articles');
+
+      cy.get('#row-input').clear().type('9999');
+      cy.get('#updateRating').click();
+
+      cy.url().should('not.include', 'numRows=9999');
     });
   });
 
@@ -105,11 +121,9 @@ describe('the article page', () => {
         { fixture: 'articles_alien_top_b.json' }
       ).as('TopBArticles');
 
-      cy.contains('Select Quality/Importance').click();
+      cy.get('#qualitySelect').select('B');
 
-      cy.get('.custom-select').eq(0).select('B');
-
-      cy.get('.custom-select').eq(1).select('Top');
+      cy.get('#importanceSelect').select('Top');
 
       cy.get('#updateRating').click();
 
@@ -118,7 +132,7 @@ describe('the article page', () => {
       cy.get('tr').contains('Prometheus').should('not.exist');
 
       cy.get('table')
-        .find('tr')
+        .find('tbody tr')
         .each(($el) => {
           cy.wrap($el).should('contain.text', 'Top');
           cy.wrap($el).should('contain.text', 'B');
@@ -143,11 +157,9 @@ describe('the article page', () => {
         cy.stub(win, 'open').as('windowOpen');
       });
 
-      cy.contains('Select Quality/Importance').click();
+      cy.get('#qualitySelect').select('B');
 
-      cy.get('.custom-select').eq(0).select('B');
-
-      cy.get('.custom-select').eq(1).select('Top');
+      cy.get('#importanceSelect').select('Top');
 
       cy.get('#randomArticle').click();
 
