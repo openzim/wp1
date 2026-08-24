@@ -1,43 +1,59 @@
 <template>
-  <div>
-    <p class="prev-page col-3 m-0">
-      <span :class="page === '1' || !page ? '' : ' link'"
-        ><a v-on:click="previousPage()">previous page</a></span
+  <div class="flex items-center gap-1.5">
+    <button
+      type="button"
+      class="wp1r-btn-secondary h-9 px-3 md:h-7 md:px-2.5"
+      :disabled="currentPage === 1"
+      v-on:click="previousPage()"
+    >
+      ← Prev
+    </button>
+    <span class="hidden items-center gap-1.5 md:flex">
+      <button
+        v-for="i in getPageDisplay()"
+        :key="i"
+        type="button"
+        class="h-7 min-w-7 px-2"
+        :class="
+          i === currentPage
+            ? 'wp1r-btn border-ink bg-ink text-white'
+            : 'wp1r-btn-secondary'
+        "
+        v-on:click="updatePage(i)"
       >
-    </p>
-    <p class="pages-cont col-6">
-      <span v-if="totalPages > 1">
-        <span
-          v-for="i in getPageDisplay()"
-          :key="i"
-          :class="
-            'page-indicator' +
-              (i === Number(page) || (i === 1 && !page) ? '' : ' link')
-          "
-          ><a v-on:click="updatePage(i)">{{ i }}</a></span
-        >
-      </span>
-    </p>
-    <p class="next-page col-3 m-0">
-      <span :class="Number(page) === totalPages ? '' : ' link'"
-        ><a v-on:click="nextPage()">next page</a></span
-      >
-    </p>
+        {{ i }}
+      </button>
+    </span>
+    <span class="px-1 font-mono text-[12px] text-ink-3 md:hidden"
+      >{{ currentPage }} / {{ totalPages }}</span
+    >
+    <button
+      type="button"
+      class="wp1r-btn-secondary h-9 px-3 md:h-7 md:px-2.5"
+      :disabled="currentPage === totalPages"
+      v-on:click="nextPage()"
+    >
+      Next →
+    </button>
   </div>
 </template>
 
 <script>
 export default {
   name: 'article-table-pagination',
-  components: {},
   props: {
     page: String,
-    totalPages: Number
+    totalPages: Number,
+  },
+  computed: {
+    currentPage: function () {
+      return Number(this.page || 1);
+    },
   },
   methods: {
-    getPageDisplay: function() {
+    getPageDisplay: function () {
       const display = [];
-      const page = Number(this.page || 1);
+      const page = this.currentPage;
       const bottom = Math.max(1, page - 5);
       const top = Math.min(page + 5, this.totalPages);
       for (let i = bottom; i <= top; i++) {
@@ -45,53 +61,25 @@ export default {
       }
       return display;
     },
-    nextPage: function() {
-      if (Number(this.page) === this.totalPages) {
+    nextPage: function () {
+      if (this.currentPage === this.totalPages) {
         return;
       }
-      if (this.page) {
-        this.updatePage(Number(this.page) + 1);
-      } else {
-        this.updatePage(2);
-      }
+      this.updatePage(this.currentPage + 1);
     },
-    previousPage: function() {
-      if (!this.page) {
+    previousPage: function () {
+      if (this.currentPage === 1) {
         return;
       }
-      this.updatePage(Number(this.page) - 1);
+      this.updatePage(this.currentPage - 1);
     },
-    updatePage: function(page) {
-      if (page === Number(this.page)) {
+    updatePage: function (page) {
+      if (page === this.currentPage) {
         return;
       }
 
       this.$emit('update-page', page);
-    }
-  }
+    },
+  },
 };
 </script>
-
-<style scoped>
-.pages-cont {
-  margin: auto;
-  text-align: center;
-}
-
-.page-indicator {
-  display: inline-block;
-  padding: 0 0.25rem;
-  width: 1.5rem;
-}
-
-.next-page .link,
-.prev-page .link,
-.page-indicator.link {
-  color: #007bff;
-  cursor: pointer;
-}
-
-.next-page {
-  text-align: right;
-}
-</style>

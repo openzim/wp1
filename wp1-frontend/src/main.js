@@ -1,7 +1,3 @@
-import 'bootstrap';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap-icons/font/bootstrap-icons.css';
-
 import '@fontsource/ibm-plex-sans/400.css';
 import '@fontsource/ibm-plex-sans/500.css';
 import '@fontsource/ibm-plex-sans/600.css';
@@ -11,10 +7,6 @@ import '@fontsource/ibm-plex-mono/500.css';
 import '@fontsource/ibm-plex-mono/600.css';
 import './tailwind.css';
 
-import 'jquery';
-import 'datatables.net';
-import 'datatables.net-dt/css/jquery.dataTables.min.css';
-
 import { createApp } from 'vue';
 import { createRouter, createWebHashHistory } from 'vue-router';
 
@@ -23,7 +15,6 @@ import ArticlePage from './components/ArticlePage.vue';
 import ComparePage from './components/ComparePage.vue';
 import AssessmentsByProject from './components/AssessmentsByProject.vue';
 import IndexPage from './components/IndexPage.vue';
-import ProjectPage from './components/ProjectPage.vue';
 import UpdatePage from './components/UpdatePage.vue';
 import CombinatorPage from './components/selections/CombinatorPage.vue';
 import NewSelectionPage from './components/selections/NewSelectionPage.vue';
@@ -55,8 +46,10 @@ const routes = [
     },
   },
   {
+    // Same component as /: the index shows the selected project's table
+    // in place, below the search hero.
     path: '/project/:projectName',
-    component: ProjectPage,
+    component: IndexPage,
     meta: {
       title: (route) => BASE_TITLE + ' - ' + route.params.projectName,
     },

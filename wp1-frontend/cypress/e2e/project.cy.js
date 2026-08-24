@@ -53,27 +53,35 @@ describe('the project page', () => {
   it('displays the article detail-list', () => {
     cy.visit('/#/project/Alien');
 
-    cy.get('tr')
-      .eq(3)
+    // The FA row's first count cell is the Top-Class importance column.
+    cy.get('table')
+      .contains('th', 'FA')
+      .parent('tr')
       .find('td')
-      .eq(0)
+      .first()
       .invoke('text')
       .then((text) => {
-        cy.get('tr').eq(3).find('td').eq(0).contains(/^\d+$/).click();
-        cy.get('tr').should('have.length', text);
+        const count = Number(text.replace(/,/g, ''));
+        cy.get('table')
+          .contains('th', 'FA')
+          .parent('tr')
+          .find('td')
+          .first()
+          .find('a')
+          .click();
+        cy.get('tbody tr').should('have.length', count);
       });
 
-    cy.get('h4').should(
-      'contain.text',
-      'Alien articles  - Top importance / FA quality'
-    );
+    cy.contains('h2', 'Alien articles');
+    cy.contains('a', 'Top importance');
+    cy.contains('a', 'FA quality');
 
-    cy.get('tr')
+    cy.get('tbody tr')
       .eq(0)
       .find('td')
       .then(($row) => {
-        cy.wrap($row).eq(2).contains('Top');
-        cy.wrap($row).eq(4).contains('FA');
+        cy.wrap($row).eq(3).contains('Top');
+        cy.wrap($row).eq(5).contains('FA');
       });
   });
 });

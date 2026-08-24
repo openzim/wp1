@@ -1,159 +1,270 @@
 <template>
-  <div class="row">
-    <div v-if="loading" class="col">
-      <pulse-loader
-        class="loader"
-        :loading="loading"
-        :color="loaderColor"
-        :size="loaderSize"
-      ></pulse-loader>
-    </div>
-    <div v-else-if="articleData" class="col">
-      <ArticleTablePageSelect
-        :numRows="articleData.pagination.display.num_rows"
-        :startPage="page || '1'"
-        v-on:page-select="onPageSelect($event)"
-      ></ArticleTablePageSelect>
-      <ArticleTableRatingSelect
-        v-if="!hideRatingSelect"
+  <div>
+    <pulse-loader
+      v-if="loading"
+      class="mt-6 text-center"
+      :loading="loading"
+      :color="loaderColor"
+      :size="loaderSize"
+    ></pulse-loader>
+    <div v-else-if="articleData">
+      <ArticleFilterBar
+        :projectId="projectId"
         :initialQuality="quality"
         :initialImportance="importance"
-        :projectId="projectId"
-        v-on:rating-select="onRatingSelect($event)"
-      ></ArticleTableRatingSelect>
-      <ArticleTableNameFilter
-        :filterValue="articlePattern"
-        v-on:name-filter="onNameFilter($event)"
-      ></ArticleTableNameFilter>
-      <div v-if="tableData.length > 0" class="my-0 row">
-        <p class="pages-cont">
-          Article {{ articleData.pagination.display.start }} -
-          {{ articleData.pagination.display.end }} of
-          {{ articleData.pagination.total }} ({{
-            articleData.pagination.total_pages
-          }}
-          page<span v-if="articleData.pagination.total_pages !== 1">s</span>)
-        </p>
+        :initialPattern="articlePattern"
+        :numRows="articleData.pagination.display.num_rows"
+        :startPage="page || '1'"
+        :hideRatingSelect="!!hideRatingSelect"
+        v-on:update-filters="onUpdateFilters($event)"
+      ></ArticleFilterBar>
+
+      <template v-if="tableData.length > 0">
+        <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <span class="font-mono text-[12px] text-ink-3"
+            >Articles {{ articleData.pagination.display.start }} –
+            {{ articleData.pagination.display.end }} of
+            {{ articleData.pagination.total }} ·
+            {{ articleData.pagination.total_pages }}
+            page<template v-if="articleData.pagination.total_pages !== 1"
+              >s</template
+            ></span
+          >
+          <a v-if="!projectIdB" :href="tsvUrl" download class="text-[12.5px]"
+            >Download all results as TSV</a
+          >
+        </div>
+        <ArticleTablePagination
+          v-if="articleData.pagination.total_pages > 1"
+          class="mt-2"
+          v-on:update-page="onUpdatePage($event)"
+          :page="page"
+          :totalPages="articleData.pagination.total_pages"
+        >
+        </ArticleTablePagination>
+
+        <!-- Article table: wikitable identity, full-cell class fills. -->
+        <div
+          class="mx-auto mt-2 w-fit max-w-full overflow-x-auto rounded border border-border"
+        >
+          <table v-if="!projectIdB" class="wt text-[13px]">
+            <thead>
+              <tr class="wt-head text-left">
+                <th class="w-10 px-2 py-[7px] text-right font-semibold">#</th>
+                <th class="px-2 py-[7px] font-semibold">Article</th>
+                <th class="px-2 py-[7px]"></th>
+                <th class="px-2 py-[7px] text-center font-semibold">
+                  Importance
+                </th>
+                <th class="px-2 py-[7px] font-semibold">Rated</th>
+                <th class="px-2 py-[7px] text-center font-semibold">Quality</th>
+                <th class="px-2 py-[7px] font-semibold">Rated</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(row, index) in tableData" :key="index">
+                <td
+                  class="px-2 py-[6px] text-right font-mono text-[12px] text-ink-4"
+                >
+                  {{ articleData.pagination.display.start + index }}
+                </td>
+                <td
+                  class="max-w-[180px] truncate px-2 py-[6px] md:max-w-[640px]"
+                  :title="row.article"
+                >
+                  <a :href="row.article_link">{{ row.article }}</a>
+                </td>
+                <td
+                  class="whitespace-nowrap px-2 py-[6px] font-mono text-[11px] text-ink-4"
+                >
+                  (<a :href="row.article_talk_link">t</a> ·
+                  <a :href="row.article_history_link">h</a>)
+                </td>
+                <td
+                  class="px-2 py-[6px] text-center"
+                  :class="classFill(row.importance)"
+                >
+                  <a
+                    v-if="classHref(row.importance)"
+                    :href="classHref(row.importance)"
+                    >{{ classLabel(row.importance) }}</a
+                  >
+                  <span v-else>{{ classLabel(row.importance) }}</span>
+                </td>
+                <td
+                  class="whitespace-nowrap px-2 py-[6px] font-mono text-[12px] text-ink-3"
+                >
+                  <a
+                    class="!text-inherit"
+                    :href="timestampLink(row.article, row.importance_updated)"
+                    >{{ formatTimestamp(row.importance_updated) }}</a
+                  >
+                  <span class="text-ink-4"
+                    >(<a
+                      class="!text-inherit"
+                      :href="
+                        timestampLink(row.article_talk, row.importance_updated)
+                      "
+                      >t</a
+                    >)</span
+                  >
+                </td>
+                <td
+                  class="px-2 py-[6px] text-center"
+                  :class="classFill(row.quality)"
+                >
+                  <ClassIcon
+                    :label="classLabel(row.quality)"
+                    :size="13"
+                  ></ClassIcon>
+                  <a
+                    v-if="classHref(row.quality)"
+                    :href="classHref(row.quality)"
+                    >{{ classLabel(row.quality) }}</a
+                  >
+                  <span v-else>{{ classLabel(row.quality) }}</span>
+                </td>
+                <td
+                  class="whitespace-nowrap px-2 py-[6px] font-mono text-[12px] text-ink-3"
+                >
+                  <a
+                    class="!text-inherit"
+                    :href="timestampLink(row.article, row.quality_updated)"
+                    >{{ formatTimestamp(row.quality_updated) }}</a
+                  >
+                  <span class="text-ink-4"
+                    >(<a
+                      class="!text-inherit"
+                      :href="
+                        timestampLink(row.article_talk, row.quality_updated)
+                      "
+                      >t</a
+                    >)</span
+                  >
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Compare mode: two rating column-groups separated by a
+               borderless white channel so project fills never touch. -->
+          <table v-else class="wt text-[13px]">
+            <thead>
+              <tr class="wt-head">
+                <th colspan="3" class="px-2 py-[6px]"></th>
+                <th colspan="2" class="px-2 py-[6px] text-center font-semibold">
+                  {{ projectId.replace(/_/g, ' ') }}
+                </th>
+                <th class="wt-gap"></th>
+                <th colspan="2" class="px-2 py-[6px] text-center font-semibold">
+                  {{ projectIdB.replace(/_/g, ' ') }}
+                </th>
+              </tr>
+              <tr class="wt-head text-left">
+                <th class="w-10 px-2 py-[7px] text-right font-semibold">#</th>
+                <th class="px-2 py-[7px] font-semibold">Article</th>
+                <th class="px-2 py-[7px]"></th>
+                <th class="px-2 py-[7px] text-center font-semibold">Imp</th>
+                <th class="px-2 py-[7px] text-center font-semibold">Qual</th>
+                <th class="wt-gap"></th>
+                <th class="px-2 py-[7px] text-center font-semibold">Imp</th>
+                <th class="px-2 py-[7px] text-center font-semibold">Qual</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(row, index) in tableData" :key="index">
+                <td
+                  class="px-2 py-[6px] text-right font-mono text-[12px] text-ink-4"
+                >
+                  {{ articleData.pagination.display.start + index }}
+                </td>
+                <td
+                  class="max-w-[180px] truncate px-2 py-[6px] md:max-w-[560px]"
+                  :title="row[0].article"
+                >
+                  <a :href="row[0].article_link">{{ row[0].article }}</a>
+                </td>
+                <td
+                  class="whitespace-nowrap px-2 py-[6px] font-mono text-[11px] text-ink-4"
+                >
+                  (<a :href="row[0].article_talk_link">t</a> ·
+                  <a :href="row[0].article_history_link">h</a>)
+                </td>
+                <td
+                  class="px-2 py-[6px] text-center"
+                  :class="classFill(row[0].importance)"
+                >
+                  {{ classLabel(row[0].importance) }}
+                </td>
+                <td
+                  class="px-2 py-[6px] text-center"
+                  :class="classFill(row[0].quality)"
+                >
+                  <ClassIcon
+                    :label="classLabel(row[0].quality)"
+                    :size="13"
+                  ></ClassIcon
+                  >{{ classLabel(row[0].quality) }}
+                </td>
+                <td class="wt-gap"></td>
+                <td
+                  class="px-2 py-[6px] text-center"
+                  :class="classFill(row[1].importance)"
+                >
+                  {{ classLabel(row[1].importance) }}
+                </td>
+                <td
+                  class="px-2 py-[6px] text-center"
+                  :class="classFill(row[1].quality)"
+                >
+                  <ClassIcon
+                    :label="classLabel(row[1].quality)"
+                    :size="13"
+                  ></ClassIcon
+                  >{{ classLabel(row[1].quality) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+          <span class="font-mono text-[12px] text-ink-3"
+            >Articles {{ articleData.pagination.display.start }} –
+            {{ articleData.pagination.display.end }} of
+            {{ articleData.pagination.total }}</span
+          >
+          <ArticleTablePagination
+            v-if="articleData.pagination.total_pages > 1"
+            v-on:update-page="onUpdatePage($event)"
+            :page="page"
+            :totalPages="articleData.pagination.total_pages"
+          >
+          </ArticleTablePagination>
+        </div>
+      </template>
+
+      <div v-else class="py-10 text-center text-[14px] text-ink-3">
+        No results to display
       </div>
-      <div v-if="tableData.length > 0 && !projectIdB" class="my-0 row">
-        <p class="pages-cont">
-          <a :href="tsvUrl" download>Download all results as TSV</a>
-        </p>
-      </div>
-      <ArticleTablePagination
-        v-if="articleData && articleData.pagination.total_pages > 1"
-        class="row justify-content-between my-0"
-        v-on:update-page="onUpdatePage($event)"
-        :page="page"
-        :totalPages="articleData.pagination.total_pages"
-      >
-      </ArticleTablePagination>
-
-      <hr class="mt-0" />
-
-      <table v-if="!projectIdB">
-        <tr v-for="(row, index) in tableData" :key="index">
-          <td>{{ articleData.pagination.display.start + index }}</td>
-          <td>
-            <a :href="row.article_link">{{ row.article }}</a> (
-            <a :href="row.article_talk_link">t</a> ·
-            <a :href="row.article_history_link">h</a> )
-          </td>
-          <td :class="classLabel(row.importance)">
-            {{ classLabel(row.importance) }}
-          </td>
-          <td>
-            <a :href="timestampLink(row.article, row.importance_updated)">{{
-              formatTimestamp(row.importance_updated)
-            }}</a>
-            (
-            <a :href="timestampLink(row.article_talk, row.importance_updated)"
-              >t</a
-            >
-            )
-          </td>
-          <td :class="classLabel(row.quality)">
-            {{ classLabel(row.quality) }}
-          </td>
-          <td>
-            <a :href="timestampLink(row.article, row.quality_updated)">{{
-              formatTimestamp(row.quality_updated)
-            }}</a>
-            (
-            <a :href="timestampLink(row.article_talk, row.quality_updated)"
-              >t</a
-            >
-            )
-          </td>
-        </tr>
-      </table>
-
-      <table v-else-if="tableData.length">
-        <tr>
-          <th colspan="2"></th>
-          <th colspan="2">{{ projectId.replace(/_/g, ' ') }}</th>
-          <th></th>
-          <th colspan="2">{{ projectIdB.replace(/_/g, ' ') }}</th>
-        </tr>
-
-        <tr v-for="(row, index) in tableData" :key="index">
-          <td>{{ articleData.pagination.display.start + index }}</td>
-          <td>
-            <a :href="row[0].article_link">{{ row[0].article }}</a> (
-            <a :href="row[0].article_talk_link">t</a> ·
-            <a :href="row[0].article_history_link">h</a> )
-          </td>
-          <td :class="classLabel(row[0].importance)">
-            {{ classLabel(row[0].importance) }}
-          </td>
-          <td :class="classLabel(row[0].quality)">
-            {{ classLabel(row[0].quality) }}
-          </td>
-          <td class="spacer"></td>
-          <td :class="classLabel(row[1].importance)">
-            {{ classLabel(row[1].importance) }}
-          </td>
-          <td :class="classLabel(row[1].quality)">
-            {{ classLabel(row[1].quality) }}
-          </td>
-        </tr>
-      </table>
-
-      <div v-if="tableData.length > 0" class="my-0 row">
-        <p class="pages-cont">
-          Article {{ articleData.pagination.display.start }} -
-          {{ articleData.pagination.display.end }} of
-          {{ articleData.pagination.total }}
-        </p>
-      </div>
-      <ArticleTablePagination
-        v-if="articleData && articleData.pagination.total_pages > 1"
-        class="row justify-content-between mb-5 mt-0"
-        v-on:update-page="onUpdatePage($event)"
-        :page="page"
-        :totalPages="articleData.pagination.total_pages"
-      >
-      </ArticleTablePagination>
-
-      <h2 v-if="!tableData.length">No results to display</h2>
     </div>
   </div>
 </template>
 
 <script>
+import ArticleFilterBar from './ArticleFilterBar.vue';
 import ArticleTablePagination from './ArticleTablePagination.vue';
-import ArticleTablePageSelect from './ArticleTablePageSelect.vue';
-import ArticleTableRatingSelect from './ArticleTableRatingSelect.vue';
-import ArticleTableNameFilter from './ArticleTableNameFilter.vue';
+import ClassIcon from './ClassIcon.vue';
 import PulseLoader from './PulseLoader.vue';
+
+import { fillClass } from '../lib/labels.js';
 
 export default {
   name: 'article-table',
   components: {
+    ArticleFilterBar,
     ArticleTablePagination,
-    ArticleTablePageSelect,
-    ArticleTableRatingSelect,
-    ArticleTableNameFilter,
+    ClassIcon,
     PulseLoader,
   },
   data: function () {
@@ -161,7 +272,7 @@ export default {
       articleData: null,
       categoryLinks: {},
       loading: false,
-      loaderColor: '#007bff',
+      loaderColor: '#2456c9',
       loaderSize: '1rem',
     };
   },
@@ -227,14 +338,8 @@ export default {
     },
   },
   methods: {
-    onPageSelect: function (selection) {
-      this.$emit('page-select', selection);
-    },
-    onRatingSelect: function (selection) {
-      this.$emit('rating-select', selection);
-    },
-    onNameFilter: function (selection) {
-      this.$emit('name-filter', selection);
+    onUpdateFilters: function (selection) {
+      this.$emit('update-filters', selection);
     },
     onUpdatePage: function (page) {
       this.$emit('update-page', page);
@@ -283,6 +388,13 @@ export default {
         this.categoryLinks[qualOrImp].text || this.categoryLinks[qualOrImp]
       );
     },
+    classHref: function (qualOrImp) {
+      const link = this.categoryLinks[qualOrImp];
+      return (link && link.href) || null;
+    },
+    classFill: function (qualOrImp) {
+      return fillClass(this.classLabel(qualOrImp));
+    },
     getCategoryLinks: async function () {
       const response = await fetch(
         `${import.meta.env.VITE_API_URL}/projects/${
@@ -324,39 +436,6 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
 @import '../labels.css';
-
-h2 {
-  text-align: center;
-}
-
-table {
-  border-collapse: collapse;
-  border: 1px solid #aaa;
-  margin: 1rem auto;
-}
-
-td {
-  border: 1px solid #aaa;
-  padding: 0 0.5rem;
-}
-
-.spacer {
-  width: 1rem;
-}
-
-tr:nth-child(even) {
-  background: lightyellow;
-}
-
-.pages-cont {
-  margin: auto;
-  text-align: center;
-}
-
-.loader {
-  margin: auto;
-  text-align: center;
-}
 </style>

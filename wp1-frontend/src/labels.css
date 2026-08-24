@@ -65,3 +65,9 @@
 .Template {
   background: #fbceb1;
 }
+
+/* Wikipedia renders Unassessed rows light grey; the API serves it as a
+   regular class label but labels.css historically had no rule for it. */
+.Unassessed {
+  background: #d3d3d3;
+}
