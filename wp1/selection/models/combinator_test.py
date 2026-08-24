@@ -192,7 +192,7 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
             [],
             [],
             [
-                "Builder Builder A is a combinator. Combinators can only reference leaf builders such as Simple, SPARQL, PetScan, Book, or WikiProject."
+                "Builder Builder A is a combinator. Combinators can only reference leaf builders such as Simple, SPARQL, PetScan, or WikiProject."
             ],
         )
         self.assertEqual(expected, actual)

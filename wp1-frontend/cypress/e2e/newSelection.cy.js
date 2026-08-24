@@ -21,8 +21,8 @@ describe('the new selection page', () => {
       cy.get('#project-select').contains('en.wikipedia.org');
     });
 
-    it('shows all six sources in the picker', () => {
-      ['Simple', 'SPARQL', 'Petscan', 'Book', 'WikiProject', 'Combinator'].map(
+    it('shows all five sources in the picker', () => {
+      ['Simple', 'SPARQL', 'Petscan', 'WikiProject', 'Combinator'].map(
         (label) => cy.contains('button', label)
       );
     });
@@ -201,7 +201,7 @@ describe('the new selection page', () => {
       });
     });
 
-    describe('the Petscan and Book sources', () => {
+    describe('the Petscan source', () => {
       it('saves a petscan URL', () => {
         cy.get('#source-petscan').click();
         cy.intercept('POST', 'v1/builders/', (req) => {
@@ -217,24 +217,6 @@ describe('the new selection page', () => {
         cy.get('#saveListButton').click();
         cy.wait('@save');
         cy.url().should('include', '/selections/user/new-id-4');
-      });
-
-      it('saves a book URL', () => {
-        cy.get('#source-book').click();
-        cy.intercept('POST', 'v1/builders/', (req) => {
-          expect(req.body.model).to.equal('wp1.selection.models.book');
-          req.reply({
-            statusCode: 200,
-            body: { success: true, id: 'new-id-5', items: {} },
-          });
-        }).as('save');
-        cy.get('#name-input').type('Book List');
-        cy.get('#book-url').type(
-          'https://en.wikipedia.org/wiki/Book:Trees_of_the_World'
-        );
-        cy.get('#saveListButton').click();
-        cy.wait('@save');
-        cy.url().should('include', '/selections/user/new-id-5');
       });
     });
   });

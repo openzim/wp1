@@ -751,16 +751,6 @@ export default {
             display: () => params.url || '',
           });
           break;
-        case 'book':
-          rows.push({
-            key: 'url',
-            label: 'Book page',
-            control: 'text',
-            mono: true,
-            hint: 'A Book: namespace page URL',
-            display: () => params.url || '',
-          });
-          break;
         case 'wikiproject':
           rows.push(
             {

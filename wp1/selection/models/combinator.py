@@ -183,7 +183,7 @@ class Builder(MetaBuilder):
                 errors.append(
                     f"Builder {label} is a combinator. Combinators can only "
                     "reference leaf builders such as Simple, SPARQL, PetScan, "
-                    "Book, or WikiProject."
+                    "or WikiProject."
                 )
 
         if errors:
