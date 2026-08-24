@@ -41,7 +41,7 @@ timestamps age. To refresh them, or to re-create the rows after changing them,
 run (from the repository root):
 
 ```bash
-pipenv run python seed-dev-selections.py
+pipenv run python scripts/util/seed-dev-selections.py
 ```
 
 The script talks directly to the dev database from `docker-compose-dev.yml`
@@ -53,7 +53,7 @@ rows for your own user instead (find your id with
 `SELECT u_id, u_username FROM users`):
 
 ```bash
-pipenv run python seed-dev-selections.py --user-id <your u_id> --username <your username>
+pipenv run python scripts/util/seed-dev-selections.py --user-id <your u_id> --username <your username>
 ```
 
 ## Updating the dev database dump

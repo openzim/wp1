@@ -11,7 +11,7 @@
 # port-coupled app config values (WP10DB_PORT, REDIS_PORT, localhost URLs)
 # to match, and optionally starts the stack.
 #
-# Usage: ./create_worktree.sh <branch> [start-point]
+# Usage: ./scripts/util/create_worktree.sh <branch> [start-point]
 #   <branch>       branch to check out in the worktree; created from
 #                  [start-point] if it doesn't exist yet
 #   [start-point]  ref a new branch is created from (default: main)
@@ -19,7 +19,7 @@
 # The worktree is created at .worktrees/<branch>.
 set -euo pipefail
 
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/../.."
 
 branch="${1:?usage: $0 <branch> [start-point]}"
 start="${2:-main}"

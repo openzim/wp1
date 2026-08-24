@@ -49,7 +49,7 @@ jobs:
           pipenv install --deploy --dev
 
       - name: Run ty
-        run: ./check_types.sh
+        run: ./scripts/util/check_types.sh
 
   docs-build:
     runs-on: ubuntu-24.04

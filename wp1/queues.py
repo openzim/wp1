@@ -48,7 +48,7 @@ def _get_assessment_cache_queue(redis):
 def enqueue_assessment_cache_warming(redis: Redis):
     """Enqueue a one-off assessment-cache warming job to run immediately.
 
-    Called on container boot (see warm-assessment-cache.py) so that a fresh
+    Called on container boot (see scripts/wp1/warm-assessment-cache.py) so that a fresh
     deploy or a Redis restart seeds the cache right away instead of leaving the
     slow query to run inline on the first web request until the next scheduled
     (noon UTC, see cron_config.py) run.

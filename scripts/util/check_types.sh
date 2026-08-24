@@ -6,10 +6,12 @@
 # this script directly, so updates here are the single source of truth.
 #
 # Usage:
-#   ./check_types.sh           # check all files in TYPED_FILES
-#   ./check_types.sh wp1/foo.py  # check a specific file (overrides the list)
+#   ./scripts/util/check_types.sh              # check all files in TYPED_FILES
+#   ./scripts/util/check_types.sh wp1/foo.py   # check a specific file (overrides the list)
 
 set -e
+
+cd "$(dirname "$0")/../.."
 
 TYPED_FILES=(
   wp1/models/wp10/builder.py
