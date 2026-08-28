@@ -298,29 +298,26 @@ def get_zim_filename_prefix(builder: Builder, selection: Selection) -> str:
     return f"{util.safe_name(builder_name)}-{selection_id_frag}"
 
 
-def _get_params(
-    builder: Builder,
-    selection: Selection,
-    title: str,
-    description: str,
-    long_description: str,
-    flavour: str = None,
-) -> dict:
-    if builder is None:
-        raise ValueError("Given builder was None: %r" % builder)
-
-    project = builder.b_project.decode("utf-8")
-
+def _get_image_name_and_tag() -> tuple[str, str]:
     image = CREDENTIALS[ENV].get("ZIMFARM", {}).get("image")
     if image is None:
         image = "ghcr.io/openzim/mwoffliner:latest"
         logger.warning(
             'No ZIMFARM["image"] found in credentials, using latest (%s)', image
         )
-    image_name, image_tag = image.split(":")
+    return image.split(":")
 
-    offliner_config = {
-        "offliner_id": "mwoffliner",
+
+def _get_offliner_flags(
+    builder: Builder,
+    selection: Selection,
+    title: str,
+    description: str,
+    long_description: str,
+    flavour: str | None = None,
+):
+    project = builder.b_project.decode("utf-8")
+    flags = {
         "mwUrl": "https://%s/" % project,
         "adminEmail": "contact+wp1@kiwix.org",
         "forceRender": "ActionParse",
@@ -339,8 +336,81 @@ def _get_params(
 
     # Add the format flag for mwoffliner if a flavour is specified.
     if flavour:
-        offliner_config["format"] = [ALLOWED_FLAVOURS[flavour]]
+        flags["format"] = [ALLOWED_FLAVOURS[flavour]]
 
+    cache_url = CREDENTIALS[ENV].get("ZIMFARM", {}).get("cache_url")
+    if cache_url is not None:
+        flags["optimisationCacheUrl"] = cache_url
+    else:
+        logger.warning(
+            "No cache_url found in credentials, skipping "
+            "optimisationCacheUrl URL for zimfarm request"
+        )
+    return flags
+
+
+def _get_schedule_update_params(
+    builder: Builder,
+    selection: Selection,
+    title: str,
+    description: str,
+    long_description: str,
+    flavour: str = None,
+) -> dict[str, Any]:
+    if builder is None:
+        raise ValueError("Given builder was None: %r" % builder)
+
+    image_name, image_tag = _get_image_name_and_tag()
+    flags = _get_offliner_flags(
+        builder, selection, title, description, long_description, flavour
+    )
+    version = CREDENTIALS[ENV].get("ZIMFARM", {}).get("definition_version", image_tag)
+
+    webhook_url = get_webhook_url()
+
+    return {
+        "name": get_zimfarm_schedule_name(builder.b_id.decode("utf-8")),
+        "language": "eng",
+        "periodicity": "manually",
+        "tags": ["wikipedia"],
+        "enabled": True,
+        "offliner": "mwoffliner",
+        "warehouse_path": "/wikipedia",
+        "image": {
+            "name": image_name,
+            "tag": image_tag,
+        },
+        "platform": None,
+        "resources": logic_selection.get_resource_profile(selection),
+        "monitor": False,
+        "flags": flags,
+        "context": "wikimedia",
+        "version": version,
+        "notification": {
+            "ended": {
+                "webhook": [webhook_url] if webhook_url else None,
+            },
+        },
+    }
+
+
+def _get_schedule_create_params(
+    builder: Builder,
+    selection: Selection,
+    title: str,
+    description: str,
+    long_description: str,
+    flavour: str = None,
+) -> dict:
+    if builder is None:
+        raise ValueError("Given builder was None: %r" % builder)
+
+    image_name, image_tag = _get_image_name_and_tag()
+    flags = _get_offliner_flags(
+        builder, selection, title, description, long_description, flavour
+    )
+
+    flags["offliner_id"] = "mwoffliner"
     config = {
         "warehouse_path": "/wikipedia",
         "image": {
@@ -350,35 +420,25 @@ def _get_params(
         "resources": logic_selection.get_resource_profile(selection),
         "platform": "wikimedia",
         "monitor": False,
-        "offliner": offliner_config,
+        "offliner": flags,
     }
-    cache_url = CREDENTIALS[ENV].get("ZIMFARM", {}).get("cache_url")
-    if cache_url is not None:
-        config["offliner"]["optimisationCacheUrl"] = cache_url
-    else:
-        logger.warning(
-            "No cache_url found in credentials, skipping "
-            "optimisationCacheUrl URL for zimfarm request"
-        )
-
     version = CREDENTIALS[ENV].get("ZIMFARM", {}).get("definition_version", image_tag)
-
     webhook_url = get_webhook_url()
 
     return {
         "name": get_zimfarm_schedule_name(builder.b_id.decode("utf-8")),
         "language": "eng",
-        "context": "wikimedia",
         "periodicity": "manually",
         "tags": ["wikipedia"],
         "enabled": True,
+        "version": version,
+        "config": config,
         "notification": {
             "ended": {
                 "webhook": [webhook_url] if webhook_url else None,
             },
         },
-        "config": config,
-        "version": version,
+        "context": "wikimedia",
     }
 
 
@@ -449,9 +509,6 @@ def create_or_update_zimfarm_schedule(
             )
         )
 
-    params = _get_params(
-        builder, selection, title, description, long_description, flavour=flavour
-    )
     base_url = get_zimfarm_url()
     headers = _get_zimfarm_headers(token)
 
@@ -463,6 +520,14 @@ def create_or_update_zimfarm_schedule(
     try:
         existing_zim_schedule = find_existing_schedule_in_db(wp10db, builder.b_id)
         if existing_zim_schedule and zimfarm_schedule_exists(redis, builder_id):
+            params = _get_schedule_update_params(
+                builder,
+                selection,
+                title,
+                description,
+                long_description,
+                flavour=flavour,
+            )
             schedule_name = get_zimfarm_schedule_name(builder_id)
             r = requests.patch(
                 "%s/recipes/%s" % (base_url, schedule_name),
@@ -481,6 +546,14 @@ def create_or_update_zimfarm_schedule(
             logic_zim_schedules.update_zim_schedule(wp10db, zim_schedule)
             zim_schedule_id_to_set = zim_schedule.s_id.decode("utf-8")
         else:
+            params = _get_schedule_create_params(
+                builder,
+                selection,
+                title,
+                description,
+                long_description,
+                flavour=flavour,
+            )
             r = requests.post("%s/recipes" % base_url, headers=headers, json=params)
             if r.status_code == 409:
                 # The recipe already exists on the Zimfarm even though there is
@@ -490,6 +563,14 @@ def create_or_update_zimfarm_schedule(
                 # params and record it locally below, making this operation
                 # idempotent instead of permanently stuck on 409.
                 schedule_name = get_zimfarm_schedule_name(builder_id)
+                params = _get_schedule_update_params(
+                    builder,
+                    selection,
+                    title,
+                    description,
+                    long_description,
+                    flavour=flavour,
+                )
                 logger.info(
                     "Recipe %s already exists on the Zimfarm, adopting it",
                     schedule_name,

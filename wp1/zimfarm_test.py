@@ -187,7 +187,7 @@ class ZimFarmTest(BaseWpOneDbTest):
         with self.assertRaises(ValueError):
             zimfarm.get_zim_filename_prefix(None, None)
 
-    def test_get_params(self):
+    def test_get_schdedule_create_params(self):
         s3 = MagicMock()
         s3.client.head_object.return_value = {"ContentLength": 20000000}
         from wp1.zimfarm import CREDENTIALS
@@ -196,7 +196,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             "cache_url"
         ] = "https://wasabi.fake/bucket"
 
-        actual = zimfarm._get_params(
+        actual = zimfarm._get_schedule_create_params(
             self.builder,
             self.selection,
             title="My Builder",
@@ -207,7 +207,7 @@ class ZimFarmTest(BaseWpOneDbTest):
         self.maxDiff = None
         self.assertEqual(self.expected_params, actual)
 
-    def test_get_params_image_in_env(self):
+    def test_get_schedule_create_params_image_in_env(self):
         s3 = MagicMock()
         s3.client.head_object.return_value = {"ContentLength": 20000000}
         from wp1.zimfarm import CREDENTIALS
@@ -226,7 +226,7 @@ class ZimFarmTest(BaseWpOneDbTest):
         }
         expected["version"] = "1.23.45"
 
-        actual = zimfarm._get_params(
+        actual = zimfarm._get_schedule_create_params(
             self.builder,
             self.selection,
             title="My Builder",
@@ -237,9 +237,11 @@ class ZimFarmTest(BaseWpOneDbTest):
         self.maxDiff = None
         self.assertEqual(expected, actual)
 
-    def test_get_params_missing_builder(self):
+    def test_get_schedule_create_params_missing_builder(self):
         with self.assertRaises(ValueError):
-            zimfarm._get_params(None, self.selection, "Tile", "Desc", "Long Desc")
+            zimfarm._get_schedule_create_params(
+                None, self.selection, "Tile", "Desc", "Long Desc"
+            )
 
     @patch("wp1.zimfarm.CREDENTIALS")
     def test_token_provider_init_oauth_valid(self, mock_credentials):
@@ -725,7 +727,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.token_provider")
-    @patch("wp1.zimfarm._get_params")
+    @patch("wp1.zimfarm._get_schedule_create_params")
     def test_create_or_update_zimfarm_schedule_creates(
         self, get_params_mock, mock_token_provider, mock_requests
     ):
@@ -769,7 +771,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.token_provider")
-    @patch("wp1.zimfarm._get_params")
+    @patch("wp1.zimfarm._get_schedule_update_params")
     @patch("wp1.zimfarm.zimfarm_schedule_exists", return_value=True)
     def test_create_or_update_zimfarm_schedule_updates(
         self,
@@ -807,6 +809,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             "New Long Description",
             None,
         )
+        get_params_mock.assert_called_once()
 
         # Actually check that the schedule was updated in the DB
         with self.wp10db.cursor() as cursor:
@@ -822,13 +825,19 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.token_provider")
-    @patch("wp1.zimfarm._get_params")
+    @patch("wp1.zimfarm._get_schedule_create_params")
+    @patch("wp1.zimfarm._get_schedule_update_params")
     def test_create_or_update_zimfarm_schedule_adopts_orphaned_recipe(
-        self, get_params_mock, mock_token_provider, mock_requests
+        self,
+        get_update_params_mock,
+        get_create_params_mock,
+        mock_token_provider,
+        mock_requests,
     ):
         """A 409 on recipe creation adopts the existing recipe via PATCH."""
         redis = MagicMock()
-        get_params_mock.return_value = {"name": "bar"}
+        get_create_params_mock.return_value = {"name": "foo"}
+        get_update_params_mock.return_value = {"name": "bar"}
         mock_token_provider.get_access_token.return_value = "abcdef"
         post_response = MagicMock()
         post_response.status_code = 409
@@ -852,7 +861,7 @@ class ZimFarmTest(BaseWpOneDbTest):
         mock_requests.post.assert_called_once_with(
             "https://fake.farm/v2/recipes",
             headers=expected_headers,
-            json={"name": "bar"},
+            json={"name": "foo"},
         )
         mock_requests.patch.assert_called_once_with(
             "https://fake.farm/v2/recipes/wp1_selection_3c4d",
@@ -870,7 +879,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.token_provider")
-    @patch("wp1.zimfarm._get_params")
+    @patch("wp1.zimfarm._get_schedule_create_params")
     def test_create_or_update_zimfarm_schedule_adopt_patch_fails(
         self, get_params_mock, mock_token_provider, mock_requests
     ):
@@ -905,7 +914,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.token_provider")
-    @patch("wp1.zimfarm._get_params")
+    @patch("wp1.zimfarm._get_schedule_create_params")
     def test_create_or_update_zimfarm_schedule_http_error(
         self, get_params_mock, mock_token_provider, mock_requests
     ):
@@ -1007,7 +1016,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.token_provider")
-    @patch("wp1.zimfarm._get_params")
+    @patch("wp1.zimfarm._get_schedule_create_params")
     def test_create_or_update_zimfarm_schedule_create_empty_long_desc_ok(
         self, get_params_mock, mock_token_provider, mock_requests
     ):
@@ -1038,7 +1047,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.token_provider")
-    @patch("wp1.zimfarm._get_params")
+    @patch("wp1.zimfarm._get_schedule_create_params")
     def test_create_or_update_zimfarm_schedule_create_missing_long_desc_ok(
         self, get_params_mock, mock_token_provider, mock_requests
     ):
@@ -1133,7 +1142,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.token_provider")
-    @patch("wp1.zimfarm._get_params")
+    @patch("wp1.zimfarm._get_schedule_create_params")
     def test_create_or_update_zimfarm_schedule_valid_graphemes(
         self, get_params_mock, mock_token_provider, mock_requests
     ):
@@ -1632,7 +1641,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             "cache_url"
         ] = "https://wasabi.fake/bucket"
 
-        actual = zimfarm._get_params(
+        actual = zimfarm._get_schedule_create_params(
             self.builder,
             self.selection,
             title="My Builder",
@@ -1650,7 +1659,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             "cache_url"
         ] = "https://wasabi.fake/bucket"
 
-        actual = zimfarm._get_params(
+        actual = zimfarm._get_schedule_create_params(
             self.builder,
             self.selection,
             title="My Builder",
@@ -1668,7 +1677,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             "cache_url"
         ] = "https://wasabi.fake/bucket"
 
-        actual = zimfarm._get_params(
+        actual = zimfarm._get_schedule_create_params(
             self.builder,
             self.selection,
             title="My Builder",
@@ -1686,7 +1695,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             "cache_url"
         ] = "https://wasabi.fake/bucket"
 
-        actual = zimfarm._get_params(
+        actual = zimfarm._get_schedule_create_params(
             self.builder,
             self.selection,
             title="My Builder",
@@ -1698,7 +1707,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.token_provider")
-    @patch("wp1.zimfarm._get_params")
+    @patch("wp1.zimfarm._get_schedule_create_params")
     def test_create_or_update_zimfarm_schedule_with_flavour(
         self, get_params_mock, mock_token_provider, mock_requests
     ):
