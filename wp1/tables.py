@@ -51,7 +51,7 @@ def labels_for_classes(sort_qual, sort_imp):
 
     for k in sort_imp.keys():
         imp_labels[k] = "{{%s}}" % k.decode("utf-8")
-    imp_labels[UNASSESSED_CLASS] = "No-Class"
+    imp_labels[UNASSESSED_CLASS] = "No-Importance"
 
     return qual_labels, imp_labels
 

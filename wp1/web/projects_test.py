@@ -63,7 +63,7 @@ class ProjectTest(BaseWebTestcase):
                 "href": "https://en.wikipedia.org/wiki/Category:Low-Class_Project_0_articles",
                 "text": "Low",
             },
-            "Unassessed-Class": "No-Class",
+            "Unassessed-Class": "No-Importance",
         },
     }
 
