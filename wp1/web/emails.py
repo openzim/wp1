@@ -2,7 +2,7 @@ import requests
 import logging
 
 from wp1 import zimfarm
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 from wp1.logic import zim_schedules
 from wp1.models.wp10.zim_file import ZimTask
 from wp1.models.wp10.zim_schedule import ZimSchedule
@@ -22,8 +22,8 @@ def send_zim_ready_email(
 ):
     """Sends an email notification when a ZIM file is ready for download."""
 
-    mailgun_config = CREDENTIALS.get(ENV, {}).get("MAILGUN", {})
-    if not mailgun_config or not mailgun_config.get("api_key"):
+    settings = get_settings()
+    if not settings.MAILGUN_API_KEY:
         logger.warning("Mailgun not configured. Email not sent.")
         return False
 
@@ -51,8 +51,8 @@ def send_zim_ready_email(
 
     try:
         response = requests.post(
-            mailgun_config["url"],
-            auth=("api", mailgun_config["api_key"]),
+            settings.MAILGUN_URL,
+            auth=("api", settings.MAILGUN_API_KEY),
             data=email_data,
             timeout=30,
         )
@@ -100,7 +100,7 @@ def notify_user_for_scheduled_zim(wp10db, zim_file: ZimTask, zim_schedule: ZimSc
     ):
         next_generation_months = zim_schedule.s_interval
 
-    email_confirm_url = CREDENTIALS.get(ENV, {}).get("CLIENT_URL", {}).get("api")
+    email_confirm_url = get_settings().CLIENT_API_URL
     unsubscribe_url = f"{email_confirm_url}/api/v1/zim/unsubscribe-notification?schedule_id={zim_schedule.s_id.decode('utf-8')}"
 
     send_zim_ready_email(
