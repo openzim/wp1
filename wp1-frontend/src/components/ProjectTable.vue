@@ -83,10 +83,14 @@
                   v-for="col in tableData.ordered_cols"
                   :key="col"
                   class="px-3 py-[4px] text-right"
-                  :class="{ 'font-semibold': isBoldRow(row) }"
+                  :class="{
+                    'font-semibold': isBoldRow(row),
+                    'hover:bg-accent-tint-2': tableData.data[row][col],
+                  }"
                 >
                   <router-link
                     v-if="tableData.data[row][col]"
+                    class="wt-link"
                     :to="{
                       path: `/project/${currentProject}/articles`,
                       query: { quality: row, importance: col },
@@ -96,8 +100,11 @@
                     }}</router-link
                   >
                 </td>
-                <td class="px-3 py-[4px] text-right font-semibold">
+                <td
+                  class="px-3 py-[4px] text-right font-semibold hover:bg-accent-tint-2"
+                >
                   <router-link
+                    class="wt-link"
                     :to="{
                       path: `/project/${currentProject}/articles`,
                       query: { quality: row },
@@ -120,6 +127,7 @@
                   class="wt-head px-3 py-[4px] text-right font-semibold"
                 >
                   <router-link
+                    class="wt-link"
                     :to="{
                       path: `/project/${currentProject}/articles`,
                       query: { importance: col },
