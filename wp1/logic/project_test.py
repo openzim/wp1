@@ -1439,9 +1439,9 @@ class GlobalCountAndListTest(BaseWpOneDbTest):
             cursor.executemany(
                 """
           INSERT INTO projects
-            (p_project, p_timestamp)
+            (p_project, p_timestamp, p_count)
           VALUES
-            (%s, '20181225001122')
+            (%s, '20181225001122', 100)
       """,
                 [("Test Project %s" % i,) for i in range(50)],
             )
@@ -1476,6 +1476,32 @@ class GlobalCountAndListTest(BaseWpOneDbTest):
             self.assertEqual(50, len(projects))
         finally:
             self.wp10db.close = orig_close
+
+    def test_list_all_projects_excludes_empty(self):
+        with self.wp10db.cursor() as cursor:
+            cursor.execute("""
+          INSERT INTO projects
+            (p_project, p_timestamp, p_count)
+          VALUES
+            ('Empty Redirect Project', '20181225001122', 0)
+      """)
+        self.wp10db.commit()
+
+        projects = logic_project.list_all_projects(self.wp10db)
+        self.assertEqual(50, len(projects))
+        self.assertNotIn(b"Empty Redirect Project", [p.p_project for p in projects])
+
+    def test_count_projects_excludes_empty(self):
+        with self.wp10db.cursor() as cursor:
+            cursor.execute("""
+          INSERT INTO projects
+            (p_project, p_timestamp, p_count)
+          VALUES
+            ('Empty Redirect Project', '20181225001122', 0)
+      """)
+        self.wp10db.commit()
+
+        self.assertEqual(50, logic_project.count_projects(self.wp10db))
 
 
 class UpdateProjectByNameTest(BaseCombinedDbTest):
