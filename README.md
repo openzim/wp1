@@ -127,33 +127,39 @@ corepack enable
 You will also need to have [Docker](https://www.docker.com/) on your system
 in order to run the development server.
 
-### Populating the credentials module
+### Configuration (.env)
 
-The script requires access to the enwiki_p replica database (referred to
-in the code as `wikidb`), as well as its own toolsdb application database
-(referred to in the code as `wp10db`). If you are a part of the toolforge
-`enwp10` [project](https://tools.wmflabs.org/admin/tool/enwp10), you can
-find the credentials for these on toolforge in the replica.my.cnf file in
-the tool's home directory. They need to be formatted in a way that is
-consumable by the library and pymysql. Look at `credentials.py.example`
-and create a copy called `credentials.py` with the relevant information
-filled in. The production version of this code also requires English Wikipedia
-API credentials for automatically editing and updating
+All backend configuration lives in a single schema in `wp1/config.py`,
+read from environment variables. The committed
+[`.env.example`](.env.example) is **generated from that schema** (run
+`pipenv run python -m wp1.config` after changing it; CI fails on drift)
+and documents every knob, its type, its default, and whether it is
+required in production.
+
+For development you usually need no configuration at all: the schema
+defaults point at the services in `docker-compose-dev.yml`. To customize
+values, copy `.env.example` to `.env` (gitignored) and edit it; the dev
+containers pick it up via docker compose's `env_file`.
+
+The main thing worth customizing is the `WIKIDB` section: the app reads
+the enwiki_p replica database (referred to in the code as `wikidb`) on
+Toolforge, and needs your Toolforge credentials to do so. If you are a
+part of the toolforge `enwp10`
+[project](https://tools.wmflabs.org/admin/tool/enwp10), you can find the
+credentials on toolforge in the replica.my.cnf file in the tool's home
+directory. This is not required for developing the frontend.
+
+The production version of this code also requires English Wikipedia API
+credentials (`API_USER`/`API_PASSWORD`) for automatically editing and
+updating
 [tables like this one](https://en.wikipedia.org/wiki/User:WP_1.0_bot/Tables/Project/Catholicism).
 Currently, if your environment is DEVELOPMENT, jobs that utilize the API
-to edit Wikipedia are disabled. There is no development wiki that gets edited
-at this time.
+to edit Wikipedia are disabled. There is no development wiki that gets
+edited at this time.
 
-The "development" credentials files, `credentials.py.dev` and
-`credentials.py.dev.example` are for running the docker graph of development
-resources. They are copied into the docker container that is run when using
-`docker-compose-dev.yml`.
-
-The `credentials.py` file proper also contains a section for TEST database
-credentials. These are used in unit tests. If you use the database provided
-in `docker-compose-test.yml` you can copy these directly from the example
-file. However, you are free to provide your own test database that will
-be destroyed after every test run. See the next section on running the tests.
+Unit tests need no configuration or env files: the pytest bootstrap
+(`conftest.py`) constructs the test configuration in code. See the next
+section on running the tests.
 
 ### Running the backend (Python/pytest) tests
 
@@ -170,11 +176,10 @@ you should be able to simply run the following command from this
 directory to run the tests:
 
 ```bash
-pipenv run WP1_ENV=test pytest
+./scripts/util/run_tests.sh
 ```
 
-**Note:** Inline env var support in `pipenv run` requires Pipenv >= 2026.5.2.
-Make sure your Pipenv is up to date.
+(or plain `pipenv run pytest` if the test containers are already up).
 
 ### Running the frontend (Cypress) integration tests
 
@@ -217,10 +222,11 @@ For development, you will need to have Docker installed as explained above.
 There is a Docker setup for a development database. It lives in
 `docker-compose-dev.yml`.
 
-Before you run the docker-compose command below, you must copy the file
-`wp1/credentials.py.dev.example` to `wp1/credentials.py.dev` and fill out the
-section for `STORAGE`, if you wish to properly materialize builder lists into
-backend selections.
+No configuration is needed before starting it: the defaults in
+`wp1/config.py` already point at the in-network hostnames of these
+services. If you want to customize anything (for example real `STORAGE`
+credentials to materialize builder lists against an external S3), copy
+`.env.example` to `.env` and edit it.
 
 ### Running parallel dev stacks (e.g. from git worktrees)
 
@@ -259,9 +265,9 @@ Notes:
 
 - Each stack gets its own network and volumes (`<project>_minio-data`), so
   minio bucket setup runs per stack, and each stack has its own dev database.
-- `wp1/credentials.py.dev` and `.env.docker` refer to the backend by the
-  in-network hostname `wp1bot-web-dev`; this keeps working in a suffixed
-  stack via a network alias, no changes needed.
+- The backend is referred to by the in-network hostname `wp1bot-web-dev`
+  (the `CLIENT_BACKEND_URL` default in `wp1/config.py`); this keeps
+  working in a suffixed stack via a network alias, no changes needed.
 - Caveat: the zimfarm UI config
   (`docker/zimfarm/zimfarm_ui_dev/config.json`) hardcodes the API URL
   `http://localhost:8004`, so a second stack's zimfarm UI won't reach its
@@ -298,16 +304,15 @@ You may need to install the `jq` tool with [these instructions](https://github.c
   necessary as they contain the latest parameters needed to run the `mwoffliner`
   scraper.
 
-  In your `credentials.py`, set the definition version to any of the versions pulled from the API. For example, if `1.17.2` was one of the downloaded definitions of the mwoffliner scraper, you want to set `definition_version` under the `ZIMFARM` section:
+  In your `.env`, set the definition version to any of the versions pulled from the API. For example, if `1.17.2` was one of the downloaded definitions of the mwoffliner scraper:
 
-  ```py
-    "ZIMFARM": {
-        "definition_version": "1.17.2",
-        "image": "ghcr.io/openzim/mwoffliner:1.17.2"
-        # other configurations for zimfarm follow...
-    }
-
+  ```sh
+  ZIMFARM_DEFINITION_VERSION=1.17.2
+  ZIMFARM_IMAGE=ghcr.io/openzim/mwoffliner:1.17.2
   ```
+
+  (These are also the schema defaults in `wp1/config.py`, so you only
+  need to set them if you registered a different version.)
 
 - Register a test Zimfarm worker
 
@@ -337,17 +342,10 @@ See the instructions in the associated [README file](https://github.com/openzim/
 The API server is included in the docker-compose-dev.yml graph and starts
 automatically. It will be available at http://localhost:5000.
 
-If you prefer to run the API server locally instead of in Docker, you can use:
-
-```bash
-pipenv run flask --app wp1.web.app --debug run
-```
-
-If you're having difficulties connecting to the backend server from the
-frontend, especially in cypress e2e tests, and especially on macOS, it might have
-something to do with IPv4 versus IPv6 networking stacks. You can try adding the
-option `--host 127.0.0.1` to the command line above (see
-https://github.com/openzim/wp1/pull/859).
+Running the app in Docker via `docker-compose-dev.yml` is the only
+supported way to run it locally. The host-side toolchain (pipenv, pytest
+via `./scripts/util/run_tests.sh`, and database migrations) still runs on
+the host, against the docker-provided services.
 
 ## Starting the web frontend
 
@@ -374,22 +372,20 @@ pnpm install
 pnpm dev
 ```
 
-## Development credentials.py
+## Development configuration
 
-The DEVELOPMENT section of credentials.py.example is already filled out with
-the proper values for the servers listed in docker-compose-dev.yml. You should
-be able to simply copy it to credentials.py.
-
-If you wish to connect to a wiki replica database on toolforge, you will need
-to fill out your credentials in WIKIDB section. This is not required for
-developing the frontend.
+See [Configuration (.env)](#configuration-env) above: the schema defaults
+in `wp1/config.py` already match the servers in `docker-compose-dev.yml`,
+so no `.env` is needed to get started. To connect to a wiki replica
+database on toolforge, set your credentials in the `WIKIDB_*` keys of
+your `.env`. This is not required for developing the frontend.
 
 ## Development overlay
 
 The API server has a built-in development overlay, currently used for manual
 update endpoints. What this means is that the endpoints defined in
 `wp1.web.dev.projects` are used with priority, instead of the production endpoints,
-**only if the credentials.py ENV == Environment.DEVELOPMENT**. This is to allow
+**only if the environment (`WP1_ENV`) is development, which is the default**. This is to allow
 for easier manual and CI testing of the manual update page.
 
 If you wish to test the manual update job with a real Wikipedia replica database
@@ -460,9 +456,10 @@ setup). The script:
 - Runs `scripts/wp1/deploy-remote.sh` on the production box (after a
   `git pull` there, so the remote script is the version being
   deployed), which:
-  - Warns and asks for confirmation if `wp1/credentials.py.example`
-    changed since the last deploy, since `/data/wp1bot/credentials.py`
-    is managed by hand and probably needs a matching update.
+  - Warns and asks for confirmation if `.env.example` changed since the
+    last deploy, since the production env file `/data/wp1bot/wp1.env`
+    (consumed by `docker-compose.yml` via `env_file`) is managed by hand
+    and probably needs a matching update.
   - Waits for all three images tagged `sha-<short sha>` for the exact
     commit being deployed to appear on ghcr.io. Deploying by the
     immutable sha tag (instead of pulling the moving `release` tag)

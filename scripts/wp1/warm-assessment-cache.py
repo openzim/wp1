@@ -4,6 +4,10 @@ from pathlib import Path
 
 # Runs as `python scripts/wp1/warm-assessment-cache.py`; put the repo root on
 # sys.path so the `wp1` package resolves regardless of cwd.
+# The config defaults point at in-docker hostnames, so in development run
+# this inside the stack:
+#   docker compose -f docker-compose-dev.yml exec dev-web \
+#     python scripts/wp1/warm-assessment-cache.py
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from wp1 import app_logging, queues
