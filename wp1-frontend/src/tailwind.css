@@ -198,6 +198,18 @@
   .wp1r .wt-head {
     background-color: #eaecf0;
   }
+  /* Matrix counts read as links even at rest (openzim/wp1#427): dotted
+     underline resting, solid on hover. Two class selectors outweigh the
+     .wp1r a palette rules above, same trick as the button opt-outs. */
+  .wp1r a.wt-link,
+  .wp1r a.wt-link:visited {
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+  }
+  .wp1r a.wt-link:hover {
+    text-decoration: underline solid;
+    text-underline-offset: 3px;
+  }
   /* Borderless white channel separating the two project column-groups in
      the compare table, so colour fills never touch across projects. */
   .wp1r .wt .wt-gap {
