@@ -43,7 +43,7 @@ def project(project_name):
     project_name_bytes = project_name.encode("utf-8")
     project = logic_project.get_project_by_name(wp10db, project_name_bytes)
     if project is None:
-        return flask.abort(404)
+        return flask.abort(404, "Project with name %s not found" % project_name)
 
     return flask.jsonify(project.to_web_dict())
 
@@ -54,7 +54,7 @@ def table(project_name):
     project_name_bytes = project_name.encode("utf-8")
     project = logic_project.get_project_by_name(wp10db, project_name_bytes)
     if project is None:
-        return flask.abort(404)
+        return flask.abort(404, "Project with name %s not found" % project_name)
 
     data = tables.generate_project_table_data(wp10db, project_name_bytes)
     logger = logging.getLogger(__name__)
@@ -72,7 +72,7 @@ def category_links(project_name):
     project_name_bytes = project_name.encode("utf-8")
     project = logic_project.get_project_by_name(wp10db, project_name_bytes)
     if project is None:
-        return flask.abort(404)
+        return flask.abort(404, "Project with name %s not found" % project_name)
 
     data = tables.generate_project_table_data(wp10db, project_name_bytes)
     data = tables.get_project_category_links(data)
@@ -86,7 +86,7 @@ def category_links_sorted(project_name):
     project_name_bytes = project_name.encode("utf-8")
     project = logic_project.get_project_by_name(wp10db, project_name_bytes)
     if project is None:
-        return flask.abort(404)
+        return flask.abort(404, "Project with name %s not found" % project_name)
     data = tables.generate_project_table_data(wp10db, project_name_bytes)
     data = tables.get_project_category_links(data, sort=True)
 
@@ -129,9 +129,9 @@ def _positive_int_param(name, default):
     try:
         value = int(value)
     except ValueError:
-        flask.abort(400)
+        flask.abort(400, "Parameter %s must be an integer, was: %s" % (name, value))
     if value < 1:
-        flask.abort(400)
+        flask.abort(400, "Parameter %s must be positive, was: %s" % (name, value))
     return value
 
 
@@ -146,7 +146,7 @@ def _project_b_args(wp10db):
         return None, None, None, None
     project_b_name_bytes = project_b_name.encode("utf-8")
     if logic_project.get_project_by_name(wp10db, project_b_name_bytes) is None:
-        flask.abort(404)
+        flask.abort(404, "Project with name %s not found" % project_b_name)
     return (
         project_b_name,
         project_b_name_bytes,
@@ -161,7 +161,7 @@ def articles(project_name):
     project_name_bytes = project_name.encode("utf-8")
     project = logic_project.get_project_by_name(wp10db, project_name_bytes)
     if project is None:
-        return flask.abort(404)
+        return flask.abort(404, "Project with name %s not found" % project_name)
 
     project_b_name, project_b_name_bytes, quality_b, importance_b = _project_b_args(
         wp10db
@@ -182,12 +182,16 @@ def articles(project_name):
 
     response_format = flask.request.args.get("format", "json")
     if response_format not in ("json", "tsv"):
-        return flask.abort(400)
+        return flask.abort(
+            400, "Unrecognized format: %s (must be json or tsv)" % response_format
+        )
 
     if response_format == "tsv":
         # TSV export is not supported for projectB comparisons.
         if project_b_name is not None:
-            return flask.abort(400)
+            return flask.abort(
+                400, "TSV export is not supported for projectB comparisons"
+            )
         ratings = logic_rating.iterate_project_rating_by_type(
             wp10db,
             project_name_bytes,
@@ -251,7 +255,7 @@ def random_article(project_name):
     project_name_bytes = project_name.encode("utf-8")
     project = logic_project.get_project_by_name(wp10db, project_name_bytes)
     if project is None:
-        return flask.abort(404)
+        return flask.abort(404, "Project with name %s not found" % project_name)
 
     quality = flask.request.args.get("quality")
     importance = flask.request.args.get("importance")
@@ -280,7 +284,7 @@ def update(project_name):
     project_name_bytes = project_name.encode("utf-8")
     project = logic_project.get_project_by_name(wp10db, project_name_bytes)
     if project is None:
-        return flask.abort(404)
+        return flask.abort(404, "Project with name %s not found" % project_name)
 
     redis = get_redis()
 
@@ -299,7 +303,7 @@ def update_time(project_name):
     project_name_bytes = project_name.encode("utf-8")
     project = logic_project.get_project_by_name(wp10db, project_name_bytes)
     if project is None:
-        return flask.abort(404)
+        return flask.abort(404, "Project with name %s not found" % project_name)
 
     redis = get_redis()
 
@@ -313,7 +317,7 @@ def update_progress(project_name):
     project_name_bytes = project_name.encode("utf-8")
     project = logic_project.get_project_by_name(wp10db, project_name_bytes)
     if project is None:
-        return flask.abort(404)
+        return flask.abort(404, "Project with name %s not found" % project_name)
 
     redis = get_redis()
 
