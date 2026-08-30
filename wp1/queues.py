@@ -19,7 +19,7 @@ from wp1.wiki_db import connect as wiki_connect
 from wp1 import logs
 from wp1 import tables
 from wp1.timestamp import utcnow
-from wp1.credentials import ENV
+from wp1.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -171,7 +171,7 @@ def enqueue_project(project_name, update_q, upload_q, redis=None, track_progress
         failure_ttl=constants.JOB_FAILURE_TTL,
     )
     set_project_update_job_id(redis, project_name, update_job.id)
-    if ENV == Environment.PRODUCTION:
+    if get_settings().ENV == Environment.PRODUCTION:
         logger.info("Enqueuing upload (dependent) %s", project_name)
         upload_q.enqueue(
             tables.upload_project_table,

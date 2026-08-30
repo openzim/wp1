@@ -11,7 +11,7 @@ Cron strings are evaluated in UTC (RQ uses rq.utils.now(), which is UTC).
 from rq import cron
 
 from wp1 import constants, maintenance
-from wp1.credentials import ENV
+from wp1.config import get_settings
 from wp1.environment import Environment
 from wp1.logic import rating as logic_rating
 
@@ -35,7 +35,7 @@ cron.register(
 # pipeline to drive; this matches the old workers image, where dev ran no
 # system cron). All three go to the single-worker 'maintenance' queue, which
 # serializes them if one runs long.
-if ENV == Environment.PRODUCTION:
+if get_settings().ENV == Environment.PRODUCTION:
     cron.register(
         maintenance.enqueue_all,
         "maintenance",

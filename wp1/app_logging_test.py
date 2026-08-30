@@ -1,26 +1,20 @@
 import logging
-from unittest.mock import patch
 
 from wp1.app_logging import configure_logging
-from wp1.environment import Environment
+from wp1.config import override_settings
 
 
 class AppLoggingTest:
     """This is a pytest test class, because we want to use the `caplog` fixture."""
 
-    @patch(
-        "wp1.app_logging.CREDENTIALS",
-        {
-            Environment.TEST: {
-                "LOGGING": {
-                    "*": {
-                        "level": "DEBUG",
-                        "format": "%(levelname)s:test:%(message)s",
-                    },
-                    "wp1.component": {"level": "INFO"},
-                },
-            }
-        },
+    @override_settings(
+        LOGGING={
+            "*": {
+                "level": "DEBUG",
+                "format": "%(levelname)s:test:%(message)s",
+            },
+            "wp1.component": {"level": "INFO"},
+        }
     )
     def test_configure_logging(self, caplog):
         configure_logging()

@@ -1,11 +1,10 @@
 import logging
 
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 
 
 def configure_logging():
-    creds = CREDENTIALS.get(ENV, {})
-    log_config = creds.get("LOGGING", {})
+    log_config = get_settings().LOGGING
 
     root_config = log_config.get(
         "*",
