@@ -71,13 +71,16 @@ def _create_or_update_builder(wp10db, data, builder_id=None):
     wp10db = get_db("wp10db")
     redis = get_redis()
 
-    builder_id = logic_builder.create_or_update_builder(
-        wp10db, list_name, user_id, project, params, model, builder_id=builder_id
-    )
-    # Either the builder was not found or the user ID was not correct. Nothing was
-    # updated, return 404.
-    if builder_id is None:
+    try:
+        builder_id = logic_builder.create_or_update_builder(
+            wp10db, list_name, user_id, project, params, model, builder_id=builder_id
+        )
+    except ObjectNotFoundError:
+        # No builder with that id exists.
         flask.abort(404)
+    except UserNotAuthorizedError:
+        # The builder exists, but belongs to another user.
+        flask.abort(403)
 
     builder = logic_builder.get_builder(wp10db, builder_id)
 
@@ -128,7 +131,7 @@ def get_builder(builder_id):
             builder_id,
             builder_user_id,
         )
-        flask.abort(401, "Unauthorized")
+        flask.abort(403, "Forbidden")
 
     selection_errors = logic_builder.latest_selections_with_errors(wp10db, builder_id)
     if not selection_errors:
@@ -226,7 +229,10 @@ def latest_selection_article_count_for_builder(builder_id):
     wp10db = get_db("wp10db")
 
     user_id = flask.session["user"]["identity"]["sub"]
-    builder = logic_builder.get_builder(wp10db, builder_id)
+    try:
+        builder = logic_builder.get_builder(wp10db, builder_id)
+    except ObjectNotFoundError:
+        flask.abort(404)
     if builder.b_user_id.decode("utf-8") != user_id:
         return (
             flask.jsonify(
@@ -421,8 +427,9 @@ def delete_schedule_for_builder(builder_id):
     user_id = flask.session["user"]["identity"]["sub"]
 
     # Get the builder and verify ownership
-    builder = logic_builder.get_builder(wp10db, builder_id.encode("utf-8"))
-    if not builder:
+    try:
+        builder = logic_builder.get_builder(wp10db, builder_id.encode("utf-8"))
+    except ObjectNotFoundError:
         return flask.jsonify({"error_messages": ["Builder not found"]}), 404
 
     builder_user_id = builder.b_user_id.decode("utf-8")

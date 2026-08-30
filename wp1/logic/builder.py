@@ -82,7 +82,7 @@ def _assert_builder_owner(builder: Builder, user_id: str | bytes | int) -> None:
     if builder.user_id == user_id_str:
         return
 
-    msg = "User %s is not authorized to delete builder %s" % (
+    msg = "User %s is not authorized to access builder %s" % (
         user_id_str,
         builder.id,
     )
@@ -248,7 +248,7 @@ def create_or_update_builder(
     params: dict[str, Any],
     model: bytes,
     builder_id: str | bytes | None = None,
-) -> str | bytes | None:
+) -> str | bytes:
     params_encoded = json.dumps(params).encode("utf-8")
     builder = Builder(
         b_name=name,
@@ -268,10 +268,15 @@ def create_or_update_builder(
         builder.b_id = builder_id.encode("utf-8")
     else:
         builder.b_id = str(builder_id).encode("utf-8")
-    if update_builder(wp10db, builder):
-        return builder_id
 
-    return None
+    # Raises ObjectNotFoundError if the builder doesn't exist and
+    # UserNotAuthorizedError if it belongs to another user, so callers can
+    # distinguish a 404 from a 403. See issue #502.
+    existing = get_builder(wp10db, builder.b_id)
+    _assert_builder_owner(existing, user_id)
+
+    update_builder(wp10db, builder)
+    return builder_id
 
 
 def insert_builder(wp10db: Connection, builder: Builder) -> bytes:

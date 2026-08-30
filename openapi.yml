@@ -537,7 +537,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/BuilderSpec'
         '401':
-          description: 'Unauthorized. You must be logged in, and the Builder must belong to you.'
+          description: 'Unauthorized. You must be logged in.'
+        '403':
+          description: 'The logged in user does not own the given Builder.'
         '404':
           description: 'Not found. No Builder with the given ID exists.'
       parameters:
@@ -571,8 +573,10 @@ paths:
           description: 'The request was missing a name, project, model or params, or the model could not be resolved.'
         '401':
           description: 'Unauthorized. You must be logged in to update a Builder.'
+        '403':
+          description: 'The logged in user does not own the given Builder.'
         '404':
-          description: 'Not found. No Builder with the given ID was found for the logged in user.'
+          description: 'Not found. No Builder with the given ID exists.'
       parameters:
         - name: builderId
           in: path
@@ -786,7 +790,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorMessages'
         '404':
-          description: 'The Builder has no materialized Selection.'
+          description: 'No Builder with the given ID exists, or it has no materialized Selection.'
       parameters:
         - name: builderId
           in: path

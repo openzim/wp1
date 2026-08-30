@@ -459,6 +459,32 @@ class BuilderTest(BaseWpOneDbTest):
         actual = self._get_builder_by_user_id()
         self.assertEqual(expected, actual)
 
+    def test_create_or_update_builder_update_not_found(self):
+        self._insert_builder()
+        with self.assertRaises(ObjectNotFoundError):
+            logic_builder.create_or_update_builder(
+                self.wp10db,
+                "Builder 2",
+                "1234",
+                "zz.wikipedia.fake",
+                {"list": ["a", "b", "c", "d"]},
+                "wp1.selection.models.simple",
+                builder_id="inexistent-id",
+            )
+
+    def test_create_or_update_builder_update_not_owner(self):
+        id_ = self._insert_builder()
+        with self.assertRaises(UserNotAuthorizedError):
+            logic_builder.create_or_update_builder(
+                self.wp10db,
+                "Builder 2",
+                "5678",
+                "zz.wikipedia.fake",
+                {"list": ["a", "b", "c", "d"]},
+                "wp1.selection.models.simple",
+                builder_id=id_,
+            )
+
     @patch(
         "wp1.models.wp10.builder.utcnow",
         return_value=datetime.datetime(2019, 12, 25, 4, 44, 44),
