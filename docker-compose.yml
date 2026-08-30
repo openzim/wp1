@@ -27,9 +27,6 @@ services:
     container_name: wp1bot-workers
     env_file:
       # All app configuration and secrets, hand-managed on the host.
-      # Rollback for the dotenv cutover: remove this line and restore the
-      # old bind mount:
-      #   - /data/wp1bot/credentials.py:/usr/src/app/wp1/credentials.py
       - /data/wp1bot/wp1.env
     volumes:
       - /data/wp1bot/db/yoyo.ini:/usr/src/app/db/production/yoyo.ini

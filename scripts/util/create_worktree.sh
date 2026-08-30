@@ -1,17 +1,11 @@
 #!/usr/bin/env bash
-# Create a git worktree for WP1 with the untracked credentials files copied
-# in. A bare `git worktree add` leaves out wp1/credentials.py.dev (it's
-# untracked), and docker-compose-dev.yml bind-mounts that file — when it's
-# missing, Docker creates a root-owned directory at its path and the dev
-# stack fails to start.
-#
-# It also writes a worktree-local .env (copied from this checkout's .env if
-# present) with a unique COMPOSE_PROJECT_NAME, WP1_SUFFIX, and host-port set
-# so the worktree's dev stack can run alongside the main one, remaps the
-# port-coupled app config values (WP10DB_PORT, REDIS_PORT, localhost URLs)
-# in both the .env and the copied credentials files to match — CLIENT_URL
-# origins must track the frontend port or the API rejects every request
-# with CORS errors — and optionally starts the stack.
+# Create a git worktree for WP1 with a worktree-local .env (copied from
+# this checkout's .env if present) containing a unique
+# COMPOSE_PROJECT_NAME, WP1_SUFFIX, and host-port set so the worktree's
+# dev stack can run alongside the main one. Remaps the port-coupled app
+# config values (WP10DB_PORT, REDIS_PORT, localhost URLs) in the .env to
+# match — CLIENT_URL origins must track the frontend port or the API
+# rejects every request with CORS errors — and optionally starts the stack.
 #
 # Usage: ./scripts/util/create_worktree.sh <branch> [start-point]
 #   <branch>       branch to check out in the worktree; created from
@@ -38,21 +32,6 @@ else
   git worktree add -b "$branch" "$dest" "$start"
 fi
 
-# Copy every credentials variant present here but absent from the fresh
-# checkout (i.e. the untracked ones; tracked variants already exist there).
-# Copies are recorded so their host ports can be remapped once the
-# worktree's port offset is known below.
-copied=0
-copied_files=()
-for f in wp1/credentials.py*; do
-  [ -f "$f" ] || continue
-  if [ ! -e "$dest/$f" ]; then
-    cp -p "$f" "$dest/$f"
-    echo "copied $f -> $dest/$f"
-    copied=$((copied + 1))
-    copied_files+=("$dest/$f")
-  fi
-done
 
 # --- Parallel dev stack config ------------------------------------------
 # Pick the smallest port offset N >= 1 not claimed by another worktree's
@@ -97,10 +76,12 @@ read -r web_port frontend_port db_port redis_port minio_port minio_console_port 
 slug=$(echo "$branch" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-')
 slug="${slug#-}"; slug="${slug%-}"
 
-# Default-host-port remap applied to every copied config file. Only
+# Default-host-port remap applied to the worktree's .env below. Only
 # localhost URLs are rewritten; container-side URLs use service hostnames
 # (wp1bot-web-dev, minio, ...) and are left alone, as are values the user
-# has already customized away from the defaults.
+# has already customized away from the defaults. CLIENT_URL origins must
+# track the frontend port or the API rejects every request with CORS
+# errors.
 remap=(
   -e "s|localhost:5000|localhost:$web_port|g"
   -e "s|localhost:5173|localhost:$frontend_port|g"
@@ -108,14 +89,6 @@ remap=(
   -e "s|localhost:8003|localhost:$zimfarm_ui_port|g"
   -e "s|localhost:8004|localhost:$zimfarm_api_port|g"
 )
-
-# Remap the copied credentials so CLIENT_URL origins/URLs match this
-# worktree's ports — otherwise the API rejects the frontend's requests
-# with CORS errors and login redirects point at the wrong stack.
-for f in ${copied_files[@]+"${copied_files[@]}"}; do
-  sed -i "${remap[@]}" "$f"
-  echo "remapped host ports in $f"
-done
 
 # Start from this checkout's .env (app secrets/config), if present, and
 # remap the default host ports to this worktree's set. Any stack block a
@@ -156,7 +129,7 @@ EOF
 echo "stack: project=wp1-dev-$slug offset=$n web=$web_port frontend=$frontend_port" \
   "db=$db_port redis=$redis_port minio=$minio_port/$minio_console_port"
 
-echo "worktree ready at $dest ($copied credentials file(s) copied)"
+echo "worktree ready at $dest"
 
 if [ -t 0 ]; then
   read -r -p "Start servers now? [Y/n] " answer
