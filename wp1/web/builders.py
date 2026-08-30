@@ -9,7 +9,7 @@ import wp1.logic.zim_files as logic_zim_tasks
 import wp1.logic.zim_schedules as logic_zim_schedules
 from wp1 import queues
 from wp1.constants import EXT_TO_CONTENT_TYPE
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 from wp1.exceptions import (
     BuilderDeleteConfirmationError,
     InvalidZimDescriptionError,
@@ -359,7 +359,7 @@ def zimfarm_status(builder_id):
 
 @builders.route("/zim/status", methods=["POST"])
 def update_zimfarm_status():
-    token = CREDENTIALS[ENV].get("ZIMFARM", {}).get("hook_token")
+    token = get_settings().ZIMFARM_HOOK_TOKEN
     provided_token = flask.request.args.get("token")
     if token and provided_token != token:
         flask.abort(403, "Missing or invalid token")
