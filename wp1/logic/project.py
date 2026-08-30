@@ -47,7 +47,7 @@ RE_REJECT_GENERIC = re.compile(ARTICLES_LABEL + b"_" + BY_QUALITY, re.I)
 
 def count_projects(wp10db):
     with wp10db.cursor() as cursor:
-        cursor.execute("SELECT COUNT(*) AS count FROM projects")
+        cursor.execute("SELECT COUNT(*) AS count FROM projects WHERE p_count > 0")
         res = cursor.fetchone()
 
     return res and res["count"]
@@ -157,8 +157,11 @@ def project_names_to_update(wikidb):
 
 def list_all_projects(wp10db):
     with wp10db.cursor() as cursor:
+        # Empty projects are usually leftover category redirects from a
+        # renamed WikiProject (openzim/wp1#425), so don't offer them.
         cursor.execute("""
       SELECT p_project, p_timestamp, p_count, p_qcount, p_icount FROM projects
+      WHERE p_count > 0
       """)
         return [Project(**db_project) for db_project in cursor.fetchall()]
 

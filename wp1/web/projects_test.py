@@ -75,6 +75,7 @@ class ProjectTest(BaseWebTestcase):
                 {
                     "p_project": b"Project %s" % str(i).encode("utf-8"),
                     "p_timestamp": b"20181225000000",
+                    "p_count": 150,
                 }
             )
 
@@ -130,8 +131,8 @@ class ProjectTest(BaseWebTestcase):
 
         with self.wp10db.cursor() as cursor:
             cursor.executemany(
-                "INSERT INTO projects (p_project, p_timestamp) "
-                "VALUES (%(p_project)s, %(p_timestamp)s)",
+                "INSERT INTO projects (p_project, p_timestamp, p_count) "
+                "VALUES (%(p_project)s, %(p_timestamp)s, %(p_count)s)",
                 projects,
             )
             cursor.executemany(
@@ -156,6 +157,22 @@ class ProjectTest(BaseWebTestcase):
             data = json.loads(rv.data)
             self.assertEqual(101, len(data))
 
+    def test_list_excludes_empty_projects(self):
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO projects (p_project, p_timestamp, p_count) "
+                "VALUES ('Empty_Redirect_Project', '20100101000000', 0)"
+            )
+        self.wp10db.commit()
+
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.get("/v1/projects/")
+            data = json.loads(rv.data)
+            self.assertEqual(101, len(data))
+            self.assertNotIn(
+                "Empty Redirect Project", [project["name"] for project in data]
+            )
+
     def test_individual_project(self):
         with self.override_db(self.app), self.app.test_client() as client:
             rv = client.get("/v1/projects/Project 0")
@@ -174,6 +191,19 @@ class ProjectTest(BaseWebTestcase):
             )
 
     def test_count(self):
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.get("/v1/projects/count")
+            data = json.loads(rv.data)
+            self.assertEqual(101, data["count"])
+
+    def test_count_excludes_empty_projects(self):
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO projects (p_project, p_timestamp, p_count) "
+                "VALUES ('Empty_Redirect_Project', '20100101000000', 0)"
+            )
+        self.wp10db.commit()
+
         with self.override_db(self.app), self.app.test_client() as client:
             rv = client.get("/v1/projects/count")
             data = json.loads(rv.data)
