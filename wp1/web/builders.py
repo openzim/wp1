@@ -45,7 +45,7 @@ def _create_or_update_builder(wp10db, data, builder_id=None):
         builder_cls = logic_builder.get_builder_module_class(model)
     except ImportError as e:
         logger.warning(str(e))
-        flask.abort(400)
+        flask.abort(400, "Unrecognized builder model: %s" % model)
 
     user_id = flask.session["user"]["identity"]["sub"]
     builder_obj = builder_cls()
@@ -77,7 +77,7 @@ def _create_or_update_builder(wp10db, data, builder_id=None):
     # Either the builder was not found or the user ID was not correct. Nothing was
     # updated, return 404.
     if builder_id is None:
-        flask.abort(404)
+        flask.abort(404, "Builder not found or is not owned by you")
 
     builder = logic_builder.get_builder(wp10db, builder_id)
 
@@ -115,7 +115,7 @@ def get_builder(builder_id):
     try:
         builder = logic_builder.get_builder(wp10db, builder_id)
     except ObjectNotFoundError:
-        flask.abort(404)
+        flask.abort(404, "No builder found with id = %s" % builder_id)
 
     # Don't return the builder unless it belongs to this user.
     user = flask.session.get("user")
@@ -151,9 +151,9 @@ def get_builder_delete_impact(builder_id):
     try:
         impact = logic_builder.get_builder_delete_impact(wp10db, user_id, builder_id)
     except UserNotAuthorizedError:
-        flask.abort(403)
+        flask.abort(403, "Builder with id = %s does not belong to you" % builder_id)
     except ObjectNotFoundError:
-        flask.abort(404)
+        flask.abort(404, "No builder found with id = %s" % builder_id)
 
     return flask.jsonify(impact)
 
@@ -181,9 +181,9 @@ def delete_builder(builder_id):
             confirm_builder_name=confirm_builder_name,
         )
     except UserNotAuthorizedError as e:
-        flask.abort(403)
+        flask.abort(403, "Builder with id = %s does not belong to you" % builder_id)
     except ObjectNotFoundError:
-        flask.abort(404)
+        flask.abort(404, "No builder found with id = %s" % builder_id)
     except BuilderDeleteConfirmationError as e:
         return flask.jsonify({"error_messages": [str(e)]}), 400
 
@@ -204,7 +204,10 @@ def latest_selection_for_builder(builder_id, ext):
 
     url = logic_builder.latest_selection_url(wp10db, builder_id, ext)
     if not url:
-        flask.abort(404)
+        flask.abort(
+            404,
+            "No %s selection found for builder with id = %s" % (ext, builder_id),
+        )
 
     return flask.redirect(url, code=302)
 
@@ -215,7 +218,10 @@ def latest_zimfarm_selection_for_builder(builder_id, ext):
 
     url = logic_builder.latest_selection_url(wp10db, builder_id, ext, zimfarm_s3=True)
     if not url:
-        flask.abort(404)
+        flask.abort(
+            404,
+            "No %s selection found for builder with id = %s" % (ext, builder_id),
+        )
 
     return flask.redirect(url, code=302)
 
@@ -243,7 +249,7 @@ def latest_selection_article_count_for_builder(builder_id):
         wp10db, builder_id, EXT_TO_CONTENT_TYPE["tsv"]
     )
     if not selection:
-        flask.abort(404)
+        flask.abort(404, "No TSV selection found for builder with id = %s" % builder_id)
 
     return flask.jsonify(
         {
@@ -356,12 +362,12 @@ def update_zimfarm_status():
     token = CREDENTIALS[ENV].get("ZIMFARM", {}).get("hook_token")
     provided_token = flask.request.args.get("token")
     if token and provided_token != token:
-        flask.abort(403)
+        flask.abort(403, "Missing or invalid token")
 
     data = flask.request.get_json()
     task_id = data.get("id")
     if task_id is None:
-        flask.abort(400)
+        flask.abort(400, "Missing task id ('id') in request data")
 
     wp10db = get_db("wp10db")
 
@@ -402,11 +408,11 @@ def latest_zim_file_for_builder(builder_id):
 
     url = logic_builder.latest_zim_file_url_for(wp10db, builder_id)
     if not url:
-        flask.abort(404)
+        flask.abort(404, "No ZIM file found for builder with id = %s" % builder_id)
 
     head = requests.head(url)
     if head.status_code == 404:
-        flask.abort(410)
+        flask.abort(410, "ZIM file has expired and is no longer available")
 
     return flask.redirect(url, code=302)
 

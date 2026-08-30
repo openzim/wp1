@@ -235,6 +235,9 @@ class BuildersTest(BaseWebTestcase):
             rv = client.get("/v1/builders/1234")
 
             self.assertEqual("404 NOT FOUND", rv.status)
+            self.assertEqual(
+                {"error": "No builder found with id = 1234"}, rv.get_json()
+            )
 
     def test_get_builder_unauthorized(self):
         self.app = create_app()

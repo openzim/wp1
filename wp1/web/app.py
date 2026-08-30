@@ -7,6 +7,7 @@ import flask_cors
 import flask_gzip
 import redis
 from flask_session import Session
+from werkzeug.exceptions import HTTPException
 
 import wp1.logic.project as logic_project
 from wp1 import environment
@@ -88,6 +89,12 @@ def create_app(session_type="redis"):
             # pymysql raises if the connection is closed twice.
             conn = flask.g.pop("wp10db")
             conn.close()
+
+    @app.errorhandler(HTTPException)
+    def handle_http_exception(e):
+        # Return errors as JSON, with the description passed to flask.abort()
+        # (or the werkzeug default), instead of the default HTML error page.
+        return flask.jsonify({"error": e.description}), e.code
 
     @app.route("/")
     def index():

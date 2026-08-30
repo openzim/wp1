@@ -168,6 +168,10 @@ class ProjectTest(BaseWebTestcase):
         with self.override_db(self.app), self.app.test_client() as client:
             rv = client.get("/v1/projects/Fee Fa Fo Project")
             self.assertEqual("404 NOT FOUND", rv.status)
+            self.assertEqual(
+                {"error": "Project with name Fee Fa Fo Project not found"},
+                rv.get_json(),
+            )
 
     def test_count(self):
         with self.override_db(self.app), self.app.test_client() as client:
