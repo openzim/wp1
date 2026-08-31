@@ -63,9 +63,13 @@ services:
       dockerfile: docker/dev-workers/Dockerfile
     image: wp1bot-workers-dev${WP1_SUFFIX:-}
     container_name: wp1bot-workers-dev${WP1_SUFFIX:-}
+    env_file:
+      # Optional overrides of the schema defaults in wp1/config.py (the
+      # defaults already point at the in-network docker hostnames).
+      - path: .env
+        required: false
     volumes:
       - ./wp1:/usr/src/app/wp1/
-      - ./wp1/credentials.py.dev:/usr/src/app/wp1/credentials.py
       - ./log/:/var/log/wp1bot/
     networks:
       - wp1bot-dev
@@ -88,17 +92,20 @@ services:
       - FLASK_DEBUG=1
       - FLASK_RUN_HOST=0.0.0.0
     command: flask --app wp1.web.app run
+    env_file:
+      # See the comment on the dev-workers service.
+      - path: .env
+        required: false
     networks:
       wp1bot-dev:
         aliases:
           # Stable in-network hostname regardless of WP1_SUFFIX; referenced by
-          # .env.docker and wp1/credentials.py.dev.
+          # the CLIENT_BACKEND_URL default in wp1/config.py.
           - wp1bot-web-dev
     ports:
       - ${WP1_WEB_PORT:-5000}:5000
     volumes:
       - .:/usr/src/app
-      - ./wp1/credentials.py.dev:/usr/src/app/wp1/credentials.py
     links:
       - redis
     restart: always

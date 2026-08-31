@@ -184,12 +184,17 @@ class Settings:
         required_in_production=True,
     )
     WP10DB_HOST: str = _field(
-        "localhost",
+        "dev-database",
         section="WP10DB (application database)",
         required_in_production=True,
+        help=(
+            "Defaults reach the database inside the dev docker network. From "
+            "the host\n(e.g. for DB tools), the dev database is published at "
+            "localhost:6300."
+        ),
     )
     WP10DB_PORT: int | None = _field(
-        6300, kind="int", section="WP10DB (application database)"
+        3306, kind="int", section="WP10DB (application database)"
     )
     WP10DB_DB: str = _field(
         "enwp10_dev",
@@ -198,8 +203,15 @@ class Settings:
     )
 
     # --- Redis ---
-    REDIS_HOST: str = _field("localhost", section="Redis")
-    REDIS_PORT: int | None = _field(9736, kind="int", section="Redis")
+    REDIS_HOST: str = _field(
+        "redis",
+        section="Redis",
+        help=(
+            "Defaults reach Redis inside the dev docker network. From the "
+            "host, it is\npublished at localhost:9736."
+        ),
+    )
+    REDIS_PORT: int | None = _field(6379, kind="int", section="Redis")
 
     # --- API (Wikipedia bot credentials) ---
     API_USER: str | None = _field(
@@ -270,12 +282,13 @@ class Settings:
         required_in_production=True,
     )
     CLIENT_BACKEND_URL: str = _field(
-        "http://localhost:5000",
+        "http://wp1bot-web-dev:5000",
         section="Client URLs",
         required_in_production=True,
     )
+
     CLIENT_BACKEND_S3_URL: str | None = _field(
-        "http://localhost:9000/org-kiwix-dev-wp1",
+        "http://minio:9000/org-kiwix-dev-wp1",
         section="Client URLs",
         required_in_production=True,
         help=(
@@ -285,9 +298,13 @@ class Settings:
 
     # --- Storage (S3/MinIO) ---
     STORAGE_URL: str | None = _field(
-        "http://localhost:9000/",
+        "http://minio:9000",
         section="Storage (S3/MinIO)",
         required_in_production=True,
+        help=(
+            "Defaults reach MinIO inside the dev docker network. From the "
+            "host, the\nMinIO API is published at localhost:9000."
+        ),
     )
     STORAGE_KEY: str = _field(
         "minio_key",
@@ -309,7 +326,7 @@ class Settings:
 
     # --- Zimfarm ---
     ZIMFARM_URL: str = _field(
-        "http://localhost:8003/v2",
+        "http://zimfarm-api/v2",
         section="Zimfarm",
         required_in_production=True,
     )
@@ -320,7 +337,7 @@ class Settings:
         help="Authentication mode: 'oauth' or 'local'.",
     )
     ZIMFARM_S3_URL: str = _field(
-        "https://localhost:9000/org-kiwix-dev-zims",
+        "https://minio:9000/org-kiwix-dev-zims",
         section="Zimfarm",
         required_in_production=True,
         help="If using minio.",

@@ -47,7 +47,7 @@ pipenv run python scripts/util/seed-dev-selections.py
 The script talks directly to the dev database from `docker-compose-dev.yml`
 and is idempotent — re-running it resets the seeded rows.
 
-If your `credentials.py.dev` has real MWOAUTH credentials, you log in as your
+If your `.env` has real `MWOAUTH_*` credentials, you log in as your
 actual Wikipedia user and won't see the fake dev user's data. Seed the same
 rows for your own user instead (find your id with
 `SELECT u_id, u_username FROM users`):
