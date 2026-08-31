@@ -158,6 +158,9 @@ class SettingsFromEnvTest(unittest.TestCase):
         self.assertIn("MAILGUN_API_KEY", str(ctx.exception))
         self.assertIn("API_USER", str(ctx.exception))
         self.assertIn("API_PASSWORD", str(ctx.exception))
+        self.assertIn("STORAGE_URL", str(ctx.exception))
+        self.assertIn("WP10DB_HOST", str(ctx.exception))
+        self.assertIn("ZIMFARM_URL", str(ctx.exception))
 
     def test_production_requires_explicit_values_not_defaults(self):
         # WIKIDB_USER has a development default; production must still

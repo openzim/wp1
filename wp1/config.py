@@ -173,17 +173,29 @@ class Settings:
     )
 
     # --- WP10DB (application database) ---
-    WP10DB_USER: str = _field("root", section="WP10DB (application database)")
+    WP10DB_USER: str = _field(
+        "root",
+        section="WP10DB (application database)",
+        required_in_production=True,
+    )
     WP10DB_PASSWORD: str = _field(
         "wikipedia",
         section="WP10DB (application database)",
         required_in_production=True,
     )
-    WP10DB_HOST: str = _field("localhost", section="WP10DB (application database)")
+    WP10DB_HOST: str = _field(
+        "localhost",
+        section="WP10DB (application database)",
+        required_in_production=True,
+    )
     WP10DB_PORT: int | None = _field(
         6300, kind="int", section="WP10DB (application database)"
     )
-    WP10DB_DB: str = _field("enwp10_dev", section="WP10DB (application database)")
+    WP10DB_DB: str = _field(
+        "enwp10_dev",
+        section="WP10DB (application database)",
+        required_in_production=True,
+    )
 
     # --- Redis ---
     REDIS_HOST: str = _field("localhost", section="Redis")
@@ -239,19 +251,33 @@ class Settings:
         ["http://localhost:5173"],
         kind="list",
         section="Client URLs",
+        required_in_production=True,
         help="Comma-separated list of allowed origins for CORS.",
     )
     CLIENT_HOMEPAGE: str | None = _field(
-        "http://localhost:5173/#/", section="Client URLs"
+        "http://localhost:5173/#/",
+        section="Client URLs",
+        required_in_production=True,
     )
     CLIENT_S3_URL: str | None = _field(
-        "http://localhost:9000/org-kiwix-dev-wp1", section="Client URLs"
+        "http://localhost:9000/org-kiwix-dev-wp1",
+        section="Client URLs",
+        required_in_production=True,
     )
-    CLIENT_API_URL: str = _field("http://localhost:5000", section="Client URLs")
-    CLIENT_BACKEND_URL: str = _field("http://localhost:5000", section="Client URLs")
+    CLIENT_API_URL: str = _field(
+        "http://localhost:5000",
+        section="Client URLs",
+        required_in_production=True,
+    )
+    CLIENT_BACKEND_URL: str = _field(
+        "http://localhost:5000",
+        section="Client URLs",
+        required_in_production=True,
+    )
     CLIENT_BACKEND_S3_URL: str | None = _field(
         "http://localhost:9000/org-kiwix-dev-wp1",
         section="Client URLs",
+        required_in_production=True,
         help=(
             "URL the zimfarm worker uses to reach the selection files over " "S3/MinIO."
         ),
@@ -259,7 +285,9 @@ class Settings:
 
     # --- Storage (S3/MinIO) ---
     STORAGE_URL: str | None = _field(
-        "http://localhost:9000/", section="Storage (S3/MinIO)"
+        "http://localhost:9000/",
+        section="Storage (S3/MinIO)",
+        required_in_production=True,
     )
     STORAGE_KEY: str = _field(
         "minio_key",
@@ -273,18 +301,28 @@ class Settings:
         required_in_production=True,
         help="Password for the storage backend.",
     )
-    STORAGE_BUCKET: str = _field("org-kiwix-dev-wp1", section="Storage (S3/MinIO)")
+    STORAGE_BUCKET: str = _field(
+        "org-kiwix-dev-wp1",
+        section="Storage (S3/MinIO)",
+        required_in_production=True,
+    )
 
     # --- Zimfarm ---
-    ZIMFARM_URL: str = _field("http://localhost:8003/v2", section="Zimfarm")
+    ZIMFARM_URL: str = _field(
+        "http://localhost:8003/v2",
+        section="Zimfarm",
+        required_in_production=True,
+    )
     ZIMFARM_AUTH_MODE: str = _field(
         "local",
         section="Zimfarm",
+        required_in_production=True,
         help="Authentication mode: 'oauth' or 'local'.",
     )
     ZIMFARM_S3_URL: str = _field(
         "https://localhost:9000/org-kiwix-dev-zims",
         section="Zimfarm",
+        required_in_production=True,
         help="If using minio.",
     )
     ZIMFARM_USER: str = _field("admin", section="Zimfarm")
