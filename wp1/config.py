@@ -412,11 +412,20 @@ class Settings:
         ),
     )
 
-    # --- Logging (code-only; not env-backed) ---
-    # Logging directives. Keys are the names of the loggers, values are
-    # dictionaries with the logging configuration. The special key '*' sets
-    # the default logging configuration. Logging is always done to stdout
-    # and is redirected/rotated by the supervisor process.
+    # --- Logging ---
+    LOGGING_LEVEL: str = _field(
+        "INFO",
+        section="Logging",
+        help="Log level for the root logger (DEBUG, INFO, WARNING, ...).",
+    )
+    LOGGING_FORMAT: str = _field(
+        "%(levelname)s:%(asctime)s:%(name)s:%(message)s",
+        section="Logging",
+        help="Log line format (Python logging format string).",
+    )
+    # Per-logger directives, code-only (not env-backed). Keys are logger
+    # names, values are dicts with the logging configuration; the special
+    # key '*' overrides the root logger config above.
     LOGGING: dict = _field({}, kind="code")
 
     @classmethod
@@ -631,6 +640,10 @@ _SECTION_DOCS = {
         "are ready. Not required for development."
     ),
     "File paths": "",
+    "Logging": (
+        "Configuration for the root logger. Logging is always done to "
+        "stdout and is\nredirected/rotated by the supervisor process."
+    ),
 }
 
 
