@@ -156,6 +156,8 @@ class SettingsFromEnvTest(unittest.TestCase):
                 Settings.from_env()
         self.assertIn("SESSION_SECRET_KEY", str(ctx.exception))
         self.assertIn("MAILGUN_API_KEY", str(ctx.exception))
+        self.assertIn("API_USER", str(ctx.exception))
+        self.assertIn("API_PASSWORD", str(ctx.exception))
 
     def test_production_requires_explicit_values_not_defaults(self):
         # WIKIDB_USER has a development default; production must still

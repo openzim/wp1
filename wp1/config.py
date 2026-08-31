@@ -193,11 +193,13 @@ class Settings:
     API_USER: str | None = _field(
         None,
         section="API (Wikipedia bot credentials)",
+        required_in_production=True,
         commented=True,
     )
     API_PASSWORD: str | None = _field(
         None,
         section="API (Wikipedia bot credentials)",
+        required_in_production=True,
         commented=True,
     )
 
