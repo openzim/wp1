@@ -53,7 +53,9 @@ TEST_SETTINGS = Settings(
     ZIMFARM_IMAGE="",
     ZIMFARM_DEFINITION_VERSION="",
     ZIMFARM_CACHE_URL="",
-    FILE_PATH_PAGEVIEWS="/tmp/pageviews",
+    # FILE_PATH_PAGEVIEWS is not set here: the schema default (a
+    # "pageviews" directory under the system temp dir) is already the
+    # right value for tests.
 )
 
 _install_settings(TEST_SETTINGS)

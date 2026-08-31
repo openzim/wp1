@@ -15,6 +15,7 @@ and commit the regenerated file. A test (wp1/config_test.py) fails on drift.
 
 import contextlib
 import os
+import tempfile
 from pathlib import Path
 
 import attrs
@@ -346,7 +347,7 @@ class Settings:
 
     # --- File paths ---
     FILE_PATH_PAGEVIEWS: str = _field(
-        "/tmp/pageviews",
+        os.path.join(tempfile.gettempdir(), "pageviews"),
         section="File paths",
         help=(
             "Path where the pageviews.bz2 file (~3GB) will be downloaded and "
