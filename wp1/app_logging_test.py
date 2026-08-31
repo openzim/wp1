@@ -32,3 +32,21 @@ class AppLoggingTest:
             ("root", logging.WARNING, "root warning message"),
             ("wp1.component", logging.ERROR, "component error message"),
         ]
+
+    @override_settings(LOGGING_LEVEL="DEBUG")
+    def test_root_level_from_settings(self, caplog):
+        configure_logging()
+
+        root = logging.getLogger()
+        root.debug("root debug message")
+
+        assert ("root", logging.DEBUG, "root debug message") in caplog.record_tuples
+
+    @override_settings(LOGGING_LEVEL="WARNING")
+    def test_root_level_from_settings_suppresses(self, caplog):
+        configure_logging()
+
+        root = logging.getLogger()
+        root.info("root info message")
+
+        assert caplog.record_tuples == []
