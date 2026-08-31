@@ -37,5 +37,6 @@ docker exec -i "$DOCKER_DB_CONTAINER" \
   mysql -u root enwikip_test < wiki_test.down.sql
 echo "Done."
 
-# Run tests
-pipenv run WP1_ENV=test pytest "$@"
+# Run tests. Test configuration is constructed in code by conftest.py;
+# no env file or WP1_ENV is needed.
+pipenv run pytest "$@"

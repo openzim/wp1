@@ -879,7 +879,9 @@ def latest_selection_url(
     # In production, the keys 's3' and 'backend_s3' should be the same.
     s3_public_url = None
     if zimfarm_s3:
-        s3_public_url = CREDENTIALS.get(ENV, {}).get("CLIENT_URL", {}).get("backend_s3")
+        backend_s3 = CREDENTIALS.get(ENV, {}).get("CLIENT_URL", {}).get("backend_s3")
+        if backend_s3 is not None:
+            s3_public_url = str(backend_s3)
     return logic_selection.url_for(selection.s_object_key, s3_public_url=s3_public_url)
 
 

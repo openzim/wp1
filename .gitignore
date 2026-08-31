@@ -19,7 +19,7 @@ cookies.txt
 log/**
 
 # Don't commit the active .env file (contains secrets).
-# .env.example, .env.test, and .env.docker are committed and safe to share.
+# .env.example and .env.docker are committed and safe to share.
 .env
 
 
