@@ -124,7 +124,13 @@ _active_creds = {
     "FILE_PATH": {
         "pageviews": _settings.FILE_PATH_PAGEVIEWS,
     },
-    "LOGGING": _settings.LOGGING,
+    "LOGGING": {
+        "*": {
+            "level": _settings.LOGGING_LEVEL,
+            "format": _settings.LOGGING_FORMAT,
+        },
+        **_settings.LOGGING,
+    },
 }
 
 # The CREDENTIALS dict keyed by environment
