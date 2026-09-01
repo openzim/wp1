@@ -8,7 +8,7 @@ logs you in as when no OAuth credentials are configured, so after running
 this script the data is visible at http://localhost:5173/#/selections/user
 after clicking "Login".
 
-If your credentials.py.dev has real MWOAUTH credentials, you log in as your
+If your .env has real ``MWOAUTH_*`` credentials, you log in as your
 actual Wikipedia user instead; pass that user's id to seed the same data for
 it (find it with ``SELECT u_id, u_username FROM users``):
 

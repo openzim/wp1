@@ -7,18 +7,18 @@ import tempfile
 import mwclient
 import requests
 
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 
 logger = logging.getLogger(__name__)
 MW_USER_AGENT = "WP1.0Bot/3.0. Run by User:Audiodude. Using mwclient/0.11.0"
 
 
 def get_credentials():
-    try:
-        return CREDENTIALS[ENV]["API"]
-    except KeyError:
+    settings = get_settings()
+    if not settings.API_USER:
         # No credentials, probably in development environment.
-        pass
+        return None
+    return {"user": settings.API_USER, "pass": settings.API_PASSWORD}
 
 
 site = None

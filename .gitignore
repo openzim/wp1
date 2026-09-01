@@ -3,11 +3,10 @@ venv
 docs-venv/
 .tool-versions
 
-#credential.py is now a secret-free adapter and is committed.
-#credential.py.dev contains hardcoded secrets (used by Docker volume mounts)
-wp1/credentials.py.dev
-wp1/credentials.py.bak
-wp1/credentials.py.dev.bak
+# The credentials.py config system is gone (replaced by .env), but stale
+# local copies and backups contain secrets and must never be committed.
+wp1/credentials.py*
+
 cookies.txt
 
 # Don't commit test artifacts
@@ -19,8 +18,11 @@ cookies.txt
 log/**
 
 # Don't commit the active .env file (contains secrets).
-# .env.example, .env.test, and .env.docker are committed and safe to share.
+# .env.example and .env.docker are committed and safe to share.
 .env
+
+# Local agent instructions (may contain private infrastructure notes)
+AGENTS.md
 
 
 # Don't commit SSH keys

@@ -2,14 +2,14 @@ import logging
 
 from redis import Redis
 
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 
 logger = logging.getLogger(__name__)
 
 
 def connect():
-    creds = CREDENTIALS[ENV]["REDIS"]
-    return Redis(**creds)
+    settings = get_settings()
+    return Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 
 
 def gen_redis_log_key(

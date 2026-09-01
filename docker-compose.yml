@@ -25,8 +25,10 @@ services:
   workers:
     image: ghcr.io/openzim/wp1-workers:release
     container_name: wp1bot-workers
+    env_file:
+      # All app configuration and secrets, hand-managed on the host.
+      - /data/wp1bot/wp1.env
     volumes:
-      - /data/wp1bot/credentials.py:/usr/src/app/wp1/credentials.py
       - /data/wp1bot/db/yoyo.ini:/usr/src/app/db/production/yoyo.ini
       - /srv/log/wp1bot/:/var/log/wp1bot/
       - /srv/data/wp1bot/:/var/data/wp1bot/
@@ -50,10 +52,11 @@ services:
       - LETSENCRYPT_HOST=api.wp1.openzim.org
       - LETSENCRYPT_EMAIL=contact@openzim.org
       - HTTPS_METHOD=redirect
+    env_file:
+      # See the comment on the workers service.
+      - /data/wp1bot/wp1.env
     expose:
       - 6555
-    volumes:
-      - /data/wp1bot/credentials.py:/usr/src/app/wp1/credentials.py
     links:
       - redis
     logging:

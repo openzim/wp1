@@ -77,13 +77,15 @@ jobs:
     runs-on: ubuntu-24.04
 
     services:
-      # Unit test rely on a local MySQL instance with an empty root password.
+      # Unit tests rely on a MySQL instance with an empty root password,
+      # reachable on port 6600 to match the test settings constructed in
+      # conftest.py (the same ports docker-compose-test.yml publishes).
       mysql:
         image: mariadb:10.4
         env:
           MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: yes
         ports:
-          - 3306:3306
+          - 6600:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
 
       redis:
@@ -110,16 +112,11 @@ jobs:
 
       - name: Verify MySQL connection from host
         run: |
-          mysql --host 127.0.0.1 --port 3306 -uroot -e "SHOW DATABASES"
+          mysql --host 127.0.0.1 --port 6600 -uroot -e "SHOW DATABASES"
 
       - name: Create test databases
         run: |
-          mysql --host 127.0.0.1 --port 3306 -uroot -e 'CREATE DATABASE enwp10_test; CREATE DATABASE enwikip_test;'
-
-      - name: Copy credentials
-        run: |
-          cp wp1/credentials.py.e2e wp1/credentials.py
-          cp wp1/credentials.py.dev.e2e wp1/credentials.py.dev
+          mysql --host 127.0.0.1 --port 6600 -uroot -e 'CREATE DATABASE enwp10_test; CREATE DATABASE enwikip_test;'
 
       - name: Test with pytest, with coverage
         run: |

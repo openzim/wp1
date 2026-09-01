@@ -9,7 +9,7 @@ from redis import Redis
 import wp1.queues as queues
 
 from wp1.constants import TS_FORMAT_WP10, SECONDS_PER_MONTH
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 from wp1.timestamp import utcnow
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.zim_schedule import ZimSchedule
@@ -338,7 +338,7 @@ def schedule_future_zimfile_generations(
         )
 
         token = zim_schedule.s_email_confirmation_token.decode("utf-8")
-        email_confirm_url = CREDENTIALS.get(ENV, {}).get("CLIENT_URL", {}).get("api")
+        email_confirm_url = get_settings().CLIENT_API_URL
         confirm_url = f"{email_confirm_url}/v1/zim/confirm-email?token={token}"
         unsubscribe_url = f"{email_confirm_url}/v1/zim/unsubscribe-email?token={token}"
         send_zim_email_confirmation(

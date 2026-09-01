@@ -7,10 +7,11 @@ import flask_cors
 import flask_gzip
 import redis
 from flask_session import Session
+from werkzeug.exceptions import HTTPException
 
 import wp1.logic.project as logic_project
 from wp1 import environment
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 from wp1.web.articles import articles
 from wp1.web.builders import builders
 from wp1.web.db import get_db, has_db
@@ -22,20 +23,8 @@ from wp1.web.sites import sites
 from wp1.web.zim_emails import zim_emails
 
 
-def get_redis_creds():
-    try:
-        return CREDENTIALS[ENV]["REDIS"]
-    except KeyError:
-        print("No REDIS_CREDS found, using defaults.")
-        return None
-
-
 def get_secret_key():
-    try:
-        return CREDENTIALS[ENV]["SESSION"]["secret_key"]
-    except KeyError:
-        print("No secret_key found, using defaults.")
-        return "WP1"
+    return get_settings().SESSION_SECRET_KEY
 
 
 # We use this to prevent caching of `/swagger.yml`
@@ -59,22 +48,18 @@ def nocache(view):
 def create_app(session_type="redis"):
     app = flask.Flask(__name__)
 
-    cors_origins = None
-    cors_origins = CREDENTIALS[ENV].get("CLIENT_URL", {}).get("domains")
-    if cors_origins is None:
-        cors_origins = "*"
+    settings = get_settings()
+
+    cors_origins = settings.CLIENT_DOMAINS or "*"
 
     cors = flask_cors.CORS(
         app, resources="*", origins=cors_origins, supports_credentials=True
     )
     gzip = flask_gzip.Gzip(app, minimum_size=256)
 
-    redis_creds = get_redis_creds()
-
-    if redis_creds is not None:
-        app.config["SESSION_REDIS"] = redis.from_url(
-            "redis://{}:{}".format(redis_creds["host"], redis_creds["port"])
-        )
+    app.config["SESSION_REDIS"] = redis.from_url(
+        "redis://{}:{}".format(settings.REDIS_HOST, settings.REDIS_PORT)
+    )
 
     app.config["SECRET_KEY"] = get_secret_key()
     app.config["SESSION_TYPE"] = session_type
@@ -89,6 +74,12 @@ def create_app(session_type="redis"):
             conn = flask.g.pop("wp10db")
             conn.close()
 
+    @app.errorhandler(HTTPException)
+    def handle_http_exception(e):
+        # Return errors as JSON, with the description passed to flask.abort()
+        # (or the werkzeug default), instead of the default HTML error page.
+        return flask.jsonify({"error": e.description}), e.code
+
     @app.route("/")
     def index():
         return flask.send_from_directory(".", "swagger.html")
@@ -98,7 +89,7 @@ def create_app(session_type="redis"):
     def swagger_api_docs_yml():
         return flask.send_from_directory(".", "openapi.yml")
 
-    if ENV == environment.Environment.DEVELOPMENT:
+    if get_settings().ENV == environment.Environment.DEVELOPMENT:
         # In development, override some project endpoints, mostly manual
         # update, to provide an easier env for developing the frontend.
         print(

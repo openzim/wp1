@@ -20,4 +20,6 @@ def redirect():
             "%sindex.php?title=%s&oldid=%s" % (FRONTEND_WIKI_BASE, name, revid)
         )
 
-    return flask.abort(404)
+    return flask.abort(
+        404, "No revision found for the given article name and timestamp"
+    )

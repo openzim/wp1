@@ -19,3 +19,11 @@ class AppTest(BaseWebTestcase):
         with self.override_db(self.app), self.app.test_client() as client:
             rv = client.get("/v1/openapi.yml")
             self.assertTrue(b"title: 'WP 1.0 Frontend'" in rv.data)
+
+    def test_http_errors_return_json_body(self):
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.get("/v1/no/such/endpoint")
+            self.assertEqual("404 NOT FOUND", rv.status)
+            data = rv.get_json()
+            self.assertIsNotNone(data)
+            self.assertIn("error", data)

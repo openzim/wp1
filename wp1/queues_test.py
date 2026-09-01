@@ -6,6 +6,7 @@ from rq.registry import ScheduledJobRegistry
 
 from wp1 import constants, queues
 from wp1.base_db_test import BaseWpOneDbTest
+from wp1.config import override_settings
 from wp1.environment import Environment
 from wp1 import queues
 from wp1.selection.models.simple import Builder as SimpleBuilder
@@ -21,7 +22,7 @@ class QueuesTest(BaseWpOneDbTest):
     def tearDown(self):
         super().tearDown()
 
-    @patch("wp1.queues.ENV", Environment.DEVELOPMENT)
+    @override_settings(ENV=Environment.DEVELOPMENT)
     @patch("wp1.queues.logic_project.update_project_by_name")
     def test_enqueue_project_development(self, mock_project_fn):
         update_q = MagicMock()
@@ -38,7 +39,7 @@ class QueuesTest(BaseWpOneDbTest):
         )
         upload_q.enqueue.assert_not_called()
 
-    @patch("wp1.queues.ENV", Environment.PRODUCTION)
+    @override_settings(ENV=Environment.PRODUCTION)
     @patch("wp1.queues.logic_project.update_project_by_name")
     @patch("wp1.queues.tables.upload_project_table")
     @patch("wp1.queues.logs.update_log_page_for_project")
@@ -76,7 +77,7 @@ class QueuesTest(BaseWpOneDbTest):
             failure_ttl=constants.JOB_FAILURE_TTL,
         )
 
-    @patch("wp1.queues.ENV", Environment.DEVELOPMENT)
+    @override_settings(ENV=Environment.DEVELOPMENT)
     @patch("wp1.queues.Queue")
     @patch("wp1.queues.enqueue_project")
     def test_enqueue_single_project(self, mock_enqueue_project, mock_queue):
@@ -93,7 +94,7 @@ class QueuesTest(BaseWpOneDbTest):
             b"Water", update_q, upload_q, redis=self.redis, track_progress=False
         )
 
-    @patch("wp1.queues.ENV", Environment.DEVELOPMENT)
+    @override_settings(ENV=Environment.DEVELOPMENT)
     @patch("wp1.queues.custom_tables.upload_custom_table_by_name")
     @patch("wp1.queues.Queue")
     @patch("wp1.queues.enqueue_project")
@@ -116,7 +117,7 @@ class QueuesTest(BaseWpOneDbTest):
             failure_ttl=constants.JOB_FAILURE_TTL,
         )
 
-    @patch("wp1.queues.ENV", Environment.DEVELOPMENT)
+    @override_settings(ENV=Environment.DEVELOPMENT)
     @patch("wp1.queues.logic_project.project_names_to_update")
     @patch("wp1.queues.custom_tables.all_custom_table_names")
     @patch("wp1.queues.wiki_connect")

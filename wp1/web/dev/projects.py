@@ -13,29 +13,14 @@ from wp1.web import authenticate
 
 import flask
 
-from wp1.environment import Environment
+from wp1.config import get_settings
 from wp1.timestamp import utcnow
 from wp1.web.redis import get_redis
-from wp1.credentials import CREDENTIALS
 
-UPDATE_DURATION_SECS = 5 * 30
-ELAPSED_TIME_SECS = 30
-BI_DURATION_SECS = UPDATE_DURATION_SECS + ELAPSED_TIME_SECS // 2
-
-try:
-    overlay_settings = CREDENTIALS[Environment.DEVELOPMENT]["OVERLAY"]
-    UPDATE_DURATION_SECS = overlay_settings.get(
-        "update_wait_time_seconds", UPDATE_DURATION_SECS
-    )
-    ELAPSED_TIME_SECS = overlay_settings.get(
-        "job_elapsed_time_seconds", ELAPSED_TIME_SECS
-    )
-    BI_DURATION_SECS = overlay_settings.get(
-        "basic_income_total_time_seconds", BI_DURATION_SECS
-    )
-except KeyError:
-    # The default values were already set before the attempted import so nothing to do
-    pass
+_settings = get_settings()
+UPDATE_DURATION_SECS = _settings.OVERLAY_UPDATE_WAIT_TIME
+ELAPSED_TIME_SECS = _settings.OVERLAY_JOB_ELAPSED_TIME
+BI_DURATION_SECS = _settings.OVERLAY_BASIC_INCOME_TOTAL_TIME
 
 dev_projects = flask.Blueprint("dev_projects", __name__)
 

@@ -72,7 +72,7 @@ if [[ "${1:-}" == "--rollback" ]]; then
   retag_and_up "$tag"
   verify
   # Deliberately does not touch $LAST_DEPLOY_FILE: the next deploy's
-  # credentials diff then spans the rolled-back range too, which is the
+  # env-schema diff then spans the rolled-back range too, which is the
   # safe direction.
   cat <<'EOF'
 ==> Rollback complete.
@@ -89,15 +89,16 @@ sha=${1:?usage: deploy-remote.sh <full-git-sha>}
 short=$(git rev-parse --short=7 "$sha")
 prev=$(cat "$LAST_DEPLOY_FILE" 2>/dev/null || true)
 
-# credentials.py on this box (/data/wp1bot/credentials.py) is managed by
-# hand. If the template changed since the last deploy, the real file
-# probably needs a matching edit -- stop and ask.
+# The production env file on this box (/data/wp1bot/wp1.env, consumed by
+# docker-compose.yml via env_file) is managed by hand. If the generated
+# .env.example changed since the last deploy, the real file probably
+# needs a matching edit -- stop and ask.
 if [[ -n "$prev" ]] && git cat-file -e "$prev" 2>/dev/null; then
-  if [[ -n "$(git diff --name-only "$prev".."$sha" -- wp1/credentials.py.example 2>/dev/null)" ]]; then
+  if [[ -n "$(git diff --name-only "$prev".."$sha" -- .env.example 2>/dev/null)" ]]; then
     cat <<EOF
 
-*** WARNING: the credentials template changed since the last deploy
-*** ($prev). Make sure /data/wp1bot/credentials.py has been
+*** WARNING: the env schema (.env.example) changed since the last deploy
+*** ($prev). Make sure /data/wp1bot/wp1.env has been
 *** updated to match before continuing.
 
 EOF
@@ -105,7 +106,7 @@ EOF
     [[ "$answer" == [yY]* ]] || { echo "Aborted."; exit 1; }
   fi
 else
-  echo "note: no previous deploy recorded; skipping credentials-change check"
+  echo "note: no previous deploy recorded; skipping env-schema-change check"
 fi
 
 # Wait for the publish workflow to push all three images for this exact
