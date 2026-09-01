@@ -21,6 +21,9 @@ log/**
 # .env.example and .env.docker are committed and safe to share.
 .env
 
+# Local agent instructions (may contain private infrastructure notes)
+AGENTS.md
+
 
 # Don't commit SSH keys
 id_ed25519
