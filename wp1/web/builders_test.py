@@ -239,7 +239,7 @@ class BuildersTest(BaseWebTestcase):
                 {"error": "No builder found with id = 1234"}, rv.get_json()
             )
 
-    def test_get_builder_unauthorized(self):
+    def test_get_builder_not_owner(self):
         self.app = create_app()
         with self.app.test_client() as client:
             with client.session_transaction() as sess:
@@ -247,7 +247,7 @@ class BuildersTest(BaseWebTestcase):
             builder_id = self._insert_builder()
             rv = client.get(f"/v1/builders/{builder_id}")
 
-            self.assertEqual("401 UNAUTHORIZED", rv.status)
+            self.assertEqual("403 FORBIDDEN", rv.status)
 
     def test_get_builder_derives_failed_reference_errors(self):
         self.app = create_app()
@@ -411,6 +411,23 @@ class BuildersTest(BaseWebTestcase):
                 sess["user"] = different_user
             rv = client.post(
                 "/v1/builders/%s" % builder_id,
+                json={
+                    "model": "wp1.selection.models.simple",
+                    "params": {"list": self.valid_article_name},
+                    "name": "updated_list",
+                    "project": "my_project",
+                },
+            )
+            self.assertEqual("403 FORBIDDEN", rv.status)
+
+    def test_update_not_found(self):
+        self._insert_builder()
+        self.app = create_app()
+        with self.override_db(self.app), self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["user"] = self.USER
+            rv = client.post(
+                "/v1/builders/inexistent-id",
                 json={
                     "model": "wp1.selection.models.simple",
                     "params": {"list": self.valid_article_name},
@@ -1655,4 +1672,21 @@ class BuildersTest(BaseWebTestcase):
                 "/v1/builders/%s/selection/latest/article_count" % builder_id
             )
         self.assertEqual("401 UNAUTHORIZED", rv.status)
-        self.assertEqual("401 UNAUTHORIZED", rv.status)
+
+    def test_latest_selection_article_count_for_builder_not_found(self):
+        self._insert_builder()
+        self.app = create_app()
+        with self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["user"] = self.USER
+            rv = client.get("/v1/builders/inexistent-id/selection/latest/article_count")
+        self.assertEqual("404 NOT FOUND", rv.status)
+
+    def test_delete_schedule_for_builder_not_found(self):
+        self._insert_builder()
+        self.app = create_app()
+        with self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["user"] = self.USER
+            rv = client.delete("/v1/builders/inexistent-id/schedule")
+        self.assertEqual("404 NOT FOUND", rv.status)

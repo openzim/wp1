@@ -776,8 +776,6 @@ class TestMakeWikiLink(unittest.TestCase):
 
 class TestTableCaching(BaseWpOneDbTest):
 
-    @patch("wp1.tables.CREDENTIALS", {"DEVELOPMENT": {"REDIS": {}}})
-    @patch("wp1.tables.ENV", "DEVELOPMENT")
     @patch("wp1.tables.Redis")
     @patch("wp1.tables.generate_table_data")
     def test_empty_cache(self, patched_table_data, patched_redis):
@@ -798,8 +796,6 @@ class TestTableCaching(BaseWpOneDbTest):
         )
         self.assertEqual(expected_table, actual)
 
-    @patch("wp1.tables.CREDENTIALS", {"DEVELOPMENT": {"REDIS": {}}})
-    @patch("wp1.tables.ENV", "DEVELOPMENT")
     @patch("wp1.tables.Redis")
     @patch("wp1.tables.generate_table_data")
     def test_full_cache(self, patched_table_data, patched_redis):

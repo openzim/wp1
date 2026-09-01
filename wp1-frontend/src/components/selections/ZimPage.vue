@@ -10,8 +10,14 @@
       <div v-else-if="notFound" class="mx-auto w-full max-w-[760px] p-[22px]">
         <h1 class="m-0 mb-2 text-xl font-semibold">404 Not Found</h1>
         <p class="m-0 text-[14px] text-ink-2">
-          Sorry, the selection with that ID either doesn't exist or isn't owned
-          by you.
+          Sorry, no selection exists with that ID.
+        </p>
+      </div>
+
+      <div v-else-if="forbidden" class="mx-auto w-full max-w-[760px] p-[22px]">
+        <h1 class="m-0 mb-2 text-xl font-semibold">403 Forbidden</h1>
+        <p class="m-0 text-[14px] text-ink-2">
+          Sorry, the selection with that ID belongs to another user.
         </p>
       </div>
 
@@ -450,6 +456,7 @@ export default {
       isDeleted: false,
       longDescription: '',
       notFound: false,
+      forbidden: false,
       noArticleCount: false,
       // HTTP status of the fetch that put the page in its error state.
       errorHttpStatus: null,
@@ -524,6 +531,8 @@ export default {
       );
       if (response.status == 404) {
         this.notFound = true;
+      } else if (response.status == 403) {
+        this.forbidden = true;
       } else if (!response.ok) {
         this.serverError = true;
         this.errorHttpStatus = response.status;

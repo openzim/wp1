@@ -2,12 +2,15 @@ import os
 
 import json
 
-from wp1.credentials import CONF_LANG
+from wp1.config import get_settings
 
 
 def _get_conf_path():
     return os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), "conf", CONF_LANG, "conf.json"
+        os.path.dirname(os.path.dirname(__file__)),
+        "conf",
+        get_settings().CONF_LANG,
+        "conf.json",
     )
 
 

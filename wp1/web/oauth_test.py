@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 
 from mwoauth import RequestToken
 
-from wp1.credentials import CREDENTIALS
+from wp1.config import override_settings
 from wp1.environment import Environment
 from wp1.web.app import create_app
 from wp1.web.base_web_testcase import BaseWebTestcase
@@ -25,27 +25,34 @@ handshaker = Mock(
     }
 )
 
+# Settings overrides matching what the old TEST_OAUTH_CREDS dict provided:
+# configured OAuth consumer credentials and a client homepage URL.
+TEST_OAUTH_SETTINGS = {
+    "MWOAUTH_CONSUMER_KEY": "consumer_key",
+    "MWOAUTH_CONSUMER_SECRET": "consumer_secret",
+    "CLIENT_HOMEPAGE": "http://localhost:5173/#/",
+}
+
+# Development environment without OAuth credentials configured.
+DEV_NO_CREDS_SETTINGS = {
+    "ENV": Environment.DEVELOPMENT,
+    "MWOAUTH_CONSUMER_KEY": "",
+    "MWOAUTH_CONSUMER_SECRET": "",
+    "CLIENT_HOMEPAGE": "http://localhost:5173/#/",
+}
+
+# Development environment with OAuth credentials configured.
+DEV_WITH_CREDS_SETTINGS = {
+    "ENV": Environment.DEVELOPMENT,
+    "MWOAUTH_CONSUMER_KEY": "dev_consumer_key",
+    "MWOAUTH_CONSUMER_SECRET": "dev_consumer_secret",
+    "CLIENT_HOMEPAGE": "http://localhost:5173/#/",
+}
+
 
 class IdentifyTest(BaseWebTestcase):
-    ENV = Environment.TEST
-    TEST_OAUTH_CREDS = {
-        Environment.TEST: {
-            **CREDENTIALS[Environment.TEST],
-            "API": {},
-            "MWOAUTH": {
-                "consumer_key": "consumer_key",
-                "consumer_secret": "consumer_secret",
-            },
-            "SESSION": {"secret_key": "wp1_secret"},
-            "CLIENT_URL": {
-                "domain": "localhost:5173",
-                "homepage": "http://localhost:5173/#/",
-            },
-        },
-        Environment.PRODUCTION: {},
-    }
 
-    @patch("wp1.web.oauth.CREDENTIALS", TEST_OAUTH_CREDS)
+    @override_settings(**TEST_OAUTH_SETTINGS)
     @patch("wp1.web.oauth.get_handshaker", lambda: handshaker)
     def test_initiate_authorized_user(self):
         self.app = create_app(session_type="filesystem")
@@ -56,7 +63,7 @@ class IdentifyTest(BaseWebTestcase):
             self.assertEqual("302 FOUND", rv.status)
             self.assertEqual("http://localhost:5173/#/", rv.location)
 
-    @patch("wp1.web.oauth.CREDENTIALS", TEST_OAUTH_CREDS)
+    @override_settings(**TEST_OAUTH_SETTINGS)
     @patch("wp1.web.oauth.get_handshaker", lambda: handshaker)
     def test_initiate_unauthorized_user(self):
         self.app = create_app()
@@ -66,7 +73,7 @@ class IdentifyTest(BaseWebTestcase):
             rv = client.get("/v1/oauth/initiate")
             self.assertEqual(REDIRECT, rv.location)
 
-    @patch("wp1.web.oauth.CREDENTIALS", TEST_OAUTH_CREDS)
+    @override_settings(**TEST_OAUTH_SETTINGS)
     def test_initiate_authorized_user_with_next_path(self):
         self.app = create_app()
         with self.app.test_client() as client:
@@ -76,14 +83,14 @@ class IdentifyTest(BaseWebTestcase):
             self.assertEqual("302 FOUND", rv.status)
             self.assertEqual(f"http://localhost:5173/#/update", rv.location)
 
-    @patch("wp1.web.oauth.CREDENTIALS", TEST_OAUTH_CREDS)
+    @override_settings(**TEST_OAUTH_SETTINGS)
     def test_complete_unauthorized_user(self):
         self.app = create_app()
         with self.app.test_client() as client:
             rv = client.get("/v1/oauth/complete")
             self.assertEqual("404 NOT FOUND", rv.status)
 
-    @patch("wp1.web.oauth.CREDENTIALS", TEST_OAUTH_CREDS)
+    @override_settings(**TEST_OAUTH_SETTINGS)
     @patch("wp1.web.oauth.get_handshaker", lambda: handshaker)
     def test_complete_authorized_user_email(self):
         self.app = create_app()
@@ -108,7 +115,7 @@ class IdentifyTest(BaseWebTestcase):
                 self.assertEqual("WP1_user", row["u_username"].decode("utf-8"))
                 self.assertEqual("wp1user@email.ch", row["u_email"].decode("utf-8"))
 
-    @patch("wp1.web.oauth.CREDENTIALS", TEST_OAUTH_CREDS)
+    @override_settings(**TEST_OAUTH_SETTINGS)
     @patch("wp1.web.oauth.get_handshaker", lambda: handshaker)
     def test_complete_authorized_user(self):
         self.app = create_app()
@@ -124,7 +131,7 @@ class IdentifyTest(BaseWebTestcase):
                 self.assertIsNotNone(row)
                 self.assertEqual("wp1user@email.ch", row["u_email"].decode("utf-8"))
 
-    @patch("wp1.web.oauth.CREDENTIALS", TEST_OAUTH_CREDS)
+    @override_settings(**TEST_OAUTH_SETTINGS)
     @patch("wp1.web.oauth.get_handshaker", lambda: handshaker)
     def test_complete_coerces_deserialized_request_token(self):
         # flask-session >= 0.6 serializes sessions as JSON (msgspec), so the
@@ -141,10 +148,9 @@ class IdentifyTest(BaseWebTestcase):
             self.assertIsInstance(token, RequestToken)
             self.assertEqual("request_token", token.key)
 
-    @patch("wp1.web.oauth.CREDENTIALS", TEST_OAUTH_CREDS)
+    @override_settings(**TEST_OAUTH_SETTINGS)
     @patch("wp1.web.oauth.get_handshaker", lambda: handshaker)
     def test_complete_authorized_user_with_next_path(self):
-        print(self.TEST_OAUTH_CREDS)
         self.app = create_app()
         with self.override_db(self.app), self.app.test_client() as client:
             with client.session_transaction() as sess:
@@ -158,7 +164,7 @@ class IdentifyTest(BaseWebTestcase):
                 cursor.execute("SELECT * FROM users WHERE u_id = 1234")
                 self.assertNotEqual(None, cursor.fetchone())
 
-    @patch("wp1.web.oauth.CREDENTIALS", TEST_OAUTH_CREDS)
+    @override_settings(**TEST_OAUTH_SETTINGS)
     def test_identify_authorized_user(self):
         self.app = create_app()
         with self.app.test_client() as client:
@@ -167,14 +173,14 @@ class IdentifyTest(BaseWebTestcase):
             rv = client.get("/v1/oauth/identify")
             self.assertEqual({"username": "WP1_user"}, rv.get_json())
 
-    @patch("wp1.web.oauth.CREDENTIALS", TEST_OAUTH_CREDS)
+    @override_settings(**TEST_OAUTH_SETTINGS)
     def test_identify_unauthorized_user(self):
         self.app = create_app()
         with self.app.test_client() as client:
             rv = client.get("/v1/oauth/identify")
             self.assertEqual("401 UNAUTHORIZED", rv.status)
 
-    @patch("wp1.web.oauth.CREDENTIALS", TEST_OAUTH_CREDS)
+    @override_settings(**TEST_OAUTH_SETTINGS)
     def test_logout_authorized_user(self):
         self.app = create_app()
         with self.app.test_client() as client:
@@ -184,21 +190,21 @@ class IdentifyTest(BaseWebTestcase):
             rv = client.get("/v1/oauth/logout")
             self.assertEqual({"status": "204"}, rv.get_json())
 
-    @patch("wp1.web.oauth.CREDENTIALS", TEST_OAUTH_CREDS)
+    @override_settings(**TEST_OAUTH_SETTINGS)
     def test_logout_unauthorized_user(self):
         self.app = create_app()
         with self.app.test_client() as client:
             rv = client.get("/v1/oauth/logout")
             self.assertEqual("404 NOT FOUND", rv.status)
 
-    @patch("wp1.web.oauth.CREDENTIALS", TEST_OAUTH_CREDS)
+    @override_settings(**TEST_OAUTH_SETTINGS)
     def test_email_unauthorized_user(self):
         self.app = create_app()
         with self.app.test_client() as client:
             rv = client.get("/v1/oauth/email")
             self.assertEqual("401 UNAUTHORIZED", rv.status)
 
-    @patch("wp1.web.oauth.CREDENTIALS", TEST_OAUTH_CREDS)
+    @override_settings(**TEST_OAUTH_SETTINGS)
     def test_email_authorized_user_with_email_in_session(self):
         self.app = create_app()
         with self.app.test_client() as client:
@@ -207,7 +213,7 @@ class IdentifyTest(BaseWebTestcase):
             rv = client.get("/v1/oauth/email")
             self.assertEqual({"email": USER["identity"]["email"]}, rv.get_json())
 
-    @patch("wp1.web.oauth.CREDENTIALS", TEST_OAUTH_CREDS)
+    @override_settings(**TEST_OAUTH_SETTINGS)
     def test_email_authorized_user_without_session_exists_in_db(self):
         self.app = create_app()
         user_id = USER["identity"]["sub"]
@@ -231,7 +237,7 @@ class IdentifyTest(BaseWebTestcase):
             rv = client.get("/v1/oauth/email")
             self.assertEqual({"email": "dbemail@domain.com"}, rv.get_json())
 
-    @patch("wp1.web.oauth.CREDENTIALS", TEST_OAUTH_CREDS)
+    @override_settings(**TEST_OAUTH_SETTINGS)
     def test_email_authorized_user_without_session_not_in_db(self):
         self.app = create_app()
         user_id = USER["identity"]["sub"]
@@ -252,35 +258,7 @@ class IdentifyTest(BaseWebTestcase):
 class DevelopmentModeTest(BaseWebTestcase):
     """tests for the development mode OAuth bypass functionality."""
 
-    DEV_NO_CREDS = {
-        Environment.DEVELOPMENT: {
-            "CLIENT_URL": {
-                "domain": "localhost:5173",
-                "homepage": "http://localhost:5173/#/",
-            },
-            "MWOAUTH": {},
-        },
-        Environment.TEST: CREDENTIALS[Environment.TEST],
-        Environment.PRODUCTION: {},
-    }
-
-    DEV_WITH_CREDS = {
-        Environment.DEVELOPMENT: {
-            "CLIENT_URL": {
-                "domain": "localhost:5173",
-                "homepage": "http://localhost:5173/#/",
-            },
-            "MWOAUTH": {
-                "consumer_key": "dev_consumer_key",
-                "consumer_secret": "dev_consumer_secret",
-            },
-        },
-        Environment.TEST: CREDENTIALS[Environment.TEST],
-        Environment.PRODUCTION: {},
-    }
-
-    @patch("wp1.web.oauth.ENV", Environment.DEVELOPMENT)
-    @patch("wp1.web.oauth.CREDENTIALS", DEV_NO_CREDS)
+    @override_settings(**DEV_NO_CREDS_SETTINGS)
     def test_initiate_dev_mode_no_creds_redirects_to_homepage(self):
         """Test : dev + no Creds redirects to homepage and creates user."""
         self.app = create_app()
@@ -299,8 +277,7 @@ class DevelopmentModeTest(BaseWebTestcase):
             self.assertEqual(b"dev_user", row["u_username"])
             self.assertEqual(b"dev_user@example.com", row["u_email"])
 
-    @patch("wp1.web.oauth.ENV", Environment.DEVELOPMENT)
-    @patch("wp1.web.oauth.CREDENTIALS", DEV_NO_CREDS)
+    @override_settings(**DEV_NO_CREDS_SETTINGS)
     def test_initiate_dev_mode_no_creds_with_next_path(self):
         """Test : dev + No Creds redirects to next_path."""
         self.app = create_app()
@@ -310,8 +287,7 @@ class DevelopmentModeTest(BaseWebTestcase):
             self.assertEqual("302 FOUND", rv.status)
             self.assertEqual("http://localhost:5173/#/update", rv.location)
 
-    @patch("wp1.web.oauth.ENV", Environment.DEVELOPMENT)
-    @patch("wp1.web.oauth.CREDENTIALS", DEV_NO_CREDS)
+    @override_settings(**DEV_NO_CREDS_SETTINGS)
     def test_initiate_dev_mode_no_creds_sets_session(self):
         """Test Case A: Verify session is set correctly by calling identify endpoint."""
         self.app = create_app()
@@ -322,8 +298,7 @@ class DevelopmentModeTest(BaseWebTestcase):
             self.assertEqual(200, rv.status_code)
             self.assertEqual({"username": "dev_user"}, rv.get_json())
 
-    @patch("wp1.web.oauth.ENV", Environment.DEVELOPMENT)
-    @patch("wp1.web.oauth.CREDENTIALS", DEV_NO_CREDS)
+    @override_settings(**DEV_NO_CREDS_SETTINGS)
     def test_initiate_dev_mode_idempotency(self):
         """Test  :  hitting initiate twice doesn't crash or duplicate rows."""
         self.app = create_app()
@@ -342,8 +317,7 @@ class DevelopmentModeTest(BaseWebTestcase):
                 count = cursor.fetchone()["cnt"]
             self.assertEqual(1, count)
 
-    @patch("wp1.web.oauth.ENV", Environment.DEVELOPMENT)
-    @patch("wp1.web.oauth.CREDENTIALS", DEV_NO_CREDS)
+    @override_settings(**DEV_NO_CREDS_SETTINGS)
     def test_initiate_dev_mode_multiple_sessions_same_user(self):
         """Test : different sessions hitting initiate don't duplicate users."""
         self.app = create_app()
@@ -364,8 +338,7 @@ class DevelopmentModeTest(BaseWebTestcase):
                 count = cursor.fetchone()["cnt"]
             self.assertEqual(1, count)
 
-    @patch("wp1.web.oauth.ENV", Environment.DEVELOPMENT)
-    @patch("wp1.web.oauth.CREDENTIALS", DEV_WITH_CREDS)
+    @override_settings(**DEV_WITH_CREDS_SETTINGS)
     @patch("wp1.web.oauth.get_handshaker", lambda: handshaker)
     def test_initiate_dev_mode_with_creds_redirects_to_oauth(self):
         """Test : dev + With Creds redirects to the external OAuth provider."""
@@ -375,8 +348,7 @@ class DevelopmentModeTest(BaseWebTestcase):
 
             self.assertEqual(REDIRECT, rv.location)
 
-    @patch("wp1.web.oauth.ENV", Environment.DEVELOPMENT)
-    @patch("wp1.web.oauth.CREDENTIALS", DEV_WITH_CREDS)
+    @override_settings(**DEV_WITH_CREDS_SETTINGS)
     @patch("wp1.web.oauth.get_handshaker", lambda: handshaker)
     def test_initiate_dev_mode_with_creds_does_not_create_fake_user(self):
         """Test  : dev + Creds does not create fake dev user in DB."""

@@ -1,17 +1,19 @@
 import logging
 
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 
 
 def configure_logging():
-    creds = CREDENTIALS.get(ENV, {})
-    log_config = creds.get("LOGGING", {})
+    settings = get_settings()
+    log_config = settings.LOGGING
 
+    # The LOGGING dict's '*' entry (per-logger overrides, code-only) wins
+    # over the flat env-backed root logger settings.
     root_config = log_config.get(
         "*",
         {
-            "level": "INFO",
-            "format": "%(levelname)s:%(asctime)s:%(name)s:%(message)s",
+            "level": settings.LOGGING_LEVEL,
+            "format": settings.LOGGING_FORMAT,
         },
     )
 

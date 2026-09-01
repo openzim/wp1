@@ -6,6 +6,7 @@ import attr
 from redis.exceptions import RedisError
 
 from wp1.base_db_test import BaseWpOneDbTest
+from wp1.config import override_settings
 from wp1.environment import Environment
 from wp1.exceptions import (
     BuilderDeleteConfirmationError,
@@ -458,6 +459,32 @@ class BuilderTest(BaseWpOneDbTest):
         expected["b_selection_zim_version"] = 1
         actual = self._get_builder_by_user_id()
         self.assertEqual(expected, actual)
+
+    def test_create_or_update_builder_update_not_found(self):
+        self._insert_builder()
+        with self.assertRaises(ObjectNotFoundError):
+            logic_builder.create_or_update_builder(
+                self.wp10db,
+                "Builder 2",
+                "1234",
+                "zz.wikipedia.fake",
+                {"list": ["a", "b", "c", "d"]},
+                "wp1.selection.models.simple",
+                builder_id="inexistent-id",
+            )
+
+    def test_create_or_update_builder_update_not_owner(self):
+        id_ = self._insert_builder()
+        with self.assertRaises(UserNotAuthorizedError):
+            logic_builder.create_or_update_builder(
+                self.wp10db,
+                "Builder 2",
+                "5678",
+                "zz.wikipedia.fake",
+                {"list": ["a", "b", "c", "d"]},
+                "wp1.selection.models.simple",
+                builder_id=id_,
+            )
 
     @patch(
         "wp1.models.wp10.builder.utcnow",
@@ -982,7 +1009,7 @@ class BuilderTest(BaseWpOneDbTest):
         actual = logic_builder.latest_url_for(150, "foo/bar-baz")
         self.assertIsNone(actual)
 
-    @patch("wp1.logic.builder.CREDENTIALS", {})
+    @override_settings(CLIENT_API_URL=None)
     def test_latest_url_for_no_server_url(self):
         actual = logic_builder.latest_url_for(15, "text/tab-separated-values")
         self.assertIsNone(actual)

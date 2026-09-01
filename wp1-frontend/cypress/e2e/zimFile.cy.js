@@ -568,6 +568,21 @@ describe('the zim file creation page', () => {
         cy.contains('404 Not Found').should('be.visible');
       });
     });
+
+    describe('and the builder belongs to another user', () => {
+      beforeEach(() => {
+        cy.intercept('GET', 'v1/builders/1', {
+          statusCode: 403,
+          body: '403 FORBIDDEN',
+        });
+        cy.visit('/#/selections/1/zim');
+      });
+
+      it('displays the 403 text', () => {
+        cy.contains('403 Forbidden').should('be.visible');
+        cy.contains('belongs to another user').should('be.visible');
+      });
+    });
   });
 
   describe('when the user is not logged in', () => {

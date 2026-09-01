@@ -6,6 +6,7 @@ from rq.registry import StartedJobRegistry
 
 from wp1 import maintenance
 from wp1.base_db_test import BaseWpOneDbTest
+from wp1.config import override_settings
 from wp1.environment import Environment
 
 
@@ -26,7 +27,7 @@ class MaintenanceTest(BaseWpOneDbTest):
         mock_restart.assert_called_once_with()
         mock_enqueue_all.assert_called_once_with(self.redis, self.wp10db)
 
-    @patch("wp1.maintenance.ENV", Environment.PRODUCTION)
+    @override_settings(ENV=Environment.PRODUCTION)
     def test_enqueue_global_production(self):
         with patch("wp1.maintenance.redis_connect", return_value=self.redis):
             maintenance.enqueue_global()
@@ -34,7 +35,7 @@ class MaintenanceTest(BaseWpOneDbTest):
         # Global table upload plus global project count.
         self.assertEqual(2, Queue("upload", connection=self.redis).count)
 
-    @patch("wp1.maintenance.ENV", Environment.DEVELOPMENT)
+    @override_settings(ENV=Environment.DEVELOPMENT)
     def test_enqueue_global_development(self):
         with patch("wp1.maintenance.redis_connect", return_value=self.redis):
             maintenance.enqueue_global()

@@ -4,6 +4,7 @@ from unittest.mock import MagicMock, patch
 import pymysql.err
 import socks
 
+from wp1.config import override_settings
 from wp1.environment import Environment
 
 
@@ -15,15 +16,11 @@ class DbTest(unittest.TestCase):
         self.assertIsNotNone(connect("WP10DB"))
         self.assertIsNotNone(connect("WIKIDB"))
 
-    @patch("wp1.db.ENV", Environment.PRODUCTION)
-    def test_exception_thrown_with_empty_creds(self):
+    def test_exception_thrown_with_unknown_db_name(self):
         from wp1.db import connect
 
         with self.assertRaises(ValueError):
-            connect("WP10DB")
-
-        with self.assertRaises(ValueError):
-            self.assertIsNotNone(connect("WIKIDB"))
+            connect("NOT_A_DB")
 
     @patch("wp1.db.pymysql.connect")
     @patch("wp1.db.time.sleep")
@@ -37,7 +34,7 @@ class DbTest(unittest.TestCase):
 
     @patch("wp1.db.pymysql.connect")
     @patch("wp1.db.socks.socksocket")
-    @patch("wp1.db.ENV", Environment.DEVELOPMENT)
+    @override_settings(ENV=Environment.DEVELOPMENT)
     def test_socks_proxy(self, mock_socket, mock_connect):
         from wp1.db import connect
 
@@ -56,7 +53,7 @@ class DbTest(unittest.TestCase):
 
     @patch("wp1.db.pymysql.connect")
     @patch("wp1.db.socks.socksocket")
-    @patch("wp1.db.ENV", Environment.DEVELOPMENT)
+    @override_settings(ENV=Environment.DEVELOPMENT)
     def test_socks_proxy_not_used(self, mock_socket, mock_connect):
         from wp1.db import connect
 

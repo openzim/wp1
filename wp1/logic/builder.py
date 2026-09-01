@@ -23,7 +23,7 @@ from wp1.constants import (
     EXT_TO_CONTENT_TYPE,
     TS_FORMAT_WP10,
 )
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 from wp1.environment import Environment
 from wp1.exceptions import (
     BuilderDeleteConfirmationError,
@@ -82,7 +82,7 @@ def _assert_builder_owner(builder: Builder, user_id: str | bytes | int) -> None:
     if builder.user_id == user_id_str:
         return
 
-    msg = "User %s is not authorized to delete builder %s" % (
+    msg = "User %s is not authorized to access builder %s" % (
         user_id_str,
         builder.id,
     )
@@ -248,7 +248,7 @@ def create_or_update_builder(
     params: dict[str, Any],
     model: bytes,
     builder_id: str | bytes | None = None,
-) -> str | bytes | None:
+) -> str | bytes:
     params_encoded = json.dumps(params).encode("utf-8")
     builder = Builder(
         b_name=name,
@@ -268,10 +268,15 @@ def create_or_update_builder(
         builder.b_id = builder_id.encode("utf-8")
     else:
         builder.b_id = str(builder_id).encode("utf-8")
-    if update_builder(wp10db, builder):
-        return builder_id
 
-    return None
+    # Raises ObjectNotFoundError if the builder doesn't exist and
+    # UserNotAuthorizedError if it belongs to another user, so callers can
+    # distinguish a 404 from a 403. See issue #502.
+    existing = get_builder(wp10db, builder.b_id)
+    _assert_builder_owner(existing, user_id)
+
+    update_builder(wp10db, builder)
+    return builder_id
 
 
 def insert_builder(wp10db: Connection, builder: Builder) -> bytes:
@@ -777,9 +782,9 @@ def latest_url_for(builder_id: str, content_type: str) -> str | None:
             content_type,
         )
         return None
-    server_url = CREDENTIALS.get(ENV, {}).get("CLIENT_URL", {}).get("api")
+    server_url = get_settings().CLIENT_API_URL
     if server_url is None:
-        logger.warning("Could not determine server API URL. Check credentials.py")
+        logger.warning("Could not determine server API URL. Check configuration.")
         return None
     return "%s/v1/builders/%s/selection/latest.%s" % (server_url, builder_id, ext)
 
@@ -798,10 +803,10 @@ def latest_zimfarm_url_for(builder_id: str, content_type: str) -> str | None:
             content_type,
         )
         return None
-    server_url = CREDENTIALS.get(ENV, {}).get("CLIENT_URL", {}).get("backend")
+    server_url = get_settings().CLIENT_BACKEND_URL
     if server_url is None:
         logger.warning(
-            "Could not determine server backend URL for Zimfarm. Check credentials.py"
+            "Could not determine server backend URL for Zimfarm. Check configuration."
         )
         return None
     return "%s/v1/builders/%s/selection/zimfarm/latest.%s" % (
@@ -813,9 +818,9 @@ def latest_zimfarm_url_for(builder_id: str, content_type: str) -> str | None:
 
 def local_url_for_latest_zim(builder_id: str) -> str | None:
     """Returns the redirect URL for the latest ZIM file for a builder."""
-    server_url = CREDENTIALS.get(ENV, {}).get("CLIENT_URL", {}).get("api")
+    server_url = get_settings().CLIENT_API_URL
     if server_url is None:
-        logger.warning("Could not determine server API URL. Check credentials.py")
+        logger.warning("Could not determine server API URL. Check configuration.")
         return None
     return "%s/v1/builders/%s/zim/latest" % (server_url, builder_id)
 
@@ -879,9 +884,7 @@ def latest_selection_url(
     # In production, the keys 's3' and 'backend_s3' should be the same.
     s3_public_url = None
     if zimfarm_s3:
-        backend_s3 = CREDENTIALS.get(ENV, {}).get("CLIENT_URL", {}).get("backend_s3")
-        if backend_s3 is not None:
-            s3_public_url = str(backend_s3)
+        s3_public_url = get_settings().CLIENT_BACKEND_S3_URL
     return logic_selection.url_for(selection.s_object_key, s3_public_url=s3_public_url)
 
 

@@ -10,7 +10,7 @@ from redis import Redis
 from wp1 import api, app_logging
 from wp1.conf import get_conf
 from wp1.constants import LIST_URL, LIST_V2_URL, WIKI_BASE
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 from wp1.logic import project as logic_project
 from wp1.logic import util as logic_util
 from wp1.templates import env as jinja_env
@@ -20,12 +20,8 @@ logger = logging.getLogger(__name__)
 
 
 def get_redis():
-    try:
-        creds = CREDENTIALS[ENV]["REDIS"]
-        return Redis(**creds)
-    except KeyError:
-        logger.exception("Redis creds not found, returning None Redis")
-        return None
+    settings = get_settings()
+    return Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 
 
 config = get_conf()

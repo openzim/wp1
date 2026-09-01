@@ -231,10 +231,10 @@ credentials to materialize builder lists against an external S3), copy
 ### Running parallel dev stacks (e.g. from git worktrees)
 
 The easiest way is `./scripts/util/create_worktree.sh <branch>`, which creates the
-worktree under `.worktrees/<branch>`, copies the untracked credentials and
-`.env` files, writes a worktree-local `.env` with a unique project name,
-suffix, and free port set (remapping the port-coupled app config values to
-match), and offers to start the stack ("Start servers now? [Y/n]").
+worktree under `.worktrees/<branch>`, writes a worktree-local `.env` (based on
+this checkout's `.env`, if present) with a unique project name, suffix, and
+free port set (remapping the port-coupled app config values to match), and
+offers to start the stack ("Start servers now? [Y/n]").
 
 Manually, the mechanism is: all host ports, container names, and built
 image tags in

@@ -15,7 +15,7 @@ from rq.registry import StartedJobRegistry
 
 import wp1.logic.project as logic_project
 from wp1 import constants, queues, tables
-from wp1.credentials import ENV
+from wp1.config import get_settings
 from wp1.environment import Environment
 from wp1.redis_db import connect as redis_connect
 from wp1.wiki_db import connect as wiki_connect
@@ -72,7 +72,7 @@ def enqueue_global():
     redis = redis_connect()
     upload_q = Queue("upload", connection=redis)
 
-    if ENV == Environment.PRODUCTION:
+    if get_settings().ENV == Environment.PRODUCTION:
         logger.info("Enqueuing global table upload")
         upload_q.enqueue(tables.upload_global_table, job_timeout=constants.JOB_TIMEOUT)
 
