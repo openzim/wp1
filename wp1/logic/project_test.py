@@ -1139,9 +1139,9 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
         self.assertEqual(b"Top-Class", rating.r_importance)
 
         logs = [
-            l
-            for l in _get_all_logs(self.redis)
-            if l.l_article == b"Art of testing" and l.l_action == b"quality"
+            log
+            for log in _get_all_logs(self.redis)
+            if log.l_article == b"Art of testing" and log.l_action == b"quality"
         ]
         self.assertEqual(1, len(logs))
         self.assertEqual(b"FA-Class", logs[0].l_old)
