@@ -30,7 +30,7 @@
           <TypeBadge :model="item.model" />
           <span aria-hidden="true" class="text-ink-5">·</span>
           <span class="truncate">{{ item.project }}</span>
-          <template v-if="articleCount !== null">
+          <template v-if="showArticleCount">
             <span aria-hidden="true" class="text-ink-5">·</span>
             <span class="whitespace-nowrap"
               >{{ articleCount.toLocaleString() }} articles</span
@@ -553,6 +553,7 @@ import {
   deriveZimStatus,
   definitionText,
   selectionHasError,
+  selectionIsPending,
   tsvReady,
   definitionNote,
   describeSchedule,
@@ -608,6 +609,12 @@ export default {
     },
     selectionStatusInfo: function () {
       return deriveSelectionStatus(this.item);
+    },
+    // While the selection is (re-)materializing, the fetched count describes
+    // the previous materialization and would be stale — hide it until the
+    // s_updated_at watcher re-fetches a fresh one.
+    showArticleCount: function () {
+      return this.articleCount !== null && !selectionIsPending(this.item);
     },
     // Distinct name: `zimStatus` is the /zim/status payload in data.
     zimStatusInfo: function () {
