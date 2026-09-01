@@ -448,25 +448,13 @@ class ZimFarmTest(BaseWpOneDbTest):
         redis.hset.assert_not_called()
 
     @override_settings(
-        ZIMFARM_AUTH_MODE="oauth",
-        ZIMFARM_OAUTH_CLIENT_ID="test_client_id",
-        ZIMFARM_OAUTH_CLIENT_SECRET="test_client_secret",
-        ZIMFARM_OAUTH_AUDIENCE_ID="test_audience",
-        ZIMFARM_OAUTH_ISSUER="https://oauth.example.com",
+        ZIMFARM_AUTH_MODE="local",
+        ZIMFARM_USER="test_user",
+        ZIMFARM_PASSWORD="test_pass",
     )
     @patch("wp1.zimfarm.naive_utcnow")
-    def test_token_provider_get_access_token_bytes_from_redis(
-        self, mock_naive_utcnow, mock_credentials
-    ):
+    def test_token_provider_get_access_token_bytes_from_redis(self, mock_naive_utcnow):
         """A real Redis client without decode_responses returns bytes keys/values."""
-        mock_credentials.__getitem__.return_value = {
-            "ZIMFARM": {
-                "auth_mode": "local",
-                "user": "test_user",
-                "password": "test_pass",
-                "token_renewal_window": 300,
-            }
-        }
 
         mock_naive_utcnow.return_value = datetime.datetime(
             2023, 1, 1, 11, 50, 0, tzinfo=None
@@ -485,20 +473,16 @@ class ZimFarmTest(BaseWpOneDbTest):
         self.assertEqual(token, "existing_token")
         redis.hset.assert_not_called()
 
-    @patch("wp1.zimfarm.CREDENTIALS")
+    @override_settings(
+        ZIMFARM_AUTH_MODE="local",
+        ZIMFARM_USER="test_user",
+        ZIMFARM_PASSWORD="test_pass",
+    )
     @patch("wp1.zimfarm.naive_utcnow")
     def test_token_provider_get_access_token_empty_hash_keeps_memory_token(
-        self, mock_naive_utcnow, mock_credentials
+        self, mock_naive_utcnow
     ):
         """hgetall returns {} for a missing key; the in-memory token survives."""
-        mock_credentials.__getitem__.return_value = {
-            "ZIMFARM": {
-                "auth_mode": "local",
-                "user": "test_user",
-                "password": "test_pass",
-                "token_renewal_window": 300,
-            }
-        }
 
         mock_naive_utcnow.return_value = datetime.datetime(
             2023, 1, 1, 11, 50, 0, tzinfo=None
@@ -515,7 +499,13 @@ class ZimFarmTest(BaseWpOneDbTest):
         self.assertEqual(token, "memory_token")
         redis.hset.assert_not_called()
 
-    @patch("wp1.zimfarm.CREDENTIALS")
+    @override_settings(
+        ZIMFARM_AUTH_MODE="oauth",
+        ZIMFARM_OAUTH_CLIENT_ID="test_client_id",
+        ZIMFARM_OAUTH_CLIENT_SECRET="test_client_secret",
+        ZIMFARM_OAUTH_AUDIENCE_ID="test_audience",
+        ZIMFARM_OAUTH_ISSUER="https://oauth.example.com",
+    )
     @patch("wp1.zimfarm.naive_utcnow")
     @patch("wp1.zimfarm.requests")
     def test_token_provider_get_access_token_expired_oauth(
