@@ -1008,7 +1008,7 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
         page_to_rating = dict((p[1], p[3]) for p in pages)
         for r in ratings:
             if r.r_article in (b"How to test", b"Failures of tests"):
-                self.assertIsNone(r.r_quality)
+                self.assertEqual(NOT_A_CLASS.encode("utf-8"), r.r_quality)
             else:
                 self.assertEqual(page_to_rating[r.r_article], r.r_quality)
 
@@ -1042,6 +1042,7 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
         for r in ratings:
             if r.r_article in (b"How to test", b"Failures of tests"):
                 self.assertIsNone(r.r_quality)
+                self.assertEqual(NOT_A_CLASS.encode("utf-8"), r.r_importance)
             else:
                 self.assertEqual(page_to_rating[r.r_article], r.r_importance, repr(r))
 
@@ -1828,6 +1829,119 @@ class ProcessUnseenArticlesMovedTest(BaseCombinedDbTest):
         )
 
         self.assertEqual(0, len(moved_articles))
+
+
+class ProcessUnseenArticlesRatingTest(BaseCombinedDbTest):
+    """Tests for how process_unseen_articles rewrites and skips ratings."""
+
+    not_a_class_db = NOT_A_CLASS.encode("utf-8")
+
+    def setUp(self):
+        super().setUp()
+        self.project = Project(p_project=b"Test", p_timestamp=b"20100101000000")
+        self.redis = fakeredis.FakeStrictRedis()
+
+    def _insert_rating(self, rating):
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                """
+        INSERT INTO ratings
+          (r_project, r_namespace, r_article, r_score, r_quality,
+           r_quality_timestamp, r_importance, r_importance_timestamp)
+        VALUES
+          (%(r_project)s, %(r_namespace)s, %(r_article)s, %(r_score)s,
+           %(r_quality)s, %(r_quality_timestamp)s, %(r_importance)s,
+           %(r_importance_timestamp)s)
+    """,
+                attr.asdict(rating),
+            )
+        self.wp10db.commit()
+
+    @patch("wp1.logic.project.logic_page.get_move_data", return_value=None)
+    def test_unseen_article_marked_not_a_class(self, mock_get_move_data):
+        """An unseen (deleted) article is rewritten as NotA-Class, not NULL."""
+        old_rating = Rating(
+            r_project=b"Test",
+            r_namespace=0,
+            r_article=b"Deleted_Article",
+            r_score=0,
+            r_quality=b"FA-Class",
+            r_quality_timestamp=b"2018-07-04T05:05:05Z",
+            r_importance=b"High-Class",
+            r_importance_timestamp=b"2018-07-04T05:05:05Z",
+        )
+        self._insert_rating(old_rating)
+        old_ratings = {b"0:Deleted_Article": old_rating}
+        seen = {b"0:Some_Other_Article"}
+
+        logic_project.process_unseen_articles(
+            self.wikidb, self.wp10db, self.redis, self.project, old_ratings, seen
+        )
+
+        ratings = _get_all_ratings(self.wp10db)
+        self.assertEqual(1, len(ratings))
+        self.assertEqual(self.not_a_class_db, ratings[0].r_quality)
+        self.assertEqual(self.not_a_class_db, ratings[0].r_importance)
+
+        logs = _get_all_logs(self.redis)
+        self.assertEqual(2, len(logs))
+        for log in logs:
+            self.assertEqual(self.not_a_class_db, log.l_new)
+
+    @patch("wp1.logic.project.logic_page.get_move_data", return_value=None)
+    def test_unseen_article_already_not_a_class_skipped(self, mock_get_move_data):
+        """A row already NotA-Class for both kinds is not processed again."""
+        old_rating = Rating(
+            r_project=b"Test",
+            r_namespace=0,
+            r_article=b"Already_Gone",
+            r_score=0,
+            r_quality=self.not_a_class_db,
+            r_quality_timestamp=b"2018-07-04T05:05:05Z",
+            r_importance=self.not_a_class_db,
+            r_importance_timestamp=b"2018-07-04T05:05:05Z",
+        )
+        old_ratings = {b"0:Already_Gone": old_rating}
+        seen = {b"0:Some_Other_Article"}
+
+        logic_project.process_unseen_articles(
+            self.wikidb, self.wp10db, self.redis, self.project, old_ratings, seen
+        )
+
+        mock_get_move_data.assert_not_called()
+        self.assertEqual(0, len(_get_all_logs(self.redis)))
+
+    @patch("wp1.logic.project.logic_page.get_move_data", return_value=None)
+    def test_unseen_article_not_a_class_quality_evaluates_importance_only(
+        self, mock_get_move_data
+    ):
+        """quality == NotA-Class -> only the importance rating is re-evaluated."""
+        old_rating = Rating(
+            r_project=b"Test",
+            r_namespace=0,
+            r_article=b"Half_Gone",
+            r_score=0,
+            r_quality=self.not_a_class_db,
+            r_quality_timestamp=b"2018-07-04T05:05:05Z",
+            r_importance=b"High-Class",
+            r_importance_timestamp=b"2018-07-04T05:05:05Z",
+        )
+        self._insert_rating(old_rating)
+        old_ratings = {b"0:Half_Gone": old_rating}
+        seen = {b"0:Some_Other_Article"}
+
+        logic_project.process_unseen_articles(
+            self.wikidb, self.wp10db, self.redis, self.project, old_ratings, seen
+        )
+
+        ratings = _get_all_ratings(self.wp10db)
+        self.assertEqual(1, len(ratings))
+        self.assertEqual(self.not_a_class_db, ratings[0].r_quality)
+        self.assertEqual(self.not_a_class_db, ratings[0].r_importance)
+
+        logs = _get_all_logs(self.redis)
+        self.assertEqual(1, len(logs))
+        self.assertEqual(b"importance", logs[0].l_action)
 
 
 class DeferredLogMovedArticleTest(ArticlesTest):
