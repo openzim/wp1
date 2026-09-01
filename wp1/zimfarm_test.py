@@ -448,6 +448,58 @@ class ZimFarmTest(BaseWpOneDbTest):
         redis.hset.assert_not_called()
 
     @override_settings(
+        ZIMFARM_AUTH_MODE="local",
+        ZIMFARM_USER="test_user",
+        ZIMFARM_PASSWORD="test_pass",
+    )
+    @patch("wp1.zimfarm.naive_utcnow")
+    def test_token_provider_get_access_token_bytes_from_redis(self, mock_naive_utcnow):
+        """A real Redis client without decode_responses returns bytes keys/values."""
+
+        mock_naive_utcnow.return_value = datetime.datetime(
+            2023, 1, 1, 11, 50, 0, tzinfo=None
+        )
+
+        redis = MagicMock()
+        redis.hgetall.return_value = {
+            b"access_token": b"existing_token",
+            b"refresh_token": b"existing_refresh",
+            b"expires_at": b"2023-01-01T12:00:00Z",
+        }
+
+        provider = ZimfarmClientTokenProvider()
+        token = provider.get_access_token(redis)
+
+        self.assertEqual(token, "existing_token")
+        redis.hset.assert_not_called()
+
+    @override_settings(
+        ZIMFARM_AUTH_MODE="local",
+        ZIMFARM_USER="test_user",
+        ZIMFARM_PASSWORD="test_pass",
+    )
+    @patch("wp1.zimfarm.naive_utcnow")
+    def test_token_provider_get_access_token_empty_hash_keeps_memory_token(
+        self, mock_naive_utcnow
+    ):
+        """hgetall returns {} for a missing key; the in-memory token survives."""
+
+        mock_naive_utcnow.return_value = datetime.datetime(
+            2023, 1, 1, 11, 50, 0, tzinfo=None
+        )
+
+        redis = MagicMock()
+        redis.hgetall.return_value = {}
+
+        provider = ZimfarmClientTokenProvider()
+        provider._access_token = "memory_token"
+        provider._expires_at = datetime.datetime(2023, 1, 1, 12, 0, 0, tzinfo=None)
+        token = provider.get_access_token(redis)
+
+        self.assertEqual(token, "memory_token")
+        redis.hset.assert_not_called()
+
+    @override_settings(
         ZIMFARM_AUTH_MODE="oauth",
         ZIMFARM_OAUTH_CLIENT_ID="test_client_id",
         ZIMFARM_OAUTH_CLIENT_SECRET="test_client_secret",

@@ -187,7 +187,16 @@ class ZimfarmClientTokenProvider:
         self._validate_creds()
 
         data = redis.hgetall(REDIS_AUTH_KEY)
-        if data is not None:
+        if data:
+            # The shared Redis client is not configured with decode_responses,
+            # so keys/values come back as bytes; decode here so the cached
+            # token is actually readable (see issue #1305).
+            data = {
+                (k.decode() if isinstance(k, bytes) else k): (
+                    v.decode() if isinstance(v, bytes) else v
+                )
+                for k, v in data.items()
+            }
             self._access_token = data.get("access_token")
             self._refresh_token = data.get("refresh_token")
             if data.get("expires_at"):
