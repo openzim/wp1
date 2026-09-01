@@ -1,4 +1,5 @@
 from wp1.base_db_test import BaseWpOneDbTest
+from wp1.config import override_settings
 from wp1.constants import AssessmentKind
 from wp1.logic import log as logic_log
 from wp1.logic import rating as logic_rating
@@ -50,6 +51,23 @@ class LogicRatingTest(BaseWpOneDbTest):
         self.assertEqual(b"Mid-Class", log.l_new)
         self.assertEqual(b"NotA-Class", log.l_old)
         self.assertEqual(b"importance", log.l_action)
+
+    def test_add_log_suppressed_by_settings(self):
+        rating = Rating(
+            r_project=b"Test Project",
+            r_namespace=0,
+            r_article=b"Testing Stuff",
+            r_quality=b"GA-Class",
+            r_quality_timestamp=b"2018-04-01T12:30:00Z",
+        )
+        with override_settings(SUPPRESS_RATING_LOGS=1):
+            logic_rating.add_log_for_rating(
+                self.redis, rating, AssessmentKind.QUALITY, b"NotA-Class"
+            )
+
+        self.assertEqual(
+            0, len(logic_log.get_logs(self.redis, article=b"Testing Stuff"))
+        )
 
 
 class GetProjectRatingByTypeTest(BaseWpOneDbTest):

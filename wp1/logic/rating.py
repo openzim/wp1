@@ -5,6 +5,7 @@ from datetime import timedelta
 import attr
 from redis import Redis
 
+from wp1.config import get_settings
 from wp1.conf import get_conf
 from wp1.constants import GLOBAL_TIMESTAMP, AssessmentKind
 from wp1.logic import log as logic_log
@@ -580,6 +581,11 @@ def count_unassessed_importance_for_project(wp10db, project):
 
 
 def add_log_for_rating(redis, new_rating, kind, old_rating_value):
+    if get_settings().SUPPRESS_RATING_LOGS:
+        # Operational escape hatch, see WP1_SUPPRESS_RATING_LOGS in
+        # .env.example. Suppressed logs are lost, not deferred.
+        return
+
     if kind == AssessmentKind.QUALITY:
         action = b"quality"
         timestamp = new_rating.r_quality_timestamp
