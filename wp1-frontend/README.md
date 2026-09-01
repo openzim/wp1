@@ -19,6 +19,12 @@ were retired with the non-Selections redesign.
 
 ## Project setup
 
+In the docker-compose dev environment, the frontend runs in its own container
+with hot reload (see [docker/dev-frontend](../docker/dev-frontend/README.md))
+and nothing needs to be installed locally. To run it outside Docker instead,
+you need [Node.js](https://nodejs.org/) version 22 and pnpm (if you don't
+have pnpm, enable it with `corepack enable`), then:
+
     pnpm install
 
 ### Development server (hot reload, port 5173)

@@ -13,7 +13,8 @@ If you get an "unknown column 'foo'" or similar message when running nosetests, 
 you've added the effects of the migration to the schema in wp10_test.up.sql. If you've
 added a new table, also make sure it's torn down in wp10_test.down.sql.
 
-See the sections in the main README on:
+See also:
 
-1. Migrating the dev database.
-1. Updating production (section on running database migrations).
+1. [Migrating the dev database](../docker/dev-db/README.md#migrating-the-dev-database).
+1. [Updating production](../scripts/wp1/README.md#updating-production) (migrations
+   are applied automatically as part of the deploy).
