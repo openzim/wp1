@@ -1095,11 +1095,57 @@ class UpdateProjectAssessmentsTest(ArticlesTest):
         self._insert_ratings(self.quality_pages[:6], 0, AssessmentKind.QUALITY)
 
         logic_project.process_unseen_articles(
-            self.wikidb, self.wp10db, self.redis, self.project, {}, {}
+            self.wikidb, self.wp10db, self.redis, self.project, {}, set(), set()
         )
 
         mock_logic_rating.insert_or_update.assert_not_called()
         mock_logic_rating.add_log_for_rating.assert_not_called()
+
+    @patch("wp1.logic.api.page.site")
+    def test_removed_quality_still_tagged_importance(self, patched_site):
+        """Issue #695: quality removed on-wiki while importance tag remains.
+
+        'Art of testing' is only in an importance category; its stale quality
+        rating has no backing category and must be reset to NotA-Class.
+        """
+        self._insert_pages([p for p in self.quality_pages if p[0] != 201])
+        self._insert_pages(self.importance_pages)
+        self._insert_ratings(self.importance_pages[4:], 0, AssessmentKind.IMPORTANCE)
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                """
+        UPDATE ratings
+          SET r_quality = %(quality)s, r_quality_timestamp = %(ts)s
+        WHERE r_article = %(article)s
+    """,
+                {
+                    "quality": b"FA-Class",
+                    "ts": self.old_ts_wiki,
+                    "article": b"Art of testing",
+                },
+            )
+        self.wp10db.commit()
+
+        logic_project.update_project_assessments(
+            self.wikidb, self.wp10db, self.redis, self.project, {}
+        )
+
+        # The article never vanished, so no move lookups happen.
+        patched_site.assert_not_called()
+
+        ratings = {r.r_article: r for r in _get_all_ratings(self.wp10db)}
+        rating = ratings[b"Art of testing"]
+        self.assertEqual(NOT_A_CLASS.encode("utf-8"), rating.r_quality)
+        self.assertEqual(b"Top-Class", rating.r_importance)
+
+        logs = [
+            l
+            for l in _get_all_logs(self.redis)
+            if l.l_article == b"Art of testing" and l.l_action == b"quality"
+        ]
+        self.assertEqual(1, len(logs))
+        self.assertEqual(b"FA-Class", logs[0].l_old)
+        self.assertEqual(NOT_A_CLASS.encode("utf-8"), logs[0].l_new)
 
 
 class GlobalArticlesTest(ArticlesTest):
@@ -1782,7 +1828,13 @@ class ProcessUnseenArticlesMovedTest(BaseCombinedDbTest):
             "wp1.logic.project.logic_page.update_page_moved"
         ) as mock_update_page_moved:
             moved_articles = logic_project.process_unseen_articles(
-                self.wikidb, self.wp10db, self.redis, self.project, old_ratings, seen
+                self.wikidb,
+                self.wp10db,
+                self.redis,
+                self.project,
+                old_ratings,
+                seen,
+                set(),
             )
 
         self.assertIn(b"0:New_Title", moved_articles)
@@ -1806,7 +1858,7 @@ class ProcessUnseenArticlesMovedTest(BaseCombinedDbTest):
         mock_get_move_data.return_value = None
 
         moved_articles = logic_project.process_unseen_articles(
-            self.wikidb, self.wp10db, self.redis, self.project, old_ratings, seen
+            self.wikidb, self.wp10db, self.redis, self.project, old_ratings, seen, set()
         )
 
         self.assertEqual(0, len(moved_articles))
@@ -1825,7 +1877,7 @@ class ProcessUnseenArticlesMovedTest(BaseCombinedDbTest):
         seen = set()
 
         moved_articles = logic_project.process_unseen_articles(
-            self.wikidb, self.wp10db, self.redis, self.project, old_ratings, seen
+            self.wikidb, self.wp10db, self.redis, self.project, old_ratings, seen, set()
         )
 
         self.assertEqual(0, len(moved_articles))
@@ -1875,7 +1927,7 @@ class ProcessUnseenArticlesRatingTest(BaseCombinedDbTest):
         seen = {b"0:Some_Other_Article"}
 
         logic_project.process_unseen_articles(
-            self.wikidb, self.wp10db, self.redis, self.project, old_ratings, seen
+            self.wikidb, self.wp10db, self.redis, self.project, old_ratings, seen, seen
         )
 
         ratings = _get_all_ratings(self.wp10db)
@@ -1905,7 +1957,7 @@ class ProcessUnseenArticlesRatingTest(BaseCombinedDbTest):
         seen = {b"0:Some_Other_Article"}
 
         logic_project.process_unseen_articles(
-            self.wikidb, self.wp10db, self.redis, self.project, old_ratings, seen
+            self.wikidb, self.wp10db, self.redis, self.project, old_ratings, seen, seen
         )
 
         mock_get_move_data.assert_not_called()
@@ -1931,7 +1983,7 @@ class ProcessUnseenArticlesRatingTest(BaseCombinedDbTest):
         seen = {b"0:Some_Other_Article"}
 
         logic_project.process_unseen_articles(
-            self.wikidb, self.wp10db, self.redis, self.project, old_ratings, seen
+            self.wikidb, self.wp10db, self.redis, self.project, old_ratings, seen, seen
         )
 
         ratings = _get_all_ratings(self.wp10db)
@@ -1942,6 +1994,126 @@ class ProcessUnseenArticlesRatingTest(BaseCombinedDbTest):
         logs = _get_all_logs(self.redis)
         self.assertEqual(1, len(logs))
         self.assertEqual(b"importance", logs[0].l_action)
+
+    @patch("wp1.logic.project.logic_page.get_move_data", return_value=None)
+    def test_seen_importance_only_resets_quality(self, mock_get_move_data):
+        """Article still tagged for importance, quality removed (issue #695)."""
+        old_rating = Rating(
+            r_project=b"Test",
+            r_namespace=0,
+            r_article=b"De_Assessed",
+            r_score=0,
+            r_quality=b"Start-Class",
+            r_quality_timestamp=b"2018-07-04T05:05:05Z",
+            r_importance=b"High-Class",
+            r_importance_timestamp=b"2018-07-04T05:05:05Z",
+        )
+        self._insert_rating(old_rating)
+        old_ratings = {b"0:De_Assessed": old_rating}
+        seen_quality = {b"0:Some_Other_Article"}
+        seen_importance = {b"0:De_Assessed", b"0:Some_Other_Article"}
+
+        logic_project.process_unseen_articles(
+            self.wikidb,
+            self.wp10db,
+            self.redis,
+            self.project,
+            old_ratings,
+            seen_quality,
+            seen_importance,
+        )
+
+        # The article still exists on-wiki, so no move lookup is made.
+        mock_get_move_data.assert_not_called()
+
+        ratings = _get_all_ratings(self.wp10db)
+        self.assertEqual(1, len(ratings))
+        self.assertEqual(self.not_a_class_db, ratings[0].r_quality)
+        self.assertEqual(b"High-Class", ratings[0].r_importance)
+
+        logs = _get_all_logs(self.redis)
+        self.assertEqual(1, len(logs))
+        self.assertEqual(b"quality", logs[0].l_action)
+        self.assertEqual(b"Start-Class", logs[0].l_old)
+        self.assertEqual(self.not_a_class_db, logs[0].l_new)
+
+    @patch("wp1.logic.project.logic_page.get_move_data", return_value=None)
+    def test_seen_quality_only_resets_importance(self, mock_get_move_data):
+        """Article still tagged for quality, importance removed."""
+        old_rating = Rating(
+            r_project=b"Test",
+            r_namespace=0,
+            r_article=b"De_Assessed",
+            r_score=0,
+            r_quality=b"Start-Class",
+            r_quality_timestamp=b"2018-07-04T05:05:05Z",
+            r_importance=b"High-Class",
+            r_importance_timestamp=b"2018-07-04T05:05:05Z",
+        )
+        self._insert_rating(old_rating)
+        old_ratings = {b"0:De_Assessed": old_rating}
+        seen_quality = {b"0:De_Assessed", b"0:Some_Other_Article"}
+        seen_importance = {b"0:Some_Other_Article"}
+
+        logic_project.process_unseen_articles(
+            self.wikidb,
+            self.wp10db,
+            self.redis,
+            self.project,
+            old_ratings,
+            seen_quality,
+            seen_importance,
+        )
+
+        mock_get_move_data.assert_not_called()
+
+        ratings = _get_all_ratings(self.wp10db)
+        self.assertEqual(1, len(ratings))
+        self.assertEqual(b"Start-Class", ratings[0].r_quality)
+        self.assertEqual(self.not_a_class_db, ratings[0].r_importance)
+
+        logs = _get_all_logs(self.redis)
+        self.assertEqual(1, len(logs))
+        self.assertEqual(b"importance", logs[0].l_action)
+        self.assertEqual(b"High-Class", logs[0].l_old)
+        self.assertEqual(self.not_a_class_db, logs[0].l_new)
+
+    @patch("wp1.logic.project.logic_page.get_move_data", return_value=None)
+    def test_empty_kind_seen_set_skips_reset(self, mock_get_move_data):
+        """An empty seen set for a kind (broken/absent category tree) never
+        resets ratings of that kind for articles seen in the other kind."""
+        old_rating = Rating(
+            r_project=b"Test",
+            r_namespace=0,
+            r_article=b"Still_Here",
+            r_score=0,
+            r_quality=b"Start-Class",
+            r_quality_timestamp=b"2018-07-04T05:05:05Z",
+            r_importance=b"High-Class",
+            r_importance_timestamp=b"2018-07-04T05:05:05Z",
+        )
+        self._insert_rating(old_rating)
+        old_ratings = {b"0:Still_Here": old_rating}
+        seen_quality = set()
+        seen_importance = {b"0:Still_Here"}
+
+        logic_project.process_unseen_articles(
+            self.wikidb,
+            self.wp10db,
+            self.redis,
+            self.project,
+            old_ratings,
+            seen_quality,
+            seen_importance,
+        )
+
+        mock_get_move_data.assert_not_called()
+
+        ratings = _get_all_ratings(self.wp10db)
+        self.assertEqual(1, len(ratings))
+        self.assertEqual(b"Start-Class", ratings[0].r_quality)
+        self.assertEqual(b"High-Class", ratings[0].r_importance)
+        self.assertEqual(0, len(_get_all_logs(self.redis)))
 
 
 class DeferredLogMovedArticleTest(ArticlesTest):

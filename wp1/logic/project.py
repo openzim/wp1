@@ -378,7 +378,10 @@ def update_project_assessments(
     if track_progress:
         count_initial_work(redis, wp10db, project.p_project)
 
-    seen = set()
+    seen_by_kind = {
+        AssessmentKind.QUALITY: set(),
+        AssessmentKind.IMPORTANCE: set(),
+    }
     all_deferred_logs = []
     for kind in (AssessmentKind.QUALITY, AssessmentKind.IMPORTANCE):
         logger.debug(
@@ -391,7 +394,7 @@ def update_project_assessments(
             extra_assessments,
             kind,
             old_ratings,
-            seen,
+            seen_by_kind[kind],
             redis=redis,
             track_progress=track_progress,
         )
@@ -401,7 +404,13 @@ def update_project_assessments(
         all_deferred_logs.extend(deferred)
 
     moved_articles = process_unseen_articles(
-        wikidb, wp10db, redis, project, old_ratings, seen
+        wikidb,
+        wp10db,
+        redis,
+        project,
+        old_ratings,
+        seen_by_kind[AssessmentKind.QUALITY],
+        seen_by_kind[AssessmentKind.IMPORTANCE],
     )
 
     # Write deferred logs for articles that were not moved.
@@ -536,9 +545,11 @@ def store_new_ratings(wp10db, redis, new_ratings, old_ratings, rating_to_categor
     return deferred_logs
 
 
-def process_unseen_articles(wikidb, wp10db, redis, project, old_ratings, seen):
+def process_unseen_articles(
+    wikidb, wp10db, redis, project, old_ratings, seen_quality, seen_importance
+):
     moved_articles = set()
-    if len(seen) == 0:
+    if len(seen_quality) == 0 and len(seen_importance) == 0:
         logger.warning(
             "Did not find any articles for %s, skipping unseen processing",
             project.p_project.decode("utf-8"),
@@ -546,7 +557,8 @@ def process_unseen_articles(wikidb, wp10db, redis, project, old_ratings, seen):
         return moved_articles
 
     denom = len(old_ratings.keys())
-    ratio = len(seen) / denom if denom != 0 else "NaN"
+    seen_count = len(seen_quality | seen_importance)
+    ratio = seen_count / denom if denom != 0 else "NaN"
 
     logger.debug("Looking for unseen articles, ratio was: %s", ratio)
     in_seen = 0
@@ -555,32 +567,63 @@ def process_unseen_articles(wikidb, wp10db, redis, project, old_ratings, seen):
     n = 0
     not_a_class_db = NOT_A_CLASS.encode("utf-8")
     for ref, old_rating in old_ratings.items():
-        if ref in seen:
-            in_seen += 1
-            continue
+        in_quality = ref in seen_quality
+        in_importance = ref in seen_importance
 
-        # By default, we evaluate both assessment kinds.
-        kind = AssessmentKind.BOTH
-        if old_rating.r_quality == not_a_class_db or old_rating.r_quality is None:
-            # The quality rating is not set, so just evaluate importance
-            kind = AssessmentKind.IMPORTANCE
+        move_data = None
+        if not in_quality and not in_importance:
+            # The article vanished from every category, so it may have been
+            # moved or deleted. By default, we evaluate both assessment kinds.
+            kind = AssessmentKind.BOTH
+            if old_rating.r_quality == not_a_class_db or old_rating.r_quality is None:
+                # The quality rating is not set, so just evaluate importance
+                kind = AssessmentKind.IMPORTANCE
+                if (
+                    old_rating.r_importance == not_a_class_db
+                    or old_rating.r_importance is None
+                ):
+                    # The importance rating is also not set, so don't do anything.
+                    skipped += 1
+                    continue
+
+            logger.debug("Processing unseen article %s", ref.decode("utf-8"))
+        else:
+            # The article is still on-wiki and categorized for at least one
+            # assessment kind. If it disappeared from every category of the
+            # other kind while still holding a rating there, that rating was
+            # removed on-wiki and has to be reset (issue #695). An empty seen
+            # set for a kind more likely indicates a missing or broken
+            # category tree than a project-wide de-assessment, so it is left
+            # alone.
             if (
-                old_rating.r_importance == not_a_class_db
-                or old_rating.r_importance is None
+                seen_quality
+                and not in_quality
+                and old_rating.r_quality is not None
+                and old_rating.r_quality != not_a_class_db
             ):
-                # The importance rating is also not set, so don't do anything.
-                skipped += 1
+                kind = AssessmentKind.QUALITY
+            elif (
+                seen_importance
+                and not in_importance
+                and old_rating.r_importance is not None
+                and old_rating.r_importance != not_a_class_db
+            ):
+                kind = AssessmentKind.IMPORTANCE
+            else:
+                in_seen += 1
                 continue
 
-        logger.debug("Processing unseen article %s", ref.decode("utf-8"))
+            logger.debug("Processing de-assessed article %s", ref.decode("utf-8"))
+
         processed += 1
         ns, title = ref.decode("utf-8").split(":", 1)
         ns = int(ns.encode("utf-8"))
         title = title.encode("utf-8")
 
-        move_data = logic_page.get_move_data(
-            wp10db, wikidb, ns, title, project.timestamp_dt
-        )
+        if not in_quality and not in_importance:
+            move_data = logic_page.get_move_data(
+                wp10db, wikidb, ns, title, project.timestamp_dt
+            )
         if move_data is not None:
             # Track the new name so deferred logs can be skipped for it.
             new_ref = (
@@ -600,11 +643,12 @@ def process_unseen_articles(wikidb, wp10db, redis, project, old_ratings, seen):
                 move_data["timestamp_dt"],
             )
 
-        # Mark this article as having NOT_A_CLASS for it's quality or importance.
-        # This probably means the article was deleted, but could in fact mean that
-        # we just failed to find its move data. Either way, the new article would
-        # have already been picked up by the assessment updater, assuming it was
-        # tagged correctly.
+        # Mark the evaluated kinds as NOT_A_CLASS. For a fully unseen article
+        # this probably means it was deleted, but could in fact mean that we
+        # just failed to find its move data; either way, the new article would
+        # have already been picked up by the assessment updater, assuming it
+        # was tagged correctly. For a partially seen article, it means the
+        # rating for this kind was removed on-wiki.
         rating = Rating(
             r_project=project.p_project, r_namespace=ns, r_article=title, r_score=0
         )
