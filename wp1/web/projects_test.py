@@ -5,6 +5,7 @@ from unittest.mock import patch
 from wp1.logic import project as logic_project
 from wp1.web.app import create_app
 from wp1.web.base_web_testcase import BaseWebTestcase
+from wp1.config import override_settings
 from wp1.environment import Environment
 
 
@@ -75,6 +76,7 @@ class ProjectTest(BaseWebTestcase):
                 {
                     "p_project": b"Project %s" % str(i).encode("utf-8"),
                     "p_timestamp": b"20181225000000",
+                    "p_count": 150,
                 }
             )
 
@@ -130,8 +132,8 @@ class ProjectTest(BaseWebTestcase):
 
         with self.wp10db.cursor() as cursor:
             cursor.executemany(
-                "INSERT INTO projects (p_project, p_timestamp) "
-                "VALUES (%(p_project)s, %(p_timestamp)s)",
+                "INSERT INTO projects (p_project, p_timestamp, p_count) "
+                "VALUES (%(p_project)s, %(p_timestamp)s, %(p_count)s)",
                 projects,
             )
             cursor.executemany(
@@ -156,6 +158,22 @@ class ProjectTest(BaseWebTestcase):
             data = json.loads(rv.data)
             self.assertEqual(101, len(data))
 
+    def test_list_excludes_empty_projects(self):
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO projects (p_project, p_timestamp, p_count) "
+                "VALUES ('Empty_Redirect_Project', '20100101000000', 0)"
+            )
+        self.wp10db.commit()
+
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.get("/v1/projects/")
+            data = json.loads(rv.data)
+            self.assertEqual(101, len(data))
+            self.assertNotIn(
+                "Empty Redirect Project", [project["name"] for project in data]
+            )
+
     def test_individual_project(self):
         with self.override_db(self.app), self.app.test_client() as client:
             rv = client.get("/v1/projects/Project 0")
@@ -168,8 +186,25 @@ class ProjectTest(BaseWebTestcase):
         with self.override_db(self.app), self.app.test_client() as client:
             rv = client.get("/v1/projects/Fee Fa Fo Project")
             self.assertEqual("404 NOT FOUND", rv.status)
+            self.assertEqual(
+                {"error": "Project with name Fee Fa Fo Project not found"},
+                rv.get_json(),
+            )
 
     def test_count(self):
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.get("/v1/projects/count")
+            data = json.loads(rv.data)
+            self.assertEqual(101, data["count"])
+
+    def test_count_excludes_empty_projects(self):
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO projects (p_project, p_timestamp, p_count) "
+                "VALUES ('Empty_Redirect_Project', '20100101000000', 0)"
+            )
+        self.wp10db.commit()
+
         with self.override_db(self.app), self.app.test_client() as client:
             rv = client.get("/v1/projects/count")
             data = json.loads(rv.data)
@@ -469,7 +504,7 @@ class ProjectTest(BaseWebTestcase):
             rv = client.get("/v1/projects/Foo Fake Project/articles/random")
             self.assertEqual("404 NOT FOUND", rv.status)
 
-    @patch("wp1.queues.ENV", Environment.PRODUCTION)
+    @override_settings(ENV=Environment.PRODUCTION)
     @patch("wp1.queues.utcnow", return_value=datetime(2018, 12, 25, 5, 55, 55))
     def test_update(self, patched_now):
         with self.override_db(self.app), self.app.test_client() as client:
@@ -481,13 +516,13 @@ class ProjectTest(BaseWebTestcase):
             data = json.loads(rv.data)
             self.assertEqual("2018-12-25 06:55 UTC", data["next_update_time"])
 
-    @patch("wp1.queues.ENV", Environment.PRODUCTION)
+    @override_settings(ENV=Environment.PRODUCTION)
     def test_update_unauthorized_user(self):
         with self.app.test_client() as client:
             rv = client.post("/v1/projects/Project 0/update")
         self.assertEqual("401 UNAUTHORIZED", rv.status)
 
-    @patch("wp1.queues.ENV", Environment.PRODUCTION)
+    @override_settings(ENV=Environment.PRODUCTION)
     @patch("wp1.queues.utcnow", return_value=datetime(2018, 12, 25, 5, 55, 55))
     def test_update_404(self, patched_now):
         with self.override_db(self.app), self.app.test_client() as client:
@@ -496,7 +531,7 @@ class ProjectTest(BaseWebTestcase):
             rv = client.post("/v1/projects/Foo Bar Baz/update")
             self.assertEqual("404 NOT FOUND", rv.status)
 
-    @patch("wp1.queues.ENV", Environment.PRODUCTION)
+    @override_settings(ENV=Environment.PRODUCTION)
     @patch("wp1.queues.utcnow", return_value=datetime(2018, 12, 25, 5, 55, 55))
     def test_update_second_time_fails(self, patched_now):
         with self.override_db(self.app):
@@ -515,7 +550,7 @@ class ProjectTest(BaseWebTestcase):
                 data = json.loads(rv.data)
                 self.assertEqual("2018-12-25 06:55 UTC", data["next_update_time"])
 
-    @patch("wp1.queues.ENV", Environment.PRODUCTION)
+    @override_settings(ENV=Environment.PRODUCTION)
     @patch("wp1.queues.utcnow", return_value=datetime(2018, 12, 25, 5, 55, 55))
     def test_update_time(self, patched_now):
         with self.override_db(self.app), self.app.test_client() as client:
@@ -525,14 +560,14 @@ class ProjectTest(BaseWebTestcase):
             data = json.loads(rv.data)
             self.assertEqual(None, data["next_update_time"])
 
-    @patch("wp1.queues.ENV", Environment.PRODUCTION)
+    @override_settings(ENV=Environment.PRODUCTION)
     @patch("wp1.queues.utcnow", return_value=datetime(2018, 12, 25, 5, 55, 55))
     def test_update_time_404(self, patched_now):
         with self.override_db(self.app), self.app.test_client() as client:
             rv = client.get("/v1/projects/Foo Bar Baz/update/time")
             self.assertEqual("404 NOT FOUND", rv.status)
 
-    @patch("wp1.queues.ENV", Environment.PRODUCTION)
+    @override_settings(ENV=Environment.PRODUCTION)
     @patch("wp1.queues.utcnow", return_value=datetime(2018, 12, 25, 5, 55, 55))
     def test_update_time_active(self, patched_now):
         with self.override_db(self.app):
@@ -560,7 +595,7 @@ class ProjectTest(BaseWebTestcase):
             self.assertIsNone(data["queue"])
             self.assertIsNone(data["job"])
 
-    @patch("wp1.queues.ENV", Environment.PRODUCTION)
+    @override_settings(ENV=Environment.PRODUCTION)
     def test_update_progress(self):
         with self.override_db(self.app), self.app.test_client() as client:
             with client.session_transaction() as sess:
@@ -575,13 +610,13 @@ class ProjectTest(BaseWebTestcase):
             self.assertIsNone(data["job"])
             self.assertEqual({"status": "queued"}, data["queue"])
 
-    @patch("wp1.queues.ENV", Environment.PRODUCTION)
+    @override_settings(ENV=Environment.PRODUCTION)
     def test_update_progress_404(self):
         with self.override_db(self.app), self.app.test_client() as client:
             rv = client.get("/v1/projects/Foo Bar Baz/update/progress")
             self.assertEqual("404 NOT FOUND", rv.status)
 
-    @patch("wp1.queues.ENV", Environment.PRODUCTION)
+    @override_settings(ENV=Environment.PRODUCTION)
     def test_update_progress_return_job_progress(self):
         with self.override_db(self.app), self.app.test_client() as client:
             expected_total = 100
@@ -598,7 +633,7 @@ class ProjectTest(BaseWebTestcase):
             self.assertEqual(expected_total, data["job"]["total"])
             self.assertEqual(expected_progress, data["job"]["progress"])
 
-    @patch("wp1.queues.ENV", Environment.PRODUCTION)
+    @override_settings(ENV=Environment.PRODUCTION)
     @patch("wp1.web.projects.logic_project.get_project_progress")
     def test_update_progress_progress_not_ints(self, patched_progress):
         patched_progress.return_value = (b"a", b"b")

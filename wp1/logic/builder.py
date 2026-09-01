@@ -23,7 +23,7 @@ from wp1.constants import (
     EXT_TO_CONTENT_TYPE,
     TS_FORMAT_WP10,
 )
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 from wp1.environment import Environment
 from wp1.exceptions import (
     BuilderDeleteConfirmationError,
@@ -777,9 +777,9 @@ def latest_url_for(builder_id: str, content_type: str) -> str | None:
             content_type,
         )
         return None
-    server_url = CREDENTIALS.get(ENV, {}).get("CLIENT_URL", {}).get("api")
+    server_url = get_settings().CLIENT_API_URL
     if server_url is None:
-        logger.warning("Could not determine server API URL. Check credentials.py")
+        logger.warning("Could not determine server API URL. Check configuration.")
         return None
     return "%s/v1/builders/%s/selection/latest.%s" % (server_url, builder_id, ext)
 
@@ -798,10 +798,10 @@ def latest_zimfarm_url_for(builder_id: str, content_type: str) -> str | None:
             content_type,
         )
         return None
-    server_url = CREDENTIALS.get(ENV, {}).get("CLIENT_URL", {}).get("backend")
+    server_url = get_settings().CLIENT_BACKEND_URL
     if server_url is None:
         logger.warning(
-            "Could not determine server backend URL for Zimfarm. Check credentials.py"
+            "Could not determine server backend URL for Zimfarm. Check configuration."
         )
         return None
     return "%s/v1/builders/%s/selection/zimfarm/latest.%s" % (
@@ -813,9 +813,9 @@ def latest_zimfarm_url_for(builder_id: str, content_type: str) -> str | None:
 
 def local_url_for_latest_zim(builder_id: str) -> str | None:
     """Returns the redirect URL for the latest ZIM file for a builder."""
-    server_url = CREDENTIALS.get(ENV, {}).get("CLIENT_URL", {}).get("api")
+    server_url = get_settings().CLIENT_API_URL
     if server_url is None:
-        logger.warning("Could not determine server API URL. Check credentials.py")
+        logger.warning("Could not determine server API URL. Check configuration.")
         return None
     return "%s/v1/builders/%s/zim/latest" % (server_url, builder_id)
 
@@ -879,7 +879,7 @@ def latest_selection_url(
     # In production, the keys 's3' and 'backend_s3' should be the same.
     s3_public_url = None
     if zimfarm_s3:
-        s3_public_url = CREDENTIALS.get(ENV, {}).get("CLIENT_URL", {}).get("backend_s3")
+        s3_public_url = get_settings().CLIENT_BACKEND_S3_URL
     return logic_selection.url_for(selection.s_object_key, s3_public_url=s3_public_url)
 
 

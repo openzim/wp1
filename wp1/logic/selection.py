@@ -9,17 +9,13 @@ import attr
 from pymysql.connections import Connection
 
 from wp1.constants import CONTENT_TYPE_TO_EXT, TS_FORMAT_WP10, ZIM_FILE_TTL
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 from wp1.logic import util
 from wp1.models.wp10.selection import Selection
 from wp1.storage import connect_storage
 from wp1.timestamp import utcnow
 
-S3_PUBLIC_URL = (
-    CREDENTIALS.get(ENV, {})
-    .get("CLIENT_URL", {})
-    .get("s3", "http://credentials.not.found.fake")
-)
+S3_PUBLIC_URL = get_settings().CLIENT_S3_URL or "http://credentials.not.found.fake"
 
 DEFAULT_SELECTION_NAME = "selection"
 

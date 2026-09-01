@@ -5,13 +5,19 @@ import unittest
 
 import pymysql
 
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 from wp1.environment import Environment
 from wp1.models.wp10.rating import Rating
 from wp1.models.wp10.selection import Selection
 from wp1.redis_db import connect as redis_connect
 
 logger = logging.getLogger(__name__)
+
+# The settings installed by the conftest.py bootstrap, captured at import
+# time. DB connections and the TEST-env guard are deliberately pinned to
+# these so that a per-test override_settings(...) (e.g. of ENV) can never
+# redirect database connections away from the test databases.
+_bootstrap_settings = get_settings()
 
 
 _sql_cache = {}
@@ -159,19 +165,20 @@ class WpOneAssertions(unittest.TestCase):
 class BaseWpOneDbTest(WpOneAssertions):
 
     def connect_wp_one_db(self):
-        if ENV != Environment.TEST:
+        settings = _bootstrap_settings
+        if settings.ENV != Environment.TEST:
             raise ValueError(
                 "Database tests destroy data! They should only be run in the TEST env"
             )
-        creds = CREDENTIALS.get(Environment.TEST, {}).get("WP10DB")
-        if creds is None:
-            raise ValueError("No WP10DB creds found")
-
         return pymysql.connect(
-            **creds,
+            user=settings.WP10DB_USER,
+            password=settings.WP10DB_PASSWORD,
+            host=settings.WP10DB_HOST,
+            port=settings.WP10DB_PORT,
+            db=settings.WP10DB_DB,
             charset=None,
             use_unicode=False,
-            cursorclass=pymysql.cursors.DictCursor
+            cursorclass=pymysql.cursors.DictCursor,
         )
 
     def _cleanup_wp_one_db(self):
@@ -186,7 +193,7 @@ class BaseWpOneDbTest(WpOneAssertions):
         _reset_tables(self.wp10db, "wp10_test.up.sql", "wp10_test.down.sql")
 
     def connect_redis_db(self):
-        if ENV != Environment.TEST:
+        if _bootstrap_settings.ENV != Environment.TEST:
             raise ValueError(
                 "Database tests destroy data! They should only be run in the TEST env"
             )
@@ -211,19 +218,20 @@ class BaseWpOneDbTest(WpOneAssertions):
 class BaseWikiDbTest(WpOneAssertions):
 
     def connect_wiki_db(self):
-        if ENV != Environment.TEST:
+        settings = _bootstrap_settings
+        if settings.ENV != Environment.TEST:
             raise ValueError(
                 "Database tests destroy data! They should only be run in the TEST env"
             )
-        creds = CREDENTIALS.get(Environment.TEST, {}).get("WIKIDB")
-        if creds is None:
-            raise ValueError("No WIKIDB creds found")
-
         return pymysql.connect(
-            **creds,
+            user=settings.WIKIDB_USER,
+            password=settings.WIKIDB_PASSWORD,
+            host=settings.WIKIDB_HOST,
+            port=settings.WIKIDB_PORT,
+            db=settings.WIKIDB_DB,
             charset=None,
             use_unicode=False,
-            cursorclass=pymysql.cursors.DictCursor
+            cursorclass=pymysql.cursors.DictCursor,
         )
 
     def _cleanup_wiki_db(self):
