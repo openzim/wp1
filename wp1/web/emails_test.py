@@ -2,6 +2,7 @@ import uuid
 from unittest.mock import ANY, MagicMock, Mock, patch
 
 from wp1.base_db_test import BaseWpOneDbTest
+from wp1.config import override_settings
 from wp1.constants import TS_FORMAT_WP10
 from wp1.models.wp10.zim_file import ZimTask
 from wp1.models.wp10.zim_schedule import ZimSchedule
@@ -73,17 +74,13 @@ class EmailsTest(BaseWpOneDbTest):
         self.wp10db.commit()
 
     @patch("wp1.web.emails.requests.post")
-    @patch("wp1.web.emails.CREDENTIALS")
-    @patch("wp1.web.emails.ENV", "test")
+    @override_settings(
+        MAILGUN_API_KEY="test-api-key",
+        MAILGUN_URL="https://api.mailgun.net/v3/test.com/messages",
+    )
     @patch("wp1.web.emails.jinja_env")
-    def test_send_zim_ready_email(self, mock_jinja_env, mock_credentials, mock_post):
+    def test_send_zim_ready_email(self, mock_jinja_env, mock_post):
         """Test successful email sending."""
-        mock_credentials.get.return_value = {
-            "MAILGUN": {
-                "api_key": "test-api-key",
-                "url": "https://api.mailgun.net/v3/test.com/messages",
-            }
-        }
 
         mock_template = Mock()
         mock_template.render.return_value = "<html>Test email content</html>"
@@ -137,19 +134,13 @@ class EmailsTest(BaseWpOneDbTest):
         self.assertEqual(email_data["html"], "<html>Test email content</html>")
 
     @patch("wp1.web.emails.requests.post")
-    @patch("wp1.web.emails.CREDENTIALS")
-    @patch("wp1.web.emails.ENV", "test")
+    @override_settings(
+        MAILGUN_API_KEY="test-api-key",
+        MAILGUN_URL="https://api.mailgun.net/v3/test.com/messages",
+    )
     @patch("wp1.web.emails.jinja_env")
-    def test_send_zim_ready_email_with_defaults(
-        self, mock_jinja_env, mock_credentials, mock_post
-    ):
+    def test_send_zim_ready_email_with_defaults(self, mock_jinja_env, mock_post):
         """Test email sending with default URLs."""
-        mock_credentials.get.return_value = {
-            "MAILGUN": {
-                "api_key": "test-api-key",
-                "url": "https://api.mailgun.net/v3/test.com/messages",
-            }
-        }
 
         mock_template = Mock()
         mock_template.render.return_value = "<html>Test email content</html>"
@@ -177,11 +168,9 @@ class EmailsTest(BaseWpOneDbTest):
             next_generation_months=None,
         )
 
-    @patch("wp1.web.emails.CREDENTIALS")
-    @patch("wp1.web.emails.ENV", "test")
-    def test_send_zim_ready_email_no_mailgun_config(self, mock_credentials):
+    @override_settings(MAILGUN_API_KEY="")
+    def test_send_zim_ready_email_no_mailgun_config(self):
         """Test email sending when Mailgun is not configured."""
-        mock_credentials.get.return_value = {}
 
         result = send_zim_ready_email(
             recipient_username="testuser",
@@ -192,13 +181,12 @@ class EmailsTest(BaseWpOneDbTest):
 
         self.assertFalse(result)
 
-    @patch("wp1.web.emails.CREDENTIALS")
-    @patch("wp1.web.emails.ENV", "test")
-    def test_send_zim_ready_email_no_api_key(self, mock_credentials):
+    @override_settings(
+        MAILGUN_API_KEY="",
+        MAILGUN_URL="https://api.mailgun.net/v3/test.com/messages",
+    )
+    def test_send_zim_ready_email_no_api_key(self):
         """Test email sending when API key is missing."""
-        mock_credentials.get.return_value = {
-            "MAILGUN": {"url": "https://api.mailgun.net/v3/test.com/messages"}
-        }
 
         result = send_zim_ready_email(
             recipient_username="testuser",
@@ -210,19 +198,13 @@ class EmailsTest(BaseWpOneDbTest):
         self.assertFalse(result)
 
     @patch("wp1.web.emails.requests.post")
-    @patch("wp1.web.emails.CREDENTIALS")
-    @patch("wp1.web.emails.ENV", "test")
+    @override_settings(
+        MAILGUN_API_KEY="test-api-key",
+        MAILGUN_URL="https://api.mailgun.net/v3/test.com/messages",
+    )
     @patch("wp1.web.emails.jinja_env")
-    def test_send_zim_ready_email_api_error(
-        self, mock_jinja_env, mock_credentials, mock_post
-    ):
+    def test_send_zim_ready_email_api_error(self, mock_jinja_env, mock_post):
         """Test email sending when API returns an error."""
-        mock_credentials.get.return_value = {
-            "MAILGUN": {
-                "api_key": "test-api-key",
-                "url": "https://api.mailgun.net/v3/test.com/messages",
-            }
-        }
 
         mock_template = Mock()
         mock_template.render.return_value = "<html>Test email content</html>"
@@ -243,19 +225,13 @@ class EmailsTest(BaseWpOneDbTest):
         self.assertFalse(result)
 
     @patch("wp1.web.emails.requests.post")
-    @patch("wp1.web.emails.CREDENTIALS")
-    @patch("wp1.web.emails.ENV", "test")
+    @override_settings(
+        MAILGUN_API_KEY="test-api-key",
+        MAILGUN_URL="https://api.mailgun.net/v3/test.com/messages",
+    )
     @patch("wp1.web.emails.jinja_env")
-    def test_send_zim_ready_email_request_exception(
-        self, mock_jinja_env, mock_credentials, mock_post
-    ):
+    def test_send_zim_ready_email_request_exception(self, mock_jinja_env, mock_post):
         """Test email sending when request raises an exception."""
-        mock_credentials.get.return_value = {
-            "MAILGUN": {
-                "api_key": "test-api-key",
-                "url": "https://api.mailgun.net/v3/test.com/messages",
-            }
-        }
 
         mock_template = Mock()
         mock_template.render.return_value = "<html>Test email content</html>"
