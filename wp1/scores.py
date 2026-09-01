@@ -10,7 +10,7 @@ import requests
 
 from wp1 import app_logging
 from wp1.constants import WP1_USER_AGENT
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 from wp1.exceptions import Wp1ScoreProcessingError
 from wp1.time import get_current_datetime
 from wp1.wp10_db import connect as wp10_connect
@@ -52,7 +52,7 @@ def get_pageview_url(prev=False):
 
 
 def get_pageview_file_path(filename):
-    path = CREDENTIALS[ENV]["FILE_PATH"]["pageviews"]
+    path = get_settings().FILE_PATH_PAGEVIEWS
     os.makedirs(path, exist_ok=True)
     return os.path.join(path, filename)
 

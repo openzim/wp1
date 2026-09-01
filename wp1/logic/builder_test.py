@@ -6,6 +6,7 @@ import attr
 from redis.exceptions import RedisError
 
 from wp1.base_db_test import BaseWpOneDbTest
+from wp1.config import override_settings
 from wp1.environment import Environment
 from wp1.exceptions import (
     BuilderDeleteConfirmationError,
@@ -982,7 +983,7 @@ class BuilderTest(BaseWpOneDbTest):
         actual = logic_builder.latest_url_for(150, "foo/bar-baz")
         self.assertIsNone(actual)
 
-    @patch("wp1.logic.builder.CREDENTIALS", {})
+    @override_settings(CLIENT_API_URL=None)
     def test_latest_url_for_no_server_url(self):
         actual = logic_builder.latest_url_for(15, "text/tab-separated-values")
         self.assertIsNone(actual)
