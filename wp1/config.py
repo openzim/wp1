@@ -412,6 +412,23 @@ class Settings:
         ),
     )
 
+    # --- Update process ---
+    SUPPRESS_RATING_LOGS: int | None = _field(
+        0,
+        kind="int",
+        env_key="WP1_SUPPRESS_RATING_LOGS",
+        section="Update process",
+        commented=True,
+        help=(
+            "TEMPORARY escape hatch: when set to 1, project updates emit no\n"
+            "assessment-change log entries (the Redis log keys that feed the\n"
+            "on-wiki log pages). Intended for a single update cycle when a "
+            "fix or\nbackfill would cause a one-time wave of rating churn. "
+            "Suppressed logs\nare lost permanently, not deferred; unset "
+            "after the cycle completes."
+        ),
+    )
+
     # --- Logging ---
     LOGGING_LEVEL: str = _field(
         "INFO",
@@ -640,6 +657,7 @@ _SECTION_DOCS = {
         "are ready. Not required for development."
     ),
     "File paths": "",
+    "Update process": "",
     "Logging": (
         "Configuration for the root logger. Logging is always done to "
         "stdout and is\nredirected/rotated by the supervisor process."
