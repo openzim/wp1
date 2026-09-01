@@ -3,6 +3,10 @@ venv
 docs-venv/
 .tool-versions
 
+# The credentials.py config system is gone (replaced by .env), but stale
+# local copies and backups contain secrets and must never be committed.
+wp1/credentials.py*
+
 cookies.txt
 
 # Don't commit test artifacts
