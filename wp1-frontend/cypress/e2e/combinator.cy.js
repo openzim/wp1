@@ -220,6 +220,18 @@ describe('the combinator builder page', () => {
         cy.contains('404 Not Found');
       });
     });
+
+    describe('when the builder belongs to another user', () => {
+      it('shows the 403 message', () => {
+        cy.intercept('GET', 'v1/builders/other-users', {
+          statusCode: 403,
+          body: '403 FORBIDDEN',
+        });
+        cy.visit('/#/selections/combinator/other-users');
+        cy.contains('403 Forbidden');
+        cy.contains('belongs to another user');
+      });
+    });
   });
 
   describe('when the user is not logged in', () => {
