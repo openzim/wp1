@@ -553,6 +553,7 @@ def process_unseen_articles(wikidb, wp10db, redis, project, old_ratings, seen):
     skipped = 0
     processed = 0
     n = 0
+    not_a_class_db = NOT_A_CLASS.encode("utf-8")
     for ref, old_rating in old_ratings.items():
         if ref in seen:
             in_seen += 1
@@ -560,11 +561,11 @@ def process_unseen_articles(wikidb, wp10db, redis, project, old_ratings, seen):
 
         # By default, we evaluate both assessment kinds.
         kind = AssessmentKind.BOTH
-        if old_rating.r_quality == NOT_A_CLASS or old_rating.r_quality is None:
+        if old_rating.r_quality == not_a_class_db or old_rating.r_quality is None:
             # The quality rating is not set, so just evaluate importance
             kind = AssessmentKind.IMPORTANCE
             if (
-                old_rating.r_importance == NOT_A_CLASS
+                old_rating.r_importance == not_a_class_db
                 or old_rating.r_importance is None
             ):
                 # The importance rating is also not set, so don't do anything.
@@ -608,13 +609,13 @@ def process_unseen_articles(wikidb, wp10db, redis, project, old_ratings, seen):
             r_project=project.p_project, r_namespace=ns, r_article=title, r_score=0
         )
         if kind in (AssessmentKind.QUALITY, AssessmentKind.BOTH):
-            rating.quality = NOT_A_CLASS.encode("utf-8")
+            rating.r_quality = not_a_class_db
             if move_data:
                 rating.set_quality_timestamp_dt(move_data["timestamp_dt"])
             else:
                 rating.r_quality_timestamp = GLOBAL_TIMESTAMP_WIKI
         if kind in (AssessmentKind.IMPORTANCE, AssessmentKind.BOTH):
-            rating.importance = NOT_A_CLASS.encode("utf-8")
+            rating.r_importance = not_a_class_db
             if move_data:
                 rating.set_importance_timestamp_dt(move_data["timestamp_dt"])
             else:
