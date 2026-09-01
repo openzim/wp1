@@ -1,5 +1,16 @@
-# See https://pre-commit.com for more information
-# See https://pre-commit.com/hooks.html for more hooks
+# Git pre-commit hooks, managed by the Python `pre-commit` tool
+# (https://pre-commit.com). They keep the code properly formatted (Black for
+# Python, Prettier for frontend code) before it ever reaches CI.
+#
+# One-time setup (pre-commit is in the Pipfile dev dependencies):
+#
+#   pipenv run pre-commit install
+#
+# After that the hooks run automatically on `git commit`. When a hook fails,
+# it usually has already reformatted the offending files, leaving them
+# modified and unstaged. Review the changes, `git add` them, and commit again.
+#
+# See https://pre-commit.com/hooks.html for more available hooks.
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v2.0.0
