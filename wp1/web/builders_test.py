@@ -1676,9 +1676,7 @@ class BuildersTest(BaseWebTestcase):
         with self.app.test_client() as client:
             with client.session_transaction() as sess:
                 sess["user"] = self.USER
-            rv = client.get(
-                "/v1/builders/inexistent-id/selection/latest/article_count"
-            )
+            rv = client.get("/v1/builders/inexistent-id/selection/latest/article_count")
         self.assertEqual("404 NOT FOUND", rv.status)
 
     def test_delete_schedule_for_builder_not_found(self):
