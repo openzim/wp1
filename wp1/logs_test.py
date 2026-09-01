@@ -827,8 +827,8 @@ class LogsTest(BaseCombinedDbTest):
             "rev] &middot; "
             "[https://en.wikipedia.org/w/index.php?"
             "title=Talk%3ALesser-known%20tests&oldid=None "
-            "t])</span> Importance rating changed from '''Start-Class''' "
-            "to '''Unknown-Class'''. <span style=\\\"white-space: "
+            "t])</span> Importance rating changed from '''Start-Importance''' "
+            "to '''Unknown-Importance'''. <span style=\\\"white-space: "
             'nowrap;\\">([https://en.wikipedia.org/w/index.php?'
             "title=Lesser-known%20tests&oldid=18000 "
             "rev] &middot; "
@@ -875,7 +875,7 @@ class LogsTest(BaseCombinedDbTest):
             "rev] &middot; "
             "[https://en.wikipedia.org/w/index.php?"
             "title=Talk%3AImportant%20tests&oldid=None "
-            "t])</span> Importance assessed as '''Unknown-Class'''. <span "
+            "t])</span> Importance assessed as '''Unknown-Importance'''. <span "
             'style=\\"white-space: '
             'nowrap;\\">([https://en.wikipedia.org/w/index.php?'
             "title=Important%20tests&oldid=15000 "

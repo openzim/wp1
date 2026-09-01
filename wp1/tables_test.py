@@ -71,7 +71,7 @@ class TablesCategoryTest(unittest.TestCase):
 
         for k, actual in actual_imp.items():
             if k == tables.UNASSESSED_CLASS:
-                expected = "No-Class"
+                expected = "No-Importance"
             else:
                 expected = "{{%s}}" % k.decode("utf-8")
             self.assertEqual(expected, actual)
@@ -453,7 +453,7 @@ class TablesDbTest(BaseWpOneDbTest):
                 b"NA-Class": "{{NA-Class|category=Category:NA-importance_Catholicism_articles}}",
                 b"NotA-Class": "Other",
                 b"Top-Class": "{{Top-Class|category=Category:Top-importance_Catholicism_articles}}",
-                b"Unassessed-Class": "No-Class",
+                b"Unassessed-Class": "No-Importance",
                 b"Unknown-Class": "{{Unknown-Class|category=Category:Unknown-importance_Catholicism_articles}}",
             },
             "qual_labels": {
@@ -932,7 +932,7 @@ class TestTableOutput(unittest.TestCase):
             b"NotA-Class": "Other",
             b"Top-Class": "{{Top-Class|category=Category:Top-importance_Modern_philosophy_articles}}",
             b"Unknown-Class": "{{Unknown-Class|category=Category:Unknown-importance_Modern_philosophy_articles}}",
-            b"Unassessed-Class": "No-Class",
+            b"Unassessed-Class": "No-Importance",
         },
         "row_labels": {
             b"A-Class": "{{A-Class|category=Category:A-Class_Modern_philosophy_articles}}",
@@ -1087,7 +1087,7 @@ class TestTableOutput(unittest.TestCase):
                 "href": "https://en.wikipedia.org/wiki/Category:Unknown-importance_Modern_philosophy_articles",
                 "text": "???",
             },
-            "Unassessed-Class": "No-Class",
+            "Unassessed-Class": "No-Importance",
         },
         "row_labels": {
             "A-Class": {
