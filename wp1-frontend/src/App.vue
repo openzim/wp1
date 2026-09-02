@@ -70,7 +70,7 @@
           Feedback
         </a>
         <a
-          href="https://kiwix.org/privacy-policy/"
+          href="https://privacy.kiwix.org"
           target="_blank"
           rel="noopener noreferrer"
           class="wp1r-navlink"
