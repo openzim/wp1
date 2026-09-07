@@ -1,26 +1,37 @@
 import csv
 import logging
-import os.path
 from bz2 import BZ2Decompressor
-from collections import namedtuple
-from contextlib import contextmanager
 from datetime import datetime, timedelta
+import pathlib
 
 import requests
 
 from wp1 import app_logging
 from wp1.constants import WP1_USER_AGENT
+from typing import NamedTuple, Generator
 from wp1.config import get_settings
 from wp1.exceptions import Wp1ScoreProcessingError
 from wp1.time import get_current_datetime
 from wp1.wp10_db import connect as wp10_connect
 
-PageviewRecord = namedtuple("PageviewRecord", ["lang", "name", "page_id", "views"])
 
 logger = logging.getLogger(__name__)
 
 
-def wiki_languages():
+class PageviewRecord(NamedTuple):
+    lang: bytes | str
+    name: bytes | str
+    page_id: bytes | str
+    views: int
+
+
+class WikiLang(NamedTuple):
+    name: str
+    code: str  # ISO639-1 code for language
+    total: int  # total number of articles
+
+
+def wiki_languages() -> Generator[WikiLang, None, None]:
     r = requests.get(
         "https://wikistats.wmcloud.org/api.php?action=dump&table=wikipedias&format=csv",
         headers={"User-Agent": WP1_USER_AGENT},
@@ -35,10 +46,22 @@ def wiki_languages():
     # Skip the header row
     next(reader, None)
     for row in reader:
-        yield row[2]
+        yield WikiLang(name=row[1], code=row[2], total=int(row[3]))
 
 
-def get_pageview_url(prev=False):
+def get_wiki_languages_exceeding_count(count: int) -> list[WikiLang]:
+    """Get only wikipedia languages whose total exceeds count.
+
+    Entries are sorted by name in descending order
+    """
+    return sorted(
+        (wiki_lang for wiki_lang in wiki_languages() if wiki_lang.total > count),
+        key=lambda w: w.name,
+        reverse=True,
+    )
+
+
+def get_pageview_url(prev: bool = False):
     weeks = 4
     if prev:
         weeks = 8
@@ -51,13 +74,13 @@ def get_pageview_url(prev=False):
     )
 
 
-def get_pageview_file_path(filename):
-    path = get_settings().FILE_PATH_PAGEVIEWS
-    os.makedirs(path, exist_ok=True)
-    return os.path.join(path, filename)
+def get_pageview_file_path(filename: str) -> pathlib.Path:
+    path = pathlib.Path(get_settings().FILE_PATH_PAGEVIEWS)
+    path.mkdir(exist_ok=True)
+    return path / filename
 
 
-def get_prev_file_path():
+def get_prev_file_path() -> pathlib.Path:
     prev_filename = get_pageview_url(prev=True).split("/")[-1]
     return get_pageview_file_path(prev_filename)
 
@@ -70,11 +93,11 @@ def get_cur_file_path():
 def download_pageviews():
     # Clean up file from last month
     prev_filepath = get_prev_file_path()
-    if os.path.exists(prev_filepath):
-        os.remove(prev_filepath)
+    if prev_filepath.exists():
+        prev_filepath.unlink()
 
     cur_filepath = get_cur_file_path()
-    if os.path.exists(cur_filepath):
+    if cur_filepath.exists():
         # File already downloaded
         return
 
@@ -87,16 +110,15 @@ def download_pageviews():
                     f.write(chunk)
         except Exception as e:
             logger.exception("Error downloading pageviews")
-            os.remove(cur_filepath)
+            cur_filepath.unlink()
             raise Wp1ScoreProcessingError("Error downloading pageviews") from e
 
 
-def raw_pageviews(decode=False):
-
+def raw_pageviews(fp: pathlib.Path, decode: bool = False):
     def as_bytes():
         decompressor = BZ2Decompressor()
         trailing = b""
-        with open(get_cur_file_path(), "rb") as f:
+        with open(fp, "rb") as f:
             while True:
                 # Read data in 1 MB chunks
                 chunk = f.read(1024 * 1024)
@@ -122,9 +144,9 @@ def raw_pageviews(decode=False):
         yield from as_bytes()
 
 
-def pageview_components():
+def pageview_components(fp: pathlib.Path):
     tally = None
-    for line in raw_pageviews():
+    for line in raw_pageviews(fp):
         parts = line.split(b" ")
         if len(parts) != 6 or parts[2] == b"null":
             # Skip pages that don't have a pageid
@@ -159,7 +181,8 @@ def pageview_components():
                 yield tally.lang, tally.name, tally.page_id, tally.views
             tally = PageviewRecord(lang, name, page_id, views)
 
-    yield tally.lang, tally.name, tally.page_id, tally.views
+    if tally is not None:
+        yield tally.lang, tally.name, tally.page_id, tally.views
 
 
 def reset_missing_articles_pageviews(wp10db):
@@ -218,7 +241,7 @@ def update_pageviews(filter_lang=None, commit_after=50000):
     try:
         truncate_temp_pageviews(wp10db)
         n = 0
-        for lang, article, page_id, views in pageview_components():
+        for lang, article, page_id, views in pageview_components(get_cur_file_path()):
             if filter_lang is None or lang == filter_lang:
                 insert_temp_pageviews(wp10db, lang, article, page_id, views)
 

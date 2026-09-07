@@ -38,3 +38,8 @@ id_rsa
 
 # Flask session
 flask_session/
+
+
+# Editors
+*.vim
+pageviews_*
