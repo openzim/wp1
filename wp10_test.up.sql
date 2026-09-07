@@ -148,6 +148,10 @@ CREATE TABLE `temp_pageviews` (
   `tp_page_id` int(11) NOT NULL,
   `tp_article` varbinary(1024) DEFAULT NULL,
   `tp_views` int(11) DEFAULT 0,
+  `tp_size` int(11) DEFAULT 0,
+  `tp_links` int(11) DEFAULT 0,
+  `tp_lang_links` int(11) DEFAULT 0,
+  `tp_score` int(11) DEFAULT 0,
   PRIMARY KEY (`tp_lang`,`tp_page_id`),
   KEY `idx_tp_article` (tp_article)
 );
@@ -157,6 +161,7 @@ CREATE TABLE `page_scores` (
   `ps_page_id` int(11) NOT NULL,
   `ps_article` varbinary(1024) DEFAULT NULL,
   `ps_views` int(11) DEFAULT 0,
+  `ps_size` int(11) DEFAULT 0,
   `ps_links` int(11) DEFAULT 0,
   `ps_lang_links` int(11) DEFAULT 0,
   `ps_score` int(11) DEFAULT 0,
