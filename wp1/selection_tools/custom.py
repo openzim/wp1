@@ -4,6 +4,7 @@ from wp1.selection_tools.projects_list import (
     build_translated_list,
 )
 import pathlib
+from wp1.selection_tools.wiki import en, fr, endless
 
 
 def build_custom_selections(
@@ -33,4 +34,8 @@ def build_custom_selections(
                 shutil.copy(src, custom_dir / src.name)
 
     if lang_code == "en":
-        pass
+        en.build_custom_selections(custom_dir, data_dir, tmp_dir)
+    elif lang_code == "fr":
+        fr.build_custom_selections(custom_dir, data_dir, tmp_dir, scores_fp)
+
+    endless.build_custom_selection(lang_code, custom_dir)

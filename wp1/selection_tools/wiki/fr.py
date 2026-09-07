@@ -6,8 +6,8 @@ from wp1.selection_tools.wiki import generate_category_entries
 
 def build_custom_selections(
     custom_dir: pathlib.Path,
-    tmp_dir: pathlib.Path,
     data_dir: pathlib.Path,
+    tmp_dir: pathlib.Path,
     scores_fp: pathlib.Path,
 ):
     # Tunisie

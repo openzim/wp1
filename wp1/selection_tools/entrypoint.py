@@ -3,6 +3,7 @@ from concurrent.futures import as_completed
 from concurrent.futures.process import ProcessPoolExecutor
 import shutil
 from pymysql import Connection
+from wp1.selection_tools.custom import build_custom_selections
 from wp1.selection_tools.projects_list import build_translated_list
 import pathlib
 from wp1.selection_tools.projects_list import build_langlinks
@@ -626,4 +627,15 @@ def build_selections(lang_code: str, start: int, data_dir: pathlib.Path):
                 future.result()
     ######################################################################
     # CUSTOM selections                                                  #
+    ######################################################################
+    logger.info("Creating custom selections...")
+    readme_fp.write_text("customs/*tsv: page_title (one file per custom selection)\n")
+    custom_dir = lang_dir / "customs"
+    custom_dir.mkdir(exist_ok=True)
+    build_custom_selections(lang_code, scores_tsv_fp, data_dir, tmp_dir)
+    if wiki == "enwiki":
+        shutil.copytree(custom_dir, en_needed_dir / "customs")
+
+    ######################################################################
+    # COMPRESS all files                                                 #
     ######################################################################
