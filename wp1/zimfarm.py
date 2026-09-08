@@ -336,8 +336,7 @@ def _get_offliner_flags(
     flags = {
         "mwUrl": "https://%s/" % project,
         "adminEmail": "contact+wp1@kiwix.org",
-        "forceRender": "ActionParse",
-        "articleList": logic_builder.latest_zimfarm_url_for(
+        "pageList": logic_builder.latest_zimfarm_url_for(
             builder.b_id.decode("utf-8"), selection.s_content_type.decode("utf-8")
         ),
         "customZimTitle": title,
@@ -347,7 +346,8 @@ def _get_offliner_flags(
             if long_description
             else f"ZIM file created from a WP1 Selection. {description}"
         ),
-        "filenamePrefix": get_zim_filename_prefix(builder, selection),
+        "customZimName": get_zim_filename_prefix(builder, selection),
+        "speed": 10,
     }
 
     # Add the format flag for mwoffliner if a flavour is specified.
