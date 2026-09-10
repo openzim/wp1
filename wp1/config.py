@@ -356,12 +356,12 @@ class Settings:
         ),
     )
     ZIMFARM_IMAGE: str = _field(
-        "ghcr.io/openzim/mwoffliner:1.17.2",
+        "ghcr.io/openzim/mwoffliner:2.0.0",
         section="Zimfarm",
         help="Update this to the latest version at the time of your deployment.",
     )
     ZIMFARM_DEFINITION_VERSION: str | None = _field(
-        "1.17.2",
+        "2.0.0",
         section="Zimfarm",
     )
     ZIMFARM_CACHE_URL: str | None = _field(
