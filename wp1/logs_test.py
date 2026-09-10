@@ -812,12 +812,12 @@ class LogsTest(BaseCombinedDbTest):
     def test_section_for_date(self):
         # Excuse my mess.
         expected = (
-            "=== December 25, 2018 ===\n"
-            "==== Renamed ====\n"
+            "<noinclude>\n=== December 25, 2018 ===\n</noinclude>\n"
+            "<noinclude>\n==== Renamed ====\n</noinclude>\n"
             "* '''[[Test Baz Bang]]''' renamed to '''[[Test Baz]]'''.\n"
             "* '''[[Testing in Copenhaven]]''' renamed to '''[[Testing in "
             "Copenhagen]]'''.\n"
-            "==== Reassessed ====\n"
+            "<noinclude>\n==== Reassessed ====\n</noinclude>\n"
             "* '''[[Lesser-known tests]]''' ([[Talk:Lesser-known "
             "tests|talk]]) reassessed.  Quality rating changed from "
             "'''Stub-Class''' to '''Start-Class'''. <span "
@@ -866,7 +866,7 @@ class LogsTest(BaseCombinedDbTest):
             "title=Talk%3ATesting%20history&oldid=None "
             "t])</span>\n"
             "\n"
-            "==== Assessed ====\n"
+            "<noinclude>\n==== Assessed ====\n</noinclude>\n"
             "* '''[[Important tests]]''' ([[Talk:Important tests|talk]]) "
             "assessed.  Quality assessed as '''NotA-Class'''. <span "
             'style=\\"white-space: '
@@ -884,7 +884,7 @@ class LogsTest(BaseCombinedDbTest):
             "title=Talk%3AImportant%20tests&oldid=None "
             "t])</span>\n"
             "\n"
-            "==== Removed ====\n"
+            "<noinclude>\n==== Removed ====\n</noinclude>\n"
             "* '''[[Testing None-a]]''' ([[Talk:Testing None-a|talk]]) "
             "removed. \n"
             "* '''[[Testing tools]]''' ([[Talk:Testing tools|talk]]) "
@@ -926,9 +926,15 @@ class LogsTest(BaseCombinedDbTest):
         )
 
         self.assertEqual(3, len(actual))
-        self.assertTrue(actual[0].startswith("=== December 27, 2018 ==="))
-        self.assertTrue(actual[1].startswith("=== December 26, 2018 ==="))
-        self.assertTrue(actual[2].startswith("=== December 25, 2018 ==="))
+        self.assertEqual(
+            [datetime(2018, 12, day).date() for day in (27, 26, 25)],
+            [
+                logs.live_page_dates_missing_from_logs(
+                    section, set(), datetime(2018, 12, 24)
+                )[0]
+                for section in actual
+            ],
+        )
 
     @patch("wp1.logs.redis_connect")
     @patch("wp1.logs.wiki_connect")

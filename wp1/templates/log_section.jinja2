@@ -1,25 +1,35 @@
 {% from 'log_helpers.jinja2' import revs, quality, importance, quality_and_importance with context -%}
+<noinclude>
 === {{log_date}} ===
+</noinclude>
 {% if renamed -%}
+<noinclude>
 ==== Renamed ====
+</noinclude>
 {% for art in renamed -%}
 * '''[[{{name[art]}}]]''' renamed to '''[[{{moved_name[art]}}]]'''.
 {% endfor -%}
 {%- endif -%}
 {%- if reassessed -%}
+<noinclude>
 ==== Reassessed ====
+</noinclude>
 {% for art in reassessed -%}
 * '''[[{{name[art]}}]]''' ([[{{talk[art]}}|talk]]) reassessed. {{quality_and_importance(art)}}
 {% endfor -%}
 {% endif -%}
 {%- if assessed %}
+<noinclude>
 ==== Assessed ====
+</noinclude>
 {% for art in assessed -%}
 * '''[[{{name[art]}}]]''' ([[{{talk[art]}}|talk]]) assessed. {{quality_and_importance(art)}}
 {% endfor -%}
 {% endif -%}
 {%- if removed %}
+<noinclude>
 ==== Removed ====
+</noinclude>
 {% for art in removed -%}
 * '''[[{{name[art]}}]]''' ([[{{talk[art]}}|talk]]) removed. {{quality_and_importance_removed}}
 {% endfor -%}
