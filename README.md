@@ -17,7 +17,8 @@ has more all-time edits than any other account on English Wikipedia. It:
   [WikiProjects](https://en.wikipedia.org/wiki/Wikipedia:WikiProject), into
   browsable quality × importance tables, with nightly updates posted back
   on-wiki as [project tables](https://en.wikipedia.org/wiki/User:WP_1.0_bot/Tables/Project/Catholicism)
-  and change logs.
+  and change logs. Log headings appear only on the log page itself, not in
+  the table of contents of pages that transclude it.
 - Lets users build **selections** — custom article lists defined by
   WikiProject, [Petscan](https://petscan.wmcloud.org/),
   [SPARQL](https://query.wikidata.org/), combinations thereof, or plain lists
