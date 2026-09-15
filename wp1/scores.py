@@ -14,7 +14,6 @@ from wp1.exceptions import Wp1ScoreProcessingError
 from wp1.time import get_current_datetime
 from wp1.wp10_db import connect as wp10_connect
 
-
 logger = logging.getLogger(__name__)
 
 
