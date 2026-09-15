@@ -148,13 +148,13 @@ class Settings:
         "someuser",
         section="WIKIDB (Wikipedia replica database)",
         required_in_production=True,
-        help="EDIT: your Toolforge username.",
+        help="EDIT: replica.my.cnf [client] user (not your SSH username).",
     )
     WIKIDB_PASSWORD: str = _field(
         "somepass",
         section="WIKIDB (Wikipedia replica database)",
         required_in_production=True,
-        help="EDIT: your Toolforge password.",
+        help="EDIT: replica.my.cnf [client] password (not your SSH password).",
     )
     WIKIDB_HOST: str = _field(
         "enwiki.analytics.db.svc.eqiad.wmflabs",
@@ -169,7 +169,7 @@ class Settings:
         kind="int",
         section="WIKIDB (Wikipedia replica database)",
         commented=True,
-        help="Not needed for Option A (SOCKS5 proxy).",
+        help="Destination MySQL port; defaults to 3306. Not the SOCKS port.",
     )
 
     # --- WP10DB (application database) ---
@@ -573,21 +573,21 @@ _SECTION_DOCS = {
         "Wikimedia's\nToolforge infrastructure. This is a read-only replica "
         "of English Wikipedia.\n"
         "\n"
-        "There are two ways to access the Wikipedia replica database in "
-        "development:\n"
+        "Development WIKIDB connections always use SOCKS5 at localhost:1080.\n"
+        "For Python running on the host, keep this SSH tunnel running:\n"
+        "  ssh -N -T -D 127.0.0.1:1080 -o ExitOnForwardFailure=yes "
+        "-o ServerAliveInterval=30 -o ServerAliveCountMax=3 login.toolforge.org\n"
+        "Configure your Toolforge SSH username/key first. DNS is resolved "
+        "through\nthe proxy. Replace the placeholder database credentials "
+        "below using\nreplica.my.cnf; keep the replica hostname and database.\n"
         "\n"
-        "Option A - SOCKS5 proxy:\n"
-        "  ssh -D 1080 login.toolforge.org\n"
-        "(This assumes you have set up your SSH credentials for Toolforge.)\n"
-        "Database traffic is tunneled through the proxy so *.eqiad.wmflabs "
-        "can resolve.\nUse the values below as-is.\n"
-        "\n"
-        "Option B - SSH port-forwarding (useful if running inside Docker):\n"
-        "  ssh -L 4711:enwiki.analytics.db.svc.eqiad.wmflabs:3306 "
-        "login.toolforge.org\n"
-        "Then override in your .env:\n"
-        "  WIKIDB_HOST=localhost\n"
-        "  WIKIDB_PORT=4711"
+        "Docker containers cannot use the host's localhost proxy. The dev "
+        "Compose\nstack does not supply a tunnel; a SOCKS listener must share "
+        "the consuming\ncontainer's network namespace. The proxy address "
+        "is not configurable.\n"
+        "An ssh -L forward does not bypass SOCKS in development.\n"
+        "See README.md, 'Wikipedia replica access (SOCKS5)', for verification\n"
+        "and troubleshooting. WP10DB and production connections are direct."
     ),
     "WP10DB (application database)": (
         "Database credentials for the enwp10 project/application database.\n"
