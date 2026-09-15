@@ -1,13 +1,11 @@
 import bz2
 from datetime import datetime
 import os.path
-import unittest
 from unittest.mock import patch, MagicMock, mock_open
 
 import requests
 
 from wp1.base_db_test import BaseWpOneDbTest
-from wp1.constants import WP1_USER_AGENT
 from wp1.exceptions import Wp1ScoreProcessingError
 from wp1 import scores
 
@@ -66,7 +64,6 @@ pageview_error_bz2 = bz2.compress(pageview_error_text)
 
 
 class ScoresTest(BaseWpOneDbTest):
-
     @patch("wp1.scores.requests")
     def test_wiki_languages(self, mock_requests):
         mock_response = MagicMock()
@@ -92,7 +89,7 @@ class ScoresTest(BaseWpOneDbTest):
         )
         mock_requests.get.return_value = mock_response
 
-        actual = list(scores.wiki_languages())
+        actual = [lang.code for lang in scores.wiki_languages()]
         self.assertEqual(["en", "ceb", "de", "fr"], actual)
 
     @patch("wp1.scores.requests")
@@ -126,16 +123,16 @@ class ScoresTest(BaseWpOneDbTest):
     @patch("wp1.scores.get_current_datetime", return_value=datetime(2024, 5, 25))
     def test_get_prev_file_path(self, mock_datetime):
         actual = scores.get_prev_file_path()
-        self.assertEqual("/tmp/pageviews/pageviews-202403-user.bz2", actual)
+        self.assertEqual("/tmp/pageviews/pageviews-202403-user.bz2", str(actual))
 
     @patch("wp1.scores.get_current_datetime", return_value=datetime(2024, 5, 25))
     def test_get_cur_file_path(self, mock_datetime):
         actual = scores.get_cur_file_path()
-        self.assertEqual("/tmp/pageviews/pageviews-202404-user.bz2", actual)
+        self.assertEqual("/tmp/pageviews/pageviews-202404-user.bz2", str(actual))
 
     def test_get_pageview_file_path(self):
         actual = scores.get_pageview_file_path("pageviews-202404-user.bz2")
-        self.assertEqual("/tmp/pageviews/pageviews-202404-user.bz2", actual)
+        self.assertEqual("/tmp/pageviews/pageviews-202404-user.bz2", str(actual))
 
     @patch("wp1.scores.get_current_datetime", return_value=datetime(2024, 5, 25))
     @patch("wp1.scores.requests.get")
@@ -211,14 +208,14 @@ class ScoresTest(BaseWpOneDbTest):
     @patch("wp1.scores.get_current_datetime", return_value=datetime(2024, 5, 25))
     @patch("builtins.open", new_callable=mock_open, read_data=pageview_bz2)
     def test_raw_pageviews(self, mock_file_open, mock_datetime):
-        actual = b"\n".join(scores.raw_pageviews())
+        actual = b"\n".join(scores.raw_pageviews(mock_file_open))
 
         self.assertEqual(pageview_text, actual)
 
     @patch("wp1.scores.get_current_datetime", return_value=datetime(2024, 5, 25))
     @patch("builtins.open", new_callable=mock_open, read_data=pageview_bz2)
     def test_raw_pageviews_decode(self, mock_file_open, mock_datetime):
-        actual = "\n".join(scores.raw_pageviews(decode=True))
+        actual = "\n".join(scores.raw_pageviews(mock_file_open, decode=True))
 
         self.assertEqual(pageview_text.decode("utf-8"), actual)
 
@@ -239,7 +236,7 @@ class ScoresTest(BaseWpOneDbTest):
             (b"af", b"1712", b"753", 22),
         ]
 
-        actual = list(scores.pageview_components())
+        actual = list(scores.pageview_components(mock_file_open))
 
         self.assertEqual(expected, actual)
 
@@ -257,7 +254,7 @@ class ScoresTest(BaseWpOneDbTest):
             (b"af", b"1712", b"753", 22),
         ]
 
-        actual = list(scores.pageview_components())
+        actual = list(scores.pageview_components(mock_file_open))
 
         self.assertEqual(expected, actual)
 

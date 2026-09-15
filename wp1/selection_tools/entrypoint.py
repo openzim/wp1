@@ -1,10 +1,12 @@
 from collections import defaultdict
+from typing import TYPE_CHECKING
 import time
 import subprocess
 from concurrent.futures import as_completed
 from concurrent.futures.process import ProcessPoolExecutor
 import shutil
 from pymysql import Connection
+from wp1.scores import get_wiki_languages_exceeding_count
 from wp1.selection_tools.constants import BASE_DIR, DATA_DIR
 from wp1.selection_tools.custom import build_custom_selections
 from wp1.selection_tools.projects_list import build_translated_list
@@ -19,7 +21,6 @@ from wp1.selection_tools.wiki.en import (
 from typing import Iterable
 import bz2
 import tempfile
-from pymysql.cursors import Cursor
 import requests
 import re
 from lxml import html
@@ -29,8 +30,10 @@ from wp1.constants import WP1_USER_AGENT
 from wp1.selection_tools.wiki.en import get_vital_articles
 from wp1.exceptions import Wp1ScoreProcessingError
 import argparse
-import csv
 import logging
+
+if TYPE_CHECKING:
+    from pymysql.cursors import Cursor
 
 from typing import NamedTuple
 
@@ -267,7 +270,7 @@ def save_pagecount_results(
 
 
 def _fetch_paginated_rows_from_db(
-    conn: Connection[Cursor], statement: str, batch_size: int
+    conn: "Connection[Cursor]", statement: str, batch_size: int
 ):
     """Fetch rows from a range query, stopping when a batch is empty."""
     lower = 0
@@ -282,7 +285,7 @@ def _fetch_paginated_rows_from_db(
             lower = upper
 
 
-def _fetch_ratings_from_db(conn: Connection[Cursor]):
+def _fetch_ratings_from_db(conn: "Connection[Cursor]"):
     stmt = """
     SELECT r_article, r_project, r_quality, r_importance
     FROM ratings
@@ -310,7 +313,7 @@ def _fetch_ratings_from_db(conn: Connection[Cursor]):
             yield from rows
 
 
-def _fetch_redirects_from_db(conn: Connection[Cursor]):
+def _fetch_redirects_from_db(conn: "Connection[Cursor]"):
     stmt = """
     SELECT rd_from, rd_title FROM redirect WHERE rd_namespace = 0
     """
@@ -323,7 +326,7 @@ def _fetch_redirects_from_db(conn: Connection[Cursor]):
             yield from rows
 
 
-def _fetch_langlinks_from_db(conn: Connection[Cursor]):
+def _fetch_langlinks_from_db(conn: "Connection[Cursor]"):
     stmt = """
     SELECT page_title, ll_lang, ll_title
     FROM langlinks, page
@@ -756,36 +759,6 @@ def build_selections(lang_code: str, start: int, data_dir: pathlib.Path):
     logger.info(f"Process finished for {wiki}")
 
 
-def get_biggest_wikipedia_list(min_article_count: int) -> list[tuple[str, int]]:
-    url = (
-        "https://wikistats.wmcloud.org/api.php?action=dump&table=wikipedias&format=csv"
-    )
-    r = requests.get(url=url, headers={"User-Agent": WP1_USER_AGENT}, timeout=60)
-    try:
-        r.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        raise Wp1ScoreProcessingError(
-            "Could not retrieve the list of Wikipedias from wikistats"
-        ) from e
-
-    results: list[tuple[str, int]] = []
-    reader = csv.reader(r.text.splitlines())
-    next(reader, None)
-    for row in reader:
-        if len(row) < 4:
-            continue
-        lang = row[2].strip()
-        try:
-            total = int(row[3].strip())
-        except ValueError:
-            continue
-        if total > min_article_count:
-            results.append((lang, total))
-
-    results.sort(key=lambda item: item[1], reverse=True)
-    return results
-
-
 def build_all_selections(
     min_article_count: int = 0,
     offset: str | None = None,
@@ -793,9 +766,9 @@ def build_all_selections(
     data_dir: pathlib.Path = DATA_DIR,
 ):
     """Build selections for every Wikipedia above ``min_article_count``."""
-    for lang, _ in get_biggest_wikipedia_list(min_article_count):
+    for lang in get_wiki_languages_exceeding_count(min_article_count):
         if offset is not None:
-            if lang == offset:
+            if lang.code == offset:
                 offset = None
             else:
                 continue
@@ -803,7 +776,7 @@ def build_all_selections(
         for attempt in range(1, 5):
             logger.info("Run %d for %s", attempt, lang)
             try:
-                build_selections(lang, start, data_dir)
+                build_selections(lang.code, start, data_dir)
             except Exception:
                 logger.exception("Build failed for %s (run %d)", lang, attempt)
                 time.sleep(1)
@@ -882,7 +855,7 @@ def main():
     elif args.command == "build-all":
         build_all_selections(args.min_articles, args.offset, args.start, args.data_dir)
     elif args.command == "list":
-        for lang, count in get_biggest_wikipedia_list(args.min_articles):
+        for lang, _, count in get_wiki_languages_exceeding_count(args.min_articles):
             print(f"{lang} {count}")
 
 
