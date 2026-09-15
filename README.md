@@ -106,6 +106,80 @@ credentials (`API_USER`/`API_PASSWORD`) for editing on-wiki tables; in
 development (`WP1_ENV=development`, the default) the jobs that edit Wikipedia
 are disabled.
 
+### Wikipedia replica access (SOCKS5)
+
+In development, `wp1.db.connect("WIKIDB")` always uses a SOCKS5 proxy at
+`localhost:1080`, with DNS resolution performed through the proxy. WP1 does
+**not** start that proxy. This applies only to the Wikipedia replica:
+`WP10DB` connections and production database connections are direct.
+
+For Python running on the host:
+
+1. Configure SSH access to `login.toolforge.org` using your Toolforge shell
+   username and SSH key (for example, in `~/.ssh/config`). Check access with
+   `ssh login.toolforge.org true`.
+2. Set `WIKIDB_USER` and `WIKIDB_PASSWORD` in your gitignored `.env` from the
+   `[client]` section of Toolforge's `~/replica.my.cnf` (or the tool account's
+   file). These are **database credentials**, not your SSH or Wikipedia
+   login. Keep `WIKIDB_HOST=enwiki.analytics.db.svc.eqiad.wmflabs`,
+   `WIKIDB_DB=enwiki_p`, and leave `WIKIDB_PORT` unset (defaults to 3306).
+3. Keep this command running in a separate terminal:
+
+   ```bash
+   ssh -N -T -D 127.0.0.1:1080 \
+     -o ExitOnForwardFailure=yes \
+     -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
+     login.toolforge.org
+   ```
+
+   The loopback binding avoids exposing an unauthenticated SOCKS proxy to
+   the network. Stop it with Ctrl-C when finished.
+
+4. From the checkout with your `.env` and Python dependencies installed,
+   verify an authenticated database query, not just an open proxy port:
+
+   ```bash
+   pipenv run python - <<'PY'
+   import socket
+   from wp1.db import connect
+
+   socket.setdefaulttimeout(15)
+   conn = connect("WIKIDB", connect_timeout=15, read_timeout=15)
+   try:
+       with conn.cursor() as cursor:
+           cursor.execute("SELECT 1 AS connected, DATABASE() AS db")
+           print(cursor.fetchall())
+   finally:
+       conn.close()
+   PY
+   ```
+
+   Expected result: `[{'connected': 1, 'db': b'enwiki_p'}]`.
+
+**Docker limitation:** the default dev web and worker containers have separate
+network namespaces. Their `localhost:1080` is not the host's proxy, and the
+Compose file does not provide a tunnel. Replica access therefore requires a
+SOCKS listener in each consuming container's network namespace; the host
+procedure above alone does not enable replica-backed Docker jobs. The proxy
+address is currently hardcoded, with no environment-variable override.
+Frontend-only development does not require the replica.
+
+**Troubleshooting:**
+
+- Connection refused at `localhost:1080`: the tunnel is stopped, or Python
+  and SSH are in different network namespaces.
+- SSH permission denied: check your Toolforge shell username/key, not the
+  database password.
+- MySQL error 1045 / access denied: the tunnel reached MySQL; check the
+  replica credentials. `someuser` / `somepass` are placeholders.
+- SOCKS destination/DNS errors: check the replica hostname and its
+  reachability from Toolforge. Local DNS need not resolve it.
+- `WIKIDB_PORT` is the destination MySQL port, **not** the SOCKS port.
+  `ssh -L` with `WIKIDB_HOST=localhost` is not an alternative to SOCKS in
+  development: the application still uses SOCKS, and that destination would
+  be interpreted from the SSH server. Do not switch to production mode to
+  bypass this; it also enables jobs that edit Wikipedia.
+
 ### Backend tests
 
 The Python tests need the test databases from `docker-compose-test.yml`; the
