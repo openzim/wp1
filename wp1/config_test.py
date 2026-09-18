@@ -176,6 +176,55 @@ class SettingsFromEnvTest(unittest.TestCase):
                 Settings.from_env()
         self.assertIn("ZIMFARM_OAUTH_CLIENT_ID", str(ctx.exception))
 
+    def test_production_rejects_invalid_client_origins(self):
+        production_env = {
+            field.metadata["env_key"] or field.name: "configured"
+            for field in attrs.fields(Settings)
+            if field.metadata["required_in_production"]
+        }
+        production_env.update(WP1_ENV="production", ZIMFARM_AUTH_MODE="local")
+        for origins in (
+            "",
+            " , , ",
+            "*",
+            "https://*.example.com",
+            "https://.*",
+            "null",
+            "ftp://example.com",
+            "example.com",
+            "https://user@example.com",
+            "https://example.com/",
+            "https://example.com?",
+            "https://[::1",
+            "https://example.com#",
+            "https://example.com:bad",
+            "https://example.com:65536",
+            "https://example.com:",
+            "https://example..com",
+            "https://example.com\\evil",
+            "https://example.com, *",
+        ):
+            with self.subTest(origins=origins):
+                with patch.dict(
+                    "os.environ",
+                    {**production_env, "CLIENT_DOMAINS": origins},
+                    clear=True,
+                ):
+                    with self.assertRaisesRegex(RuntimeError, "CLIENT_DOMAINS"):
+                        Settings.from_env()
+
+    def test_accepts_exact_origins_with_localhost_and_ipv6_ports(self):
+        origins = [
+            "https://wp1.openzim.org",
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://[::1]:5173",
+        ]
+        with patch.dict(
+            "os.environ", {"CLIENT_DOMAINS": ",".join(origins)}, clear=True
+        ):
+            self.assertEqual(origins, Settings.from_env().CLIENT_DOMAINS)
+
     def test_frozen(self):
         settings = Settings()
         with self.assertRaises(attrs.exceptions.FrozenInstanceError):

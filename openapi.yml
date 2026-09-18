@@ -1248,8 +1248,11 @@ paths:
         '401':
           description: 'Unauthorized. There is no logged in user.'
   /oauth/logout:
-    get:
+    post:
       summary: 'Log out, clearing the user from the session.'
+      description: 'Requires a session cookie and a trusted Origin, or a trusted Referer origin only when Origin is absent. Missing, null, malformed or untrusted origins are rejected with 403. GET is not supported and does not clear the session.'
+      security:
+        - sessionCookie: []
       operationId: oauthLogout
       tags:
         - OAuth
@@ -1264,8 +1267,10 @@ paths:
                   status:
                     type: string
                     description: 'Always the string "204".'
-        '404':
+        '401':
           description: 'There is no logged in user.'
+        '403':
+          description: 'Missing, null, malformed or untrusted request origin.'
 
 components:
   securitySchemes:
@@ -1273,7 +1278,7 @@ components:
       type: apiKey
       in: cookie
       name: session
-      description: 'The session cookie set by /oauth/complete. Requests must be made with credentials included so that this cookie is sent.'
+      description: 'The session cookie set by /oauth/complete. Include credentials so this cookie is sent. All unsafe session-authenticated requests (POST, PUT, PATCH, DELETE, etc.) require an Origin exactly matching a configured CLIENT_DOMAINS HTTP(S) origin. Only when Origin is absent, a valid Referer with an exactly matching origin is accepted. Missing both headers, or an empty, null, malformed or untrusted Origin, produces 403 without mutation, even if Referer is trusted. Cookie-authenticated scripts must explicitly supply an allowed Origin. CLIENT_DOMAINS must be a non-empty list of literal origins without wildcards, patterns, userinfo, paths, queries or fragments. OAuth GET handshakes and token-authenticated webhook/email links are exempt.'
   schemas:
     ErrorMessages:
       type: object

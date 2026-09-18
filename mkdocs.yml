@@ -9,4 +9,5 @@ nav:
       - ZIM files: 'user/zim_files.md'
   - 'For Developers':
       - Overview: 'developer/index.md'
+      - API security: 'developer/api-security.md'
   - 'Architectural Reference (AI-generated)': 'wiki/index.md'

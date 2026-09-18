@@ -726,6 +726,19 @@ class BuildersTest(BaseWebTestcase):
             rv.get_json(),
         )
 
+    def test_untrusted_simple_post_cannot_delete_builder(self):
+        builder_id = self._insert_builder()
+        with self.override_db(self.app), self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["user"] = self.USER
+            response = client.post(
+                f"/v1/builders/{builder_id}/delete",
+                headers={"Origin": "http://localhost:9999"},
+                data={},
+            )
+            self.assertEqual(403, response.status_code)
+        self.assertTrue(self._builder_exists(builder_id))
+
     @patch("wp1.logic.builder.redis_connect")
     @patch("wp1.logic.selection.connect_storage")
     def test_delete_successful(self, patched_connect_storage, patched_redis_connect):

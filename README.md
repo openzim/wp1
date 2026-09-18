@@ -106,6 +106,9 @@ credentials (`API_USER`/`API_PASSWORD`) for editing on-wiki tables; in
 development (`WP1_ENV=development`, the default) the jobs that edit Wikipedia
 are disabled.
 
+See [API security](docs/developer/api-security.md) for CORS configuration,
+CSRF protection, and authenticated request requirements.
+
 ### Wikipedia replica access (SOCKS5)
 
 In development, `wp1.db.connect("WIKIDB")` always uses a SOCKS5 proxy at

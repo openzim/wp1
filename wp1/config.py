@@ -15,8 +15,10 @@ and commit the regenerated file. A test (wp1/config_test.py) fails on drift.
 
 import contextlib
 import os
+import re
 import tempfile
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import attrs
 from dotenv import load_dotenv
@@ -75,6 +77,48 @@ def _resolve_env():
             f"Must be one of: development, production"
         )
     return result
+
+
+def http_origin(value, *, referer=False):
+    """Return an exact HTTP(S) origin, or None for an invalid header/config URL."""
+    if (
+        not isinstance(value, str)
+        or not value
+        or re.search(r"[\s\\\x00-\x1f\x7f#]", value)
+    ):
+        return None
+    try:
+        parsed = urlsplit(value)
+        if parsed.scheme not in ("http", "https"):
+            return None
+        if not re.fullmatch(
+            r"(?:[A-Za-z0-9.-]+|\[[0-9A-Fa-f:]+\])(?::[0-9]+)?", parsed.netloc
+        ):
+            return None
+        # urlsplit validates bracketed IPv6 and the port range. DNS names must
+        # be literal host labels, never CORS regular expressions or wildcards.
+        if not parsed.netloc.startswith("[") and not all(
+            re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?", label)
+            for label in parsed.hostname.split(".")
+        ):
+            return None
+        if parsed.port is not None and not 0 < parsed.port <= 65535:
+            return None
+        origin = f"{parsed.scheme}://{parsed.netloc}"
+        if not value.startswith(origin) or (not referer and value != origin):
+            return None
+        return origin
+    except ValueError:
+        return None
+
+
+def validate_client_domains(origins):
+    if not origins or any(http_origin(origin) is None for origin in origins):
+        raise RuntimeError(
+            "CLIENT_DOMAINS must be a non-empty comma-separated list of exact "
+            "http(s) origins (scheme, host, optional port); wildcards, patterns, "
+            "userinfo, paths, queries, fragments and null are not allowed."
+        )
 
 
 def _field(
@@ -494,6 +538,7 @@ def _validate(settings):
                 + ", ".join(missing)
                 + ". Check the env file consumed by docker compose."
             )
+    validate_client_domains(settings.CLIENT_DOMAINS)
     if settings.ZIMFARM_AUTH_MODE == "oauth":
         oauth_missing = [
             key

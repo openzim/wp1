@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import datetime
 from functools import update_wrapper, wraps
 
@@ -11,7 +12,7 @@ from werkzeug.exceptions import HTTPException
 
 import wp1.logic.project as logic_project
 from wp1 import environment
-from wp1.config import get_settings
+from wp1.config import get_settings, validate_client_domains
 from wp1.web.articles import articles
 from wp1.web.builders import builders
 from wp1.web.db import get_db, has_db
@@ -50,7 +51,13 @@ def create_app(session_type="redis"):
 
     settings = get_settings()
 
-    cors_origins = settings.CLIENT_DOMAINS or "*"
+    validate_client_domains(settings.CLIENT_DOMAINS)
+    app.config["TRUSTED_CLIENT_ORIGINS"] = frozenset(settings.CLIENT_DOMAINS)
+    # Flask-CORS otherwise interprets some strings (including IPv6 brackets)
+    # as patterns and compares literal strings case-insensitively.
+    cors_origins = [
+        re.compile(re.escape(origin) + r"\Z") for origin in settings.CLIENT_DOMAINS
+    ]
 
     cors = flask_cors.CORS(
         app, resources="*", origins=cors_origins, supports_credentials=True

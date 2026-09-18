@@ -7,6 +7,7 @@ from wp1 import environment
 from wp1.config import get_settings
 from wp1.logic import users as logic_users
 from wp1.models.wp10.user import User
+from wp1.web import authenticate
 from wp1.web.db import get_db
 
 oauth = flask.Blueprint("oauth", __name__)
@@ -142,9 +143,8 @@ def email():
     return jsonify({"email": email})
 
 
-@oauth.route("/logout")
+@oauth.route("/logout", methods=["POST"])
+@authenticate
 def logout():
-    if session.get("user") is None:
-        flask.abort(404, "User does not exist")
     session.pop("user")
     return {"status": "204"}
