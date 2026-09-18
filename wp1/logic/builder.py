@@ -1230,7 +1230,10 @@ def handle_zim_generation(
     return zim_file.z_task_id if zim_file is not None else None
 
 
-def zim_file_status_for(wp10db: Connection, builder_id: str | bytes) -> dict[str, Any]:
+def zim_file_status_for(
+    wp10db: Connection, builder_id: str | bytes, *, user_id: str | None = None
+) -> dict[str, Any]:
+    """Return public build status, with schedule details only for its owner."""
     data: dict[str, Any] = {
         "status": None,
         "error_url": None,
@@ -1242,11 +1245,19 @@ def zim_file_status_for(wp10db: Connection, builder_id: str | bytes) -> dict[str
     }
     zim_file = zim_file_for_latest_selection(wp10db, builder_id)
 
-    active_schedule = logic_zim_schedules.find_active_recurring_schedule_for_builder(
-        wp10db, builder_id
-    )
-    if active_schedule:
-        data["active_schedule"] = _format_active_schedule_data(active_schedule)
+    if user_id is not None:
+        try:
+            builder = get_builder(wp10db, builder_id)
+        except ObjectNotFoundError:
+            builder = None
+        if builder is not None and builder.user_id == str(user_id):
+            active_schedule = (
+                logic_zim_schedules.find_active_recurring_schedule_for_builder(
+                    wp10db, builder_id
+                )
+            )
+            if active_schedule:
+                data["active_schedule"] = _format_active_schedule_data(active_schedule)
 
     if not zim_file:
         return data

@@ -881,6 +881,10 @@ paths:
   /builders/{builderId}/zim/status:
     get:
       summary: 'Get the status of the currently requested ZIM file for a Builder.'
+      description: 'Build status is public. Active schedule metadata, including recipient email and schedule ID, is returned only for the authenticated Builder owner; it is null for anonymous users and non-owners. Browser clients must include session credentials to receive owner details.'
+      security:
+        - {}
+        - sessionCookie: []
       operationId: builderZimStatus
       tags:
         - ZIM
@@ -1134,8 +1138,8 @@ paths:
             type: string
   /zim/unsubscribe-notification:
     get:
-      summary: 'Unsubscribe from ZIM file generation notifications, using a schedule id.'
-      description: 'The response is an HTML page intended to be viewed in a browser, not JSON.'
+      summary: 'Unsubscribe from ZIM file generation notifications using an emailed capability.'
+      description: 'No login is required. The signed token is bound to the schedule and its current recipient email. Changed recipients and SESSION_SECRET_KEY rotation invalidate links. Old schedule_id-only links no longer authorize unsubscribe. The separate confirmation-token email workflow is unchanged. The response is an HTML page, not JSON.'
       operationId: unsubscribeZimNotification
       tags:
         - ZIM
@@ -1147,22 +1151,22 @@ paths:
               schema:
                 type: string
         '400':
-          description: 'The schedule_id parameter was missing, or the unsubscribe failed.'
+          description: 'The token parameter was missing.'
           content:
             text/html:
               schema:
                 type: string
         '404':
-          description: 'No such schedule, or it has no email address subscribed.'
+          description: 'The token is invalid, the schedule or recipient no longer matches, or the recipient has already unsubscribed.'
           content:
             text/html:
               schema:
                 type: string
       parameters:
-        - name: schedule_id
+        - name: token
           in: query
           required: true
-          description: 'The id of the ZIM schedule to unsubscribe from.'
+          description: 'Purpose-separated signed capability from the notification email. Schedule IDs alone are not accepted.'
           schema:
             type: string
   /oauth/initiate:
@@ -1399,7 +1403,7 @@ components:
     ActiveSchedule:
       type: object
       nullable: true
-      description: 'The recurring ZIM generation schedule for a Builder, or null if there is not one.'
+      description: 'The recurring ZIM generation schedule for the authenticated Builder owner, or null if there is not one or the requester is anonymous or a non-owner. Never contains an unsubscribe capability.'
       properties:
         schedule_id:
           type: string

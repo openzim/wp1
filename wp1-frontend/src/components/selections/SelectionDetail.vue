@@ -930,7 +930,8 @@ export default {
     },
     fetchZimStatus: async function () {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/builders/${this.item.id}/zim/status`
+        `${import.meta.env.VITE_API_URL}/builders/${this.item.id}/zim/status`,
+        { credentials: 'include' }
       );
       if (response.ok) {
         this.zimStatus = await response.json();

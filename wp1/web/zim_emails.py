@@ -121,9 +121,9 @@ def unsubscribe_email():
 
 @zim_emails.route("/unsubscribe-notification")
 def unsubscribe_notification():
-    """Unsubscribes from email notifications for ZIM files using schedule ID."""
-    schedule_id = flask.request.args.get("schedule_id")
-    if not schedule_id:
+    """Unsubscribe using a signed capability, without requiring a session."""
+    token = flask.request.args.get("token")
+    if not token:
         return render_error_page(
             title="Invalid Link",
             heading="Invalid Unsubscribe Link",
@@ -132,36 +132,18 @@ def unsubscribe_notification():
 
     wp10db = get_db("wp10db")
 
-    # Get the schedule details before unsubscribing
-    schedule = zim_schedules.get_zim_schedule(wp10db, schedule_id.encode("utf-8"))
-    if not schedule or not schedule.s_email:
-        return render_error_page(
-            title="Invalid Schedule",
-            heading="Invalid or Already Unsubscribed",
-            message="This schedule is invalid or you have already been unsubscribed from email notifications.",
-            status_code=404,
-        )
-
-    # Unsubscribe from email notifications by removing email
-    success = zim_schedules.unsubscribe_email_by_schedule_id(
-        wp10db, schedule_id.encode("utf-8")
-    )
-
-    if success:
-        zim_title = (
-            schedule.s_title.decode("utf-8") if schedule.s_title else "Your ZIM File"
-        )
+    if zim_schedules.unsubscribe_notification(wp10db, token):
         return render_error_page(
             title="Successfully Unsubscribed",
             heading="Successfully Unsubscribed",
             message="You will no longer receive email notifications for this ZIM file generation.",
             status_code=200,
             is_success=True,
-            zim_title=zim_title,
         )
     else:
         return render_error_page(
-            title="Unsubscribe Failed",
-            heading="Unsubscribe Failed",
-            message="Unable to unsubscribe from email notifications. You may have already been unsubscribed.",
+            title="Invalid Token",
+            heading="Invalid or Already Unsubscribed",
+            message="This unsubscribe link is invalid, no longer matches the recipient, or has already been used.",
+            status_code=404,
         )

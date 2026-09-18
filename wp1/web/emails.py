@@ -100,8 +100,9 @@ def notify_user_for_scheduled_zim(wp10db, zim_file: ZimTask, zim_schedule: ZimSc
     ):
         next_generation_months = zim_schedule.s_interval
 
-    email_confirm_url = get_settings().CLIENT_API_URL
-    unsubscribe_url = f"{email_confirm_url}/api/v1/zim/unsubscribe-notification?schedule_id={zim_schedule.s_id.decode('utf-8')}"
+    api_url = get_settings().CLIENT_API_URL.rstrip("/")
+    token = zim_schedules.generate_notification_unsubscribe_token(zim_schedule)
+    unsubscribe_url = f"{api_url}/v1/zim/unsubscribe-notification?token={token}"
 
     send_zim_ready_email(
         recipient_username=recipient_username,

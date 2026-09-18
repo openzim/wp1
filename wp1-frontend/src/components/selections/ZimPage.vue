@@ -552,7 +552,7 @@ export default {
       const url = `${import.meta.env.VITE_API_URL}/builders/${
         this.builderId
       }/zim/status`;
-      const response = await fetch(url);
+      const response = await fetch(url, { credentials: 'include' });
 
       if (!response.ok) {
         this.success = false;
