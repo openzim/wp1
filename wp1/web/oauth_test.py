@@ -187,15 +187,16 @@ class IdentifyTest(BaseWebTestcase):
             with client.session_transaction() as sess:
                 sess["user"] = USER
                 sess["next_path"] = "/"
-            rv = client.get("/v1/oauth/logout")
-            self.assertEqual({"status": "204"}, rv.get_json())
+            rv = client.post("/v1/oauth/logout")
+            self.assertEqual(200, rv.status_code)
+            self.assertEqual(401, client.get("/v1/oauth/identify").status_code)
 
     @override_settings(**TEST_OAUTH_SETTINGS)
     def test_logout_unauthorized_user(self):
         self.app = create_app()
         with self.app.test_client() as client:
-            rv = client.get("/v1/oauth/logout")
-            self.assertEqual("404 NOT FOUND", rv.status)
+            rv = client.post("/v1/oauth/logout")
+            self.assertEqual("401 UNAUTHORIZED", rv.status)
 
     @override_settings(**TEST_OAUTH_SETTINGS)
     def test_email_unauthorized_user(self):

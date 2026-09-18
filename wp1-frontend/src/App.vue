@@ -123,6 +123,7 @@ export default {
     },
     logout: async function () {
       await fetch(`${import.meta.env.VITE_API_URL}/oauth/logout`, {
+        method: 'POST',
         credentials: 'include',
       });
       this.username = null;
