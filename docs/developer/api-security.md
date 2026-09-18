@@ -34,3 +34,21 @@ require these headers.
 Logout is **`POST /v1/oauth/logout`**, with credentials and the same origin
 requirements. `GET /v1/oauth/logout` returns HTTP 405 and never logs the user
 out. An unauthenticated logout returns HTTP 401.
+
+## ZIM notification privacy
+
+ZIM build status remains public at `/v1/builders/{builderId}/zim/status`.
+Active schedule details (including email and schedule ID) are returned only
+to the authenticated builder owner; anonymous users and other users receive
+`active_schedule: null`. Browser clients must include session credentials
+to display the owner's schedule controls.
+
+Notification emails use
+`${CLIENT_API_URL}/v1/zim/unsubscribe-notification?token=...`, where
+`CLIENT_API_URL` is the API base URL without the `/v1` suffix. The signed,
+purpose-specific capability authorizes anonymous unsubscribe only for its
+schedule and current recipient email. Keep these links private. Changing
+the recipient or rotating `SESSION_SECRET_KEY` invalidates existing links.
+Old `schedule_id`-only email links no longer authorize unsubscribe; recipients
+need a newly generated notification link or can manage the schedule while
+logged in. The separate email confirmation and decline links are unchanged.

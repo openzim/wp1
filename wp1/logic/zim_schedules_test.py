@@ -343,34 +343,30 @@ class LogicZimSchedulesTest(BaseWpOneDbTest):
             row = cursor.fetchone()
             self.assertIsNone(row)
 
-    def test_unsubscribe_email_by_schedule_id_success(self):
-        """Test unsubscribing email by schedule ID."""
+    def test_notification_unsubscribe_only_changes_matching_schedule(self):
         schedule = self.new_schedule()
         schedule.s_email = b"test@example.com"
         insert_zim_schedule(self.wp10db, schedule)
+        other = self.new_schedule()
+        other.s_email = schedule.s_email
+        insert_zim_schedule(self.wp10db, other)
+        token = generate_notification_unsubscribe_token(schedule)
 
-        # Unsubscribe should remove email
-        result = unsubscribe_email_by_schedule_id(self.wp10db, schedule.s_id)
-        self.assertTrue(result)
+        self.assertTrue(unsubscribe_notification(self.wp10db, token))
+        self.assertIsNone(get_zim_schedule(self.wp10db, schedule.s_id).s_email)
+        self.assertEqual(
+            other.s_email, get_zim_schedule(self.wp10db, other.s_id).s_email
+        )
+        self.assertFalse(unsubscribe_notification(self.wp10db, token))
 
-        # Verify email was removed
-        updated_schedule = get_zim_schedule(self.wp10db, schedule.s_id)
-        self.assertIsNone(updated_schedule.s_email)
-
-    def test_unsubscribe_email_by_schedule_id_no_email(self):
-        """Test unsubscribing by schedule ID when no email exists."""
+    def test_notification_unsubscribe_rejects_changed_recipient(self):
         schedule = self.new_schedule()
-        schedule.s_email = None  # No email
+        schedule.s_email = b"old@example.com"
+        token = generate_notification_unsubscribe_token(schedule)
+        schedule.s_email = b"new@example.com"
         insert_zim_schedule(self.wp10db, schedule)
 
-        # Should return False since no email to remove
-        result = unsubscribe_email_by_schedule_id(self.wp10db, schedule.s_id)
-        self.assertFalse(result)
-
-    def test_unsubscribe_email_by_schedule_id_invalid_schedule(self):
-        """Test unsubscribing by invalid schedule ID."""
-        invalid_id = str(uuid.uuid4()).encode("utf-8")
-
-        # Should return False for non-existent schedule
-        result = unsubscribe_email_by_schedule_id(self.wp10db, invalid_id)
-        self.assertFalse(result)
+        self.assertFalse(unsubscribe_notification(self.wp10db, token))
+        self.assertEqual(
+            b"new@example.com", get_zim_schedule(self.wp10db, schedule.s_id).s_email
+        )

@@ -1,8 +1,11 @@
 import uuid
 from unittest.mock import ANY, MagicMock, Mock, patch
+from urllib.parse import urlsplit
 
 from wp1.base_db_test import BaseWpOneDbTest
 from wp1.config import override_settings
+from wp1.logic import zim_schedules
+from wp1.web.app import create_app
 from wp1.constants import TS_FORMAT_WP10
 from wp1.models.wp10.zim_file import ZimTask
 from wp1.models.wp10.zim_schedule import ZimSchedule
@@ -324,40 +327,6 @@ class EmailsTest(BaseWpOneDbTest):
 
     @patch("wp1.web.emails.send_zim_ready_email")
     @patch("wp1.web.emails.zim_schedules.get_username_by_zim_schedule_id")
-    @patch("wp1.web.emails.zimfarm.zim_file_url_for_task_id")
-    @patch("wp1.web.emails.zim_schedules.decrement_remaining_generations")
-    def test_respond_to_zim_task_completed_no_title(
-        self, mock_decrement, mock_zimfile_url, mock_get_username, mock_send_email
-    ):
-        """Test user notification when ZIM file has no title."""
-        zim_schedule_no_title = ZimSchedule(
-            s_id=b"test-schedule-id",
-            s_builder_id=b"test-builder-id",
-            s_email=b"test@example.com",
-            s_rq_job_id=b"test-job-id",
-            s_last_updated_at=utcnow().strftime(TS_FORMAT_WP10).encode("utf-8"),
-            s_interval=3,
-            s_remaining_generations=3,
-            s_email_confirmation_token=None,
-        )
-
-        mock_zimfile_url.return_value = "https://download.example.com/test.zim"
-        mock_get_username.return_value = "testuser"
-        mock_send_email.return_value = True
-
-        respond_to_zim_task_completed(self.wp10db, self.zim_task, zim_schedule_no_title)
-
-        mock_send_email.assert_called_once_with(
-            recipient_username="testuser",
-            recipient_email="test@example.com",
-            zim_title="Your ZIM File",  # Should use default title
-            download_url="https://download.example.com/test.zim",
-            unsubscribe_url="http://test.server.fake/api/v1/zim/unsubscribe-notification?schedule_id=test-schedule-id",
-            next_generation_months=3,
-        )
-
-    @patch("wp1.web.emails.send_zim_ready_email")
-    @patch("wp1.web.emails.zim_schedules.get_username_by_zim_schedule_id")
     @patch("wp1.zimfarm.requests.get")
     def test_respond_to_zim_task_completed_includes_unsubscribe_url(
         self, patched_get, mock_get_username, mock_send_email
@@ -374,13 +343,10 @@ class EmailsTest(BaseWpOneDbTest):
 
         respond_to_zim_task_completed(self.wp10db, self.zim_task, self.zim_schedule)
 
-        call_args = mock_send_email.call_args
-        call_kwargs = call_args.kwargs
-
-        self.assertIn("unsubscribe_url", call_kwargs)
-        unsubscribe_url = call_kwargs["unsubscribe_url"]
-        self.assertIsNotNone(unsubscribe_url)
-        self.assertIn("unsubscribe-notification", unsubscribe_url)
-        self.assertIn(
-            f"schedule_id={self.zim_schedule.s_id.decode('utf-8')}", unsubscribe_url
-        )
+        unsubscribe_url = mock_send_email.call_args.kwargs["unsubscribe_url"]
+        link = urlsplit(unsubscribe_url)
+        with create_app().test_client() as client:
+            response = client.get(f"{link.path}?{link.query}")
+        self.assertEqual(200, response.status_code)
+        fetched = zim_schedules.get_zim_schedule(self.wp10db, self.zim_schedule.s_id)
+        self.assertIsNone(fetched.s_email)

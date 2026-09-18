@@ -107,7 +107,7 @@ development (`WP1_ENV=development`, the default) the jobs that edit Wikipedia
 are disabled.
 
 See [API security](docs/developer/api-security.md) for CORS configuration,
-CSRF protection, and authenticated request requirements.
+CSRF protection, authenticated requests, and ZIM notification privacy.
 
 ### Wikipedia replica access (SOCKS5)
 

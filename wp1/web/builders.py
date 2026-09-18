@@ -360,7 +360,12 @@ def create_zim_file_for_builder(builder_id):
 @builders.route("/<builder_id>/zim/status")
 def zimfarm_status(builder_id):
     wp10db = get_db("wp10db")
-    return flask.jsonify(logic_builder.zim_file_status_for(wp10db, builder_id))
+    user_id = (flask.session.get("user") or {}).get("identity", {}).get("sub")
+    response = flask.jsonify(
+        logic_builder.zim_file_status_for(wp10db, builder_id, user_id=user_id)
+    )
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
 
 
 @builders.route("/zim/status", methods=["POST"])
