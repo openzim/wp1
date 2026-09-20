@@ -60,7 +60,22 @@ def create_app(session_type="redis"):
     ]
 
     cors = flask_cors.CORS(
-        app, resources="*", origins=cors_origins, supports_credentials=True
+        app,
+        resources={
+            re.compile(
+                r"/v1/projects/(?:[^/]+(?:/(?:table|category_links(?:/sorted)?"
+                r"|articles(?:/random)?|update/(?:time|progress)))?)?\Z"
+            ): {
+                "origins": "*",
+                "send_wildcard": True,
+                "supports_credentials": False,
+                "methods": ["GET", "HEAD", "OPTIONS"],
+            },
+            "*": {
+                "origins": cors_origins,
+                "supports_credentials": True,
+            },
+        },
     )
     gzip = flask_gzip.Gzip(app, minimum_size=256)
 
