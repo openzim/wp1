@@ -186,3 +186,68 @@ class SessionOriginTest(unittest.TestCase):
                 with override_settings(CLIENT_DOMAINS=origins):
                     with self.assertRaisesRegex(RuntimeError, "CLIENT_DOMAINS"):
                         create_app()
+
+    def test_public_project_reads_allow_any_origin_without_credentials(self):
+        paths = (
+            "/v1/projects/",
+            "/v1/projects/count",
+            "/v1/projects/assessments",
+            "/v1/projects/Example",
+            "/v1/projects/Example/table",
+            "/v1/projects/Example/category_links",
+            "/v1/projects/Example/category_links/sorted",
+            "/v1/projects/Example/articles",
+            "/v1/projects/Example/articles/random",
+            "/v1/projects/Example/update/time",
+            "/v1/projects/Example/update/progress",
+        )
+        for path in paths:
+            with self.subTest(path=path):
+                response = self.client.options(
+                    path,
+                    headers={
+                        "Origin": "https://untrusted.example.com",
+                        "Access-Control-Request-Method": "GET",
+                    },
+                )
+                self.assertEqual(200, response.status_code)
+                self.assertEqual("*", response.headers["Access-Control-Allow-Origin"])
+                self.assertNotIn("Access-Control-Allow-Credentials", response.headers)
+                self.assertEqual(
+                    {"GET", "HEAD", "OPTIONS"},
+                    set(response.headers["Access-Control-Allow-Methods"].split(", ")),
+                )
+
+    def test_public_project_errors_are_readable_cross_origin(self):
+        with patch("wp1.web.projects.get_db"), patch(
+            "wp1.web.projects.logic_project.get_project_by_name", return_value=None
+        ):
+            response = self.client.get(
+                "/v1/projects/Unknown",
+                headers={"Origin": "https://untrusted.example.com"},
+            )
+        self.assertEqual(404, response.status_code)
+        self.assertEqual("*", response.headers["Access-Control-Allow-Origin"])
+        self.assertNotIn("Access-Control-Allow-Credentials", response.headers)
+
+    def test_project_update_preflight_remains_origin_restricted(self):
+        for origin, accepted in (
+            (self.ORIGIN, True),
+            ("https://untrusted.example.com", False),
+        ):
+            with self.subTest(origin=origin):
+                response = self.client.options(
+                    "/v1/projects/Example/update",
+                    headers={
+                        "Origin": origin,
+                        "Access-Control-Request-Method": "POST",
+                    },
+                )
+                self.assertEqual(
+                    origin if accepted else None,
+                    response.headers.get("Access-Control-Allow-Origin"),
+                )
+                self.assertEqual(
+                    "true" if accepted else None,
+                    response.headers.get("Access-Control-Allow-Credentials"),
+                )

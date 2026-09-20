@@ -12,6 +12,19 @@ startup. Production must explicitly provide this setting; development defaults
 to `http://localhost:5173`. Trust only frontends you control, not all sibling
 subdomains.
 
+### Public project reads
+
+The public `/v1/projects/` reads allow any origin with
+`Access-Control-Allow-Origin: *` and no credential support: project list,
+count, assessments, project details, tables, category links (including sorted
+links), articles (including TSV exports and random articles), and update
+time/progress. Their CORS policy permits `GET`, `HEAD`, and `OPTIONS`.
+Browser clients should omit credentials for these requests.
+
+`POST /v1/projects/{project_name}/update` is excluded: it retains credentialed
+CORS restricted to `CLIENT_DOMAINS`, session authentication, and the
+trusted-origin mutation check. Other API endpoints are unchanged.
+
 ## Credentialed requests and CSRF protection
 
 Every unsafe request (`POST`, `PUT`, `PATCH`, `DELETE`, etc.) to a
