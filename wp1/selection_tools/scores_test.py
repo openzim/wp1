@@ -1,15 +1,16 @@
 import bz2
 from datetime import datetime
 import os.path
-import unittest
 from unittest.mock import patch, MagicMock, mock_open
 
 import requests
 
 from wp1.base_db_test import BaseWpOneDbTest
-from wp1.constants import WP1_USER_AGENT
 from wp1.exceptions import Wp1ScoreProcessingError
-from wp1 import scores
+from wp1.selection_tools import scores
+from wp1.selection_tools.models import (
+    Pageview,
+)
 
 pageview_text = b"""af.wikipedia 1701 1402 desktop 4 F1
 af.wikipedia 1701 1402 mobile-web 3 O2T1
@@ -66,8 +67,7 @@ pageview_error_bz2 = bz2.compress(pageview_error_text)
 
 
 class ScoresTest(BaseWpOneDbTest):
-
-    @patch("wp1.scores.requests")
+    @patch("wp1.selection_tools.scores.requests")
     def test_wiki_languages(self, mock_requests):
         mock_response = MagicMock()
         mock_response.text = (
@@ -92,10 +92,10 @@ class ScoresTest(BaseWpOneDbTest):
         )
         mock_requests.get.return_value = mock_response
 
-        actual = list(scores.wiki_languages())
+        actual = [lang.code for lang in scores.wiki_languages()]
         self.assertEqual(["en", "ceb", "de", "fr"], actual)
 
-    @patch("wp1.scores.requests")
+    @patch("wp1.selection_tools.scores.requests")
     def test_wiki_languages_raises_on_http_error(self, mock_requests):
         mock_response = MagicMock()
         mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError
@@ -105,7 +105,10 @@ class ScoresTest(BaseWpOneDbTest):
         with self.assertRaises(Wp1ScoreProcessingError):
             list(scores.wiki_languages())
 
-    @patch("wp1.scores.get_current_datetime", return_value=datetime(2024, 5, 25))
+    @patch(
+        "wp1.selection_tools.scores.get_current_datetime",
+        return_value=datetime(2024, 5, 25),
+    )
     def test_get_pageview_url(self, mock_datetime):
         actual = scores.get_pageview_url()
         self.assertEqual(
@@ -114,7 +117,10 @@ class ScoresTest(BaseWpOneDbTest):
             actual,
         )
 
-    @patch("wp1.scores.get_current_datetime", return_value=datetime(2024, 5, 25))
+    @patch(
+        "wp1.selection_tools.scores.get_current_datetime",
+        return_value=datetime(2024, 5, 25),
+    )
     def test_get_pageview_url_prev(self, mock_datetime):
         actual = scores.get_pageview_url(prev=True)
         self.assertEqual(
@@ -123,22 +129,31 @@ class ScoresTest(BaseWpOneDbTest):
             actual,
         )
 
-    @patch("wp1.scores.get_current_datetime", return_value=datetime(2024, 5, 25))
+    @patch(
+        "wp1.selection_tools.scores.get_current_datetime",
+        return_value=datetime(2024, 5, 25),
+    )
     def test_get_prev_file_path(self, mock_datetime):
         actual = scores.get_prev_file_path()
-        self.assertEqual("/tmp/pageviews/pageviews-202403-user.bz2", actual)
+        self.assertEqual("/tmp/pageviews/pageviews-202403-user.bz2", str(actual))
 
-    @patch("wp1.scores.get_current_datetime", return_value=datetime(2024, 5, 25))
+    @patch(
+        "wp1.selection_tools.scores.get_current_datetime",
+        return_value=datetime(2024, 5, 25),
+    )
     def test_get_cur_file_path(self, mock_datetime):
         actual = scores.get_cur_file_path()
-        self.assertEqual("/tmp/pageviews/pageviews-202404-user.bz2", actual)
+        self.assertEqual("/tmp/pageviews/pageviews-202404-user.bz2", str(actual))
 
     def test_get_pageview_file_path(self):
         actual = scores.get_pageview_file_path("pageviews-202404-user.bz2")
-        self.assertEqual("/tmp/pageviews/pageviews-202404-user.bz2", actual)
+        self.assertEqual("/tmp/pageviews/pageviews-202404-user.bz2", str(actual))
 
-    @patch("wp1.scores.get_current_datetime", return_value=datetime(2024, 5, 25))
-    @patch("wp1.scores.requests.get")
+    @patch(
+        "wp1.selection_tools.scores.get_current_datetime",
+        return_value=datetime(2024, 5, 25),
+    )
+    @patch("wp1.selection_tools.scores.requests.get")
     def test_download_pageviews(self, mock_get_response, mock_datetime):
         context = MagicMock()
         resp = MagicMock()
@@ -155,8 +170,11 @@ class ScoresTest(BaseWpOneDbTest):
         mock_get_response.assert_called_once()
         self.assertTrue(os.path.exists(file_path))
 
-    @patch("wp1.scores.get_current_datetime", return_value=datetime(2024, 5, 25))
-    @patch("wp1.scores.requests.get")
+    @patch(
+        "wp1.selection_tools.scores.get_current_datetime",
+        return_value=datetime(2024, 5, 25),
+    )
+    @patch("wp1.selection_tools.scores.requests.get")
     def test_download_pageviews_remove_prev(self, mock_get_response, mock_datetime):
         context = MagicMock()
         resp = MagicMock()
@@ -172,8 +190,11 @@ class ScoresTest(BaseWpOneDbTest):
 
         self.assertFalse(os.path.exists(file_path))
 
-    @patch("wp1.scores.get_current_datetime", return_value=datetime(2024, 5, 25))
-    @patch("wp1.scores.requests.get")
+    @patch(
+        "wp1.selection_tools.scores.get_current_datetime",
+        return_value=datetime(2024, 5, 25),
+    )
+    @patch("wp1.selection_tools.scores.requests.get")
     def test_download_pageviews_skip_existing(self, mock_get_response, mock_datetime):
         context = MagicMock()
         resp = MagicMock()
@@ -190,7 +211,7 @@ class ScoresTest(BaseWpOneDbTest):
         mock_get_response.assert_not_called()
         self.assertTrue(os.path.exists(file_path))
 
-    @patch("wp1.scores.requests.get")
+    @patch("wp1.selection_tools.scores.requests.get")
     def test_download_pageviews_handle_error(self, mock_get_response):
         context = MagicMock()
         resp = MagicMock()
@@ -208,56 +229,62 @@ class ScoresTest(BaseWpOneDbTest):
         file_path = scores.get_cur_file_path()
         self.assertFalse(os.path.exists(file_path))
 
-    @patch("wp1.scores.get_current_datetime", return_value=datetime(2024, 5, 25))
+    @patch(
+        "wp1.selection_tools.scores.get_current_datetime",
+        return_value=datetime(2024, 5, 25),
+    )
     @patch("builtins.open", new_callable=mock_open, read_data=pageview_bz2)
     def test_raw_pageviews(self, mock_file_open, mock_datetime):
-        actual = b"\n".join(scores.raw_pageviews())
+        actual = b"\n".join(scores.raw_pageviews(mock_file_open))
 
         self.assertEqual(pageview_text, actual)
 
-    @patch("wp1.scores.get_current_datetime", return_value=datetime(2024, 5, 25))
+    @patch(
+        "wp1.selection_tools.scores.get_current_datetime",
+        return_value=datetime(2024, 5, 25),
+    )
     @patch("builtins.open", new_callable=mock_open, read_data=pageview_bz2)
     def test_raw_pageviews_decode(self, mock_file_open, mock_datetime):
-        actual = "\n".join(scores.raw_pageviews(decode=True))
+        actual = "\n".join(scores.raw_pageviews(mock_file_open, decode=True))
 
         self.assertEqual(pageview_text.decode("utf-8"), actual)
 
     @patch("builtins.open", new_callable=mock_open, read_data=pageview_bz2)
     def test_pageview_components(self, mock_file_open):
         expected = [
-            (b"af", b"1701", b"1402", 7),
-            (b"af", b"1702", b"1404", 4),
-            (b"af", b"1703", b"1405", 4),
-            (b"af", b"1704", b"1406", 6),
-            (b"af", b"1705", b"1407", 4),
-            (b"af", b"1706", b"1408", 12),
-            (b"af", b"1707", b"1409", 5),
-            (b"af", b"1708", b"1410", 5),
-            (b"af", b"1709", b"1411", 4),
-            (b"af", b"\xc3\xa9\xc3\xa1\xc3\xb8", b"3774", 3),
-            (b"af", b"1711", b"752", 5),
-            (b"af", b"1712", b"753", 22),
+            Pageview("af", "1701", "1402", 7),
+            Pageview("af", "1702", "1404", 4),
+            Pageview("af", "1703", "1405", 4),
+            Pageview("af", "1704", "1406", 6),
+            Pageview("af", "1705", "1407", 4),
+            Pageview("af", "1706", "1408", 12),
+            Pageview("af", "1707", "1409", 5),
+            Pageview("af", "1708", "1410", 5),
+            Pageview("af", "1709", "1411", 4),
+            Pageview("af", b"\xc3\xa9\xc3\xa1\xc3\xb8".decode("utf-8"), "3774", 3),
+            Pageview("af", "1711", "752", 5),
+            Pageview("af", "1712", "753", 22),
         ]
 
-        actual = list(scores.pageview_components())
+        actual = list(scores.pageview_components(mock_file_open))
 
         self.assertEqual(expected, actual)
 
     @patch("builtins.open", new_callable=mock_open, read_data=pageview_error_bz2)
     def test_pageview_components_errors(self, mock_file_open):
         expected = [
-            (b"af", b"1701", b"1402", 7),
-            (b"af", b"1702", b"1404", 4),
-            (b"af", b"1704", b"1406", 6),
-            (b"af", b"1705", b"1407", 4),
-            (b"af", b"1707", b"1409", 5),
-            (b"af", b"1709", b"1411", 4),
-            (b"af", b"\xc3\xa9\xc3\xa1\xc3\xb8", b"3774", 3),
-            (b"af", b"1711", b"752", 5),
-            (b"af", b"1712", b"753", 22),
+            Pageview("af", "1701", "1402", 7),
+            Pageview("af", "1702", "1404", 4),
+            Pageview("af", "1704", "1406", 6),
+            Pageview("af", "1705", "1407", 4),
+            Pageview("af", "1707", "1409", 5),
+            Pageview("af", "1709", "1411", 4),
+            Pageview("af", b"\xc3\xa9\xc3\xa1\xc3\xb8".decode("utf-8"), "3774", 3),
+            Pageview("af", "1711", "752", 5),
+            Pageview("af", "1712", "753", 22),
         ]
 
-        actual = list(scores.pageview_components())
+        actual = list(scores.pageview_components(mock_file_open))
 
         self.assertEqual(expected, actual)
 
@@ -368,20 +395,25 @@ class ScoresTest(BaseWpOneDbTest):
             n = cursor.fetchone()["cnt"]
             self.assertEqual(0, n)
 
-    @patch("wp1.scores.wp10_connect")
-    @patch("wp1.scores.download_pageviews")
-    @patch("wp1.scores.pageview_components")
-    def test_update_pageviews(self, mock_components, mock_download, mock_db_connect):
-        mock_db_connect.return_value = self.wp10db
+    @patch("wp1.selection_tools.scores.download_pageviews")
+    @patch("wp1.selection_tools.scores.pageview_components")
+    def test_update_pageviews(self, mock_components, mock_download):
         mock_components.return_value = (
             (b"en", b"Statue_of_Liberty", 100, 100),
             (b"en", b"Eiffel_Tower", 200, 200),
             (b"fr", b"George-\xc3\x89tienne_Cartier_Monument", 300, 300),
         )
 
-        scores.update_pageviews(commit_after=2)
+        scores.load_temp_pageviews(self.wp10db, commit_after=2)
 
         mock_download.assert_called_once()
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) as cnt FROM temp_pageviews")
+            n = cursor.fetchone()["cnt"]
+            self.assertEqual(3, n)
+
+        scores.finalize_page_scores(self.wp10db)
 
         with self.wp10db.cursor() as cursor:
             cursor.execute("SELECT COUNT(*) as cnt FROM page_scores")
@@ -393,22 +425,23 @@ class ScoresTest(BaseWpOneDbTest):
             n = cursor.fetchone()["cnt"]
             self.assertEqual(0, n)
 
-    @patch("wp1.scores.wp10_connect")
-    @patch("wp1.scores.insert_temp_pageviews", side_effect=Exception("DB error"))
-    @patch("wp1.scores.download_pageviews")
-    @patch("wp1.scores.pageview_components")
+    @patch(
+        "wp1.selection_tools.scores.insert_temp_pageviews",
+        side_effect=Exception("DB error"),
+    )
+    @patch("wp1.selection_tools.scores.download_pageviews")
+    @patch("wp1.selection_tools.scores.pageview_components")
     def test_update_pageviews_rollback_on_error(
-        self, mock_components, mock_download, mock_insert, mock_db_connect
+        self, mock_components, mock_download, mock_insert
     ):
-        mock_db = MagicMock(return_value=self.wp10db)
-        mock_db_connect.return_value = mock_db
+        mock_db = MagicMock(wraps=self.wp10db)
         mock_components.return_value = (
             (b"en", b"Statue_of_Liberty", 100, 100),
             (b"en", b"Eiffel_Tower", 200, 200),
             (b"fr", b"George-\xc3\x89tienne_Cartier_Monument", 300, 300),
         )
 
-        scores.update_pageviews(commit_after=2)
+        scores.load_temp_pageviews(mock_db, commit_after=2)
 
         mock_download.assert_called_once()
         mock_insert.assert_called_once()
@@ -424,19 +457,104 @@ class ScoresTest(BaseWpOneDbTest):
             n = cursor.fetchone()["cnt"]
             self.assertEqual(0, n)
 
-    @patch("wp1.scores.download_pageviews")
-    @patch("wp1.scores.pageview_components")
+    @patch("wp1.selection_tools.scores.download_pageviews")
+    @patch("wp1.selection_tools.scores.pageview_components")
     def test_update_pageviews_filter(self, mock_components, mock_download):
         mock_components.return_value = (
-            (b"en", b"Statue_of_Liberty", 100, 100),
-            (b"en", b"Eiffel_Tower", 200, 200),
-            (b"fr", b"George-\xc3\x89tienne_Cartier_Monument", 300, 300),
+            ("en", "Statue_of_Liberty", "100", 100),
+            ("en", "Eiffel_Tower", "200", 200),
+            (
+                "fr",
+                b"George-\xc3\x89tienne_Cartier_Monument".decode("utf-8"),
+                "300",
+                300,
+            ),
         )
 
-        scores.update_pageviews(filter_lang="fr")
+        scores.load_temp_pageviews(self.wp10db, filter_lang="fr")
 
         mock_download.assert_called_once()
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) as cnt FROM temp_pageviews")
+            n = cursor.fetchone()["cnt"]
+            self.assertEqual(1, n)
+
+        scores.finalize_page_scores(self.wp10db)
+
         with self.wp10db.cursor() as cursor:
             cursor.execute("SELECT COUNT(*) as cnt FROM page_scores")
             n = cursor.fetchone()["cnt"]
             self.assertEqual(1, n)
+
+    def test_swap_temp_page_metrics_to_scores(self):
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO temp_pagesize (tp_lang, tp_article, tp_page_id, tp_size)"
+                'VALUES ("en", "Statue_of_Liberty", 1234, 4096)'
+            )
+            cursor.execute(
+                "INSERT INTO temp_pagelinks (tp_lang, tp_article, tp_page_id, tp_links)"
+                'VALUES ("en", "Statue_of_Liberty", 1234, 7)'
+            )
+            cursor.execute(
+                "INSERT INTO temp_pagelanglinks "
+                "(tp_lang, tp_article, tp_page_id, tp_lang_links)"
+                'VALUES ("en", "Statue_of_Liberty", 1234, 3)'
+            )
+            cursor.execute(
+                "INSERT INTO temp_pagescores (tp_lang, tp_article, tp_page_id, tp_score)"
+                'VALUES ("en", "Statue_of_Liberty", 1234, 555)'
+            )
+
+        scores.swap_temp_pagesize_to_scores(self.wp10db)
+        scores.swap_temp_pagelinks_to_scores(self.wp10db)
+        scores.swap_temp_pagelanglinks_to_scores(self.wp10db)
+        scores.swap_temp_pagescores_to_scores(self.wp10db)
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute("SELECT * FROM page_scores WHERE ps_page_id = 1234")
+            result = cursor.fetchone()
+            self.assertEqual(result["ps_size"], 4096)
+            self.assertEqual(result["ps_links"], 7)
+            self.assertEqual(result["ps_lang_links"], 3)
+            self.assertEqual(result["ps_score"], 555)
+
+    def test_finalize_page_scores(self):
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO temp_pageviews (tp_lang, tp_article, tp_page_id, tp_views)"
+                'VALUES ("en", "Statue_of_Liberty", 1234, 100)'
+            )
+            cursor.execute(
+                "INSERT INTO temp_pagesize (tp_lang, tp_article, tp_page_id, tp_size)"
+                'VALUES ("en", "Statue_of_Liberty", 1234, 4096)'
+            )
+            cursor.execute(
+                "INSERT INTO temp_pagelinks (tp_lang, tp_article, tp_page_id, tp_links)"
+                'VALUES ("en", "Statue_of_Liberty", 1234, 7)'
+            )
+            cursor.execute(
+                "INSERT INTO temp_pagelanglinks "
+                "(tp_lang, tp_article, tp_page_id, tp_lang_links)"
+                'VALUES ("en", "Statue_of_Liberty", 1234, 3)'
+            )
+            cursor.execute(
+                "INSERT INTO temp_pagescores (tp_lang, tp_article, tp_page_id, tp_score)"
+                'VALUES ("en", "Statue_of_Liberty", 1234, 555)'
+            )
+
+        scores.finalize_page_scores(self.wp10db)
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute("SELECT * FROM page_scores WHERE ps_page_id = 1234")
+            result = cursor.fetchone()
+            self.assertEqual(result["ps_views"], 100)
+            self.assertEqual(result["ps_size"], 4096)
+            self.assertEqual(result["ps_links"], 7)
+            self.assertEqual(result["ps_lang_links"], 3)
+            self.assertEqual(result["ps_score"], 555)
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) as cnt FROM temp_pageviews")
+            self.assertEqual(0, cursor.fetchone()["cnt"])

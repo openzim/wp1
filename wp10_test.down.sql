@@ -14,3 +14,8 @@ DROP TABLE IF EXISTS `zim_tasks`;
 DROP TABLE IF EXISTS `zim_schedules`;
 DROP TABLE IF EXISTS `page_scores`;
 DROP TABLE IF EXISTS `temp_pageviews`;
+DROP TABLE IF EXISTS `temp_pagesize`;
+DROP TABLE IF EXISTS `temp_pagelinks`;
+DROP TABLE IF EXISTS `temp_pagelanglinks`;
+DROP TABLE IF EXISTS `temp_pagescores`;
+DROP TABLE IF EXISTS `temp_redirects`;
