@@ -489,13 +489,11 @@ def resolve_temp_redirects(wp10db: "Connection[Cursor]"):
     """Follow redirect-to-redirect chains so each source maps to its target."""
     with wp10db.cursor() as cursor:
         while True:
-            cursor.execute(
-                """UPDATE temp_redirects r
+            cursor.execute("""UPDATE temp_redirects r
                 JOIN temp_redirects n
                     ON n.tr_lang = r.tr_lang AND n.tr_source = r.tr_target
                 SET r.tr_target = n.tr_target
-                WHERE r.tr_target <> n.tr_target"""
-            )
+                WHERE r.tr_target <> n.tr_target""")
             if cursor.rowcount == 0:
                 break
     wp10db.commit()
@@ -510,24 +508,18 @@ def fold_redirect_metrics(wp10db: "Connection[Cursor]"):
     )
     with wp10db.cursor() as cursor:
         for table, column in folds:
-            cursor.execute(
-                f"""UPDATE {table} tgt
+            cursor.execute(f"""UPDATE {table} tgt
                 JOIN temp_redirects r
                     ON r.tr_lang = tgt.tp_lang AND r.tr_target = tgt.tp_article
                 JOIN {table} src
                     ON src.tp_lang = r.tr_lang AND src.tp_article = r.tr_source
-                SET tgt.{column} = tgt.{column} + src.{column}"""
-            )
-            cursor.execute(
-                f"""DELETE src FROM {table} src
+                SET tgt.{column} = tgt.{column} + src.{column}""")
+            cursor.execute(f"""DELETE src FROM {table} src
                 JOIN temp_redirects r
-                    ON r.tr_lang = src.tp_lang AND r.tr_source = src.tp_article"""
-            )
-        cursor.execute(
-            """DELETE p FROM temp_pagesize p
+                    ON r.tr_lang = src.tp_lang AND r.tr_source = src.tp_article""")
+        cursor.execute("""DELETE p FROM temp_pagesize p
             JOIN temp_redirects r
-                ON r.tr_lang = p.tp_lang AND r.tr_source = p.tp_article"""
-        )
+                ON r.tr_lang = p.tp_lang AND r.tr_source = p.tp_article""")
     wp10db.commit()
 
 
