@@ -5,8 +5,12 @@ from collections.abc import Generator, Iterable
 from typing import NamedTuple, cast
 
 from wp1.selection_tools.models import (
+    PageLangLinkCount,
+    PageLinkCount,
     PageMetrics,
+    PageSize,
     Pageview,
+    ScoredPage,
     ScoredTitle,
     WikiLang,
     decode_row,
@@ -364,55 +368,219 @@ def insert_temp_pageviews(
         )
 
 
-def insert_temp_pageviews_metrics(
+def insert_temp_redirects(
     wp10db: "Connection[Cursor]",
     lang: str,
-    rows: Iterable[PageMetrics],
-    commit: bool = True,
+    rows: Iterable[tuple[str, str]],
 ):
-    """Insert each page's size, links, language links and score in temp_pageviews."""
+    """Stage the redirects as source -> target title pairs.
+
+    Chains are flattened afterwards by resolve_temp_redirects.
+    """
     with wp10db.cursor() as cursor:
         cursor.executemany(
-            """INSERT INTO temp_pageviews
-                (tp_lang, tp_page_id, tp_article, tp_size, tp_links,
-                 tp_lang_links, tp_score)
-              VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """INSERT INTO temp_redirects (tr_lang, tr_source, tr_target)
+              VALUES (%s, %s, %s)
+              ON DUPLICATE KEY UPDATE tr_target = VALUES(tr_target)""",
+            ((lang, source, target) for source, target in rows),
+        )
+    wp10db.commit()
+
+
+def insert_temp_pagesize(
+    wp10db: "Connection[Cursor]",
+    lang: str,
+    rows: Iterable[PageSize],
+    commit: bool = True,
+):
+    """Insert each page's size in temp_pagesize."""
+    with wp10db.cursor() as cursor:
+        cursor.executemany(
+            """INSERT INTO temp_pagesize
+                (tp_lang, tp_page_id, tp_article, tp_size)
+              VALUES (%s, %s, %s, %s)
               ON DUPLICATE KEY UPDATE
                 tp_article = VALUES(tp_article),
-                tp_size = VALUES(tp_size),
-                tp_links = VALUES(tp_links),
-                tp_lang_links = VALUES(tp_lang_links),
+                tp_size = VALUES(tp_size)""",
+            ((lang, row.page_id, row.article, row.size) for row in rows),
+        )
+    if commit:
+        wp10db.commit()
+
+
+def insert_temp_pagelinks(
+    wp10db: "Connection[Cursor]",
+    lang: str,
+    rows: Iterable[PageLinkCount],
+    commit: bool = True,
+):
+    """Insert each page's links in temp_pagelinks."""
+    with wp10db.cursor() as cursor:
+        cursor.executemany(
+            """INSERT INTO temp_pagelinks
+                (tp_lang, tp_page_id, tp_article, tp_links)
+              VALUES (%s, %s, %s, %s)
+              ON DUPLICATE KEY UPDATE
+                tp_article = VALUES(tp_article),
+                tp_links = VALUES(tp_links)""",
+            ((lang, row.page_id, row.article, row.links) for row in rows),
+        )
+    if commit:
+        wp10db.commit()
+
+
+def insert_temp_pagelanglinks(
+    wp10db: "Connection[Cursor]",
+    lang: str,
+    rows: Iterable[PageLangLinkCount],
+    commit: bool = True,
+):
+    """Insert each page's language links in temp_pagelanglinks."""
+    with wp10db.cursor() as cursor:
+        cursor.executemany(
+            """INSERT INTO temp_pagelanglinks
+                (tp_lang, tp_page_id, tp_article, tp_lang_links)
+              VALUES (%s, %s, %s, %s)
+              ON DUPLICATE KEY UPDATE
+                tp_article = VALUES(tp_article),
+                tp_lang_links = VALUES(tp_lang_links)""",
+            ((lang, row.page_id, row.article, row.langlinks) for row in rows),
+        )
+    if commit:
+        wp10db.commit()
+
+
+def insert_temp_pagescores(
+    wp10db: "Connection[Cursor]",
+    lang: str,
+    rows: Iterable[ScoredPage],
+    commit: bool = True,
+):
+    """Insert each page's score in temp_pagescores."""
+    with wp10db.cursor() as cursor:
+        cursor.executemany(
+            """INSERT INTO temp_pagescores
+                (tp_lang, tp_page_id, tp_article, tp_score)
+              VALUES (%s, %s, %s, %s)
+              ON DUPLICATE KEY UPDATE
+                tp_article = VALUES(tp_article),
                 tp_score = VALUES(tp_score)""",
-            (
-                (
-                    lang,
-                    metrics.page_id,
-                    metrics.title,
-                    metrics.size,
-                    metrics.links,
-                    metrics.langlinks,
-                    metrics.score,
-                )
-                for metrics in rows
-            ),
+            ((lang, row.page_id, row.article, row.score) for row in rows),
         )
     if commit:
         wp10db.commit()
 
 
 def swap_temp_pageviews_to_scores(wp10db: "Connection[Cursor]"):
+    """Copy the staged pageviews into page_scores."""
     statement = """INSERT INTO page_scores
-            (ps_lang, ps_page_id, ps_article, ps_views, ps_size, ps_links,
-             ps_lang_links, ps_score)
-        SELECT tp_lang, tp_page_id, tp_article, tp_views, tp_size, tp_links,
-               tp_lang_links, tp_score
+            (ps_lang, ps_page_id, ps_article, ps_views)
+        SELECT tp_lang, tp_page_id, tp_article, tp_views
         FROM temp_pageviews
         ON DUPLICATE KEY UPDATE
             ps_article = VALUES(ps_article),
-            ps_views = VALUES(ps_views),
-            ps_size = VALUES(ps_size),
-            ps_links = VALUES(ps_links),
-            ps_lang_links = VALUES(ps_lang_links),
+            ps_views = VALUES(ps_views);"""
+    with wp10db.cursor() as cursor:
+        cursor.execute(statement)
+        wp10db.commit()
+
+
+def resolve_temp_redirects(wp10db: "Connection[Cursor]"):
+    """Follow redirect-to-redirect chains so each source maps to its target."""
+    with wp10db.cursor() as cursor:
+        while True:
+            cursor.execute(
+                """UPDATE temp_redirects r
+                JOIN temp_redirects n
+                    ON n.tr_lang = r.tr_lang AND n.tr_source = r.tr_target
+                SET r.tr_target = n.tr_target
+                WHERE r.tr_target <> n.tr_target"""
+            )
+            if cursor.rowcount == 0:
+                break
+    wp10db.commit()
+
+
+def fold_redirect_metrics(wp10db: "Connection[Cursor]"):
+    """Add each redirect page's staged metrics to the page it points at."""
+    folds = (
+        ("temp_pagelinks", "tp_links"),
+        ("temp_pagelanglinks", "tp_lang_links"),
+        ("temp_pageviews", "tp_views"),
+    )
+    with wp10db.cursor() as cursor:
+        for table, column in folds:
+            cursor.execute(
+                f"""UPDATE {table} tgt
+                JOIN temp_redirects r
+                    ON r.tr_lang = tgt.tp_lang AND r.tr_target = tgt.tp_article
+                JOIN {table} src
+                    ON src.tp_lang = r.tr_lang AND src.tp_article = r.tr_source
+                SET tgt.{column} = tgt.{column} + src.{column}"""
+            )
+            cursor.execute(
+                f"""DELETE src FROM {table} src
+                JOIN temp_redirects r
+                    ON r.tr_lang = src.tp_lang AND r.tr_source = src.tp_article"""
+            )
+        cursor.execute(
+            """DELETE p FROM temp_pagesize p
+            JOIN temp_redirects r
+                ON r.tr_lang = p.tp_lang AND r.tr_source = p.tp_article"""
+        )
+    wp10db.commit()
+
+
+def swap_temp_pagesize_to_scores(wp10db: "Connection[Cursor]"):
+    """Copy the staged page sizes into page_scores."""
+    statement = """INSERT INTO page_scores
+            (ps_lang, ps_page_id, ps_article, ps_size)
+        SELECT tp_lang, tp_page_id, tp_article, tp_size
+        FROM temp_pagesize
+        ON DUPLICATE KEY UPDATE
+            ps_article = VALUES(ps_article),
+            ps_size = VALUES(ps_size);"""
+    with wp10db.cursor() as cursor:
+        cursor.execute(statement)
+        wp10db.commit()
+
+
+def swap_temp_pagelinks_to_scores(wp10db: "Connection[Cursor]"):
+    """Copy the staged page links into page_scores."""
+    statement = """INSERT INTO page_scores
+            (ps_lang, ps_page_id, ps_article, ps_links)
+        SELECT tp_lang, tp_page_id, tp_article, tp_links
+        FROM temp_pagelinks
+        ON DUPLICATE KEY UPDATE
+            ps_article = VALUES(ps_article),
+            ps_links = VALUES(ps_links);"""
+    with wp10db.cursor() as cursor:
+        cursor.execute(statement)
+        wp10db.commit()
+
+
+def swap_temp_pagelanglinks_to_scores(wp10db: "Connection[Cursor]"):
+    """Copy the staged language links into page_scores."""
+    statement = """INSERT INTO page_scores
+            (ps_lang, ps_page_id, ps_article, ps_lang_links)
+        SELECT tp_lang, tp_page_id, tp_article, tp_lang_links
+        FROM temp_pagelanglinks
+        ON DUPLICATE KEY UPDATE
+            ps_article = VALUES(ps_article),
+            ps_lang_links = VALUES(ps_lang_links);"""
+    with wp10db.cursor() as cursor:
+        cursor.execute(statement)
+        wp10db.commit()
+
+
+def swap_temp_pagescores_to_scores(wp10db: "Connection[Cursor]"):
+    """Copy the staged scores into page_scores."""
+    statement = """INSERT INTO page_scores
+            (ps_lang, ps_page_id, ps_article, ps_score)
+        SELECT tp_lang, tp_page_id, tp_article, tp_score
+        FROM temp_pagescores
+        ON DUPLICATE KEY UPDATE
+            ps_article = VALUES(ps_article),
             ps_score = VALUES(ps_score);"""
     with wp10db.cursor() as cursor:
         cursor.execute(statement)
@@ -425,12 +593,50 @@ def truncate_temp_pageviews(wp10db: "Connection[Cursor]"):
     wp10db.commit()
 
 
+def truncate_temp_redirects(wp10db: "Connection[Cursor]"):
+    with wp10db.cursor() as cursor:
+        cursor.execute("TRUNCATE TABLE temp_redirects;")
+    wp10db.commit()
+
+
+def truncate_temp_pagesize(wp10db: "Connection[Cursor]"):
+    with wp10db.cursor() as cursor:
+        cursor.execute("TRUNCATE TABLE temp_pagesize;")
+    wp10db.commit()
+
+
+def truncate_temp_pagelinks(wp10db: "Connection[Cursor]"):
+    with wp10db.cursor() as cursor:
+        cursor.execute("TRUNCATE TABLE temp_pagelinks;")
+    wp10db.commit()
+
+
+def truncate_temp_pagelanglinks(wp10db: "Connection[Cursor]"):
+    with wp10db.cursor() as cursor:
+        cursor.execute("TRUNCATE TABLE temp_pagelanglinks;")
+    wp10db.commit()
+
+
+def truncate_temp_pagescores(wp10db: "Connection[Cursor]"):
+    with wp10db.cursor() as cursor:
+        cursor.execute("TRUNCATE TABLE temp_pagescores;")
+    wp10db.commit()
+
+
 def finalize_page_scores(wp10db: "Connection[Cursor]"):
-    """Run the delayed final update of page_scores from temp_pageviews."""
-    logger.debug("Swapping data from temp_pageviews table to page_scores table")
+    """Run the delayed final update of page_scores from the temp tables."""
+    logger.debug("Swapping data from the temp tables to the page_scores table")
     swap_temp_pageviews_to_scores(wp10db)
+    swap_temp_pagesize_to_scores(wp10db)
+    swap_temp_pagelinks_to_scores(wp10db)
+    swap_temp_pagelanglinks_to_scores(wp10db)
+    swap_temp_pagescores_to_scores(wp10db)
     reset_missing_articles_pageviews(wp10db)
     truncate_temp_pageviews(wp10db)
+    truncate_temp_pagesize(wp10db)
+    truncate_temp_pagelinks(wp10db)
+    truncate_temp_pagelanglinks(wp10db)
+    truncate_temp_pagescores(wp10db)
     logger.info("Transaction Done")
 
 
@@ -439,12 +645,7 @@ def load_temp_pageviews(
     filter_lang: str | None = None,
     commit_after: int = 50000,
 ):
-    """Download the pageview dump and stage the views in temp_pageviews.
-
-    The final update into page_scores is deliberately left to
-    finalize_page_scores so that the selection tools can add the links,
-    language links and score before the swap.
-    """
+    """Download the pageview dump and stage the views in temp_pageviews"""
     download_pageviews()
 
     if filter_lang is None:

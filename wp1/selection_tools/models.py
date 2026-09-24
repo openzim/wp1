@@ -60,7 +60,7 @@ class LangLink(NamedTuple):
 class Redirect(NamedTuple):
     """A redirecting page and the title it points to"""
 
-    source_id: int
+    source_title: str
     target_title: str
 
 
@@ -95,6 +95,38 @@ class ScoredTitle(NamedTuple):
     """An article title and its score."""
 
     title: str
+    score: int
+
+
+class PageSize(NamedTuple):
+    """A page and its size, as staged in temp_pagesize."""
+
+    page_id: int
+    article: str
+    size: int
+
+
+class PageLinkCount(NamedTuple):
+    """A page and how many links point to it, as staged in temp_pagelinks."""
+
+    page_id: int
+    article: str
+    links: int
+
+
+class PageLangLinkCount(NamedTuple):
+    """A page and how many language links it has, staged in temp_pagelanglinks."""
+
+    page_id: int
+    article: str
+    langlinks: int
+
+
+class ScoredPage(NamedTuple):
+    """A page and its score, as staged in temp_pagescores."""
+
+    page_id: int
+    article: str
     score: int
 
 

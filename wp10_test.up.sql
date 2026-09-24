@@ -156,6 +156,50 @@ CREATE TABLE `temp_pageviews` (
   KEY `idx_tp_article` (tp_article)
 );
 
+CREATE TABLE `temp_pagesize` (
+  `tp_lang` varbinary(255) NOT NULL,
+  `tp_page_id` int(11) NOT NULL,
+  `tp_article` varbinary(1024) DEFAULT NULL,
+  `tp_size` int(11) DEFAULT 0,
+  PRIMARY KEY (`tp_lang`,`tp_page_id`),
+  KEY `idx_tp_article` (tp_article)
+);
+
+CREATE TABLE `temp_pagelinks` (
+  `tp_lang` varbinary(255) NOT NULL,
+  `tp_page_id` int(11) NOT NULL,
+  `tp_article` varbinary(1024) DEFAULT NULL,
+  `tp_links` int(11) DEFAULT 0,
+  PRIMARY KEY (`tp_lang`,`tp_page_id`),
+  KEY `idx_tp_article` (tp_article)
+);
+
+CREATE TABLE `temp_pagelanglinks` (
+  `tp_lang` varbinary(255) NOT NULL,
+  `tp_page_id` int(11) NOT NULL,
+  `tp_article` varbinary(1024) DEFAULT NULL,
+  `tp_lang_links` int(11) DEFAULT 0,
+  PRIMARY KEY (`tp_lang`,`tp_page_id`),
+  KEY `idx_tp_article` (tp_article)
+);
+
+CREATE TABLE `temp_pagescores` (
+  `tp_lang` varbinary(255) NOT NULL,
+  `tp_page_id` int(11) NOT NULL,
+  `tp_article` varbinary(1024) DEFAULT NULL,
+  `tp_score` int(11) DEFAULT 0,
+  PRIMARY KEY (`tp_lang`,`tp_page_id`),
+  KEY `idx_tp_article` (tp_article)
+);
+
+CREATE TABLE `temp_redirects` (
+  `tr_lang` varbinary(255) NOT NULL,
+  `tr_source` varbinary(1024) NOT NULL,
+  `tr_target` varbinary(1024) DEFAULT NULL,
+  PRIMARY KEY (`tr_lang`,`tr_source`),
+  KEY `idx_tr_target` (`tr_lang`,`tr_target`)
+);
+
 CREATE TABLE `page_scores` (
   `ps_lang` varbinary(255) NOT NULL,
   `ps_page_id` int(11) NOT NULL,

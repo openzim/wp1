@@ -8,7 +8,9 @@ import requests
 from wp1.base_db_test import BaseWpOneDbTest
 from wp1.exceptions import Wp1ScoreProcessingError
 from wp1.selection_tools import scores
-from wp1.selection_tools.models import PageMetrics, Pageview
+from wp1.selection_tools.models import (
+    Pageview,
+)
 
 pageview_text = b"""af.wikipedia 1701 1402 desktop 4 F1
 af.wikipedia 1701 1402 mobile-web 3 O2T1
@@ -485,49 +487,34 @@ class ScoresTest(BaseWpOneDbTest):
             n = cursor.fetchone()["cnt"]
             self.assertEqual(1, n)
 
-    def test_stage_temp_page_metrics_updates_existing_row(self):
-        scores.insert_temp_pageviews(self.wp10db, "en", "Statue_of_Liberty", "100", 42)
-        metrics = [PageMetrics("Statue_of_Liberty", 100, 4096, 7, 3, 15, (), 999)]
-
-        scores.insert_temp_pageviews_metrics(self.wp10db, "en", metrics)
-
-        with self.wp10db.cursor() as cursor:
-            cursor.execute("SELECT * FROM temp_pageviews WHERE tp_page_id = 100")
-            result = cursor.fetchone()
-            self.assertEqual(result["tp_views"], 42)
-            self.assertEqual(result["tp_size"], 4096)
-            self.assertEqual(result["tp_links"], 7)
-            self.assertEqual(result["tp_lang_links"], 3)
-            self.assertEqual(result["tp_score"], 999)
-
-    def test_stage_temp_page_metrics_inserts_missing_row(self):
-        metrics = [PageMetrics("Eiffel_Tower", 200, 8192, 5, 1, 9, (), 1234)]
-
-        scores.insert_temp_pageviews_metrics(self.wp10db, "en", metrics)
-
-        with self.wp10db.cursor() as cursor:
-            cursor.execute("SELECT * FROM temp_pageviews WHERE tp_page_id = 200")
-            result = cursor.fetchone()
-            self.assertEqual(result["tp_views"], 0)
-            self.assertEqual(result["tp_size"], 8192)
-            self.assertEqual(result["tp_links"], 5)
-            self.assertEqual(result["tp_lang_links"], 1)
-            self.assertEqual(result["tp_score"], 1234)
-
-    def test_swap_temp_pageviews_to_scores_with_metrics(self):
+    def test_swap_temp_page_metrics_to_scores(self):
         with self.wp10db.cursor() as cursor:
             cursor.execute(
-                "INSERT INTO temp_pageviews (tp_lang, tp_article, tp_page_id, "
-                "tp_views, tp_size, tp_links, tp_lang_links, tp_score)"
-                'VALUES ("en", "Statue_of_Liberty", 1234, 100, 4096, 7, 3, 555)'
+                "INSERT INTO temp_pagesize (tp_lang, tp_article, tp_page_id, tp_size)"
+                'VALUES ("en", "Statue_of_Liberty", 1234, 4096)'
+            )
+            cursor.execute(
+                "INSERT INTO temp_pagelinks (tp_lang, tp_article, tp_page_id, tp_links)"
+                'VALUES ("en", "Statue_of_Liberty", 1234, 7)'
+            )
+            cursor.execute(
+                "INSERT INTO temp_pagelanglinks "
+                "(tp_lang, tp_article, tp_page_id, tp_lang_links)"
+                'VALUES ("en", "Statue_of_Liberty", 1234, 3)'
+            )
+            cursor.execute(
+                "INSERT INTO temp_pagescores (tp_lang, tp_article, tp_page_id, tp_score)"
+                'VALUES ("en", "Statue_of_Liberty", 1234, 555)'
             )
 
-        scores.swap_temp_pageviews_to_scores(self.wp10db)
+        scores.swap_temp_pagesize_to_scores(self.wp10db)
+        scores.swap_temp_pagelinks_to_scores(self.wp10db)
+        scores.swap_temp_pagelanglinks_to_scores(self.wp10db)
+        scores.swap_temp_pagescores_to_scores(self.wp10db)
 
         with self.wp10db.cursor() as cursor:
             cursor.execute("SELECT * FROM page_scores WHERE ps_page_id = 1234")
             result = cursor.fetchone()
-            self.assertEqual(result["ps_views"], 100)
             self.assertEqual(result["ps_size"], 4096)
             self.assertEqual(result["ps_links"], 7)
             self.assertEqual(result["ps_lang_links"], 3)
@@ -536,9 +523,25 @@ class ScoresTest(BaseWpOneDbTest):
     def test_finalize_page_scores(self):
         with self.wp10db.cursor() as cursor:
             cursor.execute(
-                "INSERT INTO temp_pageviews (tp_lang, tp_article, tp_page_id, "
-                "tp_views, tp_size, tp_links, tp_lang_links, tp_score)"
-                'VALUES ("en", "Statue_of_Liberty", 1234, 100, 4096, 7, 3, 555)'
+                "INSERT INTO temp_pageviews (tp_lang, tp_article, tp_page_id, tp_views)"
+                'VALUES ("en", "Statue_of_Liberty", 1234, 100)'
+            )
+            cursor.execute(
+                "INSERT INTO temp_pagesize (tp_lang, tp_article, tp_page_id, tp_size)"
+                'VALUES ("en", "Statue_of_Liberty", 1234, 4096)'
+            )
+            cursor.execute(
+                "INSERT INTO temp_pagelinks (tp_lang, tp_article, tp_page_id, tp_links)"
+                'VALUES ("en", "Statue_of_Liberty", 1234, 7)'
+            )
+            cursor.execute(
+                "INSERT INTO temp_pagelanglinks "
+                "(tp_lang, tp_article, tp_page_id, tp_lang_links)"
+                'VALUES ("en", "Statue_of_Liberty", 1234, 3)'
+            )
+            cursor.execute(
+                "INSERT INTO temp_pagescores (tp_lang, tp_article, tp_page_id, tp_score)"
+                'VALUES ("en", "Statue_of_Liberty", 1234, 555)'
             )
 
         scores.finalize_page_scores(self.wp10db)
