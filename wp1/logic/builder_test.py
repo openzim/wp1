@@ -1,11 +1,15 @@
 import datetime
+import json
 from unittest.mock import ANY, MagicMock, call, patch
 
 import attr
+from redis.exceptions import RedisError
 
 from wp1.base_db_test import BaseWpOneDbTest
+from wp1.config import override_settings
 from wp1.environment import Environment
 from wp1.exceptions import (
+    BuilderDeleteConfirmationError,
     InvalidZimTitleError,
     ObjectNotFoundError,
     UserNotAuthorizedError,
@@ -25,6 +29,7 @@ class BuilderTest(BaseWpOneDbTest):
         "b_name": b"My Builder",
         "b_user_id": b"1234",
         "b_project": b"en.wikipedia.fake",
+        "b_dbname": None,
         "b_model": b"wp1.selection.models.simple",
         "b_params": b'{"list": ["a", "b", "c"]}',
         "b_created_at": b"20191225044444",
@@ -52,6 +57,7 @@ class BuilderTest(BaseWpOneDbTest):
             "z_status": "NOT_REQUESTED",
             "z_is_deleted": None,
             "active_schedule": None,
+            "has_failed_references": False,
         }
     ]
 
@@ -74,6 +80,7 @@ class BuilderTest(BaseWpOneDbTest):
             "z_status": "NOT_REQUESTED",
             "z_is_deleted": None,
             "active_schedule": None,
+            "has_failed_references": False,
         },
         {
             "id": "1a-2b-3c-4d",
@@ -93,6 +100,7 @@ class BuilderTest(BaseWpOneDbTest):
             "z_status": "NOT_REQUESTED",
             "z_is_deleted": None,
             "active_schedule": None,
+            "has_failed_references": False,
         },
     ]
 
@@ -115,6 +123,7 @@ class BuilderTest(BaseWpOneDbTest):
             "z_status": None,
             "z_is_deleted": None,
             "active_schedule": None,
+            "has_failed_references": False,
         }
     ]
 
@@ -137,6 +146,7 @@ class BuilderTest(BaseWpOneDbTest):
             "z_status": "NOT_REQUESTED",
             "z_is_deleted": None,
             "active_schedule": None,
+            "has_failed_references": False,
         }
     ]
 
@@ -159,6 +169,7 @@ class BuilderTest(BaseWpOneDbTest):
             "z_status": "FILE_READY",
             "z_is_deleted": True,
             "active_schedule": None,
+            "has_failed_references": False,
         }
     ]
 
@@ -184,6 +195,61 @@ class BuilderTest(BaseWpOneDbTest):
             )
         self.wp10db.commit()
         return value_dict["b_id"]
+
+    def _insert_builder_record(
+        self,
+        id_,
+        name,
+        user_id="1234",
+        project="en.wikipedia.fake",
+        model="wp1.selection.models.simple",
+        params=None,
+        current_version=0,
+    ):
+        if params is None:
+            params = {"list": ["a", "b", "c"]}
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO builders
+               (b_id, b_name, b_user_id, b_project, b_params, b_model,
+                b_created_at, b_updated_at, b_current_version,
+                b_selection_zim_version)
+             VALUES
+               (%s, %s, %s, %s, %s, %s,
+                '20191225044444', '20191225044444', %s, 0)
+          """,
+                (
+                    id_.encode("utf-8"),
+                    name.encode("utf-8"),
+                    str(user_id).encode("utf-8"),
+                    project.encode("utf-8"),
+                    json.dumps(params).encode("utf-8"),
+                    model.encode("utf-8"),
+                    current_version,
+                ),
+            )
+        self.wp10db.commit()
+        return id_.encode("utf-8")
+
+    def _get_builder_params(self, builder_id):
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "SELECT b_params FROM builders WHERE b_id = %s", (builder_id,)
+            )
+            row = cursor.fetchone()
+        if row is None:
+            return None
+        return json.loads(row["b_params"].decode("utf-8"))
+
+    def _get_builder_updated_at(self, builder_id):
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "SELECT b_updated_at FROM builders WHERE b_id = %s", (builder_id,)
+            )
+            row = cursor.fetchone()
+        if row is None:
+            return None
+        return row["b_updated_at"]
 
     def _insert_zim_schedule(
         self,
@@ -227,17 +293,21 @@ class BuilderTest(BaseWpOneDbTest):
         object_key="selections/foo/1234/name.tsv",
         builder_id=b"1a-2b-3c-4d",
         has_errors=False,
+        error_messages=None,
         zim_file_ready=False,
         zim_task_id="5678",
         skip_zim=False,
         zim_schedule_id=b"schedule_123",
+        status=None,
     ):
-        if has_errors:
-            status = "CAN_RETRY"
-            error_messages = '{"error_messages":["There was an error"]}'
-        else:
-            status = "OK"
-            error_messages = None
+        if status is None:
+            if has_errors:
+                status = "CAN_RETRY"
+                if error_messages is None:
+                    error_messages = '{"error_messages":["There was an error"]}'
+            else:
+                status = "OK"
+                error_messages = None
 
         zimfarm_status = b"NOT_REQUESTED"
         zim_file_updated_at = None
@@ -390,6 +460,32 @@ class BuilderTest(BaseWpOneDbTest):
         actual = self._get_builder_by_user_id()
         self.assertEqual(expected, actual)
 
+    def test_create_or_update_builder_update_not_found(self):
+        self._insert_builder()
+        with self.assertRaises(ObjectNotFoundError):
+            logic_builder.create_or_update_builder(
+                self.wp10db,
+                "Builder 2",
+                "1234",
+                "zz.wikipedia.fake",
+                {"list": ["a", "b", "c", "d"]},
+                "wp1.selection.models.simple",
+                builder_id="inexistent-id",
+            )
+
+    def test_create_or_update_builder_update_not_owner(self):
+        id_ = self._insert_builder()
+        with self.assertRaises(UserNotAuthorizedError):
+            logic_builder.create_or_update_builder(
+                self.wp10db,
+                "Builder 2",
+                "5678",
+                "zz.wikipedia.fake",
+                {"list": ["a", "b", "c", "d"]},
+                "wp1.selection.models.simple",
+                builder_id=id_,
+            )
+
     @patch(
         "wp1.models.wp10.builder.utcnow",
         return_value=datetime.datetime(2019, 12, 25, 4, 44, 44),
@@ -415,7 +511,8 @@ class BuilderTest(BaseWpOneDbTest):
         self.builder.b_id = id_
         self.assertEqual(self.builder, actual)
 
-    def test_materialize_builder_with_connections(self):
+    @patch("wp1.logic.builder.logic_sites.dbname_for_project", return_value="enwiki")
+    def test_materialize_builder_with_connections(self, mock_dbname_for_project):
         s3 = MagicMock()
         redis = MagicMock()
 
@@ -437,16 +534,63 @@ class BuilderTest(BaseWpOneDbTest):
         materialize_mock.materialize.assert_called_once_with(
             ANY, ANY, self.builder, "text/tab-separated-values", 2
         )
+        mock_dbname_for_project.assert_called_once_with(redis, "en.wikipedia.fake")
+        self.assertEqual(b"enwiki", self.builder.b_dbname)
 
         actual = self._get_builder_by_user_id()
         expected = dict(**self.expected_builder)
         expected["b_current_version"] = 2
         expected["b_selection_zim_version"] = 2
+        expected["b_dbname"] = b"enwiki"
         self.assertEqual(expected, actual)
 
+    @patch("wp1.logic.builder.logic_sites.dbname_for_project", return_value=None)
+    def test_materialize_builder_dbname_not_found(self, mock_dbname_for_project):
+        TestBuilderClass = MagicMock()
+        TestBuilderClass.return_value = MagicMock()
+
+        self._insert_builder()
+        self._insert_selection(1, "text/tab-separated-values")
+
+        logic_builder.materialize_builder(
+            TestBuilderClass,
+            self.builder,
+            "text/tab-separated-values",
+            MagicMock(),
+            MagicMock(),
+            self.wp10db,
+        )
+        self.assertIsNone(self.builder.b_dbname)
+        self.assertIsNone(self._get_builder_by_user_id()["b_dbname"])
+
+    @patch(
+        "wp1.logic.builder.logic_sites.dbname_for_project",
+        side_effect=RedisError("sitematrix down"),
+    )
+    def test_materialize_builder_dbname_resolution_error(self, mock_dbname_for_project):
+        TestBuilderClass = MagicMock()
+        TestBuilderClass.return_value = MagicMock()
+
+        self._insert_builder()
+        self._insert_selection(1, "text/tab-separated-values")
+
+        logic_builder.materialize_builder(
+            TestBuilderClass,
+            self.builder,
+            "text/tab-separated-values",
+            MagicMock(),
+            MagicMock(),
+            self.wp10db,
+        )
+        self.assertIsNone(self.builder.b_dbname)
+        self.assertIsNone(self._get_builder_by_user_id()["b_dbname"])
+
+    @patch("wp1.logic.builder.logic_sites.dbname_for_project", return_value=None)
     @patch("wp1.logic.builder.wp10_connect")
     @patch("wp1.logic.builder.connect_storage")
-    def test_materialize_builder(self, mock_connect_storage, mock_connect_wp10):
+    def test_materialize_builder(
+        self, mock_connect_storage, mock_connect_wp10, mock_dbname_for_project
+    ):
         mock_connect_wp10.return_value = self.wp10db
         TestBuilderClass = MagicMock()
         materialize_mock = MagicMock()
@@ -473,6 +617,7 @@ class BuilderTest(BaseWpOneDbTest):
         expected["b_selection_zim_version"] = 2
         self.assertEqual(expected, actual)
 
+    @patch("wp1.logic.builder.logic_sites.dbname_for_project", return_value=None)
     @patch("wp1.logic.builder.wp10_connect")
     @patch("wp1.logic.builder.redis_connect")
     @patch("wp1.logic.builder.connect_storage")
@@ -483,6 +628,7 @@ class BuilderTest(BaseWpOneDbTest):
         mock_connect_storage,
         mock_redis_connect,
         mock_connect_wp10,
+        mock_dbname_for_project,
     ):
         s3 = MagicMock()
         redis = MagicMock()
@@ -649,6 +795,140 @@ class BuilderTest(BaseWpOneDbTest):
             self.expected_list_with_zimfarm_status, article_data
         )
 
+    def _insert_combinator_scenario(self, exclude_status="FAILED", include_status="OK"):
+        """(ref-a OR ref-b) NOT ref-c, with a stale-OK combinator selection."""
+        self._insert_builder_record("ref-a", "Ref A", current_version=1)
+        self._insert_selection(
+            "sel-a", "text/tab-separated-values", builder_id=b"ref-a", skip_zim=True
+        )
+        self._insert_builder_record("ref-b", "Ref B", current_version=1)
+        self._insert_selection(
+            "sel-b",
+            "text/tab-separated-values",
+            builder_id=b"ref-b",
+            skip_zim=True,
+            status=include_status,
+        )
+        self._insert_builder_record("ref-c", "Ref C", current_version=1)
+        self._insert_selection(
+            "sel-c",
+            "text/tab-separated-values",
+            builder_id=b"ref-c",
+            skip_zim=True,
+            status=exclude_status,
+        )
+        self._insert_builder_record(
+            "combo",
+            "My Combinator",
+            model="wp1.selection.models.combinator",
+            current_version=1,
+            params={
+                "include": {"builders": ["ref-a", "ref-b"], "operation": "union"},
+                "exclude": {"builders": ["ref-c"], "operation": "union"},
+            },
+        )
+        self._insert_selection(
+            "sel-combo", "text/tab-separated-values", builder_id=b"combo", skip_zim=True
+        )
+
+    def test_get_builders_flags_failed_exclude_reference(self):
+        self._insert_combinator_scenario(exclude_status="FAILED")
+
+        article_data = logic_builder.get_builders_with_selections(self.wp10db, "1234")
+
+        by_id = {row["id"]: row for row in article_data}
+        self.assertTrue(by_id["combo"]["has_failed_references"])
+        self.assertFalse(by_id["ref-a"]["has_failed_references"])
+        self.assertFalse(by_id["ref-c"]["has_failed_references"])
+
+    def test_get_builders_flags_retryable_include_reference(self):
+        self._insert_combinator_scenario(
+            exclude_status="OK", include_status="CAN_RETRY"
+        )
+
+        article_data = logic_builder.get_builders_with_selections(self.wp10db, "1234")
+
+        by_id = {row["id"]: row for row in article_data}
+        self.assertTrue(by_id["combo"]["has_failed_references"])
+
+    def test_get_builders_no_flag_when_references_ok(self):
+        self._insert_combinator_scenario(exclude_status="OK")
+
+        article_data = logic_builder.get_builders_with_selections(self.wp10db, "1234")
+
+        by_id = {row["id"]: row for row in article_data}
+        self.assertFalse(by_id["combo"]["has_failed_references"])
+
+    def test_failed_reference_errors_for_exclude_reference(self):
+        self._insert_combinator_scenario(exclude_status="FAILED")
+        builder = logic_builder.get_builder(self.wp10db, b"combo")
+
+        actual = logic_builder.failed_reference_errors(self.wp10db, builder)
+
+        self.assertEqual(
+            [
+                {
+                    "builder_id": "ref-c",
+                    "builder_name": "Ref C",
+                    "builder_model": "wp1.selection.models.simple",
+                    "message": "Referenced builder Ref C latest selection failed",
+                    "status": "FAILED",
+                    "code": "REFERENCED_SELECTION_FAILED",
+                    "reason": "latest selection failed",
+                    "action": "Open this list, fix the failed selection, then update this Combinator.",
+                }
+            ],
+            actual,
+        )
+
+    def test_failed_reference_errors_for_non_meta_builder(self):
+        self._insert_builder()
+        builder = logic_builder.get_builder(self.wp10db, b"1a-2b-3c-4d")
+
+        actual = logic_builder.failed_reference_errors(self.wp10db, builder)
+
+        self.assertEqual([], actual)
+
+    def test_derived_selection_error_fatal(self):
+        self._insert_combinator_scenario(
+            exclude_status="FAILED", include_status="CAN_RETRY"
+        )
+        builder = logic_builder.get_builder(self.wp10db, b"combo")
+
+        actual = logic_builder.derived_selection_error(self.wp10db, builder)
+
+        self.assertEqual("FAILED", actual["status"])
+        self.assertEqual("tsv", actual["ext"])
+        self.assertEqual(
+            ["ref-b", "ref-c"],
+            [error["builder_id"] for error in actual["referenced_builder_errors"]],
+        )
+        self.assertEqual(
+            [
+                "Referenced builder Ref B latest selection failed but can be retried",
+                "Referenced builder Ref C latest selection failed",
+            ],
+            actual["error_messages"],
+        )
+
+    def test_derived_selection_error_retryable(self):
+        self._insert_combinator_scenario(
+            exclude_status="CAN_RETRY", include_status="OK"
+        )
+        builder = logic_builder.get_builder(self.wp10db, b"combo")
+
+        actual = logic_builder.derived_selection_error(self.wp10db, builder)
+
+        self.assertEqual("CAN_RETRY", actual["status"])
+
+    def test_derived_selection_error_none_when_references_ok(self):
+        self._insert_combinator_scenario(exclude_status="OK")
+        builder = logic_builder.get_builder(self.wp10db, b"combo")
+
+        actual = logic_builder.derived_selection_error(self.wp10db, builder)
+
+        self.assertIsNone(actual)
+
     def test_update_builder_doesnt_exist(self):
         actual = logic_builder.update_builder(self.wp10db, self.builder)
         self.assertFalse(actual)
@@ -729,7 +1009,7 @@ class BuilderTest(BaseWpOneDbTest):
         actual = logic_builder.latest_url_for(150, "foo/bar-baz")
         self.assertIsNone(actual)
 
-    @patch("wp1.logic.builder.CREDENTIALS", {})
+    @override_settings(CLIENT_API_URL=None)
     def test_latest_url_for_no_server_url(self):
         actual = logic_builder.latest_url_for(15, "text/tab-separated-values")
         self.assertIsNone(actual)
@@ -853,6 +1133,286 @@ class BuilderTest(BaseWpOneDbTest):
         actual = logic_builder.latest_zim_file_url_for(self.wp10db, builder_id)
 
         self.assertIsNone(actual)
+
+    def test_get_builder_delete_impact_no_references(self):
+        self._insert_builder_record("target-builder", "Target Builder")
+
+        actual = logic_builder.get_builder_delete_impact(
+            self.wp10db, "1234", "target-builder"
+        )
+
+        self.assertEqual(
+            {
+                "builder": {
+                    "id": "target-builder",
+                    "name": "Target Builder",
+                    "project": "en.wikipedia.fake",
+                    "model": "wp1.selection.models.simple",
+                },
+                "affected_combinators": [],
+            },
+            actual,
+        )
+
+    def test_get_builder_delete_impact_with_references(self):
+        self._insert_builder_record("target-builder", "Target Builder")
+        self._insert_builder_record("other-builder", "Other Builder")
+        self._insert_builder_record(
+            "combo-keep",
+            "Keep Combo",
+            model="wp1.selection.models.combinator",
+            params={
+                "include": {
+                    "builders": ["target-builder", "other-builder"],
+                    "operation": "union",
+                },
+                "exclude": {"builders": ["target-builder"], "operation": "union"},
+            },
+        )
+        self._insert_builder_record(
+            "combo-empty",
+            "Empty Combo",
+            model="wp1.selection.models.combinator",
+            params={
+                "include": {"builders": ["target-builder"], "operation": "union"},
+                "exclude": {"builders": [], "operation": "union"},
+            },
+        )
+
+        actual = logic_builder.get_builder_delete_impact(
+            self.wp10db, "1234", "target-builder"
+        )
+        affected = sorted(actual["affected_combinators"], key=lambda item: item["id"])
+
+        self.assertEqual(
+            [
+                {
+                    "id": "combo-empty",
+                    "name": "Empty Combo",
+                    "project": "en.wikipedia.fake",
+                    "referenced_in": ["include"],
+                    "remaining_include_builder_count": 0,
+                    "will_be_auto_deleted": True,
+                },
+                {
+                    "id": "combo-keep",
+                    "name": "Keep Combo",
+                    "project": "en.wikipedia.fake",
+                    "referenced_in": ["include", "exclude"],
+                    "remaining_include_builder_count": 1,
+                    "will_be_auto_deleted": False,
+                },
+            ],
+            affected,
+        )
+
+    @patch("wp1.logic.builder.time.strftime", return_value="20200102030405")
+    @patch("wp1.logic.builder.queues.enqueue_materialize")
+    def test_rebuild_referencing_combinators_enqueues_and_marks_pending(
+        self, mock_enqueue, mock_strftime
+    ):
+        self._insert_builder_record("target-builder", "Target Builder")
+        self._insert_builder_record("other-builder", "Other Builder")
+        self._insert_builder_record(
+            "combo-keep",
+            "Keep Combo",
+            model="wp1.selection.models.combinator",
+            params={
+                "include": {
+                    "builders": ["target-builder", "other-builder"],
+                    "operation": "union",
+                },
+                "exclude": {"builders": [], "operation": "union"},
+            },
+        )
+        target_builder = logic_builder.get_builder(self.wp10db, "target-builder")
+
+        actual = logic_builder._rebuild_referencing_combinators(
+            MagicMock(), self.wp10db, target_builder
+        )
+
+        self.assertEqual(["combo-keep"], actual)
+        self.assertEqual(b"20200102030405", self._get_builder_updated_at(b"combo-keep"))
+        mock_enqueue.assert_called_once()
+        mock_strftime.assert_called_once()
+
+    @patch("wp1.logic.builder.time.strftime", return_value="20200102030405")
+    @patch("wp1.logic.builder.queues.enqueue_materialize")
+    def test_rebuild_referencing_combinators_skips_pending_mark_on_enqueue_error(
+        self, mock_enqueue, mock_strftime
+    ):
+        mock_enqueue.side_effect = RedisError("Redis unavailable")
+        self._insert_builder_record("target-builder", "Target Builder")
+        self._insert_builder_record(
+            "combo-keep",
+            "Keep Combo",
+            model="wp1.selection.models.combinator",
+            params={
+                "include": {"builders": ["target-builder"], "operation": "union"},
+                "exclude": {"builders": [], "operation": "union"},
+            },
+        )
+        target_builder = logic_builder.get_builder(self.wp10db, "target-builder")
+
+        actual = logic_builder._rebuild_referencing_combinators(
+            MagicMock(), self.wp10db, target_builder
+        )
+
+        self.assertEqual([], actual)
+        self.assertEqual(b"20191225044444", self._get_builder_updated_at(b"combo-keep"))
+        mock_strftime.assert_not_called()
+
+    @patch("wp1.logic.builder.queues.enqueue_materialize")
+    @patch("wp1.logic.builder.queues.cancel_scheduled_job")
+    @patch("wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id")
+    @patch("wp1.logic.builder.logic_selection.delete_keys_from_storage")
+    def test_delete_builder_updates_kept_combinator(
+        self, mock_delete_keys, mock_delete_schedule, mock_cancel_job, mock_enqueue
+    ):
+        mock_delete_keys.return_value = True
+        self._insert_builder_record("target-builder", "Target Builder")
+        self._insert_builder_record("other-builder", "Other Builder")
+        self._insert_builder_record(
+            "combo-keep",
+            "Keep Combo",
+            model="wp1.selection.models.combinator",
+            params={
+                "include": {
+                    "builders": ["target-builder", "other-builder"],
+                    "operation": "union",
+                },
+                "exclude": {"builders": ["target-builder"], "operation": "union"},
+            },
+        )
+
+        actual = logic_builder.delete_builder(
+            self.wp10db,
+            "1234",
+            "target-builder",
+            confirm_builder_name="Target Builder",
+        )
+
+        self.assertTrue(actual["db_delete_success"])
+        self.assertEqual(["combo-keep"], actual["updated_combinator_ids"])
+        self.assertEqual(
+            {
+                "include": {"builders": ["other-builder"], "operation": "union"},
+                "exclude": {"builders": [], "operation": "union"},
+            },
+            self._get_builder_params(b"combo-keep"),
+        )
+        mock_enqueue.assert_called_once()
+
+    @patch("wp1.logic.builder.queues.enqueue_materialize")
+    @patch("wp1.logic.builder.queues.cancel_scheduled_job")
+    @patch("wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id")
+    @patch("wp1.logic.builder.logic_selection.delete_keys_from_storage")
+    def test_delete_builder_deletes_selected_combinator(
+        self, mock_delete_keys, mock_delete_schedule, mock_cancel_job, mock_enqueue
+    ):
+        mock_delete_keys.return_value = True
+        self._insert_builder_record("target-builder", "Target Builder")
+        self._insert_builder_record("other-builder", "Other Builder")
+        self._insert_builder_record(
+            "combo-delete",
+            "Delete Combo",
+            model="wp1.selection.models.combinator",
+            params={
+                "include": {
+                    "builders": ["target-builder", "other-builder"],
+                    "operation": "union",
+                },
+                "exclude": {"builders": [], "operation": "union"},
+            },
+        )
+
+        actual = logic_builder.delete_builder(
+            self.wp10db,
+            "1234",
+            "target-builder",
+            delete_combinator_ids=["combo-delete"],
+            confirm_builder_name="Target Builder",
+        )
+
+        self.assertTrue(actual["db_delete_success"])
+        self.assertEqual(["combo-delete"], actual["deleted_combinator_ids"])
+        self.assertIsNone(self._get_builder_params(b"combo-delete"))
+        mock_enqueue.assert_not_called()
+
+    @patch("wp1.logic.builder.queues.enqueue_materialize")
+    @patch("wp1.logic.builder.queues.cancel_scheduled_job")
+    @patch("wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id")
+    @patch("wp1.logic.builder.logic_selection.delete_keys_from_storage")
+    def test_delete_builder_auto_deletes_empty_combinator(
+        self, mock_delete_keys, mock_delete_schedule, mock_cancel_job, mock_enqueue
+    ):
+        mock_delete_keys.return_value = True
+        self._insert_builder_record("target-builder", "Target Builder")
+        self._insert_builder_record(
+            "combo-empty",
+            "Empty Combo",
+            model="wp1.selection.models.combinator",
+            params={
+                "include": {"builders": ["target-builder"], "operation": "union"},
+                "exclude": {"builders": [], "operation": "union"},
+            },
+        )
+
+        actual = logic_builder.delete_builder(
+            self.wp10db,
+            "1234",
+            "target-builder",
+            confirm_builder_name="Target Builder",
+        )
+
+        self.assertTrue(actual["db_delete_success"])
+        self.assertEqual(["combo-empty"], actual["auto_deleted_combinator_ids"])
+        self.assertIsNone(self._get_builder_params(b"combo-empty"))
+        mock_enqueue.assert_not_called()
+
+    @patch("wp1.logic.builder.queues.enqueue_materialize")
+    @patch("wp1.logic.builder.queues.cancel_scheduled_job")
+    @patch("wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id")
+    @patch("wp1.logic.builder.logic_selection.delete_keys_from_storage")
+    def test_delete_builder_ignores_stale_selected_combinator(
+        self, mock_delete_keys, mock_delete_schedule, mock_cancel_job, mock_enqueue
+    ):
+        mock_delete_keys.return_value = True
+        self._insert_builder_record("target-builder", "Target Builder")
+        self._insert_builder_record("other-builder", "Other Builder")
+        self._insert_builder_record(
+            "combo-stale",
+            "Stale Combo",
+            model="wp1.selection.models.combinator",
+            params={
+                "include": {"builders": ["other-builder"], "operation": "union"},
+                "exclude": {"builders": [], "operation": "union"},
+            },
+        )
+
+        actual = logic_builder.delete_builder(
+            self.wp10db,
+            "1234",
+            "target-builder",
+            delete_combinator_ids=["combo-stale"],
+            confirm_builder_name="Target Builder",
+        )
+
+        self.assertTrue(actual["db_delete_success"])
+        self.assertEqual([], actual["deleted_combinator_ids"])
+        self.assertIsNotNone(self._get_builder_params(b"combo-stale"))
+        mock_enqueue.assert_not_called()
+
+    def test_delete_builder_name_confirmation_mismatch(self):
+        self._insert_builder_record("target-builder", "Target Builder")
+
+        with self.assertRaises(BuilderDeleteConfirmationError):
+            logic_builder.delete_builder(
+                self.wp10db,
+                "1234",
+                "target-builder",
+                confirm_builder_name="Wrong Name",
+            )
 
     @patch("wp1.logic.builder.queues.cancel_scheduled_job")
     @patch("wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id")
@@ -991,6 +1551,29 @@ class BuilderTest(BaseWpOneDbTest):
             ]
         )
 
+    @patch("wp1.logic.selection.connect_storage")
+    @patch("wp1.logic.builder.queues.cancel_scheduled_job")
+    @patch("wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id")
+    def test_delete_builder_retryable_selection_without_object_key(
+        self, mock_delete_schedule, mock_cancel_job, mock_connect_storage
+    ):
+        builder_id = self._insert_builder()
+        self._insert_selection(
+            1,
+            "text/tab-separated-values",
+            object_key=None,
+            builder_id=builder_id,
+            has_errors=True,
+            skip_zim=True,
+        )
+
+        actual = logic_builder.delete_builder(self.wp10db, 1234, builder_id)
+
+        self.assertTrue(actual["db_delete_success"])
+        self.assertTrue(actual["s3_delete_success"])
+        self.assertIsNone(self._get_builder_params(builder_id))
+        mock_connect_storage.assert_not_called()
+
     @patch("wp1.logic.builder.queues.cancel_scheduled_job")
     @patch("wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id")
     @patch("wp1.logic.builder.logic_selection.delete_keys_from_storage")
@@ -1067,6 +1650,48 @@ class BuilderTest(BaseWpOneDbTest):
         actual = logic_builder.latest_selections_with_errors(self.wp10db, builder_id)
 
         self.assertEqual(0, len(actual))
+
+    def test_latest_selection_with_errors_includes_referenced_builders(self):
+        builder_id = self._insert_builder(current_version=1)
+        self._insert_selection(
+            1,
+            "text/tab-separated-values",
+            builder_id=builder_id,
+            has_errors=True,
+            error_messages=(
+                '{"error_messages":["Combinator failed"],'
+                '"referenced_builder_errors":[{'
+                '"builder_id":"builder-a",'
+                '"builder_name":"Builder A",'
+                '"builder_model":"wp1.selection.models.simple",'
+                '"message":"Referenced builder Builder A failed",'
+                '"reason":"failed",'
+                '"status":"FAILED"}]}'
+            ),
+        )
+
+        actual = logic_builder.latest_selections_with_errors(self.wp10db, builder_id)
+
+        self.assertEqual(
+            [
+                {
+                    "status": "CAN_RETRY",
+                    "ext": "tsv",
+                    "error_messages": ["Combinator failed"],
+                    "referenced_builder_errors": [
+                        {
+                            "builder_id": "builder-a",
+                            "builder_name": "Builder A",
+                            "builder_model": "wp1.selection.models.simple",
+                            "message": "Referenced builder Builder A failed",
+                            "reason": "failed",
+                            "status": "FAILED",
+                        }
+                    ],
+                }
+            ],
+            actual,
+        )
 
     @patch("wp1.logic.builder.zimfarm.create_or_update_zimfarm_schedule")
     @patch("wp1.logic.builder.zimfarm.request_zimfarm_task")

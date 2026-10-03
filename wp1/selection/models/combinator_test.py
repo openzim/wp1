@@ -1,7 +1,13 @@
 from unittest.mock import MagicMock, patch
 
 from wp1.base_db_test import BaseWpOneDbTest
-from wp1.exceptions import Wp1FatalSelectionError
+from wp1.exceptions import (
+    Wp1FatalMetaSelectionError,
+    Wp1FatalSelectionError,
+    Wp1MetaBuilderProcessError,
+    Wp1RetryableMetaSelectionError,
+    Wp1RetryableSelectionError,
+)
 from wp1.models.wp10.builder import Builder
 from wp1.selection.models.combinator import Builder as CombinatorBuilder
 
@@ -119,6 +125,22 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
         self.assertEqual(expected, actual)
 
     @patch("wp1.selection.models.combinator.logic_builder.get_builder")
+    def test_validate_same_builder_in_include_and_exclude(self, mock_get_builder):
+        mock_get_builder.return_value = _reference_builder()
+        params = dict(self.params)
+        params["include"] = {"builders": ["builder-a"], "operation": "union"}
+        params["exclude"] = {"builders": ["builder-a"], "operation": "union"}
+
+        actual = self.builder.validate(**params)
+
+        expected = (
+            [],
+            [],
+            ["Builders cannot be both included and excluded: Builder A"],
+        )
+        self.assertEqual(expected, actual)
+
+    @patch("wp1.selection.models.combinator.logic_builder.get_builder")
     def test_validate_ignores_empty_exclude_operation(self, mock_get_builder):
         mock_get_builder.return_value = _reference_builder()
         params = dict(self.params)
@@ -138,7 +160,7 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
             [],
             [],
             [
-                "Builder Builder A (builder-a) belongs to another user. You can only reference your own builders."
+                "Builder Builder A belongs to another user. You can only reference your own builders."
             ],
         )
         self.assertEqual(expected, actual)
@@ -153,7 +175,7 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
             [],
             [],
             [
-                "Builder Builder A (builder-a) belongs to project 'de.wikipedia.org'. All referenced builders must use the same project."
+                "Builder Builder A belongs to project 'de.wikipedia.org'. All referenced builders must use the same project."
             ],
         )
         self.assertEqual(expected, actual)
@@ -170,7 +192,7 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
             [],
             [],
             [
-                "Builder Builder A (builder-a) is a combinator. Combinators can only reference leaf builders such as Simple, SPARQL, PetScan, Book, or WikiProject."
+                "Builder Builder A is a combinator. Combinators can only reference leaf builders such as Simple, SPARQL, PetScan, or WikiProject."
             ],
         )
         self.assertEqual(expected, actual)
@@ -232,6 +254,114 @@ class CombinatorBuilderTest(BaseWpOneDbTest):
 
         with self.assertRaises(Wp1FatalSelectionError):
             self.builder.build("text/tab-separated-values", **params)
+
+    @patch("wp1.selection.models.combinator.logic_builder.get_builder")
+    @patch("wp1.selection.models.combinator.Builder._fetch_selection_data")
+    def test_build_reports_all_retryable_dependency_failures(
+        self, mock_fetch_selection_data, mock_get_builder
+    ):
+        mock_get_builder.side_effect = lambda _wp10db, builder_id: _reference_builder(
+            id_=builder_id,
+            name={
+                "builder-a": "Builder A",
+                "builder-b": "Builder B",
+                "builder-c": "Builder C",
+            }[builder_id],
+        )
+
+        def fetch_selection(_wp10db, _s3, builder_id, label):
+            if builder_id in ("builder-a", "builder-b"):
+                raise Wp1RetryableMetaSelectionError(
+                    f"Referenced builder {label} is not ready",
+                    code="REFERENCED_SELECTION_NOT_READY",
+                    reason="latest selection is not ready yet",
+                    action="Wait for this list to finish processing, then retry this Combinator.",
+                )
+            return b"ok\n"
+
+        mock_fetch_selection_data.side_effect = fetch_selection
+        params = dict(self.params)
+        params.update(
+            include={
+                "builders": ["builder-a", "builder-b", "builder-c"],
+                "operation": "union",
+            },
+            s3=MagicMock(),
+        )
+
+        with self.assertRaises(Wp1RetryableSelectionError) as context:
+            self.builder.build("text/tab-separated-values", **params)
+
+        self.assertIsInstance(context.exception.__cause__, Wp1MetaBuilderProcessError)
+        self.assertEqual(3, mock_fetch_selection_data.call_count)
+        message = str(context.exception)
+        self.assertIn("Builder A is not ready", message)
+        self.assertIn("Builder B is not ready", message)
+        referenced_errors = context.exception.extra["referenced_builder_errors"]
+        self.assertEqual(
+            ["builder-a", "builder-b"],
+            [error["builder_id"] for error in referenced_errors],
+        )
+        self.assertEqual(
+            ["CAN_RETRY", "CAN_RETRY"],
+            [error["status"] for error in referenced_errors],
+        )
+
+    @patch("wp1.selection.models.combinator.logic_builder.get_builder")
+    @patch("wp1.selection.models.combinator.Builder._fetch_selection_data")
+    def test_build_reports_mixed_dependency_failures_as_fatal(
+        self, mock_fetch_selection_data, mock_get_builder
+    ):
+        mock_get_builder.side_effect = lambda _wp10db, builder_id: _reference_builder(
+            id_=builder_id,
+            name={
+                "builder-a": "Builder A",
+                "builder-b": "Builder B",
+                "builder-c": "Builder C",
+            }[builder_id],
+        )
+
+        def fetch_selection(_wp10db, _s3, builder_id, label):
+            if builder_id == "builder-b":
+                raise Wp1RetryableMetaSelectionError(
+                    f"Referenced builder {label} is not ready",
+                    code="REFERENCED_SELECTION_NOT_READY",
+                    reason="latest selection is not ready yet",
+                    action="Wait for this list to finish processing, then retry this Combinator.",
+                )
+            if builder_id == "builder-c":
+                raise Wp1FatalMetaSelectionError(
+                    f"Referenced builder {label} latest selection failed",
+                    code="REFERENCED_SELECTION_FAILED",
+                    reason="latest selection failed",
+                    action="Open this list, fix the failed selection, then update this Combinator.",
+                )
+            return b"ok\n"
+
+        mock_fetch_selection_data.side_effect = fetch_selection
+        params = dict(self.params)
+        params.update(
+            include={"builders": ["builder-a", "builder-b"], "operation": "union"},
+            exclude={"builders": ["builder-c"], "operation": "union"},
+            s3=MagicMock(),
+        )
+
+        with self.assertRaises(Wp1FatalSelectionError) as context:
+            self.builder.build("text/tab-separated-values", **params)
+
+        self.assertIsInstance(context.exception.__cause__, Wp1MetaBuilderProcessError)
+        self.assertEqual(3, mock_fetch_selection_data.call_count)
+        message = str(context.exception)
+        self.assertIn("Builder B is not ready", message)
+        self.assertIn("Builder C latest selection failed", message)
+        referenced_errors = context.exception.extra["referenced_builder_errors"]
+        self.assertEqual(
+            ["CAN_RETRY", "FAILED"],
+            [error["status"] for error in referenced_errors],
+        )
+        fatal_error = referenced_errors[1]
+        self.assertEqual("REFERENCED_SELECTION_FAILED", fatal_error["code"])
+        self.assertIn("fix the failed selection", fatal_error["action"])
 
     def test_validate_with_referenced_builder_in_db(self):
         self._insert_builder()

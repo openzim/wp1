@@ -15,7 +15,19 @@
   "selection_errors": [
     {
       "error_messages": [
-        "Referenced builder Retry Builder (retry-builder) latest selection is not ready"
+        "Referenced builder Retry Builder (retry-builder) latest selection failed but can be retried"
+      ],
+      "referenced_builder_errors": [
+        {
+          "builder_id": "retry-builder",
+          "builder_name": "Retry Builder",
+          "builder_model": "wp1.selection.models.simple",
+          "code": "REFERENCED_SELECTION_RETRYABLE_FAILURE",
+          "message": "Referenced builder Retry Builder (retry-builder) latest selection failed but can be retried",
+          "reason": "latest selection failed but can be retried",
+          "action": "Open this list and retry it, then retry this Combinator.",
+          "status": "CAN_RETRY"
+        }
       ],
       "ext": "tsv",
       "status": "CAN_RETRY"

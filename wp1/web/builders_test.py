@@ -1,4 +1,5 @@
 import datetime
+import json
 from unittest.mock import ANY, MagicMock, patch
 
 import attr
@@ -80,6 +81,44 @@ class BuildersTest(BaseWebTestcase):
             )
         self.wp10db.commit()
         return self.builder.b_id.decode("utf-8")
+
+    def _insert_builder_record(
+        self,
+        id_,
+        name,
+        user_id="1234",
+        project="en.wikipedia.fake",
+        model="wp1.selection.models.simple",
+        params=None,
+    ):
+        if params is None:
+            params = {"list": ["a", "b", "c"]}
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO builders
+               (b_id, b_name, b_user_id, b_project, b_params, b_model,
+                b_created_at, b_updated_at, b_current_version,
+                b_selection_zim_version)
+             VALUES
+               (%s, %s, %s, %s, %s, %s,
+                '20191225044444', '20191225044444', 0, 0)
+        """,
+                (
+                    id_.encode("utf-8"),
+                    name.encode("utf-8"),
+                    str(user_id).encode("utf-8"),
+                    project.encode("utf-8"),
+                    json.dumps(params).encode("utf-8"),
+                    model.encode("utf-8"),
+                ),
+            )
+        self.wp10db.commit()
+        return id_
+
+    def _builder_exists(self, builder_id):
+        with self.wp10db.cursor() as cursor:
+            cursor.execute("SELECT 1 FROM builders WHERE b_id = %s", (builder_id,))
+            return cursor.fetchone() is not None
 
     def _insert_selections(self, builder_id):
         selections = [
@@ -196,8 +235,11 @@ class BuildersTest(BaseWebTestcase):
             rv = client.get("/v1/builders/1234")
 
             self.assertEqual("404 NOT FOUND", rv.status)
+            self.assertEqual(
+                {"error": "No builder found with id = 1234"}, rv.get_json()
+            )
 
-    def test_get_builder_unauthorized(self):
+    def test_get_builder_not_owner(self):
         self.app = create_app()
         with self.app.test_client() as client:
             with client.session_transaction() as sess:
@@ -205,7 +247,51 @@ class BuildersTest(BaseWebTestcase):
             builder_id = self._insert_builder()
             rv = client.get(f"/v1/builders/{builder_id}")
 
-            self.assertEqual("401 UNAUTHORIZED", rv.status)
+            self.assertEqual("403 FORBIDDEN", rv.status)
+
+    def test_get_builder_derives_failed_reference_errors(self):
+        self.app = create_app()
+        with self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["user"] = self.USER
+            self._insert_builder_record("ref-ok", "Ref OK")
+            self._insert_builder_record("ref-bad", "Ref Bad")
+            self._insert_builder_record(
+                "combo",
+                "My Combinator",
+                model="wp1.selection.models.combinator",
+                params={
+                    "include": {"builders": ["ref-ok"], "operation": "union"},
+                    "exclude": {"builders": ["ref-bad"], "operation": "union"},
+                },
+            )
+            with self.wp10db.cursor() as cursor:
+                cursor.execute("""UPDATE builders SET b_current_version = 1
+               WHERE b_id IN ('ref-ok', 'ref-bad', 'combo')""")
+                cursor.executemany(
+                    """INSERT INTO selections
+                 (s_id, s_builder_id, s_content_type, s_updated_at, s_version,
+                  s_status)
+               VALUES (%s, %s, 'text/tab-separated-values', '20201225105544',
+                       1, %s)""",
+                    [
+                        ("s-ok", "ref-ok", "OK"),
+                        ("s-bad", "ref-bad", "FAILED"),
+                        ("s-combo", "combo", "OK"),
+                    ],
+                )
+            self.wp10db.commit()
+
+            rv = client.get("/v1/builders/combo")
+
+            self.assertEqual("200 OK", rv.status)
+            selection_errors = rv.get_json()["selection_errors"]
+            self.assertEqual(1, len(selection_errors))
+            self.assertEqual("FAILED", selection_errors[0]["status"])
+            self.assertEqual("tsv", selection_errors[0]["ext"])
+            referenced = selection_errors[0]["referenced_builder_errors"]
+            self.assertEqual(["ref-bad"], [e["builder_id"] for e in referenced])
+            self.assertEqual("REFERENCED_SELECTION_FAILED", referenced[0]["code"])
 
     def test_create_unsuccessful(self):
         self.app = create_app()
@@ -325,6 +411,23 @@ class BuildersTest(BaseWebTestcase):
                 sess["user"] = different_user
             rv = client.post(
                 "/v1/builders/%s" % builder_id,
+                json={
+                    "model": "wp1.selection.models.simple",
+                    "params": {"list": self.valid_article_name},
+                    "name": "updated_list",
+                    "project": "my_project",
+                },
+            )
+            self.assertEqual("403 FORBIDDEN", rv.status)
+
+    def test_update_not_found(self):
+        self._insert_builder()
+        self.app = create_app()
+        with self.override_db(self.app), self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["user"] = self.USER
+            rv = client.post(
+                "/v1/builders/inexistent-id",
                 json={
                     "model": "wp1.selection.models.simple",
                     "params": {"list": self.valid_article_name},
@@ -496,6 +599,145 @@ class BuildersTest(BaseWebTestcase):
         with self.app.test_client() as client:
             rv = client.get("/v1/builders/%s/selection/latest.tsv" % builder_id)
         self.assertEqual("404 NOT FOUND", rv.status)
+
+    def test_delete_impact_successful(self):
+        self._insert_builder_record("target-builder", "Target Builder")
+        self._insert_builder_record("other-builder", "Other Builder")
+        self._insert_builder_record(
+            "combo-keep",
+            "Keep Combo",
+            model="wp1.selection.models.combinator",
+            params={
+                "include": {
+                    "builders": ["target-builder", "other-builder"],
+                    "operation": "union",
+                },
+                "exclude": {"builders": [], "operation": "union"},
+            },
+        )
+
+        self.app = create_app()
+        with self.override_db(self.app), self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["user"] = self.USER
+            rv = client.get("/v1/builders/target-builder/delete-impact")
+
+        self.assertEqual("200 OK", rv.status)
+        self.assertEqual(
+            {
+                "builder": {
+                    "id": "target-builder",
+                    "name": "Target Builder",
+                    "project": "en.wikipedia.fake",
+                    "model": "wp1.selection.models.simple",
+                },
+                "affected_combinators": [
+                    {
+                        "id": "combo-keep",
+                        "name": "Keep Combo",
+                        "project": "en.wikipedia.fake",
+                        "referenced_in": ["include"],
+                        "remaining_include_builder_count": 1,
+                        "will_be_auto_deleted": False,
+                    }
+                ],
+            },
+            rv.get_json(),
+        )
+
+    def test_delete_impact_not_owner(self):
+        self._insert_builder_record("target-builder", "Target Builder")
+
+        self.app = create_app()
+        with self.override_db(self.app), self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["user"] = self.UNAUTHORIZED_USER
+            rv = client.get("/v1/builders/target-builder/delete-impact")
+
+        self.assertEqual("403 FORBIDDEN", rv.status)
+
+    def test_delete_impact_no_builder(self):
+        self.app = create_app()
+        with self.override_db(self.app), self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["user"] = self.USER
+            rv = client.get("/v1/builders/missing-builder/delete-impact")
+
+        self.assertEqual("404 NOT FOUND", rv.status)
+
+    @patch("wp1.logic.builder.redis_connect")
+    @patch("wp1.logic.selection.connect_storage")
+    def test_delete_with_selected_combinator(
+        self, patched_connect_storage, patched_redis_connect
+    ):
+        patched_redis_connect.return_value = MagicMock()
+        self._insert_builder_record("target-builder", "Target Builder")
+        self._insert_builder_record("other-builder", "Other Builder")
+        self._insert_builder_record(
+            "combo-delete",
+            "Delete Combo",
+            model="wp1.selection.models.combinator",
+            params={
+                "include": {
+                    "builders": ["target-builder", "other-builder"],
+                    "operation": "union",
+                },
+                "exclude": {"builders": [], "operation": "union"},
+            },
+        )
+
+        self.app = create_app()
+        with self.override_db(self.app), self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["user"] = self.USER
+            rv = client.post(
+                "/v1/builders/target-builder/delete",
+                json={
+                    "delete_combinator_ids": ["combo-delete"],
+                    "confirm_builder_name": "Target Builder",
+                },
+            )
+
+        self.assertEqual("200 OK", rv.status)
+        self.assertEqual({"status": "204"}, rv.get_json())
+        self.assertFalse(self._builder_exists("target-builder"))
+        self.assertFalse(self._builder_exists("combo-delete"))
+
+    @patch("wp1.logic.builder.redis_connect")
+    @patch("wp1.logic.selection.connect_storage")
+    def test_delete_confirmation_mismatch(
+        self, patched_connect_storage, patched_redis_connect
+    ):
+        patched_redis_connect.return_value = MagicMock()
+        self._insert_builder_record("target-builder", "Target Builder")
+
+        self.app = create_app()
+        with self.override_db(self.app), self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["user"] = self.USER
+            rv = client.post(
+                "/v1/builders/target-builder/delete",
+                json={"confirm_builder_name": "Wrong Name"},
+            )
+
+        self.assertEqual("400 BAD REQUEST", rv.status)
+        self.assertEqual(
+            {"error_messages": ["Builder name confirmation did not match"]},
+            rv.get_json(),
+        )
+
+    def test_untrusted_simple_post_cannot_delete_builder(self):
+        builder_id = self._insert_builder()
+        with self.override_db(self.app), self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["user"] = self.USER
+            response = client.post(
+                f"/v1/builders/{builder_id}/delete",
+                headers={"Origin": "http://localhost:9999"},
+                data={},
+            )
+            self.assertEqual(403, response.status_code)
+        self.assertTrue(self._builder_exists(builder_id))
 
     @patch("wp1.logic.builder.redis_connect")
     @patch("wp1.logic.selection.connect_storage")
@@ -1443,4 +1685,21 @@ class BuildersTest(BaseWebTestcase):
                 "/v1/builders/%s/selection/latest/article_count" % builder_id
             )
         self.assertEqual("401 UNAUTHORIZED", rv.status)
-        self.assertEqual("401 UNAUTHORIZED", rv.status)
+
+    def test_latest_selection_article_count_for_builder_not_found(self):
+        self._insert_builder()
+        self.app = create_app()
+        with self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["user"] = self.USER
+            rv = client.get("/v1/builders/inexistent-id/selection/latest/article_count")
+        self.assertEqual("404 NOT FOUND", rv.status)
+
+    def test_delete_schedule_for_builder_not_found(self):
+        self._insert_builder()
+        self.app = create_app()
+        with self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["user"] = self.USER
+            rv = client.delete("/v1/builders/inexistent-id/schedule")
+        self.assertEqual("404 NOT FOUND", rv.status)

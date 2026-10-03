@@ -1,0 +1,18 @@
+{
+  "builder": {
+    "id": "1",
+    "name": "Builder 1",
+    "project": "en.wiktionary.org",
+    "model": "wp1.selection.models.simple"
+  },
+  "affected_combinators": [
+    {
+      "id": "combo-empty",
+      "name": "Empty Combo",
+      "project": "en.wiktionary.org",
+      "referenced_in": ["include"],
+      "remaining_include_builder_count": 0,
+      "will_be_auto_deleted": true
+    }
+  ]
+}

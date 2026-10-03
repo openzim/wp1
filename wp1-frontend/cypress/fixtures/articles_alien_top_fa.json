@@ -1,0 +1,36 @@
+{
+  "articles": [
+    {
+      "article": "Alien vs. Predator (film)",
+      "article_history_link": "https://en.wikipedia.org/w/index.php?title=Alien%20vs.%20Predator%20%28film%29&action=history",
+      "article_link": "https://en.wikipedia.org/w/index.php?title=Alien%20vs.%20Predator%20%28film%29",
+      "article_talk": "Talk:Alien vs. Predator (film)",
+      "article_talk_link": "https://en.wikipedia.org/w/index.php?title=Talk:Alien%20vs.%20Predator%20%28film%29",
+      "importance": "Top-Class",
+      "importance_updated": "2009-07-13T00:08:55Z",
+      "quality": "FA-Class",
+      "quality_updated": "2009-07-13T00:08:55Z"
+    },
+    {
+      "article": "Prometheus (2012 film)",
+      "article_history_link": "https://en.wikipedia.org/w/index.php?title=Prometheus%20%282012%20film%29&action=history",
+      "article_link": "https://en.wikipedia.org/w/index.php?title=Prometheus%20%282012%20film%29",
+      "article_talk": "Talk:Prometheus (2012 film)",
+      "article_talk_link": "https://en.wikipedia.org/w/index.php?title=Talk:Prometheus%20%282012%20film%29",
+      "importance": "Top-Class",
+      "importance_updated": "2015-11-27T19:37:36Z",
+      "quality": "FA-Class",
+      "quality_updated": "2013-06-12T22:02:57Z"
+    }
+  ],
+  "pagination": {
+    "display": {
+      "end": 2,
+      "num_rows": 100,
+      "start": 1
+    },
+    "page": 1,
+    "total": 2,
+    "total_pages": 1
+  }
+}

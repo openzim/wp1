@@ -46,6 +46,15 @@ class TestBuilderNoContext(TestBuilder):
         raise Wp1FatalSelectionError("Something broke")
 
 
+class TestBuilderExtraError(TestBuilder):
+
+    def build(self, content_type, **params):
+        raise Wp1FatalSelectionError(
+            "Referenced builder broke",
+            extra={"extra_context": "kept"},
+        )
+
+
 class TestBuilderSuppressedException(TestBuilder):
 
     def build(self, content_type, **params):
@@ -72,6 +81,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
             b_name=b"My Builder",
             b_user_id=1234,
             b_project=b"en.wikipedia.fake",
+            b_dbname=b"enwiki",
             b_model=b"wp1.selection.models.fake",
             b_params='{"list":["a","b","c"]}',
         )
@@ -106,7 +116,7 @@ class AbstractBuilderTest(BaseWpOneDbTest):
 
         self.assertEqual(
             actual.s_object_key,
-            b"selections/wp1.selection.models.fake/" b"abcd-1234/MyBuilder.tsv",
+            b"selections/wp1.selection.models.fake/" b"abcd-1234/MyBuilder.enwiki.tsv",
         )
 
     @patch(
@@ -132,7 +142,22 @@ class AbstractBuilderTest(BaseWpOneDbTest):
         object_key = self.s3.upload_fileobj.call_args[1]["key"]
         self.assertEqual(b"a\nb\nc", data.read())
         self.assertEqual(
-            "selections/wp1.selection.models.fake/abcd-1234/MyBuilder.tsv", object_key
+            "selections/wp1.selection.models.fake/abcd-1234/MyBuilder.enwiki.tsv",
+            object_key,
+        )
+
+    @patch("wp1.models.wp10.selection.uuid.uuid4", return_value="abcd-1234")
+    def test_materialize_object_key_without_dbname(self, mock_uuid4):
+        self.builder.b_dbname = None
+        self.test_builder.materialize(
+            self.s3, self.wp10db, self.builder, "text/tab-separated-values", 1
+        )
+
+        actual = get_first_selection(self.wp10db)
+
+        self.assertEqual(
+            actual.s_object_key,
+            b"selections/wp1.selection.models.fake/" b"abcd-1234/MyBuilder.tsv",
         )
 
     def test_materialize_version(self):
@@ -210,6 +235,22 @@ class AbstractBuilderTest(BaseWpOneDbTest):
 
         self.assertEqual(
             {"error_messages": ["Something broke"]}, json.loads(actual.s_error_messages)
+        )
+
+    def test_materialize_extra_error_data(self):
+        builder_obj = TestBuilderExtraError()
+        builder_obj.materialize(
+            self.s3, self.wp10db, self.builder, "text/tab-separated-values", 1
+        )
+
+        actual = get_first_selection(self.wp10db)
+
+        self.assertEqual(
+            {
+                "error_messages": ["Referenced builder broke"],
+                "extra_context": "kept",
+            },
+            json.loads(actual.s_error_messages),
         )
 
     def test_materialize_suppressed_message(self):

@@ -9,8 +9,9 @@ import wp1.logic.zim_files as logic_zim_tasks
 import wp1.logic.zim_schedules as logic_zim_schedules
 from wp1 import queues
 from wp1.constants import EXT_TO_CONTENT_TYPE
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 from wp1.exceptions import (
+    BuilderDeleteConfirmationError,
     InvalidZimDescriptionError,
     InvalidZimFlavourError,
     InvalidZimLongDescriptionError,
@@ -44,7 +45,7 @@ def _create_or_update_builder(wp10db, data, builder_id=None):
         builder_cls = logic_builder.get_builder_module_class(model)
     except ImportError as e:
         logger.warning(str(e))
-        flask.abort(400)
+        flask.abort(400, "Unrecognized builder model: %s" % model)
 
     user_id = flask.session["user"]["identity"]["sub"]
     builder_obj = builder_cls()
@@ -70,13 +71,16 @@ def _create_or_update_builder(wp10db, data, builder_id=None):
     wp10db = get_db("wp10db")
     redis = get_redis()
 
-    builder_id = logic_builder.create_or_update_builder(
-        wp10db, list_name, user_id, project, params, model, builder_id=builder_id
-    )
-    # Either the builder was not found or the user ID was not correct. Nothing was
-    # updated, return 404.
-    if builder_id is None:
-        flask.abort(404)
+    try:
+        builder_id = logic_builder.create_or_update_builder(
+            wp10db, list_name, user_id, project, params, model, builder_id=builder_id
+        )
+    except ObjectNotFoundError:
+        # No builder with that id exists.
+        flask.abort(404, "No builder found with id = %s" % builder_id)
+    except UserNotAuthorizedError:
+        # The builder exists, but belongs to another user.
+        flask.abort(403, "Builder with id = %s does not belong to you" % builder_id)
 
     builder = logic_builder.get_builder(wp10db, builder_id)
 
@@ -114,7 +118,7 @@ def get_builder(builder_id):
     try:
         builder = logic_builder.get_builder(wp10db, builder_id)
     except ObjectNotFoundError:
-        flask.abort(404)
+        flask.abort(404, "No builder found with id = %s" % builder_id)
 
     # Don't return the builder unless it belongs to this user.
     user = flask.session.get("user")
@@ -127,12 +131,34 @@ def get_builder(builder_id):
             builder_id,
             builder_user_id,
         )
-        flask.abort(401, "Unauthorized")
+        flask.abort(403, "Builder with id = %s does not belong to you" % builder_id)
 
     selection_errors = logic_builder.latest_selections_with_errors(wp10db, builder_id)
+    if not selection_errors:
+        # A Combinator whose own selection is stale-OK while a referenced
+        # selection has failed still needs to report as errored.
+        derived_error = logic_builder.derived_selection_error(wp10db, builder)
+        if derived_error is not None:
+            selection_errors = [derived_error]
     res = builder.to_web_dict()
     res.update(selection_errors=selection_errors)
     return flask.jsonify(res)
+
+
+@builders.route("/<builder_id>/delete-impact")
+@authenticate
+def get_builder_delete_impact(builder_id):
+    wp10db = get_db("wp10db")
+    user_id = flask.session["user"]["identity"]["sub"]
+
+    try:
+        impact = logic_builder.get_builder_delete_impact(wp10db, user_id, builder_id)
+    except UserNotAuthorizedError:
+        flask.abort(403, "Builder with id = %s does not belong to you" % builder_id)
+    except ObjectNotFoundError:
+        flask.abort(404, "No builder found with id = %s" % builder_id)
+
+    return flask.jsonify(impact)
 
 
 @builders.route("/<builder_id>/delete", methods=["POST"])
@@ -140,13 +166,29 @@ def get_builder(builder_id):
 def delete_builder(builder_id):
     wp10db = get_db("wp10db")
     user_id = flask.session["user"]["identity"]["sub"]
+    data = flask.request.get_json(silent=True) or {}
+    delete_combinator_ids = data.get("delete_combinator_ids", [])
+    confirm_builder_name = data.get("confirm_builder_name")
+
+    if not isinstance(delete_combinator_ids, list) or not all(
+        isinstance(item, str) for item in delete_combinator_ids
+    ):
+        return flask.jsonify({"error_messages": ["Invalid delete_combinator_ids"]}), 400
 
     try:
-        status = logic_builder.delete_builder(wp10db, user_id, builder_id)
+        status = logic_builder.delete_builder(
+            wp10db,
+            user_id,
+            builder_id,
+            delete_combinator_ids=delete_combinator_ids,
+            confirm_builder_name=confirm_builder_name,
+        )
     except UserNotAuthorizedError as e:
-        flask.abort(403)
+        flask.abort(403, "Builder with id = %s does not belong to you" % builder_id)
     except ObjectNotFoundError:
-        flask.abort(404)
+        flask.abort(404, "No builder found with id = %s" % builder_id)
+    except BuilderDeleteConfirmationError as e:
+        return flask.jsonify({"error_messages": [str(e)]}), 400
 
     if not status["db_delete_success"]:
         return (
@@ -165,7 +207,10 @@ def latest_selection_for_builder(builder_id, ext):
 
     url = logic_builder.latest_selection_url(wp10db, builder_id, ext)
     if not url:
-        flask.abort(404)
+        flask.abort(
+            404,
+            "No %s selection found for builder with id = %s" % (ext, builder_id),
+        )
 
     return flask.redirect(url, code=302)
 
@@ -176,7 +221,10 @@ def latest_zimfarm_selection_for_builder(builder_id, ext):
 
     url = logic_builder.latest_selection_url(wp10db, builder_id, ext, zimfarm_s3=True)
     if not url:
-        flask.abort(404)
+        flask.abort(
+            404,
+            "No %s selection found for builder with id = %s" % (ext, builder_id),
+        )
 
     return flask.redirect(url, code=302)
 
@@ -187,7 +235,10 @@ def latest_selection_article_count_for_builder(builder_id):
     wp10db = get_db("wp10db")
 
     user_id = flask.session["user"]["identity"]["sub"]
-    builder = logic_builder.get_builder(wp10db, builder_id)
+    try:
+        builder = logic_builder.get_builder(wp10db, builder_id)
+    except ObjectNotFoundError:
+        flask.abort(404, "No builder found with id = %s" % builder_id)
     if builder.b_user_id.decode("utf-8") != user_id:
         return (
             flask.jsonify(
@@ -204,7 +255,7 @@ def latest_selection_article_count_for_builder(builder_id):
         wp10db, builder_id, EXT_TO_CONTENT_TYPE["tsv"]
     )
     if not selection:
-        flask.abort(404)
+        flask.abort(404, "No TSV selection found for builder with id = %s" % builder_id)
 
     return flask.jsonify(
         {
@@ -309,20 +360,25 @@ def create_zim_file_for_builder(builder_id):
 @builders.route("/<builder_id>/zim/status")
 def zimfarm_status(builder_id):
     wp10db = get_db("wp10db")
-    return flask.jsonify(logic_builder.zim_file_status_for(wp10db, builder_id))
+    user_id = (flask.session.get("user") or {}).get("identity", {}).get("sub")
+    response = flask.jsonify(
+        logic_builder.zim_file_status_for(wp10db, builder_id, user_id=user_id)
+    )
+    response.headers["Cache-Control"] = "private, no-store"
+    return response
 
 
 @builders.route("/zim/status", methods=["POST"])
 def update_zimfarm_status():
-    token = CREDENTIALS[ENV].get("ZIMFARM", {}).get("hook_token")
+    token = get_settings().ZIMFARM_HOOK_TOKEN
     provided_token = flask.request.args.get("token")
     if token and provided_token != token:
-        flask.abort(403)
+        flask.abort(403, "Missing or invalid token")
 
     data = flask.request.get_json()
     task_id = data.get("id")
     if task_id is None:
-        flask.abort(400)
+        flask.abort(400, "Missing task id ('id') in request data")
 
     wp10db = get_db("wp10db")
 
@@ -363,11 +419,11 @@ def latest_zim_file_for_builder(builder_id):
 
     url = logic_builder.latest_zim_file_url_for(wp10db, builder_id)
     if not url:
-        flask.abort(404)
+        flask.abort(404, "No ZIM file found for builder with id = %s" % builder_id)
 
     head = requests.head(url)
     if head.status_code == 404:
-        flask.abort(410)
+        flask.abort(410, "ZIM file has expired and is no longer available")
 
     return flask.redirect(url, code=302)
 
@@ -382,8 +438,9 @@ def delete_schedule_for_builder(builder_id):
     user_id = flask.session["user"]["identity"]["sub"]
 
     # Get the builder and verify ownership
-    builder = logic_builder.get_builder(wp10db, builder_id.encode("utf-8"))
-    if not builder:
+    try:
+        builder = logic_builder.get_builder(wp10db, builder_id.encode("utf-8"))
+    except ObjectNotFoundError:
         return flask.jsonify({"error_messages": ["Builder not found"]}), 404
 
     builder_user_id = builder.b_user_id.decode("utf-8")

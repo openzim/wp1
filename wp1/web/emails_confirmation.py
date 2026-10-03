@@ -1,7 +1,7 @@
 import requests
 import logging
 
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 from wp1.templates import env as jinja_env
 
 logger = logging.getLogger(__name__)
@@ -18,8 +18,8 @@ def send_zim_email_confirmation(
 ):
     """Sends an email confirmation for ZIM file notifications."""
 
-    mailgun_config = CREDENTIALS.get(ENV, {}).get("MAILGUN", {})
-    if not mailgun_config or not mailgun_config.get("api_key"):
+    settings = get_settings()
+    if not settings.MAILGUN_API_KEY:
         logger.warning("Mailgun not configured. Confirmation email not sent.")
         return False
 
@@ -47,8 +47,8 @@ def send_zim_email_confirmation(
 
     try:
         response = requests.post(
-            mailgun_config["url"],
-            auth=("api", mailgun_config["api_key"]),
+            settings.MAILGUN_URL,
+            auth=("api", settings.MAILGUN_API_KEY),
             data=email_data,
             timeout=30,
         )

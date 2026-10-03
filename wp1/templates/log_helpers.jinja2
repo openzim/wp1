@@ -23,9 +23,9 @@
 {% macro importance(art) -%}
    {% if l[art]['importance'].l_new -%}
      {%- if not l[art]['importance'].l_old or l[art]['importance'].l_old.decode('utf-8') == 'NotA-Class' -%}
-       Importance assessed as '''{{l[art]['importance'].l_new.decode('utf-8')}}'''.
-     {%- else -%}
-       Importance rating changed from '''{{l[art]['importance'].l_old.decode('utf-8')}}''' to '''{{l[art]['importance'].l_new.decode('utf-8')}}'''.
+      Importance assessed as '''{{l[art]['importance'].l_new | importance_label}}'''.
+    {%- else -%}
+      Importance rating changed from '''{{l[art]['importance'].l_old | importance_label}}''' to '''{{l[art]['importance'].l_new | importance_label}}'''.
      {%- endif -%}
    {%- endif %}
 {%- endmacro %}
@@ -44,6 +44,6 @@
      Quality rating was '''{{l[art]['quality'].l_old.decode('utf-8')}}'''. {{revs(art, 'quality')}}
     {%- endif -%}
   {%- if l[art]['importance'] -%}
-     Importance rating was '''{{l[art]['importance'].l_old.decode('utf-8')}}'''. {{revs(art, 'importacne')}}. {{revs(art, 'importance')}}
+     Importance rating was '''{{l[art]['importance'].l_old | importance_label}}'''. {{revs(art, 'importacne')}}. {{revs(art, 'importance')}}
   {%- endif -%}
 {% endmacro %}

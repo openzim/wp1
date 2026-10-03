@@ -33,6 +33,9 @@ MAX_LOGS_PER_DAY = 100000
 
 WIKI_BASE = "https://en.wikipedia.org/wiki/"
 FRONTEND_WIKI_BASE = "https://en.wikipedia.org/w/"
+# The database name of the wiki that the ratings tables track. The rating
+# system is en.wikipedia.org-only (see WIKI_BASE above).
+WIKI_DBNAME = "enwiki"
 
 PAGE_SIZE = 100
 

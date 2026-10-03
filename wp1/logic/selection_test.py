@@ -277,6 +277,34 @@ class SelectionTest(BaseWpOneDbTest):
         )
         self.assertEqual("selections/foo.bar.model/deadbeef/name.tsv", actual)
 
+    def test_object_key_for_selection_with_name_and_dbname(self):
+        actual = logic_selection.object_key_for_selection(
+            self.selection, "foo.bar.model", name="name", dbname="enwiki"
+        )
+        self.assertEqual("selections/foo.bar.model/deadbeef/name.enwiki.tsv", actual)
+
+    def test_object_key_for_with_name_and_dbname(self):
+        actual = logic_selection.object_key_for(
+            "abcd-1234",
+            "text/tab-separated-values",
+            "foo.bar.model",
+            name="name",
+            dbname="frwiktionary",
+        )
+        self.assertEqual(
+            "selections/foo.bar.model/abcd-1234/name.frwiktionary.tsv", actual
+        )
+
+    def test_object_key_for_selection_with_dbname_and_legacy_schema(self):
+        actual = logic_selection.object_key_for_selection(
+            self.selection,
+            "foo.bar.model",
+            name="name",
+            dbname="enwiki",
+            use_legacy_schema=True,
+        )
+        self.assertEqual("selections/foo.bar.model/deadbeef.tsv", actual)
+
     def test_object_key_for_selection_with_name_and_legacy_schema(self):
         actual = logic_selection.object_key_for_selection(
             self.selection, "foo.bar.model", name="name", use_legacy_schema=True

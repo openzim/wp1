@@ -60,7 +60,7 @@ class ModelsBuilderTest(BaseWpOneDbTest):
         self.assertEqual("100", self.builder.user_id)
         self.assertEqual("en.wikipedia.org", self.builder.project)
         self.assertEqual("wp1.selection.models.simple", self.builder.model)
-        self.assertEqual("My List (builder-a)", self.builder.label)
+        self.assertEqual("My List", self.builder.label)
 
     def test_set_updated_at_dt(self):
         dt = datetime.datetime(2020, 12, 15, 9, 30, 55)

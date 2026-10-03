@@ -1,0 +1,9 @@
+# pnpm blocks dependency install scripts by default. These two need theirs:
+# cypress downloads its browser binary, esbuild builds its platform binary.
+allowBuilds:
+  cypress: true
+  esbuild: true
+
+# The pnpm version is pinned via packageManager, so "a newer pnpm exists"
+# notices in build and CI logs are just noise.
+updateNotifier: false

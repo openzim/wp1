@@ -71,7 +71,7 @@ class TablesCategoryTest(unittest.TestCase):
 
         for k, actual in actual_imp.items():
             if k == tables.UNASSESSED_CLASS:
-                expected = "No-Class"
+                expected = "No-Importance"
             else:
                 expected = "{{%s}}" % k.decode("utf-8")
             self.assertEqual(expected, actual)
@@ -453,7 +453,7 @@ class TablesDbTest(BaseWpOneDbTest):
                 b"NA-Class": "{{NA-Class|category=Category:NA-importance_Catholicism_articles}}",
                 b"NotA-Class": "Other",
                 b"Top-Class": "{{Top-Class|category=Category:Top-importance_Catholicism_articles}}",
-                b"Unassessed-Class": "No-Class",
+                b"Unassessed-Class": "No-Importance",
                 b"Unknown-Class": "{{Unknown-Class|category=Category:Unknown-importance_Catholicism_articles}}",
             },
             "qual_labels": {
@@ -704,6 +704,56 @@ class TablesDbTest(BaseWpOneDbTest):
             self.wp10db.close = orig_close
 
 
+class TablesNullRatingsTest(unittest.TestCase):
+    # Stats as returned by get_project_stats for a project where some
+    # articles have a NULL quality or importance rating in the database.
+    stats = [
+        {"n": 3, "q": b"B-Class", "i": b"High-Class"},
+        {"n": 2, "q": b"B-Class", "i": None},
+        {"n": 1, "q": None, "i": b"Low-Class"},
+        {"n": 4, "q": b"Unassessed-Class", "i": b"Low-Class"},
+    ]
+
+    categories = {
+        "sort_qual": {
+            b"B-Class": 300,
+            tables.NOT_A_CLASS: 11,
+            tables.UNASSESSED_CLASS: 0,
+        },
+        "sort_imp": {
+            b"High-Class": 300,
+            b"Low-Class": 100,
+            tables.NOT_A_CLASS: 11,
+        },
+        "qual_labels": {},
+        "imp_labels": {},
+    }
+
+    def test_data_for_stats_maps_null_to_not_a_class(self):
+        data, cols = tables.data_for_stats(self.stats)
+
+        self.assertNotIn(None, cols)
+        self.assertNotIn(None, data)
+        for value in data.values():
+            self.assertNotIn(None, value)
+        self.assertEqual(2, data[b"B-Class"][tables.NOT_A_CLASS])
+        self.assertEqual(1, data[tables.NOT_A_CLASS][b"Low-Class"])
+
+    def test_convert_table_data_for_web_with_null_ratings(self):
+        table_data = tables.generate_table_data(
+            self.stats,
+            self.categories,
+            {"project": b"Test_Project", "project_display": "Test Project"},
+        )
+
+        # This raised AttributeError ("'NoneType' object has no attribute
+        # 'decode'") before NULL ratings were mapped to NOT_A_CLASS.
+        actual = tables.convert_table_data_for_web(table_data)
+
+        self.assertEqual(2, actual["data"]["B-Class"]["NotA-Class"])
+        self.assertEqual(1, actual["data"]["NotA-Class"]["Low-Class"])
+
+
 class TestMakeWikiLink(unittest.TestCase):
 
     def test_creates_link(self):
@@ -726,8 +776,6 @@ class TestMakeWikiLink(unittest.TestCase):
 
 class TestTableCaching(BaseWpOneDbTest):
 
-    @patch("wp1.tables.CREDENTIALS", {"DEVELOPMENT": {"REDIS": {}}})
-    @patch("wp1.tables.ENV", "DEVELOPMENT")
     @patch("wp1.tables.Redis")
     @patch("wp1.tables.generate_table_data")
     def test_empty_cache(self, patched_table_data, patched_redis):
@@ -748,8 +796,6 @@ class TestTableCaching(BaseWpOneDbTest):
         )
         self.assertEqual(expected_table, actual)
 
-    @patch("wp1.tables.CREDENTIALS", {"DEVELOPMENT": {"REDIS": {}}})
-    @patch("wp1.tables.ENV", "DEVELOPMENT")
     @patch("wp1.tables.Redis")
     @patch("wp1.tables.generate_table_data")
     def test_full_cache(self, patched_table_data, patched_redis):
@@ -886,7 +932,7 @@ class TestTableOutput(unittest.TestCase):
             b"NotA-Class": "Other",
             b"Top-Class": "{{Top-Class|category=Category:Top-importance_Modern_philosophy_articles}}",
             b"Unknown-Class": "{{Unknown-Class|category=Category:Unknown-importance_Modern_philosophy_articles}}",
-            b"Unassessed-Class": "No-Class",
+            b"Unassessed-Class": "No-Importance",
         },
         "row_labels": {
             b"A-Class": "{{A-Class|category=Category:A-Class_Modern_philosophy_articles}}",
@@ -1041,7 +1087,7 @@ class TestTableOutput(unittest.TestCase):
                 "href": "https://en.wikipedia.org/wiki/Category:Unknown-importance_Modern_philosophy_articles",
                 "text": "???",
             },
-            "Unassessed-Class": "No-Class",
+            "Unassessed-Class": "No-Importance",
         },
         "row_labels": {
             "A-Class": {

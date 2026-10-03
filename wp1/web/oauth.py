@@ -1,38 +1,35 @@
 import attr
 import flask
 from flask import jsonify, session
-from mwoauth import ConsumerToken, Handshaker
+from mwoauth import ConsumerToken, Handshaker, RequestToken
 
 from wp1 import environment
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 from wp1.logic import users as logic_users
 from wp1.models.wp10.user import User
+from wp1.web import authenticate
 from wp1.web.db import get_db
 
 oauth = flask.Blueprint("oauth", __name__)
 
 
 def get_handshaker():
+    settings = get_settings()
     consumer_token = ConsumerToken(
-        CREDENTIALS[ENV]["MWOAUTH"]["consumer_key"],
-        CREDENTIALS[ENV]["MWOAUTH"]["consumer_secret"],
+        settings.MWOAUTH_CONSUMER_KEY,
+        settings.MWOAUTH_CONSUMER_SECRET,
     )
     handshaker = Handshaker("https://en.wikipedia.org/w/index.php", consumer_token)
     return handshaker
 
 
 def get_homepage_url():
-    return CREDENTIALS[ENV]["CLIENT_URL"]["homepage"]
+    return get_settings().CLIENT_HOMEPAGE
 
 
 def has_oauth_credentials():
-    try:
-        oauth_creds = CREDENTIALS[ENV].get("MWOAUTH", {})
-        consumer_key = oauth_creds.get("consumer_key", "")
-        consumer_secret = oauth_creds.get("consumer_secret", "")
-        return bool(consumer_key and consumer_secret)
-    except (KeyError, AttributeError):
-        return False
+    settings = get_settings()
+    return bool(settings.MWOAUTH_CONSUMER_KEY and settings.MWOAUTH_CONSUMER_SECRET)
 
 
 def create_fake_dev_user():
@@ -67,7 +64,9 @@ def initiate():
         return redirect_after_login()
 
     # In development mode, use fake user if OAuth credentials are not configured
-    if ENV == environment.Environment.DEVELOPMENT and not has_oauth_credentials():
+    if get_settings().ENV == environment.Environment.DEVELOPMENT and not (
+        has_oauth_credentials()
+    ):
         fake_identity, fake_access_token = create_fake_dev_user()
         wp10db = get_db("wp10db")
 
@@ -96,7 +95,11 @@ def complete():
 
     handshaker = get_handshaker()
     query_string = str(flask.request.query_string.decode("utf-8"))
-    access_token = handshaker.complete(session["request_token"], query_string)
+    # flask-session serializes the session as JSON, so the RequestToken
+    # namedtuple stored by /initiate comes back as a plain list. Rebuild it
+    # before handing it to mwoauth, which accesses request_token.key.
+    request_token = RequestToken(*session["request_token"])
+    access_token = handshaker.complete(request_token, query_string)
     session.pop("request_token")
     identity = handshaker.identify(access_token)
 
@@ -140,9 +143,8 @@ def email():
     return jsonify({"email": email})
 
 
-@oauth.route("/logout")
+@oauth.route("/logout", methods=["POST"])
+@authenticate
 def logout():
-    if session.get("user") is None:
-        flask.abort(404, "User does not exist")
     session.pop("user")
     return {"status": "204"}

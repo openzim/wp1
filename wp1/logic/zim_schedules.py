@@ -3,13 +3,14 @@ from typing import Any
 import attr
 import secrets
 from dateutil.relativedelta import relativedelta
+from itsdangerous import BadData, URLSafeSerializer
 from pymysql.connections import Connection
 from redis import Redis
 
 import wp1.queues as queues
 
 from wp1.constants import TS_FORMAT_WP10, SECONDS_PER_MONTH
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 from wp1.timestamp import utcnow
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.zim_schedule import ZimSchedule
@@ -253,12 +254,50 @@ def unsubscribe_email(wp10db: Connection, token: str | bytes) -> bool:
     return updated
 
 
-def unsubscribe_email_by_schedule_id(wp10db: Connection, schedule_id: bytes) -> bool:
-    """Unsubscribes from email notifications by removing email from a schedule. Returns True if found and unsubscribed."""
+def _notification_unsubscribe_serializer() -> URLSafeSerializer:
+    return URLSafeSerializer(
+        get_settings().SESSION_SECRET_KEY, salt="zim-notification-unsubscribe-v1"
+    )
+
+
+def generate_notification_unsubscribe_token(schedule: ZimSchedule) -> str:
+    """Issue a capability for this schedule's current notification recipient."""
+    if not schedule.s_email:
+        raise ValueError("Cannot issue an unsubscribe token without a recipient")
+    return _notification_unsubscribe_serializer().dumps(
+        {
+            "schedule_id": schedule.s_id.decode("utf-8"),
+            "email": schedule.s_email.decode("utf-8"),
+        }
+    )
+
+
+def unsubscribe_notification(wp10db: Connection, token: str) -> bool:
+    """Validate a capability and atomically unsubscribe its matching recipient."""
+    if not isinstance(token, str) or not token:
+        return False
+    try:
+        payload = _notification_unsubscribe_serializer().loads(token)
+    except (BadData, UnicodeError):
+        return False
+    if not isinstance(payload, dict) or set(payload) != {"schedule_id", "email"}:
+        return False
+    schedule_id = payload["schedule_id"]
+    email = payload["email"]
+    if not isinstance(schedule_id, str) or not schedule_id:
+        return False
+    if not isinstance(email, str) or not email:
+        return False
+    try:
+        recipient = (schedule_id.encode("utf-8"), email.encode("utf-8"))
+    except UnicodeEncodeError:
+        return False
     with wp10db.cursor() as cursor:
         cursor.execute(
-            "UPDATE zim_schedules SET s_email = NULL WHERE s_id = %s AND s_email IS NOT NULL",
-            (schedule_id,),
+            """UPDATE zim_schedules
+               SET s_email = NULL, s_email_confirmation_token = NULL
+               WHERE s_id = %s AND s_email = %s""",
+            recipient,
         )
         updated = bool(cursor.rowcount)
     wp10db.commit()
@@ -338,7 +377,7 @@ def schedule_future_zimfile_generations(
         )
 
         token = zim_schedule.s_email_confirmation_token.decode("utf-8")
-        email_confirm_url = CREDENTIALS.get(ENV, {}).get("CLIENT_URL", {}).get("api")
+        email_confirm_url = get_settings().CLIENT_API_URL
         confirm_url = f"{email_confirm_url}/v1/zim/confirm-email?token={token}"
         unsubscribe_url = f"{email_confirm_url}/v1/zim/unsubscribe-email?token={token}"
         send_zim_email_confirmation(

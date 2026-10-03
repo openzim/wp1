@@ -8,7 +8,7 @@ import pymysql.cursors
 import pymysql.err
 import socks
 
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 from wp1.environment import Environment
 
 logger = logging.getLogger(__name__)
@@ -16,28 +16,46 @@ logger = logging.getLogger(__name__)
 RETRY_TIME_SECONDS = 5
 
 
-def connect(db_name: str, **overrides: object) -> pymysql.connections.Connection:
-    creds = CREDENTIALS[ENV].get(db_name)
-    if creds is None:
-        raise ValueError("db credentials for %r in ENV=%s are None" % (db_name, ENV))
+def _db_kwargs(db_name: str) -> dict[str, object]:
+    """Explicit mapping from the runtime database name to settings values."""
+    s = get_settings()
+    if db_name == "WIKIDB":
+        return {
+            "user": s.WIKIDB_USER,
+            "password": s.WIKIDB_PASSWORD or "",
+            "host": s.WIKIDB_HOST,
+            "db": s.WIKIDB_DB,
+            "port": s.WIKIDB_PORT or 3306,
+        }
+    if db_name == "WP10DB":
+        return {
+            "user": s.WP10DB_USER,
+            "password": s.WP10DB_PASSWORD or "",
+            "host": s.WP10DB_HOST,
+            "db": s.WP10DB_DB,
+            "port": s.WP10DB_PORT or 3306,
+        }
+    raise ValueError("Unknown database name: %r" % db_name)
 
+
+def connect(db_name: str, **overrides: object) -> pymysql.connections.Connection:
     kwargs: dict[str, object] = {
         "charset": None,
         "use_unicode": False,
         "cursorclass": pymysql.cursors.SSDictCursor,
-        **creds,
+        **_db_kwargs(db_name),
         **overrides,
     }
 
     tries = 4
     while True:
         try:
-            if db_name == "WIKIDB" and ENV == Environment.DEVELOPMENT:
+            if db_name == "WIKIDB" and get_settings().ENV == Environment.DEVELOPMENT:
                 # In development, connect through a SOCKS5 proxy so that hosts on
                 # *.eqiad.wmflabs can be reached.
                 s = socks.socksocket()
                 s.set_proxy(socks.SOCKS5, "localhost")
-                s.connect((kwargs["host"], kwargs.get("port", 3306)))
+                s.connect((kwargs["host"], kwargs["port"]))
                 conn = pymysql.connect(**kwargs, defer_connect=True)
                 conn.connect(sock=s)
             else:

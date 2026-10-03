@@ -5,8 +5,8 @@ from unittest.mock import patch
 import attr
 
 from wp1 import logs
-from wp1.logic import log as logic_log
 from wp1.base_db_test import BaseCombinedDbTest
+from wp1.logic import log as logic_log
 from wp1.models.wp10.log import Log
 
 
@@ -541,6 +541,82 @@ class LogsTest(BaseCombinedDbTest):
         actual = list(attr.astuple(a) for a in actual)
         self.assertEqual(sorted(expected), sorted(actual))
 
+    def test_insert_or_update_preserves_earlier_dates(self):
+        # Regression: re-logging the same article on a later day must not
+        # overwrite the earlier day's log, or that date vanishes from Redis
+        # while still present on the live log page (stalled uploads of
+        # 2026-08-15).
+        day_one = Log(
+            l_project=self.project,
+            l_article=b"Repeat offender",
+            l_action=b"quality",
+            l_old=b"NotA-Class",
+            l_new=b"Stub-Class",
+            l_namespace=0,
+            l_timestamp=b"20181225112233",
+            l_revision_timestamp=b"2018-12-25T08:22:33Z",
+        )
+        day_two = attr.evolve(
+            day_one,
+            l_old=b"Stub-Class",
+            l_new=b"C-Class",
+            l_timestamp=b"20181226101010",
+            l_revision_timestamp=b"2018-12-26T05:10:10Z",
+        )
+        logic_log.insert_or_update(self.redis, day_one)
+        logic_log.insert_or_update(self.redis, day_two)
+
+        actual = logic_log.get_logs(self.redis, article=b"Repeat offender")
+        self.assertEqual(sorted([day_one, day_two]), sorted(actual))
+
+    def test_insert_or_update_dedupes_same_day(self):
+        first = Log(
+            l_project=self.project,
+            l_article=b"Same day",
+            l_action=b"quality",
+            l_old=b"NotA-Class",
+            l_new=b"Stub-Class",
+            l_namespace=0,
+            l_timestamp=b"20181225112233",
+            l_revision_timestamp=b"2018-12-25T08:22:33Z",
+        )
+        second = attr.evolve(
+            first,
+            l_old=b"Stub-Class",
+            l_new=b"B-Class",
+            l_timestamp=b"20181225180000",
+        )
+        logic_log.insert_or_update(self.redis, first)
+        logic_log.insert_or_update(self.redis, second)
+
+        actual = logic_log.get_logs(self.redis, article=b"Same day")
+        self.assertEqual([second], actual)
+
+    def test_get_logs_matches_legacy_undated_keys(self):
+        # Keys written before the :YYYYMMDD suffix existed must still be
+        # returned by wildcard-article reads until their TTL expires.
+        legacy = Log(
+            l_project=self.project,
+            l_article=b"Legacy article",
+            l_action=b"quality",
+            l_old=b"NotA-Class",
+            l_new=b"GA-Class",
+            l_namespace=0,
+            l_timestamp=b"20181227130000",
+            l_revision_timestamp=b"2018-12-27T08:00:00Z",
+        )
+        mapping = {
+            k: b"__redis__none__" if v is None else v
+            for k, v in attr.asdict(legacy).items()
+        }
+        self.redis.hset(
+            "wp1:logs:%s:0:quality:Legacy article" % self.project.decode("utf-8"),
+            mapping=mapping,
+        )
+
+        actual = logic_log.get_logs(self.redis, project=self.project)
+        self.assertIn(legacy, actual)
+
     def test_move_target(self):
         for i, m in enumerate(self.moves):
             actual = logs.move_target(
@@ -736,12 +812,12 @@ class LogsTest(BaseCombinedDbTest):
     def test_section_for_date(self):
         # Excuse my mess.
         expected = (
-            "=== December 25, 2018 ===\n"
-            "==== Renamed ====\n"
+            "<noinclude>\n=== December 25, 2018 ===\n</noinclude>\n"
+            "<noinclude>\n==== Renamed ====\n</noinclude>\n"
             "* '''[[Test Baz Bang]]''' renamed to '''[[Test Baz]]'''.\n"
             "* '''[[Testing in Copenhaven]]''' renamed to '''[[Testing in "
             "Copenhagen]]'''.\n"
-            "==== Reassessed ====\n"
+            "<noinclude>\n==== Reassessed ====\n</noinclude>\n"
             "* '''[[Lesser-known tests]]''' ([[Talk:Lesser-known "
             "tests|talk]]) reassessed.  Quality rating changed from "
             "'''Stub-Class''' to '''Start-Class'''. <span "
@@ -751,8 +827,8 @@ class LogsTest(BaseCombinedDbTest):
             "rev] &middot; "
             "[https://en.wikipedia.org/w/index.php?"
             "title=Talk%3ALesser-known%20tests&oldid=None "
-            "t])</span> Importance rating changed from '''Start-Class''' "
-            "to '''Unknown-Class'''. <span style=\\\"white-space: "
+            "t])</span> Importance rating changed from '''Start-Importance''' "
+            "to '''Unknown-Importance'''. <span style=\\\"white-space: "
             'nowrap;\\">([https://en.wikipedia.org/w/index.php?'
             "title=Lesser-known%20tests&oldid=18000 "
             "rev] &middot; "
@@ -790,7 +866,7 @@ class LogsTest(BaseCombinedDbTest):
             "title=Talk%3ATesting%20history&oldid=None "
             "t])</span>\n"
             "\n"
-            "==== Assessed ====\n"
+            "<noinclude>\n==== Assessed ====\n</noinclude>\n"
             "* '''[[Important tests]]''' ([[Talk:Important tests|talk]]) "
             "assessed.  Quality assessed as '''NotA-Class'''. <span "
             'style=\\"white-space: '
@@ -799,7 +875,7 @@ class LogsTest(BaseCombinedDbTest):
             "rev] &middot; "
             "[https://en.wikipedia.org/w/index.php?"
             "title=Talk%3AImportant%20tests&oldid=None "
-            "t])</span> Importance assessed as '''Unknown-Class'''. <span "
+            "t])</span> Importance assessed as '''Unknown-Importance'''. <span "
             'style=\\"white-space: '
             'nowrap;\\">([https://en.wikipedia.org/w/index.php?'
             "title=Important%20tests&oldid=15000 "
@@ -808,7 +884,7 @@ class LogsTest(BaseCombinedDbTest):
             "title=Talk%3AImportant%20tests&oldid=None "
             "t])</span>\n"
             "\n"
-            "==== Removed ====\n"
+            "<noinclude>\n==== Removed ====\n</noinclude>\n"
             "* '''[[Testing None-a]]''' ([[Talk:Testing None-a|talk]]) "
             "removed. \n"
             "* '''[[Testing tools]]''' ([[Talk:Testing tools|talk]]) "
@@ -850,9 +926,15 @@ class LogsTest(BaseCombinedDbTest):
         )
 
         self.assertEqual(3, len(actual))
-        self.assertTrue(actual[0].startswith("=== December 27, 2018 ==="))
-        self.assertTrue(actual[1].startswith("=== December 26, 2018 ==="))
-        self.assertTrue(actual[2].startswith("=== December 25, 2018 ==="))
+        self.assertEqual(
+            [datetime(2018, 12, day).date() for day in (27, 26, 25)],
+            [
+                logs.live_page_dates_missing_from_logs(
+                    section, set(), datetime(2018, 12, 24)
+                )[0]
+                for section in actual
+            ],
+        )
 
     @patch("wp1.logs.redis_connect")
     @patch("wp1.logs.wiki_connect")
@@ -861,6 +943,7 @@ class LogsTest(BaseCombinedDbTest):
     def test_upload_log_page_for_project(
         self, patched_api, patched_wp10, patched_wiki, patched_redis
     ):
+        patched_api.get_page.return_value.text.return_value = ""
         logs.update_log_page_for_project(b"Catholicism")
         call = patched_api.save_page.call_args[0]
         self.assertEqual("Update logs for past 7 days", call[2])
@@ -874,6 +957,7 @@ class LogsTest(BaseCombinedDbTest):
         self, patched_datetime, patched_api, patched_wp10, patched_wiki, patched_redis
     ):
         project_name = b"Catholicism"
+        patched_api.get_page.return_value.text.return_value = ""
         header = "<noinclude>{{Log}}\n{{Automatically generated}}</noinclude>\n"
         no_logs_msg = (
             "'''There were no logs for this project from December 21, "
@@ -887,11 +971,117 @@ class LogsTest(BaseCombinedDbTest):
     @patch("wp1.logs.wiki_connect")
     @patch("wp1.logs.wp10_connect")
     @patch("wp1.logs.api")
+    @patch("wp1.logs.get_current_datetime", return_value=datetime(2018, 12, 28, 12))
+    def test_upload_log_page_no_logs_live_page_has_recent_sections_skips(
+        self, patched_datetime, patched_api, patched_wp10, patched_wiki, patched_redis
+    ):
+        patched_api.get_page.return_value.text.return_value = (
+            "<noinclude>{{Log}}\n{{Automatically generated}}</noinclude>\n"
+            "=== December 26, 2018 ===\n"
+            "==== Assessed ====\n"
+            "* '''[[Test results]]''' assessed.\n"
+        )
+        logs.update_log_page_for_project(b"Catholicism")
+        patched_api.save_page.assert_not_called()
+
+    @patch("wp1.logs.redis_connect")
+    @patch("wp1.logs.wiki_connect")
+    @patch("wp1.logs.wp10_connect")
+    @patch("wp1.logs.api")
+    @patch("wp1.logs.get_current_datetime", return_value=datetime(2018, 12, 28, 12))
+    def test_upload_log_page_no_logs_live_page_only_old_sections_saves(
+        self, patched_datetime, patched_api, patched_wp10, patched_wiki, patched_redis
+    ):
+        patched_api.get_page.return_value.text.return_value = (
+            "<noinclude>{{Log}}\n{{Automatically generated}}</noinclude>\n"
+            "=== December 20, 2018 ===\n"
+            "==== Assessed ====\n"
+            "* '''[[Test results]]''' assessed.\n"
+        )
+        header = "<noinclude>{{Log}}\n{{Automatically generated}}</noinclude>\n"
+        no_logs_msg = (
+            "'''There were no logs for this project from December 21, "
+            "2018 - December 28, 2018.'''"
+        )
+        logs.update_log_page_for_project(b"Catholicism")
+        call = patched_api.save_page.call_args[0]
+        self.assertEqual(header + no_logs_msg, call[1])
+
+    @patch("wp1.logs.redis_connect")
+    @patch("wp1.logs.wiki_connect")
+    @patch("wp1.logs.wp10_connect")
+    @patch("wp1.logs.api")
+    @patch("wp1.logs.generate_log_edits")
+    @patch("wp1.logs.calculate_logs_to_update")
+    @patch("wp1.logs.get_current_datetime", return_value=datetime(2018, 12, 28, 12))
+    def test_upload_log_page_live_page_date_missing_from_logs_skips(
+        self,
+        patched_datetime,
+        patched_calculate,
+        patched_generate,
+        patched_api,
+        patched_wp10,
+        patched_wiki,
+        patched_redis,
+    ):
+        patched_calculate.return_value = {datetime(2018, 12, 27).date(): ["some log"]}
+        patched_generate.return_value = ["=== December 27, 2018 ===\ncontent"]
+        patched_api.get_page.return_value.text.return_value = (
+            "<noinclude>{{Log}}\n{{Automatically generated}}</noinclude>\n"
+            "=== December 27, 2018 ===\n"
+            "==== Assessed ====\n"
+            "* '''[[Test results]]''' assessed.\n"
+            "=== December 26, 2018 ===\n"
+            "==== Assessed ====\n"
+            "* '''[[Testing tools]]''' assessed.\n"
+        )
+        logs.update_log_page_for_project(b"Catholicism")
+        patched_api.save_page.assert_not_called()
+
+    @patch("wp1.logs.redis_connect")
+    @patch("wp1.logs.wiki_connect")
+    @patch("wp1.logs.wp10_connect")
+    @patch("wp1.logs.api")
+    @patch("wp1.logs.generate_log_edits")
+    @patch("wp1.logs.calculate_logs_to_update")
+    @patch("wp1.logs.get_current_datetime", return_value=datetime(2018, 12, 28, 12))
+    def test_upload_log_page_live_page_dates_all_in_logs_saves(
+        self,
+        patched_datetime,
+        patched_calculate,
+        patched_generate,
+        patched_api,
+        patched_wp10,
+        patched_wiki,
+        patched_redis,
+    ):
+        patched_calculate.return_value = {
+            datetime(2018, 12, 26).date(): ["some log"],
+            datetime(2018, 12, 27).date(): ["other log"],
+        }
+        patched_generate.return_value = ["=== December 27, 2018 ===\ncontent"]
+        patched_api.get_page.return_value.text.return_value = (
+            "<noinclude>{{Log}}\n{{Automatically generated}}</noinclude>\n"
+            "=== December 27, 2018 ===\n"
+            "==== Assessed ====\n"
+            "* '''[[Test results]]''' assessed.\n"
+            "=== December 20, 2018 ===\n"
+            "==== Assessed ====\n"
+            "* '''[[Testing tools]]''' assessed.\n"
+        )
+        logs.update_log_page_for_project(b"Catholicism")
+        patched_api.save_page.assert_called_once()
+
+    @patch("wp1.logs.redis_connect")
+    @patch("wp1.logs.wiki_connect")
+    @patch("wp1.logs.wp10_connect")
+    @patch("wp1.logs.api")
     @patch("wp1.logs.generate_log_edits")
     def test_upload_log_page_for_project_huge_text(
         self, patched_generate, patched_api, patched_wp10, patched_wiki, patched_redis
     ):
         project_name = b"Catholicism"
+        patched_api.get_page.return_value.text.return_value = ""
         header = "<noinclude>{{Log}}\n{{Automatically generated}}</noinclude>\n"
         text = "a" * 1000 * 1024
         patched_generate.return_value = [text, text, text]
@@ -908,7 +1098,8 @@ class LogsTest(BaseCombinedDbTest):
         self, patched_generate, patched_api, patched_wp10, patched_wiki, patched_redis
     ):
         project_name = b"Catholicism"
-        sorry_msg = "Sorry, all of the logs for this date were too large to " "upload."
+        patched_api.get_page.return_value.text.return_value = ""
+        sorry_msg = "Sorry, all of the logs for this date were too large to upload."
         header = "<noinclude>{{Log}}\n{{Automatically generated}}</noinclude>\n"
         text = "a" * 3000 * 1024
         patched_generate.return_value = [text, text, text]

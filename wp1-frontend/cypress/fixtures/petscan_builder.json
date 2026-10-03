@@ -1,0 +1,7 @@
+{
+  "params": { "url": "https://petscan.wmflabs.org/?psid=123456" },
+  "name": "Petscan Builder",
+  "model": "wp1.selection.models.petscan",
+  "project": "en.wikipedia.org",
+  "selection_errors": []
+}

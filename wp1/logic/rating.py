@@ -5,6 +5,7 @@ from datetime import timedelta
 import attr
 from redis import Redis
 
+from wp1.config import get_settings
 from wp1.conf import get_conf
 from wp1.constants import GLOBAL_TIMESTAMP, AssessmentKind
 from wp1.logic import log as logic_log
@@ -34,7 +35,7 @@ def cache_assessment_numbers(redis, data):
         return
 
     pkl = pickle.dumps(data)
-    # The warming job (see wp1.queues.schedule_assessment_cache_warming) refreshes
+    # The warming job (registered in cron_config.py) refreshes
     # this once a day at noon UTC. The TTL is a bit over 24h so the entry never
     # expires before the next day's run overwrites it (which would otherwise open
     # a daily window where a web request hits the slow query directly).
@@ -76,8 +77,8 @@ def get_all_assessment_numbers(wp10db, redis: Redis = None):
 def update_assessment_cache():
     """Recompute the assessment numbers and refresh the cache.
 
-    This is the entry point for the recurring cache-warming job (registered by
-    wp1.queues.schedule_assessment_cache_warming). It runs in its own RQ worker,
+    This is the entry point for the recurring cache-warming job (registered in
+    cron_config.py). It runs in its own RQ worker,
     so it opens its own database and Redis connections. The underlying query is
     slow (minutes in production), which is exactly why it runs here on a
     schedule rather than in a web request.
@@ -198,11 +199,49 @@ def _project_rating_query(
     if page is not None:
         page = int(page) - 1
         query += " LIMIT %s,%s" % (page * limit, limit)
-    else:
+    elif limit is not None:
         query += " LIMIT %s" % limit
 
     logger.debug(query)
     return query
+
+
+def _project_rating_params(
+    project_name,
+    quality=None,
+    importance=None,
+    project_b_name=None,
+    quality_b=None,
+    importance_b=None,
+    pattern=None,
+):
+    params = {
+        "r_project": project_name,
+        "r_quality": quality,
+        "r_importance": importance,
+    }
+
+    if pattern is not None:
+        params["article_pattern_compiled"] = "%" + pattern + "%"
+    if project_b_name is not None:
+        params["r_project_b"] = project_b_name
+    if quality_b is not None:
+        params["r_quality_b"] = quality_b
+    if importance_b is not None:
+        params["r_importance_b"] = importance_b
+
+    return params
+
+
+def _rating_pair_from_row(res):
+    rating_b = Rating(
+        r_project=res.pop("rating_b.r_project"),
+        r_article=res.pop("rating_b.r_article"),
+        r_namespace=res.pop("rating_b.r_namespace"),
+        r_quality=res.pop("rating_b.r_quality"),
+        r_importance=res.pop("rating_b.r_importance"),
+    )
+    return (Rating(**res), rating_b)
 
 
 def get_project_rating_count_by_type(
@@ -226,21 +265,15 @@ def get_project_rating_count_by_type(
         count=True,
     )
 
-    params = {
-        "r_project": project_name,
-        "r_quality": quality,
-        "r_importance": importance,
-    }
-
-    if pattern is not None:
-        params["article_pattern_compiled"] = "%" + pattern + "%"
-    if project_b_name is not None:
-        params["r_project_b"] = project_b_name
-    if quality_b is not None:
-        params["r_quality_b"] = quality_b
-    if importance_b is not None:
-        params["r_importance_b"] = importance_b
-
+    params = _project_rating_params(
+        project_name,
+        quality=quality,
+        importance=importance,
+        project_b_name=project_b_name,
+        quality_b=quality_b,
+        importance_b=importance_b,
+        pattern=pattern,
+    )
     with wp10db.cursor() as cursor:
         cursor.execute(query, params)
         res = cursor.fetchone()
@@ -279,38 +312,60 @@ def get_project_rating_by_type(
         page=page,
         limit=limit,
     )
-    params = {
-        "r_project": project_name,
-        "r_quality": quality,
-        "r_importance": importance,
-    }
-
-    if pattern is not None:
-        params["article_pattern_compiled"] = "%" + pattern + "%"
-    if project_b_name is not None:
-        params["r_project_b"] = project_b_name
-    if quality_b is not None:
-        params["r_quality_b"] = quality_b
-    if importance_b is not None:
-        params["r_importance_b"] = importance_b
+    params = _project_rating_params(
+        project_name,
+        quality=quality,
+        importance=importance,
+        project_b_name=project_b_name,
+        quality_b=quality_b,
+        importance_b=importance_b,
+        pattern=pattern,
+    )
 
     with wp10db.cursor() as cursor:
         cursor.execute(query, params)
         if project_b_name is None:
             return [Rating(**db_rating) for db_rating in cursor.fetchall()]
 
-        results = []
-        for res in cursor.fetchall():
-            rating_b = Rating(
-                r_project=res.pop("rating_b.r_project"),
-                r_article=res.pop("rating_b.r_article"),
-                r_namespace=res.pop("rating_b.r_namespace"),
-                r_quality=res.pop("rating_b.r_quality"),
-                r_importance=res.pop("rating_b.r_importance"),
-            )
-            rating_a = Rating(**res)
-            results.append((rating_a, rating_b))
-        return results
+        return [_rating_pair_from_row(res) for res in cursor.fetchall()]
+
+
+def iterate_project_rating_by_type(
+    wp10db,
+    project_name,
+    quality=None,
+    importance=None,
+    pattern=None,
+    batch_size=500,
+):
+    """Yields every Rating matching the filters, without pagination.
+
+    Rows are fetched from the server-side cursor in batches of batch_size,
+    so arbitrarily large result sets can be streamed without buffering them
+    in memory.
+    """
+    query = _project_rating_query(
+        project_name,
+        quality=quality,
+        importance=importance,
+        pattern=pattern,
+        limit=None,
+    )
+    params = _project_rating_params(
+        project_name,
+        quality=quality,
+        importance=importance,
+        pattern=pattern,
+    )
+
+    with wp10db.cursor() as cursor:
+        cursor.execute(query, params)
+        while True:
+            rows = cursor.fetchmany(batch_size)
+            if not rows:
+                return
+            for res in rows:
+                yield Rating(**res)
 
 
 def get_random_article(
@@ -526,6 +581,11 @@ def count_unassessed_importance_for_project(wp10db, project):
 
 
 def add_log_for_rating(redis, new_rating, kind, old_rating_value):
+    if get_settings().SUPPRESS_RATING_LOGS:
+        # Operational escape hatch, see WP1_SUPPRESS_RATING_LOGS in
+        # .env.example. Suppressed logs are lost, not deferred.
+        return
+
     if kind == AssessmentKind.QUALITY:
         action = b"quality"
         timestamp = new_rating.r_quality_timestamp

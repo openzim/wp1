@@ -16,5 +16,59 @@
 // Import commands.js using ES2015 syntax:
 import './commands';
 
+// The replag banner script is third-party code fetched live from wmflabs on
+// every page load. Upstream changes to it can throw in the test browser and
+// fail every spec (Cypress fails tests on any uncaught exception). No test
+// asserts on the banner, so serve an empty script instead.
+beforeEach(() => {
+  cy.intercept(
+    { url: 'https://tools-static.wmflabs.org/replag-embed/replag-embed.js' },
+    { body: '' }
+  );
+});
+
+// Default stubs for API endpoints that components fetch on nearly every
+// page, so that no test depends on the Python backend being up. The
+// responses mirror what the real backend returns when there is no login
+// session (the state CI used to run in). Specs override these with their
+// own cy.intercept calls where a test needs different data — intercepts
+// defined later (i.e. in the spec) take precedence over these.
+beforeEach(() => {
+  cy.intercept('v1/oauth/identify', { statusCode: 401, body: 'Unauthorized' });
+  cy.intercept('v1/oauth/email', { statusCode: 401, body: 'Unauthorized' });
+  cy.intercept('v1/selection/lists', {
+    statusCode: 401,
+    body: 'Unauthorized',
+  });
+  cy.intercept('v1/builders/*', { statusCode: 401, body: 'Unauthorized' });
+  // The single-segment glob above doesn't match nested builder paths, which
+  // the selections detail pane fetches for every selected row.
+  cy.intercept('v1/builders/*/zim/status', {
+    body: {
+      status: null,
+      error_url: null,
+      is_deleted: null,
+      active_schedule: null,
+    },
+  });
+  cy.intercept('v1/builders/*/selection/latest/article_count', {
+    statusCode: 401,
+    body: 'Unauthorized',
+  });
+  cy.intercept('v1/builders/*/delete-impact', {
+    statusCode: 401,
+    body: 'Unauthorized',
+  });
+  cy.intercept('v1/sites/', { fixture: 'sites.json' });
+  cy.intercept('v1/projects/count', { fixture: 'projects_count.json' });
+  cy.intercept('v1/projects/', { fixture: 'projects.json' });
+  cy.intercept('v1/projects/*/category_links', {
+    fixture: 'category_links_alien.json',
+  });
+  cy.intercept('v1/projects/*/category_links/sorted', {
+    fixture: 'category_links_sorted_alien.json',
+  });
+});
+
 // Alternatively you can use CommonJS syntax:
 // require('./commands')

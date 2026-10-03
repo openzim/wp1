@@ -1,0 +1,31 @@
+import logging
+import sys
+from pathlib import Path
+
+# Runs as `python scripts/wp1/enqueue-project.py`; put the repo root on
+# sys.path so the `wp1` package resolves regardless of cwd.
+# The config defaults point at in-docker hostnames, so in development run
+# this inside the stack:
+#   docker compose -f docker-compose-dev.yml exec dev-web \
+#     python scripts/wp1/enqueue-project.py <project>
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from wp1 import app_logging, queues
+from wp1.redis_db import connect as redis_connect
+
+logger = logging.getLogger(__name__)
+
+
+def main():
+    app_logging.configure_logging()
+
+    # Job methods expect project names as bytes.
+    project_names = [n.encode("utf-8") for n in sys.argv[1:]]
+    logger.debug(project_names)
+
+    redis = redis_connect()
+    queues.enqueue_multiple_projects(redis, project_names)
+
+
+if __name__ == "__main__":
+    main()

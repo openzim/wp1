@@ -13,7 +13,7 @@ import wp1.logic.selection as logic_selection
 import wp1.logic.zim_schedules as logic_zim_schedules
 from wp1 import constants
 from wp1.constants import WP1_USER_AGENT
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 from wp1.exceptions import (
     InvalidZimDescriptionError,
     InvalidZimFlavourError,
@@ -30,6 +30,13 @@ from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.timestamp import naive_utcnow
 
 REDIS_AUTH_KEY = "zimfarm.auth"
+
+# Timeout in seconds for requests to the Zimfarm API.
+REQUESTS_TIMEOUT = 30
+
+# Renew the Zimfarm access token when it is within this many seconds of
+# expiring.
+TOKEN_RENEWAL_WINDOW = 300
 
 # ZIM metadata limits as per https://wiki.openzim.org/wiki/Metadata
 ZIM_TITLE_MAX_LENGTH = 30
@@ -71,52 +78,56 @@ class ZimfarmClientTokenProvider:
         self._access_token: str | None = None
         self._refresh_token: str | None = None
         self._expires_at: datetime = datetime.fromtimestamp(0, UTC).replace(tzinfo=None)
-        self._zimfarm_creds: dict[str, Any] = CREDENTIALS[ENV].get("ZIMFARM", {})
+
+    @property
+    def _settings(self):
+        return get_settings()
 
     def _validate_creds(self):
-        if self._zimfarm_creds.get("auth_mode", "local") == "local":
-            if not (
-                self._zimfarm_creds.get("user") and self._zimfarm_creds.get("password")
-            ):
+        settings = self._settings
+        if settings.ZIMFARM_AUTH_MODE == "local":
+            if not (settings.ZIMFARM_USER and settings.ZIMFARM_PASSWORD):
                 raise ZimFarmError(
-                    "user and password must be set in Zimfarm site credentials "
-                    "when auth mode is 'local' "
+                    "ZIMFARM_USER and ZIMFARM_PASSWORD must be set "
+                    "when ZIMFARM_AUTH_MODE is 'local'"
                 )
-        elif self._zimfarm_creds.get("auth_mode") == "oauth":
+        elif settings.ZIMFARM_AUTH_MODE == "oauth":
             if not (
-                self._zimfarm_creds.get("oauth_issuer")
-                and self._zimfarm_creds.get("oauth_client_id")
-                and self._zimfarm_creds.get("oauth_client_secret")
-                and self._zimfarm_creds.get("oauth_audience_id")
+                settings.ZIMFARM_OAUTH_ISSUER
+                and settings.ZIMFARM_OAUTH_CLIENT_ID
+                and settings.ZIMFARM_OAUTH_CLIENT_SECRET
+                and settings.ZIMFARM_OAUTH_AUDIENCE_ID
             ):
                 raise ZimFarmError(
-                    "oauth_client_secret, oauth_client_id and oauth_audience_id must be set "
-                    "in Zimfarm site credentials when auth mode is 'oauth'"
+                    "ZIMFARM_OAUTH_CLIENT_SECRET, ZIMFARM_OAUTH_CLIENT_ID and "
+                    "ZIMFARM_OAUTH_AUDIENCE_ID must be set "
+                    "when ZIMFARM_AUTH_MODE is 'oauth'"
                 )
         else:
             raise ZimFarmError(
-                f"Unknown auth mode {self._zimfarm_creds.get('auth_mode')}. "
+                f"Unknown auth mode {settings.ZIMFARM_AUTH_MODE}. "
                 "Allowed values are 'local' and 'oauth'."
             )
 
     def _generate_oauth_access_token(self) -> None:
         """Generate oauth access token and update expires_at."""
 
+        settings = self._settings
         logger.debug(
             "Requesting auth token from %s with oauth credentials",
-            self._zimfarm_creds.get("oauth_issuer"),
+            settings.ZIMFARM_OAUTH_ISSUER,
         )
         response = requests.post(
-            f"{self._zimfarm_creds.get('oauth_issuer')}/oauth2/token",
+            f"{settings.ZIMFARM_OAUTH_ISSUER}/oauth2/token",
             data={
                 "grant_type": "client_credentials",
-                "audience": self._zimfarm_creds.get("oauth_audience_id"),
+                "audience": settings.ZIMFARM_OAUTH_AUDIENCE_ID,
             },
             auth=HTTPBasicAuth(
-                self._zimfarm_creds.get("oauth_client_id"),
-                self._zimfarm_creds.get("oauth_client_secret"),
+                settings.ZIMFARM_OAUTH_CLIENT_ID,
+                settings.ZIMFARM_OAUTH_CLIENT_SECRET,
             ),
-            timeout=self._zimfarm_creds.get("requests_timeout", 30),
+            timeout=REQUESTS_TIMEOUT,
             headers={"User-Agent": WP1_USER_AGENT},
         )
 
@@ -140,7 +151,7 @@ class ZimfarmClientTokenProvider:
                 json={
                     "refresh_token": self._refresh_token,
                 },
-                timeout=self._zimfarm_creds.get("requests_timeout", 30),
+                timeout=REQUESTS_TIMEOUT,
                 headers={"User-Agent": WP1_USER_AGENT},
             )
         else:
@@ -151,10 +162,10 @@ class ZimfarmClientTokenProvider:
             response = requests.post(
                 f"{get_zimfarm_url()}/auth/authorize",
                 json={
-                    "username": self._zimfarm_creds.get("user"),
-                    "password": self._zimfarm_creds.get("password"),
+                    "username": self._settings.ZIMFARM_USER,
+                    "password": self._settings.ZIMFARM_PASSWORD,
                 },
-                timeout=self._zimfarm_creds.get("requests_timeout", 30),
+                timeout=REQUESTS_TIMEOUT,
                 headers={"User-Agent": WP1_USER_AGENT},
             )
 
@@ -176,7 +187,16 @@ class ZimfarmClientTokenProvider:
         self._validate_creds()
 
         data = redis.hgetall(REDIS_AUTH_KEY)
-        if data is not None:
+        if data:
+            # The shared Redis client is not configured with decode_responses,
+            # so keys/values come back as bytes; decode here so the cached
+            # token is actually readable (see issue #1305).
+            data = {
+                (k.decode() if isinstance(k, bytes) else k): (
+                    v.decode() if isinstance(v, bytes) else v
+                )
+                for k, v in data.items()
+            }
             self._access_token = data.get("access_token")
             self._refresh_token = data.get("refresh_token")
             if data.get("expires_at"):
@@ -186,13 +206,12 @@ class ZimfarmClientTokenProvider:
 
         now = naive_utcnow()
         if self._access_token is None or now >= (
-            self._expires_at
-            - timedelta(seconds=self._zimfarm_creds.get("token_renewal_window", 300))
+            self._expires_at - timedelta(seconds=TOKEN_RENEWAL_WINDOW)
         ):
             logger.debug("Refreshing Zimfarm acess token")
-            if self._zimfarm_creds.get("auth_mode") == "oauth":
+            if self._settings.ZIMFARM_AUTH_MODE == "oauth":
                 self._generate_oauth_access_token()
-            elif self._zimfarm_creds.get("auth_mode") == "local":
+            elif self._settings.ZIMFARM_AUTH_MODE == "local":
                 self._generate_local_access_token()
 
             if self._access_token:
@@ -214,21 +233,20 @@ token_provider = ZimfarmClientTokenProvider()
 
 
 def get_zimfarm_url():
-    url = CREDENTIALS[ENV].get("ZIMFARM", {}).get("url")
+    url = get_settings().ZIMFARM_URL
     if url is None:
-        raise ZimFarmError(
-            'CREDENTIALS did not contain ["ZIMFARM"]["url"], environment = %s' % ENV
-        )
+        raise ZimFarmError("Configuration error, ZIMFARM_URL is not set")
     return url
 
 
 def get_webhook_url():
-    token = CREDENTIALS[ENV].get("ZIMFARM", {}).get("hook_token")
+    settings = get_settings()
+    token = settings.ZIMFARM_HOOK_TOKEN
     if token is None:
         return None
 
-    base_url = CREDENTIALS[ENV].get("CLIENT_URL", {}).get("backend")
-    if base_url is None:
+    base_url = settings.CLIENT_BACKEND_URL
+    if not base_url:
         return None
 
     return "%s/v1/builders/zim/status?token=%s" % (base_url, urllib.parse.quote(token))
@@ -298,7 +316,101 @@ def get_zim_filename_prefix(builder: Builder, selection: Selection) -> str:
     return f"{util.safe_name(builder_name)}-{selection_id_frag}"
 
 
-def _get_params(
+def _get_image_name_and_tag() -> tuple[str, str]:
+    image = get_settings().ZIMFARM_IMAGE or None
+    if image is None:
+        image = "ghcr.io/openzim/mwoffliner:latest"
+        logger.warning("ZIMFARM_IMAGE is not configured, using latest (%s)", image)
+    return image.split(":")
+
+
+def _get_offliner_flags(
+    builder: Builder,
+    selection: Selection,
+    title: str,
+    description: str,
+    long_description: str,
+    flavour: str | None = None,
+):
+    project = builder.b_project.decode("utf-8")
+    flags = {
+        "mwUrl": "https://%s/" % project,
+        "adminEmail": "contact+wp1@kiwix.org",
+        "pageList": logic_builder.latest_zimfarm_url_for(
+            builder.b_id.decode("utf-8"), selection.s_content_type.decode("utf-8")
+        ),
+        "customZimTitle": title,
+        "customZimDescription": description,
+        "customZimLongDescription": (
+            long_description
+            if long_description
+            else f"ZIM file created from a WP1 Selection. {description}"
+        ),
+        "customZimName": get_zim_filename_prefix(builder, selection),
+        "speed": 10,
+    }
+
+    # Add the format flag for mwoffliner if a flavour is specified.
+    if flavour:
+        flags["format"] = [ALLOWED_FLAVOURS[flavour]]
+
+    cache_url = get_settings().ZIMFARM_CACHE_URL
+    if cache_url is not None:
+        flags["optimisationCacheUrl"] = cache_url
+    else:
+        logger.warning(
+            "ZIMFARM_CACHE_URL is not configured, skipping "
+            "optimisationCacheUrl URL for zimfarm request"
+        )
+    return flags
+
+
+def _get_schedule_update_params(
+    builder: Builder,
+    selection: Selection,
+    title: str,
+    description: str,
+    long_description: str,
+    flavour: str = None,
+) -> dict[str, Any]:
+    if builder is None:
+        raise ValueError("Given builder was None: %r" % builder)
+
+    image_name, image_tag = _get_image_name_and_tag()
+    flags = _get_offliner_flags(
+        builder, selection, title, description, long_description, flavour
+    )
+    version = get_settings().ZIMFARM_DEFINITION_VERSION or image_tag
+
+    webhook_url = get_webhook_url()
+
+    return {
+        "name": get_zimfarm_schedule_name(builder.b_id.decode("utf-8")),
+        "language": "eng",
+        "periodicity": "manually",
+        "tags": ["wikipedia"],
+        "enabled": True,
+        "offliner": "mwoffliner",
+        "warehouse_path": "/wikipedia",
+        "image": {
+            "name": image_name,
+            "tag": image_tag,
+        },
+        "platform": None,
+        "resources": logic_selection.get_resource_profile(selection),
+        "monitor": False,
+        "flags": flags,
+        "context": "wikimedia",
+        "version": version,
+        "notification": {
+            "ended": {
+                "webhook": [webhook_url] if webhook_url else None,
+            },
+        },
+    }
+
+
+def _get_schedule_create_params(
     builder: Builder,
     selection: Selection,
     title: str,
@@ -309,38 +421,12 @@ def _get_params(
     if builder is None:
         raise ValueError("Given builder was None: %r" % builder)
 
-    project = builder.b_project.decode("utf-8")
+    image_name, image_tag = _get_image_name_and_tag()
+    flags = _get_offliner_flags(
+        builder, selection, title, description, long_description, flavour
+    )
 
-    image = CREDENTIALS[ENV].get("ZIMFARM", {}).get("image")
-    if image is None:
-        image = "ghcr.io/openzim/mwoffliner:latest"
-        logger.warning(
-            'No ZIMFARM["image"] found in credentials, using latest (%s)', image
-        )
-    image_name, image_tag = image.split(":")
-
-    offliner_config = {
-        "offliner_id": "mwoffliner",
-        "mwUrl": "https://%s/" % project,
-        "adminEmail": "contact+wp1@kiwix.org",
-        "forceRender": "ActionParse",
-        "articleList": logic_builder.latest_zimfarm_url_for(
-            builder.b_id.decode("utf-8"), selection.s_content_type.decode("utf-8")
-        ),
-        "customZimTitle": title,
-        "customZimDescription": description,
-        "customZimLongDescription": (
-            long_description
-            if long_description
-            else f"ZIM file created from a WP1 Selection. {description}"
-        ),
-        "filenamePrefix": get_zim_filename_prefix(builder, selection),
-    }
-
-    # Add the format flag for mwoffliner if a flavour is specified.
-    if flavour:
-        offliner_config["format"] = [ALLOWED_FLAVOURS[flavour]]
-
+    flags["offliner_id"] = "mwoffliner"
     config = {
         "warehouse_path": "/wikipedia",
         "image": {
@@ -350,35 +436,25 @@ def _get_params(
         "resources": logic_selection.get_resource_profile(selection),
         "platform": "wikimedia",
         "monitor": False,
-        "offliner": offliner_config,
+        "offliner": flags,
     }
-    cache_url = CREDENTIALS[ENV].get("ZIMFARM", {}).get("cache_url")
-    if cache_url is not None:
-        config["offliner"]["optimisationCacheUrl"] = cache_url
-    else:
-        logger.warning(
-            "No cache_url found in credentials, skipping "
-            "optimisationCacheUrl URL for zimfarm request"
-        )
-
-    version = CREDENTIALS[ENV].get("ZIMFARM", {}).get("definition_version", image_tag)
-
+    version = get_settings().ZIMFARM_DEFINITION_VERSION or image_tag
     webhook_url = get_webhook_url()
 
     return {
         "name": get_zimfarm_schedule_name(builder.b_id.decode("utf-8")),
         "language": "eng",
-        "context": "wikimedia",
         "periodicity": "manually",
         "tags": ["wikipedia"],
         "enabled": True,
+        "version": version,
+        "config": config,
         "notification": {
             "ended": {
                 "webhook": [webhook_url] if webhook_url else None,
             },
         },
-        "config": config,
-        "version": version,
+        "context": "wikimedia",
     }
 
 
@@ -449,9 +525,6 @@ def create_or_update_zimfarm_schedule(
             )
         )
 
-    params = _get_params(
-        builder, selection, title, description, long_description, flavour=flavour
-    )
     base_url = get_zimfarm_url()
     headers = _get_zimfarm_headers(token)
 
@@ -463,6 +536,14 @@ def create_or_update_zimfarm_schedule(
     try:
         existing_zim_schedule = find_existing_schedule_in_db(wp10db, builder.b_id)
         if existing_zim_schedule and zimfarm_schedule_exists(redis, builder_id):
+            params = _get_schedule_update_params(
+                builder,
+                selection,
+                title,
+                description,
+                long_description,
+                flavour=flavour,
+            )
             schedule_name = get_zimfarm_schedule_name(builder_id)
             r = requests.patch(
                 "%s/recipes/%s" % (base_url, schedule_name),
@@ -481,7 +562,40 @@ def create_or_update_zimfarm_schedule(
             logic_zim_schedules.update_zim_schedule(wp10db, zim_schedule)
             zim_schedule_id_to_set = zim_schedule.s_id.decode("utf-8")
         else:
+            params = _get_schedule_create_params(
+                builder,
+                selection,
+                title,
+                description,
+                long_description,
+                flavour=flavour,
+            )
             r = requests.post("%s/recipes" % base_url, headers=headers, json=params)
+            if r.status_code == 409:
+                # The recipe already exists on the Zimfarm even though there is
+                # no matching local schedule row (e.g. it was orphaned by an
+                # earlier failure between recipe creation and the local
+                # insert). Adopt it: overwrite its config with the current
+                # params and record it locally below, making this operation
+                # idempotent instead of permanently stuck on 409.
+                schedule_name = get_zimfarm_schedule_name(builder_id)
+                params = _get_schedule_update_params(
+                    builder,
+                    selection,
+                    title,
+                    description,
+                    long_description,
+                    flavour=flavour,
+                )
+                logger.info(
+                    "Recipe %s already exists on the Zimfarm, adopting it",
+                    schedule_name,
+                )
+                r = requests.patch(
+                    "%s/recipes/%s" % (base_url, schedule_name),
+                    headers=headers,
+                    json=params,
+                )
             r.raise_for_status()
             zim_schedule_id = str(uuid.uuid4())
             zim_schedule = ZimSchedule(
@@ -600,11 +714,9 @@ def zim_file_url_for_task_id(task_id):
             "Could not get warehouse path for ZIM file, task_id = %s" % task_id
         )
 
-    base_url = CREDENTIALS[ENV].get("ZIMFARM", {}).get("s3_url")
+    base_url = get_settings().ZIMFARM_S3_URL
     if base_url is None:
-        raise ZimFarmError(
-            'Configuration error, could not find ZIMFARM["s3_url"] in credentials'
-        )
+        raise ZimFarmError("Configuration error, ZIMFARM_S3_URL is not set")
 
     return f"{base_url}{warehouse_path}/{name}"
 

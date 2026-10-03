@@ -6,7 +6,7 @@ import requests
 
 from wp1 import zimfarm
 from wp1.base_db_test import BaseWpOneDbTest
-from wp1.environment import Environment
+from wp1.config import override_settings
 from wp1.exceptions import (
     InvalidZimDescriptionError,
     InvalidZimFlavourError,
@@ -57,11 +57,11 @@ class ZimFarmTest(BaseWpOneDbTest):
                 "customZimLongDescription": "This is the long description",
                 "mwUrl": "https://en.wikipedia.fake/",
                 "adminEmail": "contact+wp1@kiwix.org",
-                "articleList": "http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/zimfarm/latest.tsv",
+                "pageList": "http://test.server.fake/v1/builders/1a-2b-3c-4d/selection/zimfarm/latest.tsv",
                 "customZimTitle": "My Builder",
-                "filenamePrefix": "MyBuilder-def",
+                "customZimName": "MyBuilder-def",
                 "optimisationCacheUrl": "https://wasabi.fake/bucket",
-                "forceRender": "ActionParse",
+                "speed": 10,
             },
         },
         "version": "latest",
@@ -187,37 +187,25 @@ class ZimFarmTest(BaseWpOneDbTest):
         with self.assertRaises(ValueError):
             zimfarm.get_zim_filename_prefix(None, None)
 
-    def test_get_params(self):
+    def test_get_schdedule_create_params(self):
         s3 = MagicMock()
         s3.client.head_object.return_value = {"ContentLength": 20000000}
-        from wp1.zimfarm import CREDENTIALS
 
-        CREDENTIALS[Environment.TEST]["ZIMFARM"][
-            "cache_url"
-        ] = "https://wasabi.fake/bucket"
-
-        actual = zimfarm._get_params(
-            self.builder,
-            self.selection,
-            title="My Builder",
-            description="This is the short description",
-            long_description="This is the long description",
-        )
+        with override_settings(ZIMFARM_CACHE_URL="https://wasabi.fake/bucket"):
+            actual = zimfarm._get_schedule_create_params(
+                self.builder,
+                self.selection,
+                title="My Builder",
+                description="This is the short description",
+                long_description="This is the long description",
+            )
 
         self.maxDiff = None
         self.assertEqual(self.expected_params, actual)
 
-    def test_get_params_image_in_env(self):
+    def test_get_schedule_create_params_image_in_env(self):
         s3 = MagicMock()
         s3.client.head_object.return_value = {"ContentLength": 20000000}
-        from wp1.zimfarm import CREDENTIALS
-
-        CREDENTIALS[Environment.TEST]["ZIMFARM"][
-            "cache_url"
-        ] = "https://wasabi.fake/bucket"
-        CREDENTIALS[Environment.TEST]["ZIMFARM"][
-            "image"
-        ] = "ghcr.io/openzim/mwoffliner-advanced:1.23.45"
 
         expected = self.expected_params.copy()
         expected["config"]["image"] = {
@@ -226,48 +214,35 @@ class ZimFarmTest(BaseWpOneDbTest):
         }
         expected["version"] = "1.23.45"
 
-        actual = zimfarm._get_params(
-            self.builder,
-            self.selection,
-            title="My Builder",
-            description="This is the short description",
-            long_description="This is the long description",
-        )
+        with override_settings(
+            ZIMFARM_CACHE_URL="https://wasabi.fake/bucket",
+            ZIMFARM_IMAGE="ghcr.io/openzim/mwoffliner-advanced:1.23.45",
+        ):
+            actual = zimfarm._get_schedule_create_params(
+                self.builder,
+                self.selection,
+                title="My Builder",
+                description="This is the short description",
+                long_description="This is the long description",
+            )
 
         self.maxDiff = None
         self.assertEqual(expected, actual)
 
-    def test_get_params_missing_builder(self):
+    def test_get_schedule_create_params_missing_builder(self):
         with self.assertRaises(ValueError):
-            zimfarm._get_params(None, self.selection, "Tile", "Desc", "Long Desc")
+            zimfarm._get_schedule_create_params(
+                None, self.selection, "Tile", "Desc", "Long Desc"
+            )
 
-    @patch("wp1.zimfarm.CREDENTIALS")
-    def test_token_provider_init_oauth_valid(self, mock_credentials):
-        mock_credentials.__getitem__.return_value = {
-            "ZIMFARM": {
-                "auth_mode": "oauth",
-                "oauth_client_id": "test_client_id",
-                "oauth_client_secret": "test_client_secret",
-                "oauth_audience_id": "test_audience",
-                "oauth_issuer": "https://oauth.example.com",
-            }
-        }
-
-        provider = ZimfarmClientTokenProvider()
-        provider._validate_creds()
-
-        self.assertIsNone(provider._access_token)
-        self.assertIsNone(provider._refresh_token)
-
-    @patch("wp1.zimfarm.CREDENTIALS")
-    def test_token_provider_init_local_valid(self, mock_credentials):
-        mock_credentials.__getitem__.return_value = {
-            "ZIMFARM": {
-                "auth_mode": "local",
-                "user": "test_user",
-                "password": "test_pass",
-            }
-        }
+    @override_settings(
+        ZIMFARM_AUTH_MODE="oauth",
+        ZIMFARM_OAUTH_CLIENT_ID="test_client_id",
+        ZIMFARM_OAUTH_CLIENT_SECRET="test_client_secret",
+        ZIMFARM_OAUTH_AUDIENCE_ID="test_audience",
+        ZIMFARM_OAUTH_ISSUER="https://oauth.example.com",
+    )
+    def test_token_provider_init_oauth_valid(self):
 
         provider = ZimfarmClientTokenProvider()
         provider._validate_creds()
@@ -275,56 +250,59 @@ class ZimFarmTest(BaseWpOneDbTest):
         self.assertIsNone(provider._access_token)
         self.assertIsNone(provider._refresh_token)
 
-    @patch("wp1.zimfarm.CREDENTIALS")
-    def test_token_provider_init_oauth_missing_credentials(self, mock_credentials):
-        mock_credentials.__getitem__.return_value = {
-            "ZIMFARM": {
-                "auth_mode": "oauth",
-                "oauth_client_id": "test_client_id",
-            }
-        }
+    @override_settings(
+        ZIMFARM_AUTH_MODE="local",
+        ZIMFARM_USER="test_user",
+        ZIMFARM_PASSWORD="test_pass",
+    )
+    def test_token_provider_init_local_valid(self):
+
+        provider = ZimfarmClientTokenProvider()
+        provider._validate_creds()
+
+        self.assertIsNone(provider._access_token)
+        self.assertIsNone(provider._refresh_token)
+
+    @override_settings(
+        ZIMFARM_AUTH_MODE="oauth",
+        ZIMFARM_OAUTH_CLIENT_ID="test_client_id",
+        ZIMFARM_OAUTH_CLIENT_SECRET=None,
+        ZIMFARM_OAUTH_AUDIENCE_ID=None,
+    )
+    def test_token_provider_init_oauth_missing_credentials(self):
 
         with self.assertRaises(ZimFarmError):
             ZimfarmClientTokenProvider()._validate_creds()
 
-    @patch("wp1.zimfarm.CREDENTIALS")
-    def test_token_provider_init_local_missing_credentials(self, mock_credentials):
-        mock_credentials.__getitem__.return_value = {
-            "ZIMFARM": {
-                "auth_mode": "local",
-                "user": "test_user",
-            }
-        }
+    @override_settings(
+        ZIMFARM_AUTH_MODE="local",
+        ZIMFARM_USER="test_user",
+        ZIMFARM_PASSWORD="",
+    )
+    def test_token_provider_init_local_missing_credentials(self):
 
         with self.assertRaises(ZimFarmError):
             ZimfarmClientTokenProvider()._validate_creds()
 
-    @patch("wp1.zimfarm.CREDENTIALS")
-    def test_token_provider_init_unknown_auth_mode(self, mock_credentials):
-        mock_credentials.__getitem__.return_value = {
-            "ZIMFARM": {"auth_mode": "unknown"}
-        }
+    @override_settings(ZIMFARM_AUTH_MODE="unknown")
+    def test_token_provider_init_unknown_auth_mode(self):
 
         with self.assertRaises(ZimFarmError):
             ZimfarmClientTokenProvider()._validate_creds()
 
-    @patch("wp1.zimfarm.CREDENTIALS")
+    @override_settings(
+        ZIMFARM_AUTH_MODE="oauth",
+        ZIMFARM_OAUTH_CLIENT_ID="test_client_id",
+        ZIMFARM_OAUTH_CLIENT_SECRET="test_client_secret",
+        ZIMFARM_OAUTH_AUDIENCE_ID="test_audience",
+        ZIMFARM_OAUTH_ISSUER="https://oauth.example.com",
+    )
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.naive_utcnow")
     def test_token_provider_generate_oauth_access_token_success(
-        self, mock_naive_utcnow, mock_requests, mock_credentials
+        self, mock_naive_utcnow, mock_requests
     ):
         """Test _generate_oauth_access_token successfully generates token"""
-        mock_credentials.__getitem__.return_value = {
-            "ZIMFARM": {
-                "auth_mode": "oauth",
-                "oauth_client_id": "test_client_id",
-                "oauth_client_secret": "test_client_secret",
-                "oauth_audience_id": "test_audience",
-                "oauth_issuer": "https://oauth.example.com",
-                "requests_timeout": 30,
-            }
-        }
 
         mock_naive_utcnow.return_value = datetime.datetime(
             2023, 1, 1, 0, 0, 0, tzinfo=None
@@ -342,20 +320,15 @@ class ZimFarmTest(BaseWpOneDbTest):
         self.assertEqual(provider._access_token, "oauth_token_123")
         self.assertEqual(provider._expires_at, datetime.datetime(2023, 1, 1, 1, 0, 0))
 
-    @patch("wp1.zimfarm.CREDENTIALS")
+    @override_settings(
+        ZIMFARM_AUTH_MODE="oauth",
+        ZIMFARM_OAUTH_CLIENT_ID="test_client_id",
+        ZIMFARM_OAUTH_CLIENT_SECRET="test_client_secret",
+        ZIMFARM_OAUTH_AUDIENCE_ID="test_audience",
+        ZIMFARM_OAUTH_ISSUER="https://oauth.example.com",
+    )
     @patch("wp1.zimfarm.requests")
-    def test_token_provider_generate_oauth_access_token_http_error(
-        self, mock_requests, mock_credentials
-    ):
-        mock_credentials.__getitem__.return_value = {
-            "ZIMFARM": {
-                "auth_mode": "oauth",
-                "oauth_client_id": "test_client_id",
-                "oauth_client_secret": "test_client_secret",
-                "oauth_audience_id": "test_audience",
-                "oauth_issuer": "https://oauth.example.com",
-            }
-        }
+    def test_token_provider_generate_oauth_access_token_http_error(self, mock_requests):
 
         mock_response = MagicMock()
         mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError
@@ -367,20 +340,16 @@ class ZimFarmTest(BaseWpOneDbTest):
         with self.assertRaises(ZimFarmError):
             provider._generate_oauth_access_token()
 
-    @patch("wp1.zimfarm.CREDENTIALS")
+    @override_settings(
+        ZIMFARM_AUTH_MODE="local",
+        ZIMFARM_USER="test_user",
+        ZIMFARM_PASSWORD="test_pass",
+    )
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.get_zimfarm_url")
     def test_token_provider_generate_local_access_token_no_refresh(
-        self, mock_get_url, mock_requests, mock_credentials
+        self, mock_get_url, mock_requests
     ):
-        mock_credentials.__getitem__.return_value = {
-            "ZIMFARM": {
-                "auth_mode": "local",
-                "user": "test_user",
-                "password": "test_pass",
-                "requests_timeout": 30,
-            }
-        }
         mock_get_url.return_value = "https://fake.farm/v2"
 
         mock_response = MagicMock()
@@ -398,20 +367,16 @@ class ZimFarmTest(BaseWpOneDbTest):
         self.assertEqual(provider._refresh_token, "refresh_token_123")
         self.assertEqual(provider._expires_at, datetime.datetime(2023, 1, 1, 12, 0, 0))
 
-    @patch("wp1.zimfarm.CREDENTIALS")
+    @override_settings(
+        ZIMFARM_AUTH_MODE="local",
+        ZIMFARM_USER="test_user",
+        ZIMFARM_PASSWORD="test_pass",
+    )
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.get_zimfarm_url")
     def test_token_provider_generate_local_access_token_with_refresh(
-        self, mock_get_url, mock_requests, mock_credentials
+        self, mock_get_url, mock_requests
     ):
-        mock_credentials.__getitem__.return_value = {
-            "ZIMFARM": {
-                "auth_mode": "local",
-                "user": "test_user",
-                "password": "test_pass",
-                "requests_timeout": 30,
-            }
-        }
         mock_get_url.return_value = "https://fake.farm/v2"
 
         mock_response = MagicMock()
@@ -435,19 +400,16 @@ class ZimFarmTest(BaseWpOneDbTest):
             headers={"User-Agent": "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>"},
         )
 
-    @patch("wp1.zimfarm.CREDENTIALS")
+    @override_settings(
+        ZIMFARM_AUTH_MODE="local",
+        ZIMFARM_USER="test_user",
+        ZIMFARM_PASSWORD="test_pass",
+    )
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.get_zimfarm_url")
     def test_token_provider_generate_local_access_token_http_error(
-        self, mock_get_url, mock_requests, mock_credentials
+        self, mock_get_url, mock_requests
     ):
-        mock_credentials.__getitem__.return_value = {
-            "ZIMFARM": {
-                "auth_mode": "local",
-                "user": "test_user",
-                "password": "test_pass",
-            }
-        }
         mock_get_url.return_value = "https://fake.farm/v2"
 
         mock_response = MagicMock()
@@ -460,19 +422,13 @@ class ZimFarmTest(BaseWpOneDbTest):
         with self.assertRaises(ZimFarmError):
             provider._generate_local_access_token()
 
-    @patch("wp1.zimfarm.CREDENTIALS")
+    @override_settings(
+        ZIMFARM_AUTH_MODE="local",
+        ZIMFARM_USER="test_user",
+        ZIMFARM_PASSWORD="test_pass",
+    )
     @patch("wp1.zimfarm.naive_utcnow")
-    def test_token_provider_get_access_token_not_expired(
-        self, mock_naive_utcnow, mock_credentials
-    ):
-        mock_credentials.__getitem__.return_value = {
-            "ZIMFARM": {
-                "auth_mode": "local",
-                "user": "test_user",
-                "password": "test_pass",
-                "token_renewal_window": 300,
-            }
-        }
+    def test_token_provider_get_access_token_not_expired(self, mock_naive_utcnow):
 
         mock_naive_utcnow.return_value = datetime.datetime(
             2023, 1, 1, 11, 50, 0, tzinfo=None
@@ -491,22 +447,70 @@ class ZimFarmTest(BaseWpOneDbTest):
         self.assertEqual(token, "existing_token")
         redis.hset.assert_not_called()
 
-    @patch("wp1.zimfarm.CREDENTIALS")
+    @override_settings(
+        ZIMFARM_AUTH_MODE="local",
+        ZIMFARM_USER="test_user",
+        ZIMFARM_PASSWORD="test_pass",
+    )
+    @patch("wp1.zimfarm.naive_utcnow")
+    def test_token_provider_get_access_token_bytes_from_redis(self, mock_naive_utcnow):
+        """A real Redis client without decode_responses returns bytes keys/values."""
+
+        mock_naive_utcnow.return_value = datetime.datetime(
+            2023, 1, 1, 11, 50, 0, tzinfo=None
+        )
+
+        redis = MagicMock()
+        redis.hgetall.return_value = {
+            b"access_token": b"existing_token",
+            b"refresh_token": b"existing_refresh",
+            b"expires_at": b"2023-01-01T12:00:00Z",
+        }
+
+        provider = ZimfarmClientTokenProvider()
+        token = provider.get_access_token(redis)
+
+        self.assertEqual(token, "existing_token")
+        redis.hset.assert_not_called()
+
+    @override_settings(
+        ZIMFARM_AUTH_MODE="local",
+        ZIMFARM_USER="test_user",
+        ZIMFARM_PASSWORD="test_pass",
+    )
+    @patch("wp1.zimfarm.naive_utcnow")
+    def test_token_provider_get_access_token_empty_hash_keeps_memory_token(
+        self, mock_naive_utcnow
+    ):
+        """hgetall returns {} for a missing key; the in-memory token survives."""
+
+        mock_naive_utcnow.return_value = datetime.datetime(
+            2023, 1, 1, 11, 50, 0, tzinfo=None
+        )
+
+        redis = MagicMock()
+        redis.hgetall.return_value = {}
+
+        provider = ZimfarmClientTokenProvider()
+        provider._access_token = "memory_token"
+        provider._expires_at = datetime.datetime(2023, 1, 1, 12, 0, 0, tzinfo=None)
+        token = provider.get_access_token(redis)
+
+        self.assertEqual(token, "memory_token")
+        redis.hset.assert_not_called()
+
+    @override_settings(
+        ZIMFARM_AUTH_MODE="oauth",
+        ZIMFARM_OAUTH_CLIENT_ID="test_client_id",
+        ZIMFARM_OAUTH_CLIENT_SECRET="test_client_secret",
+        ZIMFARM_OAUTH_AUDIENCE_ID="test_audience",
+        ZIMFARM_OAUTH_ISSUER="https://oauth.example.com",
+    )
     @patch("wp1.zimfarm.naive_utcnow")
     @patch("wp1.zimfarm.requests")
     def test_token_provider_get_access_token_expired_oauth(
-        self, mock_requests, mock_naive_utcnow, mock_credentials
+        self, mock_requests, mock_naive_utcnow
     ):
-        mock_credentials.__getitem__.return_value = {
-            "ZIMFARM": {
-                "auth_mode": "oauth",
-                "oauth_client_id": "test_client_id",
-                "oauth_client_secret": "test_client_secret",
-                "oauth_audience_id": "test_audience",
-                "oauth_issuer": "https://oauth.example.com",
-                "token_renewal_window": 300,
-            }
-        }
 
         mock_naive_utcnow.return_value = datetime.datetime(
             2023, 1, 1, 12, 0, 0, tzinfo=None
@@ -532,22 +536,18 @@ class ZimFarmTest(BaseWpOneDbTest):
         self.assertEqual(token, "new_oauth_token")
         redis.hset.assert_called_once()
 
-    @patch("wp1.zimfarm.CREDENTIALS")
+    @override_settings(
+        ZIMFARM_AUTH_MODE="local",
+        ZIMFARM_USER="test_user",
+        ZIMFARM_PASSWORD="test_pass",
+    )
     @patch("wp1.zimfarm.naive_utcnow")
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.get_zimfarm_url")
     def test_token_provider_get_access_token_expired_local(
-        self, mock_get_url, mock_requests, mock_naive_utcnow, mock_credentials
+        self, mock_get_url, mock_requests, mock_naive_utcnow
     ):
         """Test get_access_token refreshes token when expired (local mode)"""
-        mock_credentials.__getitem__.return_value = {
-            "ZIMFARM": {
-                "auth_mode": "local",
-                "user": "test_user",
-                "password": "test_pass",
-                "token_renewal_window": 300,
-            }
-        }
         mock_get_url.return_value = "https://fake.farm/v2"
 
         mock_naive_utcnow.return_value = datetime.datetime(
@@ -575,21 +575,18 @@ class ZimFarmTest(BaseWpOneDbTest):
         self.assertEqual(token, "new_local_token")
         redis.hset.assert_called_once()
 
-    @patch("wp1.zimfarm.CREDENTIALS")
+    @override_settings(
+        ZIMFARM_AUTH_MODE="oauth",
+        ZIMFARM_OAUTH_CLIENT_ID="test_client_id",
+        ZIMFARM_OAUTH_CLIENT_SECRET="test_client_secret",
+        ZIMFARM_OAUTH_AUDIENCE_ID="test_audience",
+        ZIMFARM_OAUTH_ISSUER="https://oauth.example.com",
+    )
     @patch("wp1.zimfarm.naive_utcnow")
     @patch("wp1.zimfarm.requests")
     def test_token_provider_get_access_token_no_redis_data_oauth(
-        self, mock_requests, mock_naive_utcnow, mock_credentials
+        self, mock_requests, mock_naive_utcnow
     ):
-        mock_credentials.__getitem__.return_value = {
-            "ZIMFARM": {
-                "auth_mode": "oauth",
-                "oauth_client_id": "test_client_id",
-                "oauth_client_secret": "test_client_secret",
-                "oauth_audience_id": "test_audience",
-                "oauth_issuer": "https://oauth.example.com",
-            }
-        }
 
         mock_naive_utcnow.return_value = datetime.datetime(
             2023, 1, 1, 12, 0, 0, tzinfo=None
@@ -611,20 +608,17 @@ class ZimFarmTest(BaseWpOneDbTest):
         self.assertEqual(token, "fresh_oauth_token")
         redis.hset.assert_called_once()
 
-    @patch("wp1.zimfarm.CREDENTIALS")
+    @override_settings(
+        ZIMFARM_AUTH_MODE="local",
+        ZIMFARM_USER="test_user",
+        ZIMFARM_PASSWORD="test_pass",
+    )
     @patch("wp1.zimfarm.naive_utcnow")
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.get_zimfarm_url")
     def test_token_provider_get_access_token_no_redis_data_local(
-        self, mock_get_url, mock_requests, mock_naive_utcnow, mock_credentials
+        self, mock_get_url, mock_requests, mock_naive_utcnow
     ):
-        mock_credentials.__getitem__.return_value = {
-            "ZIMFARM": {
-                "auth_mode": "local",
-                "user": "test_user",
-                "password": "test_pass",
-            }
-        }
         mock_get_url.return_value = "https://fake.farm/v2"
 
         mock_naive_utcnow.return_value = datetime.datetime(
@@ -648,20 +642,15 @@ class ZimFarmTest(BaseWpOneDbTest):
         self.assertEqual(token, "fresh_local_token")
         redis.hset.assert_called_once()
 
-    @patch("wp1.zimfarm.CREDENTIALS")
+    @override_settings(
+        ZIMFARM_AUTH_MODE="oauth",
+        ZIMFARM_OAUTH_CLIENT_ID="test_client_id",
+        ZIMFARM_OAUTH_CLIENT_SECRET="test_client_secret",
+        ZIMFARM_OAUTH_AUDIENCE_ID="test_audience",
+        ZIMFARM_OAUTH_ISSUER="https://oauth.example.com",
+    )
     @patch("wp1.zimfarm.naive_utcnow")
-    def test_token_provider_get_access_token_stores_in_redis(
-        self, mock_naive_utcnow, mock_credentials
-    ):
-        mock_credentials.__getitem__.return_value = {
-            "ZIMFARM": {
-                "auth_mode": "oauth",
-                "oauth_client_id": "test_client_id",
-                "oauth_client_secret": "test_client_secret",
-                "oauth_audience_id": "test_audience",
-                "oauth_issuer": "https://oauth.example.com",
-            }
-        }
+    def test_token_provider_get_access_token_stores_in_redis(self, mock_naive_utcnow):
 
         mock_naive_utcnow.return_value = datetime.datetime(
             2023, 1, 1, 12, 0, 0, tzinfo=None
@@ -725,7 +714,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.token_provider")
-    @patch("wp1.zimfarm._get_params")
+    @patch("wp1.zimfarm._get_schedule_create_params")
     def test_create_or_update_zimfarm_schedule_creates(
         self, get_params_mock, mock_token_provider, mock_requests
     ):
@@ -769,7 +758,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.token_provider")
-    @patch("wp1.zimfarm._get_params")
+    @patch("wp1.zimfarm._get_schedule_update_params")
     @patch("wp1.zimfarm.zimfarm_schedule_exists", return_value=True)
     def test_create_or_update_zimfarm_schedule_updates(
         self,
@@ -807,6 +796,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             "New Long Description",
             None,
         )
+        get_params_mock.assert_called_once()
 
         # Actually check that the schedule was updated in the DB
         with self.wp10db.cursor() as cursor:
@@ -822,7 +812,96 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.token_provider")
-    @patch("wp1.zimfarm._get_params")
+    @patch("wp1.zimfarm._get_schedule_create_params")
+    @patch("wp1.zimfarm._get_schedule_update_params")
+    def test_create_or_update_zimfarm_schedule_adopts_orphaned_recipe(
+        self,
+        get_update_params_mock,
+        get_create_params_mock,
+        mock_token_provider,
+        mock_requests,
+    ):
+        """A 409 on recipe creation adopts the existing recipe via PATCH."""
+        redis = MagicMock()
+        get_create_params_mock.return_value = {"name": "foo"}
+        get_update_params_mock.return_value = {"name": "bar"}
+        mock_token_provider.get_access_token.return_value = "abcdef"
+        post_response = MagicMock()
+        post_response.status_code = 409
+        mock_requests.post.return_value = post_response
+        mock_requests.patch.return_value = MagicMock()
+
+        zimfarm.create_or_update_zimfarm_schedule(
+            redis,
+            self.wp10db,
+            self.builder,
+            "Test Title",
+            "Test Description",
+            None,
+            None,
+        )
+
+        expected_headers = {
+            "Authorization": "Bearer abcdef",
+            "User-Agent": "WP 1.0 bot 1.0.0/Audiodude <audiodude@gmail.com>",
+        }
+        mock_requests.post.assert_called_once_with(
+            "https://fake.farm/v2/recipes",
+            headers=expected_headers,
+            json={"name": "foo"},
+        )
+        mock_requests.patch.assert_called_once_with(
+            "https://fake.farm/v2/recipes/wp1_selection_3c4d",
+            headers=expected_headers,
+            json={"name": "bar"},
+        )
+        # The adopted recipe gets a local schedule row.
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM zim_schedules WHERE s_title = %s", (b"Test Title",)
+            )
+            result = cursor.fetchone()
+            self.assertIsNotNone(result)
+            self.assertEqual(self.builder.b_id, result["s_builder_id"])
+
+    @patch("wp1.zimfarm.requests")
+    @patch("wp1.zimfarm.token_provider")
+    @patch("wp1.zimfarm._get_schedule_create_params")
+    def test_create_or_update_zimfarm_schedule_adopt_patch_fails(
+        self, get_params_mock, mock_token_provider, mock_requests
+    ):
+        """If the adopting PATCH fails, the error propagates and no row is inserted."""
+        redis = MagicMock()
+        get_params_mock.return_value = {"name": "bar"}
+        mock_token_provider.get_access_token.return_value = "abcdef"
+        mock_requests.exceptions.HTTPError = requests.exceptions.HTTPError
+        post_response = MagicMock()
+        post_response.status_code = 409
+        mock_requests.post.return_value = post_response
+        patch_response = MagicMock()
+        patch_response.raise_for_status.side_effect = requests.exceptions.HTTPError
+        mock_requests.patch.return_value = patch_response
+
+        with self.assertRaises(ZimFarmError):
+            zimfarm.create_or_update_zimfarm_schedule(
+                redis,
+                self.wp10db,
+                self.builder,
+                "Test Title",
+                "Test Description",
+                None,
+                None,
+            )
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "SELECT * FROM zim_schedules WHERE s_title = %s", (b"Test Title",)
+            )
+            self.assertIsNone(cursor.fetchone())
+
+    @patch("wp1.zimfarm.requests")
+    @patch("wp1.zimfarm.token_provider")
+    @patch("wp1.zimfarm._get_schedule_create_params")
     def test_create_or_update_zimfarm_schedule_http_error(
         self, get_params_mock, mock_token_provider, mock_requests
     ):
@@ -924,7 +1003,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.token_provider")
-    @patch("wp1.zimfarm._get_params")
+    @patch("wp1.zimfarm._get_schedule_create_params")
     def test_create_or_update_zimfarm_schedule_create_empty_long_desc_ok(
         self, get_params_mock, mock_token_provider, mock_requests
     ):
@@ -955,7 +1034,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.token_provider")
-    @patch("wp1.zimfarm._get_params")
+    @patch("wp1.zimfarm._get_schedule_create_params")
     def test_create_or_update_zimfarm_schedule_create_missing_long_desc_ok(
         self, get_params_mock, mock_token_provider, mock_requests
     ):
@@ -1050,7 +1129,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.token_provider")
-    @patch("wp1.zimfarm._get_params")
+    @patch("wp1.zimfarm._get_schedule_create_params")
     def test_create_or_update_zimfarm_schedule_valid_graphemes(
         self, get_params_mock, mock_token_provider, mock_requests
     ):
@@ -1229,7 +1308,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             zimfarm.zim_file_url_for_task_id("foo-bar")
 
     @patch("wp1.zimfarm.requests.get")
-    @patch("wp1.zimfarm.CREDENTIALS", {Environment.TEST: {}})
+    @override_settings(ZIMFARM_S3_URL=None)
     def test_zim_file_url_for_task_id_missing_s3_url(self, patched_get):
         resp = MagicMock()
         resp.json.return_value = {
@@ -1542,14 +1621,9 @@ class ZimFarmTest(BaseWpOneDbTest):
         with self.assertRaises(InvalidZimFlavourError):
             zimfarm.validate_flavour("innvalid_flavour")
 
+    @override_settings(ZIMFARM_CACHE_URL="https://wasabi.fake/bucket")
     def test_get_params_with_flavour_nopic(self):
-        from wp1.zimfarm import CREDENTIALS
-
-        CREDENTIALS[Environment.TEST]["ZIMFARM"][
-            "cache_url"
-        ] = "https://wasabi.fake/bucket"
-
-        actual = zimfarm._get_params(
+        actual = zimfarm._get_schedule_create_params(
             self.builder,
             self.selection,
             title="My Builder",
@@ -1560,14 +1634,9 @@ class ZimFarmTest(BaseWpOneDbTest):
 
         self.assertEqual(["nopic:nopic"], actual["config"]["offliner"]["format"])
 
+    @override_settings(ZIMFARM_CACHE_URL="https://wasabi.fake/bucket")
     def test_get_params_with_flavour_mini(self):
-        from wp1.zimfarm import CREDENTIALS
-
-        CREDENTIALS[Environment.TEST]["ZIMFARM"][
-            "cache_url"
-        ] = "https://wasabi.fake/bucket"
-
-        actual = zimfarm._get_params(
+        actual = zimfarm._get_schedule_create_params(
             self.builder,
             self.selection,
             title="My Builder",
@@ -1578,14 +1647,9 @@ class ZimFarmTest(BaseWpOneDbTest):
 
         self.assertEqual(["nodet,nopic:mini"], actual["config"]["offliner"]["format"])
 
+    @override_settings(ZIMFARM_CACHE_URL="https://wasabi.fake/bucket")
     def test_get_params_with_flavour_maxi(self):
-        from wp1.zimfarm import CREDENTIALS
-
-        CREDENTIALS[Environment.TEST]["ZIMFARM"][
-            "cache_url"
-        ] = "https://wasabi.fake/bucket"
-
-        actual = zimfarm._get_params(
+        actual = zimfarm._get_schedule_create_params(
             self.builder,
             self.selection,
             title="My Builder",
@@ -1596,14 +1660,9 @@ class ZimFarmTest(BaseWpOneDbTest):
 
         self.assertEqual(["novid:maxi"], actual["config"]["offliner"]["format"])
 
+    @override_settings(ZIMFARM_CACHE_URL="https://wasabi.fake/bucket")
     def test_get_params_without_flavour_no_format(self):
-        from wp1.zimfarm import CREDENTIALS
-
-        CREDENTIALS[Environment.TEST]["ZIMFARM"][
-            "cache_url"
-        ] = "https://wasabi.fake/bucket"
-
-        actual = zimfarm._get_params(
+        actual = zimfarm._get_schedule_create_params(
             self.builder,
             self.selection,
             title="My Builder",
@@ -1615,7 +1674,7 @@ class ZimFarmTest(BaseWpOneDbTest):
 
     @patch("wp1.zimfarm.requests")
     @patch("wp1.zimfarm.token_provider")
-    @patch("wp1.zimfarm._get_params")
+    @patch("wp1.zimfarm._get_schedule_create_params")
     def test_create_or_update_zimfarm_schedule_with_flavour(
         self, get_params_mock, mock_token_provider, mock_requests
     ):

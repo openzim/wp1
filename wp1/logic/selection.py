@@ -9,17 +9,13 @@ import attr
 from pymysql.connections import Connection
 
 from wp1.constants import CONTENT_TYPE_TO_EXT, TS_FORMAT_WP10, ZIM_FILE_TTL
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 from wp1.logic import util
 from wp1.models.wp10.selection import Selection
 from wp1.storage import connect_storage
 from wp1.timestamp import utcnow
 
-S3_PUBLIC_URL = (
-    CREDENTIALS.get(ENV, {})
-    .get("CLIENT_URL", {})
-    .get("s3", "http://credentials.not.found.fake")
-)
+S3_PUBLIC_URL = get_settings().CLIENT_S3_URL or "http://credentials.not.found.fake"
 
 DEFAULT_SELECTION_NAME = "selection"
 
@@ -100,6 +96,7 @@ def object_key_for(
     content_type: str,
     model: str,
     name: str | None = None,
+    dbname: str | None = None,
     use_legacy_schema: bool = False,
 ) -> str:
     if not selection_id:
@@ -116,6 +113,11 @@ def object_key_for(
             "ext": ext,
         }
 
+    # Include the dbname of the wiki (eg 'enwiki') in the filename, so that
+    # downloaded selections identify the wiki their articles belong to.
+    if dbname is not None:
+        ext = "%s.%s" % (dbname, ext)
+
     return "selections/%(model)s/%(id)s/%(name)s.%(ext)s" % {
         "model": model,
         "id": selection_id,
@@ -128,6 +130,7 @@ def object_key_for_selection(
     selection: Selection,
     model: str,
     name: str | None = None,
+    dbname: str | None = None,
     use_legacy_schema: bool = False,
 ) -> str:
     if not selection:
@@ -139,6 +142,7 @@ def object_key_for_selection(
         selection.s_content_type.decode("utf-8"),
         model,
         name=name,
+        dbname=dbname,
         use_legacy_schema=use_legacy_schema,
     )
 
@@ -151,13 +155,20 @@ def delete_keys_from_storage(keys: bytes | list[bytes]) -> bool:
         if isinstance(key, str):
             raise ValueError("Expected keys to all be bytes, not str")
 
-    s3 = connect_storage()
-    resp = s3.bucket.delete_objects(
-        Delete={
-            "Objects": [{"Key": html.escape(k.decode("utf-8"))} for k in keys],
-            "Quiet": True,
-        }
-    )
+    if not keys:
+        return True
+
+    try:
+        s3 = connect_storage()
+        resp = s3.bucket.delete_objects(
+            Delete={
+                "Objects": [{"Key": html.escape(k.decode("utf-8"))} for k in keys],
+                "Quiet": True,
+            }
+        )
+    except Exception:
+        logger.warning("Failed to delete keys from storage", exc_info=True)
+        return False
 
     fully_successful = True
 
@@ -188,7 +199,11 @@ def set_error_messages(selection: Selection, e: Exception) -> None:
     # Use __cause__ because we can use '... from e' expressions to either set or suppress the cause.
     if e.__cause__:
         messages.append(str(e.__cause__))
-    selection.s_error_messages = json.dumps({"error_messages": messages})
+    error_data = {"error_messages": messages}
+    extra = getattr(e, "extra", None)
+    if isinstance(extra, dict):
+        error_data.update(extra)
+    selection.s_error_messages = json.dumps(error_data)
 
 
 def update_zimfarm_task(

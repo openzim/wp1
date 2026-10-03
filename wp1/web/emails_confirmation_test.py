@@ -3,6 +3,7 @@ from unittest.mock import patch, Mock, MagicMock
 import uuid
 
 from wp1.base_db_test import BaseWpOneDbTest
+from wp1.config import override_settings
 from wp1.web.emails import respond_to_zim_task_completed
 from wp1.web.emails_confirmation import send_zim_email_confirmation
 from wp1.models.wp10.zim_file import ZimTask
@@ -93,19 +94,13 @@ class EmailConfirmationTest(BaseWpOneDbTest):
         mock_notify.assert_not_called()  # Should NOT send email
 
     @patch("wp1.web.emails_confirmation.requests.post")
-    @patch("wp1.web.emails_confirmation.CREDENTIALS")
-    @patch("wp1.web.emails_confirmation.ENV", "test")
+    @override_settings(
+        MAILGUN_API_KEY="test-api-key",
+        MAILGUN_URL="https://api.mailgun.net/v3/test.com/messages",
+    )
     @patch("wp1.web.emails_confirmation.jinja_env")
-    def test_send_zim_email_confirmation_success(
-        self, mock_jinja_env, mock_credentials, mock_post
-    ):
+    def test_send_zim_email_confirmation_success(self, mock_jinja_env, mock_post):
         """Test successful confirmation email sending."""
-        mock_credentials.get.return_value = {
-            "MAILGUN": {
-                "api_key": "test-api-key",
-                "url": "https://api.mailgun.net/v3/test.com/messages",
-            }
-        }
 
         mock_template = Mock()
         mock_template.render.return_value = "<html>Confirmation email content</html>"
@@ -158,11 +153,9 @@ class EmailConfirmationTest(BaseWpOneDbTest):
         self.assertIn("confirm your email address", email_data["text"])
         self.assertEqual(email_data["html"], "<html>Confirmation email content</html>")
 
-    @patch("wp1.web.emails.CREDENTIALS")
-    @patch("wp1.web.emails.ENV", "test")
-    def test_send_zim_email_confirmation_no_mailgun_config(self, mock_credentials):
+    @override_settings(MAILGUN_API_KEY="")
+    def test_send_zim_email_confirmation_no_mailgun_config(self):
         """Test confirmation email sending when Mailgun is not configured."""
-        mock_credentials.get.return_value = {}
 
         result = send_zim_email_confirmation(
             recipient_username="testuser",
@@ -176,20 +169,14 @@ class EmailConfirmationTest(BaseWpOneDbTest):
 
         self.assertFalse(result)
 
-    @patch("wp1.web.emails.requests.post")
-    @patch("wp1.web.emails.CREDENTIALS")
-    @patch("wp1.web.emails.ENV", "test")
-    @patch("wp1.web.emails.jinja_env")
-    def test_send_zim_email_confirmation_api_error(
-        self, mock_jinja_env, mock_credentials, mock_post
-    ):
+    @patch("wp1.web.emails_confirmation.requests.post")
+    @override_settings(
+        MAILGUN_API_KEY="test-api-key",
+        MAILGUN_URL="https://api.mailgun.net/v3/test.com/messages",
+    )
+    @patch("wp1.web.emails_confirmation.jinja_env")
+    def test_send_zim_email_confirmation_api_error(self, mock_jinja_env, mock_post):
         """Test confirmation email sending when API returns error."""
-        mock_credentials.get.return_value = {
-            "MAILGUN": {
-                "api_key": "test-api-key",
-                "url": "https://api.mailgun.net/v3/test.com/messages",
-            }
-        }
 
         mock_template = Mock()
         mock_template.render.return_value = "<html>Confirmation email content</html>"

@@ -10,7 +10,7 @@ from redis import Redis
 from wp1 import api, app_logging
 from wp1.conf import get_conf
 from wp1.constants import LIST_URL, LIST_V2_URL, WIKI_BASE
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 from wp1.logic import project as logic_project
 from wp1.logic import util as logic_util
 from wp1.templates import env as jinja_env
@@ -20,12 +20,8 @@ logger = logging.getLogger(__name__)
 
 
 def get_redis():
-    try:
-        creds = CREDENTIALS[ENV]["REDIS"]
-        return Redis(**creds)
-    except KeyError:
-        logger.exception("Redis creds not found, returning None Redis")
-        return None
+    settings = get_settings()
+    return Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 
 
 config = get_conf()
@@ -51,7 +47,7 @@ def labels_for_classes(sort_qual, sort_imp):
 
     for k in sort_imp.keys():
         imp_labels[k] = "{{%s}}" % k.decode("utf-8")
-    imp_labels[UNASSESSED_CLASS] = "No-Class"
+    imp_labels[UNASSESSED_CLASS] = "No-Importance"
 
     return qual_labels, imp_labels
 
@@ -283,11 +279,18 @@ def data_for_stats(stats):
     cols = {}
 
     for row in stats:
+        # A NULL quality or importance means the article has been rated on
+        # one axis but not the other. cleanup_project normalizes these to
+        # NOT_A_CLASS in the database, but the stats query can still see NULL
+        # rows (e.g. mid-update). Treat them as NOT_A_CLASS here as well, so
+        # that None never ends up as a table data key.
+        q = row["q"] if row["q"] is not None else NOT_A_CLASS
+        i = row["i"] if row["i"] is not None else NOT_A_CLASS
         # The += here is for 'NotA-Class' classifications, which
         # could happen either as a result of an actual category or as
         # the result of the if statements above
-        data[row["q"]][row["i"]] += row["n"]
-        cols[row["i"]] = 1
+        data[q][i] += row["n"]
+        cols[i] = 1
 
     return data, cols
 

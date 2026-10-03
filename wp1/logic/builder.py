@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib
 import json
 import logging
+import time
 from typing import TYPE_CHECKING, Any
 
 import attr
@@ -10,8 +11,9 @@ from dateutil.relativedelta import relativedelta
 from kiwixstorage import KiwixStorage
 from pymysql.connections import Connection
 from redis import Redis
-
+from redis.exceptions import RedisError
 import wp1.logic.selection as logic_selection
+import wp1.logic.sites as logic_sites
 import wp1.logic.util as logic_util
 import wp1.logic.zim_files as logic_zim_tasks
 import wp1.logic.zim_schedules as logic_zim_schedules
@@ -21,9 +23,14 @@ from wp1.constants import (
     EXT_TO_CONTENT_TYPE,
     TS_FORMAT_WP10,
 )
-from wp1.credentials import CREDENTIALS, ENV
+from wp1.config import get_settings
 from wp1.environment import Environment
-from wp1.exceptions import ObjectNotFoundError, UserNotAuthorizedError, ZimFarmError
+from wp1.exceptions import (
+    BuilderDeleteConfirmationError,
+    ObjectNotFoundError,
+    UserNotAuthorizedError,
+    ZimFarmError,
+)
 from wp1.models.wp10.builder import Builder
 from wp1.models.wp10.selection import Selection
 from wp1.models.wp10.zim_file import ZimTask
@@ -41,6 +48,22 @@ logger = logging.getLogger(__name__)
 
 META_BUILDER_MODELS = {"wp1.selection.models.combinator"}
 
+# How a referenced builder's broken TSV selection is described to users, both
+# when a Combinator build hits it (wp1.selection.meta_builder) and when the
+# failure is derived at read time for display.
+REFERENCE_FAILURE_INFO = {
+    "FAILED": {
+        "code": "REFERENCED_SELECTION_FAILED",
+        "reason": "latest selection failed",
+        "action": "Open this list, fix the failed selection, then update this Combinator.",
+    },
+    "CAN_RETRY": {
+        "code": "REFERENCED_SELECTION_RETRYABLE_FAILURE",
+        "reason": "latest selection failed but can be retried",
+        "action": "Open this list and retry it, then retry this Combinator.",
+    },
+}
+
 
 def builder_label_by_id(wp10db: Connection, builder_id: str | bytes) -> str:
     try:
@@ -52,6 +75,159 @@ def builder_label_by_id(wp10db: Connection, builder_id: str | bytes) -> str:
 
 def is_meta_builder(builder: Builder) -> bool:
     return builder.model in META_BUILDER_MODELS
+
+
+def _assert_builder_owner(builder: Builder, user_id: str | bytes | int) -> None:
+    user_id_str = logic_util.as_text(user_id)
+    if builder.user_id == user_id_str:
+        return
+
+    msg = "User %s is not authorized to access builder %s" % (
+        user_id_str,
+        builder.id,
+    )
+    logger.warning(msg)
+    raise UserNotAuthorizedError(msg)
+
+
+def _group_builder_ids(params: dict[str, Any], group_name: str) -> list[str]:
+    group = params.get(group_name)
+    if not isinstance(group, dict):
+        return []
+
+    builders = group.get("builders", [])
+    if not isinstance(builders, list):
+        return []
+
+    return [builder_id for builder_id in builders if isinstance(builder_id, str)]
+
+
+def _parse_builder_params(raw_params: bytes | None) -> dict[str, Any] | None:
+    try:
+        params = json.loads(raw_params or b"{}")
+    except json.decoder.JSONDecodeError:
+        return None
+    if not isinstance(params, dict):
+        return None
+    return params
+
+
+def _referenced_builder_ids(params: dict[str, Any]) -> list[str]:
+    """All builder ids referenced by meta-builder params, include and exclude."""
+    ids = _group_builder_ids(params, "include") + _group_builder_ids(params, "exclude")
+    return list(dict.fromkeys(ids))
+
+
+def _remove_builder_reference_from_params(
+    params: dict[str, Any], target_builder_id: str
+) -> tuple[dict[str, Any], bool]:
+    changed = False
+    for group_name in ("include", "exclude"):
+        group = params.get(group_name)
+        if not isinstance(group, dict):
+            continue
+
+        builders = group.get("builders", [])
+        if not isinstance(builders, list):
+            continue
+
+        filtered_builders = [
+            builder_id for builder_id in builders if builder_id != target_builder_id
+        ]
+        if filtered_builders != builders:
+            group["builders"] = filtered_builders
+            changed = True
+
+    return params, changed
+
+
+def _combinator_reference_record(
+    combinator: Builder, target_builder_id: str
+) -> dict[str, Any] | None:
+    params = _parse_builder_params(combinator.b_params)
+    if params is None:
+        logger.warning("Could not parse params for builder id=%s", combinator.id)
+        return None
+
+    include_builders = _group_builder_ids(params, "include")
+    exclude_builders = _group_builder_ids(params, "exclude")
+
+    referenced_in = []
+    if target_builder_id in include_builders:
+        referenced_in.append("include")
+    if target_builder_id in exclude_builders:
+        referenced_in.append("exclude")
+
+    if not referenced_in:
+        return None
+
+    remaining_include_builders = [
+        builder_id for builder_id in include_builders if builder_id != target_builder_id
+    ]
+    return {
+        "builder": combinator,
+        "params": params,
+        "id": combinator.id,
+        "name": combinator.name,
+        "project": combinator.project,
+        "referenced_in": referenced_in,
+        "remaining_include_builder_count": len(remaining_include_builders),
+        "will_be_auto_deleted": len(remaining_include_builders) == 0,
+    }
+
+
+def _find_referencing_combinators(
+    wp10db: Connection, user_id: str | bytes | int, builder_id: str | bytes
+) -> list[dict[str, Any]]:
+    target_builder_id = logic_util.as_text(builder_id)
+    user_id_str = logic_util.as_text(user_id)
+
+    with wp10db.cursor() as cursor:
+        cursor.execute(
+            """SELECT * FROM builders
+           WHERE b_user_id = %s AND b_model = %s
+        """,
+            (user_id_str, "wp1.selection.models.combinator"),
+        )
+        combinators = [Builder(**row) for row in cursor.fetchall()]
+
+    records = []
+    for combinator in combinators:
+        if combinator.id == target_builder_id:
+            continue
+        record = _combinator_reference_record(combinator, target_builder_id)
+        if record is not None:
+            records.append(record)
+    return records
+
+
+def get_builder_delete_impact(
+    wp10db: Connection, user_id: str | bytes | int, builder_id: str | bytes
+) -> dict[str, Any]:
+    builder = get_builder(wp10db, builder_id)
+    _assert_builder_owner(builder, user_id)
+
+    return {
+        "builder": {
+            "id": builder.id,
+            "name": builder.name,
+            "project": builder.project,
+            "model": builder.model,
+        },
+        "affected_combinators": [
+            {
+                "id": record["id"],
+                "name": record["name"],
+                "project": record["project"],
+                "referenced_in": record["referenced_in"],
+                "remaining_include_builder_count": record[
+                    "remaining_include_builder_count"
+                ],
+                "will_be_auto_deleted": record["will_be_auto_deleted"],
+            }
+            for record in _find_referencing_combinators(wp10db, user_id, builder.id)
+        ],
+    }
 
 
 def get_builder_module_class(model: str) -> type[AbstractBuilder]:
@@ -72,7 +248,7 @@ def create_or_update_builder(
     params: dict[str, Any],
     model: bytes,
     builder_id: str | bytes | None = None,
-) -> str | bytes | None:
+) -> str | bytes:
     params_encoded = json.dumps(params).encode("utf-8")
     builder = Builder(
         b_name=name,
@@ -92,10 +268,15 @@ def create_or_update_builder(
         builder.b_id = builder_id.encode("utf-8")
     else:
         builder.b_id = str(builder_id).encode("utf-8")
-    if update_builder(wp10db, builder):
-        return builder_id
 
-    return None
+    # Raises ObjectNotFoundError if the builder doesn't exist and
+    # UserNotAuthorizedError if it belongs to another user, so callers can
+    # distinguish a 404 from a 403. See issue #502.
+    existing = get_builder(wp10db, builder.b_id)
+    _assert_builder_owner(existing, user_id)
+
+    update_builder(wp10db, builder)
+    return builder_id
 
 
 def insert_builder(wp10db: Connection, builder: Builder) -> bytes:
@@ -104,10 +285,10 @@ def insert_builder(wp10db: Connection, builder: Builder) -> bytes:
     with wp10db.cursor() as cursor:
         cursor.execute(
             """INSERT INTO builders
-             (b_id, b_name, b_user_id, b_project, b_params, b_model,
+             (b_id, b_name, b_user_id, b_project, b_dbname, b_params, b_model,
               b_created_at, b_updated_at)
            VALUES
-             (%(b_id)s, %(b_name)s, %(b_user_id)s, %(b_project)s,
+             (%(b_id)s, %(b_name)s, %(b_user_id)s, %(b_project)s, %(b_dbname)s,
               %(b_params)s, %(b_model)s, %(b_created_at)s,
               %(b_updated_at)s)
         """,
@@ -146,31 +327,100 @@ def update_builder(wp10db: Connection, builder: Builder) -> bool:
     return rowcount > 0
 
 
-def delete_builder(
-    wp10db: Connection, user_id: str | bytes, builder_id: str | bytes
+def _update_builder_params(
+    wp10db: Connection, builder: Builder, params: dict[str, Any]
+) -> bool:
+    builder.b_params = json.dumps(params).encode("utf-8")
+    builder.set_updated_at_now()
+    with wp10db.cursor() as cursor:
+        cursor.execute(
+            """UPDATE builders
+           SET b_params = %s, b_updated_at = %s
+           WHERE b_id = %s AND b_user_id = %s
+        """,
+            (builder.b_params, builder.b_updated_at, builder.b_id, builder.b_user_id),
+        )
+        rowcount = cursor.rowcount
+    wp10db.commit()
+    return rowcount > 0
+
+
+def _enqueue_combinator_rebuilds(redis: Redis, combinators: list[Builder]) -> list[str]:
+    combinator_cls = None
+    enqueued_combinator_ids = []
+    for combinator in combinators:
+        if combinator_cls is None:
+            combinator_cls = get_builder_module_class(combinator.model)
+        queues.enqueue_materialize(
+            redis, combinator_cls, combinator, "text/tab-separated-values"
+        )
+        enqueued_combinator_ids.append(combinator.id)
+
+    return enqueued_combinator_ids
+
+
+def _rebuild_referencing_combinators(
+    redis: Redis, wp10db: Connection, builder: Builder
+) -> list[str]:
+    referencing_records = _find_referencing_combinators(
+        wp10db, builder.user_id, builder.id
+    )
+
+    enqueued_combinator_ids = []
+    with wp10db.cursor() as cursor:
+        for record in referencing_records:
+            combinator = record["builder"]
+            try:
+                enqueued_combinator_ids.extend(
+                    _enqueue_combinator_rebuilds(redis, [combinator])
+                )
+            except RedisError:
+                logger.exception(
+                    "Could not enqueue dependent Combinator rebuild for builder id=%s",
+                    combinator.b_id,
+                )
+                continue
+
+            # The list UI treats builders newer than their latest selection as pending.
+            cursor.execute(
+                """UPDATE builders
+               SET b_updated_at = %s
+               WHERE b_id = %s AND b_user_id = %s
+            """,
+                (
+                    time.strftime(TS_FORMAT_WP10, time.gmtime()).encode("utf-8"),
+                    combinator.b_id,
+                    combinator.b_user_id,
+                ),
+            )
+    wp10db.commit()
+
+    return enqueued_combinator_ids
+
+
+def _combine_delete_status(aggregate: dict[str, Any], current: dict[str, bool]) -> None:
+    for key in (
+        "db_delete_success",
+        "s3_delete_success",
+        "zimfarm_delete_success",
+        "rq_cancel_success",
+    ):
+        aggregate[key] = aggregate[key] and current[key]
+
+
+def _delete_builder_and_assets(
+    wp10db: Connection,
+    redis: Redis,
+    user_id: str | bytes | int,
+    builder_id: str | bytes,
 ) -> dict[str, bool]:
     if not isinstance(builder_id, bytes):
         builder_id = str(builder_id).encode("utf-8")
 
     # Fail fast if the Builder doesn't even exist
-    try:
-        builder = get_builder(wp10db, builder_id)
-    except ObjectNotFoundError:
-        raise
-
-    user_id_str = (
-        user_id.decode("utf-8") if isinstance(user_id, bytes) else str(user_id)
-    )
-    if builder.b_user_id.decode("utf-8") != user_id_str:
-        msg = "User %s is not authorized to delete builder %s" % (
-            user_id_str,
-            builder_id.decode("utf-8"),
-        )
-        logger.warning(msg)
-        raise UserNotAuthorizedError(msg)
-
-    # Connect to Redis for zimfarm operations
-    redis = redis_connect()
+    builder = get_builder(wp10db, builder_id)
+    _assert_builder_owner(builder, user_id)
+    user_id_str = logic_util.as_text(user_id)
 
     # Try to delete the zimfarm schedule first (before deleting from DB)
     zimfarm_delete_success = True
@@ -219,7 +469,7 @@ def delete_builder(
            WHERE b.b_user_id = %s AND b.b_id = %s
              AND s.s_object_key IS NOT NULL
         """,
-            (user_id, builder_id),
+            (user_id_str, builder_id),
         )
         keys_to_delete = [d["object_key"] for d in cursor.fetchall()]
         cursor.execute(
@@ -227,7 +477,7 @@ def delete_builder(
            LEFT JOIN selections AS s ON s.s_builder_id = b.b_id
            WHERE b.b_user_id = %s AND b.b_id = %s
         """,
-            (user_id, builder_id),
+            (user_id_str, builder_id),
         )
         rowcount = cursor.rowcount
 
@@ -243,6 +493,79 @@ def delete_builder(
     }
 
 
+def delete_builder(
+    wp10db: Connection,
+    user_id: str | bytes | int,
+    builder_id: str | bytes,
+    delete_combinator_ids: list[str] | None = None,
+    confirm_builder_name: str | None = None,
+) -> dict[str, Any]:
+    if not isinstance(builder_id, bytes):
+        builder_id = str(builder_id).encode("utf-8")
+    builder = get_builder(wp10db, builder_id)
+    _assert_builder_owner(builder, user_id)
+
+    if confirm_builder_name is not None and confirm_builder_name != builder.name:
+        raise BuilderDeleteConfirmationError("Builder name confirmation did not match")
+
+    redis = redis_connect()
+
+    selected_combinator_ids = {
+        logic_util.as_text(combinator_id)
+        for combinator_id in (delete_combinator_ids or [])
+    }
+    referencing_records = _find_referencing_combinators(wp10db, user_id, builder.id)
+
+    selected_delete_records = []
+    auto_delete_records = []
+    kept_records = []
+    for record in referencing_records:
+        if record["id"] in selected_combinator_ids:
+            selected_delete_records.append(record)
+        elif record["will_be_auto_deleted"]:
+            auto_delete_records.append(record)
+        else:
+            kept_records.append(record)
+
+    status: dict[str, Any] = {
+        "db_delete_success": True,
+        "s3_delete_success": True,
+        "zimfarm_delete_success": True,
+        "rq_cancel_success": True,
+    }
+    for record in selected_delete_records + auto_delete_records:
+        _combine_delete_status(
+            status, _delete_builder_and_assets(wp10db, redis, user_id, record["id"])
+        )
+
+    _combine_delete_status(
+        status, _delete_builder_and_assets(wp10db, redis, user_id, builder_id)
+    )
+
+    updated_combinators = []
+    for record in kept_records:
+        params, changed = _remove_builder_reference_from_params(
+            record["params"], builder.id
+        )
+        if changed and _update_builder_params(wp10db, record["builder"], params):
+            updated_combinators.append(record["builder"])
+
+    updated_combinator_ids = _enqueue_combinator_rebuilds(redis, updated_combinators)
+
+    status.update(
+        {
+            "deleted_combinator_ids": [
+                record["id"] for record in selected_delete_records
+            ],
+            "auto_deleted_combinator_ids": [
+                record["id"] for record in auto_delete_records
+            ],
+            "updated_combinator_ids": updated_combinator_ids,
+        }
+    )
+    return status
+
+
 def get_builder(wp10db: Connection, id_: str | bytes) -> Builder:
     with wp10db.cursor() as cursor:
         cursor.execute("SELECT * FROM builders WHERE b_id = %s", id_)
@@ -253,6 +576,35 @@ def get_builder(wp10db: Connection, id_: str | bytes) -> Builder:
                 % (id_.decode("utf-8") if isinstance(id_, bytes) else id_)
             )
         return Builder(**db_builder)
+
+
+def _refresh_builder_dbname(redis: Redis, wp10db: Connection, builder: Builder) -> None:
+    """Resolves and persists the dbname for the builder's project, if needed.
+
+    The dbname (eg 'enwiki') is looked up in the redis-cached sitematrix. Any
+    failure to resolve it is logged and ignored, so that materialization can
+    proceed without it.
+    """
+    try:
+        dbname = logic_sites.dbname_for_project(
+            redis, builder.b_project.decode("utf-8")
+        )
+    except logic_sites.FETCH_ERRORS:
+        logger.exception("Could not resolve dbname for project=%s", builder.b_project)
+        return
+    if dbname is None:
+        logger.warning("No dbname found for project=%s", builder.b_project)
+        return
+    encoded = dbname.encode("utf-8")
+    if encoded == builder.b_dbname:
+        return
+    builder.b_dbname = encoded
+    with wp10db.cursor() as cursor:
+        cursor.execute(
+            "UPDATE builders SET b_dbname = %(b_dbname)s WHERE b_id = %(b_id)s",
+            {"b_dbname": builder.b_dbname, "b_id": builder.b_id},
+        )
+    wp10db.commit()
 
 
 def materialize_builder(
@@ -280,6 +632,7 @@ def materialize_builder(
     if builder.b_id is None:
         raise ValueError("Cannot materialize builder without b_id")
 
+    _refresh_builder_dbname(redis, wp10db, builder)
     try:
         materializer = builder_cls()
         next_version = logic_selection.get_next_version(
@@ -301,6 +654,8 @@ def materialize_builder(
             # version was updated, because that indicates that the ZIM file
             # was never requested or errored and should remain in that state.
             auto_handle_zim_generation(redis, wp10db, builder.b_id)
+        if content_type == "text/tab-separated-values" and not is_meta_builder(builder):
+            _rebuild_referencing_combinators(redis, wp10db, builder)
     finally:
         if should_close:
             wp10db.close()
@@ -427,9 +782,9 @@ def latest_url_for(builder_id: str, content_type: str) -> str | None:
             content_type,
         )
         return None
-    server_url = CREDENTIALS.get(ENV, {}).get("CLIENT_URL", {}).get("api")
+    server_url = get_settings().CLIENT_API_URL
     if server_url is None:
-        logger.warning("Could not determine server API URL. Check credentials.py")
+        logger.warning("Could not determine server API URL. Check configuration.")
         return None
     return "%s/v1/builders/%s/selection/latest.%s" % (server_url, builder_id, ext)
 
@@ -448,10 +803,10 @@ def latest_zimfarm_url_for(builder_id: str, content_type: str) -> str | None:
             content_type,
         )
         return None
-    server_url = CREDENTIALS.get(ENV, {}).get("CLIENT_URL", {}).get("backend")
+    server_url = get_settings().CLIENT_BACKEND_URL
     if server_url is None:
         logger.warning(
-            "Could not determine server backend URL for Zimfarm. Check credentials.py"
+            "Could not determine server backend URL for Zimfarm. Check configuration."
         )
         return None
     return "%s/v1/builders/%s/selection/zimfarm/latest.%s" % (
@@ -463,9 +818,9 @@ def latest_zimfarm_url_for(builder_id: str, content_type: str) -> str | None:
 
 def local_url_for_latest_zim(builder_id: str) -> str | None:
     """Returns the redirect URL for the latest ZIM file for a builder."""
-    server_url = CREDENTIALS.get(ENV, {}).get("CLIENT_URL", {}).get("api")
+    server_url = get_settings().CLIENT_API_URL
     if server_url is None:
-        logger.warning("Could not determine server API URL. Check credentials.py")
+        logger.warning("Could not determine server API URL. Check configuration.")
         return None
     return "%s/v1/builders/%s/zim/latest" % (server_url, builder_id)
 
@@ -529,7 +884,7 @@ def latest_selection_url(
     # In production, the keys 's3' and 'backend_s3' should be the same.
     s3_public_url = None
     if zimfarm_s3:
-        s3_public_url = CREDENTIALS.get(ENV, {}).get("CLIENT_URL", {}).get("backend_s3")
+        s3_public_url = get_settings().CLIENT_BACKEND_S3_URL
     return logic_selection.url_for(selection.s_object_key, s3_public_url=s3_public_url)
 
 
@@ -621,6 +976,92 @@ def latest_selections_with_errors(
         res.append(status)
 
     return res
+
+
+def failed_reference_errors(
+    wp10db: Connection, builder: Builder
+) -> list[dict[str, Any]]:
+    """Read-time failure info for selections referenced by a meta builder.
+
+    Returns one entry per referenced builder whose latest TSV selection is
+    FAILED or CAN_RETRY, in the same shape as
+    Wp1MetaBuilderProcessError.to_user_messages().
+    """
+    if not is_meta_builder(builder):
+        return []
+    params = _parse_builder_params(builder.b_params)
+    if params is None:
+        return []
+    reference_ids = _referenced_builder_ids(params)
+    if not reference_ids:
+        return []
+
+    with wp10db.cursor() as cursor:
+        cursor.execute(
+            """SELECT b.b_id, b.b_name, b.b_model, s.s_status
+           FROM builders b
+           LEFT JOIN selections s
+             ON s.s_builder_id = b.b_id
+             AND s.s_version = b.b_current_version
+             AND s.s_content_type = 'text/tab-separated-values'
+           WHERE b.b_id IN ({placeholders})
+        """.format(placeholders=", ".join(["%s"] * len(reference_ids))),
+            tuple(reference_ids),
+        )
+        rows = cursor.fetchall()
+
+    rows_by_id = {logic_util.as_text(row["b_id"]): row for row in rows}
+    errors = []
+    for reference_id in reference_ids:
+        row = rows_by_id.get(reference_id)
+        if row is None:
+            continue
+        status = (
+            logic_util.as_text(row["s_status"]) if row["s_status"] is not None else None
+        )
+        info = REFERENCE_FAILURE_INFO.get(status)
+        if info is None:
+            continue
+        label = (
+            logic_util.as_text(row["b_name"])
+            if row["b_name"] is not None
+            else reference_id
+        )
+        errors.append(
+            {
+                "builder_id": reference_id,
+                "builder_name": label,
+                "builder_model": logic_util.as_text(row["b_model"]),
+                "message": f"Referenced builder {label} {info['reason']}",
+                "status": status,
+                **info,
+            }
+        )
+    return errors
+
+
+def derived_selection_error(
+    wp10db: Connection, builder: Builder
+) -> dict[str, Any] | None:
+    """A synthesized selection error for a meta builder with failed references.
+
+    A Combinator is normally marked errored by its own rebuild after a
+    referenced selection fails. If that rebuild never ran (missed enqueue,
+    manually restored data), the Combinator's stored selection stays OK while
+    its references are broken. This derives the error at read time so the
+    Combinator still reports as errored.
+    """
+    reference_errors = failed_reference_errors(wp10db, builder)
+    if not reference_errors:
+        return None
+
+    has_fatal = any(error["status"] == "FAILED" for error in reference_errors)
+    return {
+        "status": "FAILED" if has_fatal else "CAN_RETRY",
+        "ext": "tsv",
+        "error_messages": [error["message"] for error in reference_errors],
+        "referenced_builder_errors": reference_errors,
+    }
 
 
 def request_zim_file_task_for_builder(
@@ -789,7 +1230,10 @@ def handle_zim_generation(
     return zim_file.z_task_id if zim_file is not None else None
 
 
-def zim_file_status_for(wp10db: Connection, builder_id: str | bytes) -> dict[str, Any]:
+def zim_file_status_for(
+    wp10db: Connection, builder_id: str | bytes, *, user_id: str | None = None
+) -> dict[str, Any]:
+    """Return public build status, with schedule details only for its owner."""
     data: dict[str, Any] = {
         "status": None,
         "error_url": None,
@@ -801,11 +1245,19 @@ def zim_file_status_for(wp10db: Connection, builder_id: str | bytes) -> dict[str
     }
     zim_file = zim_file_for_latest_selection(wp10db, builder_id)
 
-    active_schedule = logic_zim_schedules.find_active_recurring_schedule_for_builder(
-        wp10db, builder_id
-    )
-    if active_schedule:
-        data["active_schedule"] = _format_active_schedule_data(active_schedule)
+    if user_id is not None:
+        try:
+            builder = get_builder(wp10db, builder_id)
+        except ObjectNotFoundError:
+            builder = None
+        if builder is not None and builder.user_id == str(user_id):
+            active_schedule = (
+                logic_zim_schedules.find_active_recurring_schedule_for_builder(
+                    wp10db, builder_id
+                )
+            )
+            if active_schedule:
+                data["active_schedule"] = _format_active_schedule_data(active_schedule)
 
     if not zim_file:
         return data
@@ -964,6 +1416,31 @@ def _get_active_schedule_data(
     return data
 
 
+def _annotate_failed_references(
+    db_rows: list[dict[str, Any]], rows: list[dict[str, Any]]
+) -> None:
+    """Flags meta-builder rows whose referenced TSV selections are failed.
+
+    Referenced builders always belong to the same user (enforced at validate
+    time), so their statuses are already present in the user's own rows.
+    """
+    tsv_status_by_id = {
+        row["id"]: row["s_status"]
+        for db_row, row in zip(db_rows, rows)
+        if db_row["s_content_type"] == b"text/tab-separated-values"
+    }
+    for db_row, row in zip(db_rows, rows):
+        if logic_util.as_text(db_row["b_model"]) not in META_BUILDER_MODELS:
+            continue
+        params = _parse_builder_params(db_row["b_params"])
+        if params is None:
+            continue
+        row["has_failed_references"] = any(
+            tsv_status_by_id.get(reference_id) in REFERENCE_FAILURE_INFO
+            for reference_id in _referenced_builder_ids(params)
+        )
+
+
 def get_builders_with_selections(
     wp10db: Connection, user_id: str | bytes
 ) -> list[dict[str, Any]]:
@@ -1003,6 +1480,9 @@ def get_builders_with_selections(
         builder.update(_get_selection_data(db_builder))
         builder.update(_get_zimfile_data(db_builder))
         builder.update(_get_active_schedule_data(db_builder))
+        builder["has_failed_references"] = False
         result.append(builder)
+
+    _annotate_failed_references(data, result)
 
     return result

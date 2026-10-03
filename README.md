@@ -1,9 +1,4 @@
-# Wikipedia 1.0 engine
-
-This directory contains the code of Wikipedia 1.0 supporting
-software. More information about the Wikipedia 1.0 project can be
-found [on the Wikipedia in
-English](https://en.wikipedia.org/wiki/Wikipedia:Version_1.0_Editorial_Team).
+# WP1 — the Wikipedia 1.0 engine
 
 [![build status](https://github.com/openzim/wp1/actions/workflows/workflow.yml/badge.svg)](https://github.com/openzim/wp1/actions?query=branch%3Amain)
 [![codecov](https://codecov.io/gh/openzim/wp1/branch/main/graph/badge.svg)](https://codecov.io/gh/openzim/wp1)
@@ -11,413 +6,248 @@ English](https://en.wikipedia.org/wiki/Wikipedia:Version_1.0_Editorial_Team).
 [![Doc](https://readthedocs.org/projects/wp1/badge/?style=flat)](https://wp1.readthedocs.io/en/latest/?badge=latest)
 [![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html)
 
-## Contents
-
-The `wp1` subdirectory includes code for updating the `enwp10`
-database, specifically the `ratings` table (but also other
-tables). The library code itself isn't directly runnable, but instead
-is loaded and run in various docker images that are maintained in the
-`docker` directory.
-
-`requirements.txt` is a list of python dependencies in pip format that
-need to be installed in a virtual env in order to run the library code.
-Both the `web` and `workers` docker images use the same requirements,
-though [Flask](https://www.palletsprojects.com/p/flask/) and its
-dependencies are not utilized by the worker code.
-
-The `cron` directory contains wrapper scripts for cron jobs that are
-run [inside the workers image](https://github.com/openzim/wp1/blob/master/docker/workers/Dockerfile#L15).
-
-The `setup` directory contains a historical record of the database
-schema used by the tool for what is referred to in code as the `wp10`
-database. This file has been heavily edited, but should be able to be
-used to re-create the `enwp10` database if necessary.
-
-`wp1-frontend` contains the code for the Vue-CLI based frontend,
-which is encapsulated and served from the `frontend` docker image.
-See that directory for instructions on how to setup a development
-environment for the frontend.
-
-`conf.json` is a configuration file that is used by the `wp1`
-library code.
-
-`docker-compose.yml` is a file read by the `docker-compose`
-[command](https://docs.docker.com/compose/) in order to generate the
-graph of required docker images that represent the production environment.
-
-`docker-compose-dev.yml` is a similar file which sets up a dev environment,
-with Redis and a MariaDB server for the `enwp10` database. Through profiles like `zimfarm` and `zimfarm-worker`, you can start the Zimfarm containers required to execute a task.
-
-`docker-compose-test.yml` is a another docker file which sets up the test db
-for python "nosetests" (unit tests). Run it similarly:
-
-```bash
-docker compose -f docker-compose-test.yml up -d
-```
-
-The `*.dockerfile` symlinks allow for each docker image in this repository
-(there are many) to be more easily organized.
-
-`openapi.yml` is a YAML file that describes the API of the `web` image
-in [OpenAPI](https://swagger.io/specification/) format. If you visit
-the [index of the API server](https://api.wp1.openzim.org) you will
-get a swagger-ui documentation frontend that utilizes this file. It
-is symlinked into the `wp1/web` directory.
-
-The `wp10_test.*.sql` and `wiki_test.*.sql` files are rough
-approximations of the schemas of the two databases that the library
-interfaces with. They are used for unit testing.
-
-## Installation
-
-This code is targeted to and tested on Python 3.12.0. For now, all development
-has been on Linux, Other platforms may not be fully supported.
-
-### Installing dependencies
-
-WP1 uses [Pipenv](https://pipenv.pypa.io/en/latest/) to managed dependencies.
-A `Pipfile` and `Pipfile.lock` are provided. You should have the pipenv tool
-installed in your global Python install (not in a virtualenv):
-
-```bash
-pip3 install pipenv
-```
-
-Then you can use:
-
-```bash
-pipenv install --dev
-```
-
-Which will install the dependencies at the precise versions specified in the
-`Pipfile.lock` file. Behind the scenes, Pipenv creates a virtualenv for you
-automatically, which it keeps up to date when you run Pipenv commands. You
-can use the `pipenv shell` command to start a shell using the environment,
-which is similar to "activating" a virtualenv. You can also use `pipenv run`
-to run arbitrary individual shell commands within that environment. In many
-cases, it will be more convenient to use commands like `pipenv run pytest`
-then actually spawning a subshell.
-
-### Installing frontend requirements (optional)
-
-**Note:** If you are using the docker-compose development environment, you do not
-need to install Node.js or frontend dependencies locally. The frontend runs inside
-a Docker container with hot-reload support. See the "Starting the web frontend"
-section below.
-
-If you prefer to run the frontend locally without Docker, it requires
-[Node.js](https://nodejs.org/) version 18 to build and run. Once node is
-installed, to install the requirements for the frontend server, cd into
-`wp1-frontend` and use:
-
-```bash
-yarn install
-```
-
-If you do not have yarn, it can be installed with:
-
-```bash
-npm i -g yarn
-```
-
-### Docker
-
-You will also need to have [Docker](https://www.docker.com/) on your system
-in order to run the development server.
-
-### Populating the credentials module
-
-The script requires access to the enwiki_p replica database (referred to
-in the code as `wikidb`), as well as its own toolsdb application database
-(referred to in the code as `wp10db`). If you are a part of the toolforge
-`enwp10` [project](https://tools.wmflabs.org/admin/tool/enwp10), you can
-find the credentials for these on toolforge in the replica.my.cnf file in
-the tool's home directory. They need to be formatted in a way that is
-consumable by the library and pymysql. Look at `credentials.py.example`
-and create a copy called `credentials.py` with the relevant information
-filled in. The production version of this code also requires English Wikipedia
-API credentials for automatically editing and updating
-[tables like this one](https://en.wikipedia.org/wiki/User:WP_1.0_bot/Tables/Project/Catholicism).
-Currently, if your environment is DEVELOPMENT, jobs that utilize the API
-to edit Wikipedia are disabled. There is no development wiki that gets edited
-at this time.
-
-The "development" credentials files, `credentials.py.dev` and
-`credentials.py.dev.example` are for running the docker graph of development
-resources. They are copied into the docker container that is run when using
-`docker-compose-dev.yml`.
-
-The `credentials.py` file proper also contains a section for TEST database
-credentials. These are used in unit tests. If you use the database provided
-in `docker-compose-test.yml` you can copy these directly from the example
-file. However, you are free to provide your own test database that will
-be destroyed after every test run. See the next section on running the tests.
-
-### Running the backend (Python/pytest) tests
-
-The backend/python tests require a MariaDB or MySQL instance to connect to in
-order to verify various statements and logic. This database does not need to be
-persistent and in fact part of the test setup and teardown is to recreate (destroy)
-a fresh schema for the test databases each time. You also will need two databases
-in your server: `enwp10_test` and `enwikip_test`. They can use default settings
-and be empty. **If you've followed the steps under 'Development' below to
-create a running dev database with docker-compose, you're all set.**
-
-If you have that, and you've already installed the requirements above,
-you should be able to simply run the following command from this
-directory to run the tests:
-
-```bash
-pipenv run WP1_ENV=test pytest
-```
-
-**Note:** Inline env var support in `pipenv run` requires Pipenv >= 2026.5.2.
-Make sure your Pipenv is up to date.
-
-### Running the frontend (Cypress) integration tests
-
-For frontend tests, you need to have a full working local development
-environment. You should follow the steps in 'Installation' above, as well as the
-steps in 'Development' below. Your frontend should be running on port 5173 (the
-default) and the backend should be on port 5000 (also the default).
-
-To run the tests:
-
-```bash
-cd wp1-frontend
-$(yarn bin)/cypress run
-```
-
-Then follow the GUI prompts to run "Electron E2E tests".
-
-# Development
-
-For development, you will need to have Docker installed as explained above.
-
-## Running docker-compose
-
-There is a Docker setup for a development database. It lives in
-`docker-compose-dev.yml`.
-
-Before you run the docker-compose command below, you must copy the file
-`wp1/credentials.py.dev.example` to `wp1/credentials.py.dev` and fill out the
-section for `STORAGE`, if you wish to properly materialize builder lists into
-backend selections.
-
-### Setting up the development services
-
-The dev stack has various containers which can be activated via various profiles. The `zimfarm` profile sets up a local zimfarm DB, API and UI.
-The `zimfarm-worker` profile sets up a local zimfarm worker manager and receiver that stores the results/files of tasks.
-
-If it is your first execution of the dev stack, you need to create offliners and a "virtual" worker in Zimfarm DB. Thus, you need to start the services without the worker profile until you register a worker.
-
-You may need to install the `jq` tool with [these instructions](https://github.com/jqlang/jq/wiki/Installation).
-
-#### Registering a worker
-
-- Start the dev stack without a Zimfarm worker for now
-
-  ```sh
-  docker compose -f docker-compose-dev.yml --profile zimfarm up --pull always --build
-  ```
-
-  This starts the API, creates an admin user with username: `admin` and password `admin`
-
-- Register offliners in the database
-
-  ```sh
-  cd docker/zimfarm
-  ./create_offliners.sh
-  ```
-
-  This pulls the various versions of the mwoffliner definition schema from the Zimfarm API
-  and registers the definition within your docker Zimfarm API. These definitions are
-  necessary as they contain the latest parameters needed to run the `mwoffliner`
-  scraper.
-
-  In your `credentials.py`, set the definition version to any of the versions pulled from the API. For example, if `1.17.2` was one of the downloaded definitions of the mwoffliner scraper, you want to set `definition_version` under the `ZIMFARM` section:
-
-  ```py
-    "ZIMFARM": {
-        "definition_version": "1.17.2",
-        "image": "ghcr.io/openzim/mwoffliner:1.17.2"
-        # other configurations for zimfarm follow...
-    }
-
-  ```
-
-- Register a test Zimfarm worker
-
-  ```sh
-  cd docker/zimfarm
-  ./create_worker.sh
-  ```
-
-  This registers a worker with username `test_worker` and generates SSH keys for it to authenticate with the Zimfarm API. The worker is configured with 3 CPU, 20GB RAM and 20GB disk.
-
-- Restart the dev stack with a Zimfarm worker now
-  ```sh
-  docker compose -f docker-compose-dev.yml --profile zimfarm --profile zimfarm-worker \
-  up -d
-  ```
-
-## Migrating and updating the dev database.
-
-See the instructions in the associated [README file](https://github.com/openzim/wp1/blob/main/docker/dev-db/README.md)
-
-## Starting the API server
-
-The API server is included in the docker-compose-dev.yml graph and starts
-automatically. It will be available at http://localhost:5000.
-
-If you prefer to run the API server locally instead of in Docker, you can use:
-
-```bash
-pipenv run flask --app wp1.web.app --debug run
-```
-
-If you're having difficulties connecting to the backend server from the
-frontend, especially in cypress e2e tests, and especially on macOS, it might have
-something to do with IPv4 versus IPv6 networking stacks. You can try adding the
-option `--host 127.0.0.1` to the command line above (see
-https://github.com/openzim/wp1/pull/859).
-
-## Starting the web frontend
-
-The frontend is included in the docker-compose-dev.yml graph and starts
-automatically with hot-reload support. It will be available at http://localhost:5173.
-
-To start all development services including the frontend:
+WP1 is the software behind [wp1.openzim.org](https://wp1.openzim.org), the
+successor to the original bot of the
+[Wikipedia 1.0 project](https://en.wikipedia.org/wiki/Wikipedia:Version_1.0_Editorial_Team)
+— which, as [User:WP 1.0 bot](https://en.wikipedia.org/wiki/User:WP_1.0_bot),
+has more all-time edits than any other account on English Wikipedia. It:
+
+- Aggregates the **quality and importance assessments** of every rated English
+  Wikipedia article, across more than 2,000
+  [WikiProjects](https://en.wikipedia.org/wiki/Wikipedia:WikiProject), into
+  browsable quality × importance tables, with nightly updates posted back
+  on-wiki as [project tables](https://en.wikipedia.org/wiki/User:WP_1.0_bot/Tables/Project/Catholicism)
+  and change logs. Log headings appear only on the log page itself, not in
+  the table of contents of pages that transclude it.
+- Lets users build **selections** — custom article lists defined by
+  WikiProject, [Petscan](https://petscan.wmcloud.org/),
+  [SPARQL](https://query.wikidata.org/), combinations thereof, or plain lists
+  — for slicing Wikipedia content.
+- Turns those selections into **[ZIM files](https://wiki.openzim.org/wiki/ZIM_file_format)**,
+  via the [Zimfarm](https://github.com/openzim/zimfarm), for reading offline
+  with [Kiwix](https://kiwix.org/).
+
+![Screenshot of the WP1 frontend showing the quality/importance assessment table for WikiProject Water](docs/img/wp1-screenshot.webp)
+
+End-user documentation lives at
+[wp1.readthedocs.io](https://wp1.readthedocs.io/en/latest/); the API is
+described by [openapi.yml](openapi.yml) and browsable at
+[api.wp1.openzim.org](https://api.wp1.openzim.org).
+
+## Quick start (development)
+
+Everything runs in Docker: the only hard requirement is
+[Docker](https://www.docker.com/) with the compose plugin. From a fresh
+checkout:
 
 ```bash
 docker compose -f docker-compose-dev.yml up --build
 ```
 
-Changes made to files in `wp1-frontend/src/` will be automatically reflected
-in the browser without needing to restart the container.
+This starts the full development stack — frontend with hot reload at
+http://localhost:5173, API server at http://localhost:5000, plus the dev
+database (MariaDB), Redis, materializer workers, and MinIO (s3-compatible
+storage). No configuration is needed: the defaults in `wp1/config.py` already
+point at these services.
 
-### Running the frontend locally (alternative)
+On the first run (and after new migrations land), migrate the dev database as
+described in [docker/dev-db/README.md](docker/dev-db/README.md), which also
+covers seeding it with test Selection data. Migrations, like the rest of the
+host-side Python toolchain, run through
+[Pipenv](https://pipenv.pypa.io/en/latest/):
 
-If you prefer to run the frontend locally instead of in Docker, you will need
-Node.js installed. Then install the dependencies and start the dev server:
+```bash
+pip3 install pipenv       # into your global Python (3.12), not a virtualenv
+pipenv install --dev
+```
+
+That's it. Edits to `wp1-frontend/src/` hot-reload in the browser, and the
+source tree is volume-mounted into the API container, where Flask's debug
+mode auto-reloads on backend edits. Development is targeted at Linux; other
+platforms may not be fully supported.
+
+## Repository tour
+
+| Path                                      | What it is                                                                                                                                                       |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`wp1/`](wp1/)                            | The Python backend: `wp1/logic` (business logic), `wp1/web` (Flask API), RQ jobs, and the update engine. Runs only inside the Docker images.                     |
+| [`wp1-frontend/`](wp1-frontend/README.md) | The Vue 3 + Vite + Tailwind frontend.                                                                                                                            |
+| [`docker/`](docker/README.md)             | One subdirectory per Docker image (production and dev), including the local [Zimfarm](docker/zimfarm/README.md) and the [dev database](docker/dev-db/README.md). |
+| [`db/`](db/README.md)                     | YoYo database migrations for the `enwp10` database.                                                                                                              |
+| [`scripts/util/`](scripts/util/README.md) | Development helpers: test runner, type checker, dev-data seeder, parallel worktree stacks.                                                                       |
+| [`scripts/wp1/`](scripts/wp1/README.md)   | Production deploy, rollback, and operational scripts.                                                                                                            |
+| [`docs/`](docs/)                          | The [mkdocs](https://www.mkdocs.org/) sources for [wp1.readthedocs.io](https://wp1.readthedocs.io/en/latest/).                                                   |
+| [`cron_config.py`](cron_config.py)        | The recurring production jobs (nightly update enqueues, table rebuilds, cache warming), scheduled by RQ's cron scheduler.                                        |
+
+## Development
+
+### Configuration (.env)
+
+All backend configuration lives in a single schema in `wp1/config.py`, read
+from environment variables. The committed [`.env.example`](.env.example) is
+**generated from that schema** (run `pipenv run python -m wp1.config` after
+changing it; CI fails on drift) and documents every knob, its type, its
+default, and whether it is required in production.
+
+For development you usually need no configuration at all: the schema defaults
+point at the services in `docker-compose-dev.yml`. To customize values, copy
+`.env.example` to `.env` (gitignored) and edit it; the dev containers pick it
+up via docker compose's `env_file`.
+
+The main thing worth customizing is the `WIKIDB` section: the app reads the
+enwiki_p replica database (referred to in the code as `wikidb`) on Toolforge,
+and needs your Toolforge credentials to do so. If you are a part of the
+toolforge `enwp10` [project](https://tools.wmflabs.org/admin/tool/enwp10), you
+can find the credentials on toolforge in the replica.my.cnf file in the tool's
+home directory. This is not required for developing the frontend.
+
+The production instance additionally requires English Wikipedia API
+credentials (`API_USER`/`API_PASSWORD`) for editing on-wiki tables; in
+development (`WP1_ENV=development`, the default) the jobs that edit Wikipedia
+are disabled.
+
+See [API security](docs/developer/api-security.md) for CORS configuration,
+CSRF protection, authenticated requests, and ZIM notification privacy.
+
+### Wikipedia replica access (SOCKS5)
+
+In development, `wp1.db.connect("WIKIDB")` always uses a SOCKS5 proxy at
+`localhost:1080`, with DNS resolution performed through the proxy. WP1 does
+**not** start that proxy. This applies only to the Wikipedia replica:
+`WP10DB` connections and production database connections are direct.
+
+For Python running on the host:
+
+1. Configure SSH access to `login.toolforge.org` using your Toolforge shell
+   username and SSH key (for example, in `~/.ssh/config`). Check access with
+   `ssh login.toolforge.org true`.
+2. Set `WIKIDB_USER` and `WIKIDB_PASSWORD` in your gitignored `.env` from the
+   `[client]` section of Toolforge's `~/replica.my.cnf` (or the tool account's
+   file). These are **database credentials**, not your SSH or Wikipedia
+   login. Keep `WIKIDB_HOST=enwiki.analytics.db.svc.eqiad.wmflabs`,
+   `WIKIDB_DB=enwiki_p`, and leave `WIKIDB_PORT` unset (defaults to 3306).
+3. Keep this command running in a separate terminal:
+
+   ```bash
+   ssh -N -T -D 127.0.0.1:1080 \
+     -o ExitOnForwardFailure=yes \
+     -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
+     login.toolforge.org
+   ```
+
+   The loopback binding avoids exposing an unauthenticated SOCKS proxy to
+   the network. Stop it with Ctrl-C when finished.
+
+4. From the checkout with your `.env` and Python dependencies installed,
+   verify an authenticated database query, not just an open proxy port:
+
+   ```bash
+   pipenv run python - <<'PY'
+   import socket
+   from wp1.db import connect
+
+   socket.setdefaulttimeout(15)
+   conn = connect("WIKIDB", connect_timeout=15, read_timeout=15)
+   try:
+       with conn.cursor() as cursor:
+           cursor.execute("SELECT 1 AS connected, DATABASE() AS db")
+           print(cursor.fetchall())
+   finally:
+       conn.close()
+   PY
+   ```
+
+   Expected result: `[{'connected': 1, 'db': b'enwiki_p'}]`.
+
+**Docker limitation:** the default dev web and worker containers have separate
+network namespaces. Their `localhost:1080` is not the host's proxy, and the
+Compose file does not provide a tunnel. Replica access therefore requires a
+SOCKS listener in each consuming container's network namespace; the host
+procedure above alone does not enable replica-backed Docker jobs. The proxy
+address is currently hardcoded, with no environment-variable override.
+Frontend-only development does not require the replica.
+
+**Troubleshooting:**
+
+- Connection refused at `localhost:1080`: the tunnel is stopped, or Python
+  and SSH are in different network namespaces.
+- SSH permission denied: check your Toolforge shell username/key, not the
+  database password.
+- MySQL error 1045 / access denied: the tunnel reached MySQL; check the
+  replica credentials. `someuser` / `somepass` are placeholders.
+- SOCKS destination/DNS errors: check the replica hostname and its
+  reachability from Toolforge. Local DNS need not resolve it.
+- `WIKIDB_PORT` is the destination MySQL port, **not** the SOCKS port.
+  `ssh -L` with `WIKIDB_HOST=localhost` is not an alternative to SOCKS in
+  development: the application still uses SOCKS, and that destination would
+  be interpreted from the SSH server. Do not switch to production mode to
+  bypass this; it also enables jobs that edit Wikipedia.
+
+### Backend tests
+
+The Python tests need the test databases from `docker-compose-test.yml`; the
+wrapper script starts them automatically (and cleans up after interrupted
+runs):
+
+```bash
+./scripts/util/run_tests.sh
+```
+
+(or plain `pipenv run pytest` if the test containers are already up). No
+`.env` is needed: the pytest bootstrap (`conftest.py`) constructs the test
+configuration in code.
+
+### Frontend tests
+
+The Cypress suite is hermetic — every API call is stubbed, so no backend or
+Docker services are needed, just the frontend served on port 5173:
 
 ```bash
 cd wp1-frontend
-yarn install
-yarn dev
+pnpm dev                  # or: pnpm build --mode staging && python3 -m http.server 5173 --directory dist/
+pnpm exec cypress run     # in another terminal; `cypress open` for the GUI
 ```
 
-## Development credentials.py
+See [wp1-frontend/README.md](wp1-frontend/README.md) for more on the frontend,
+including running it outside Docker.
 
-The DEVELOPMENT section of credentials.py.example is already filled out with
-the proper values for the servers listed in docker-compose-dev.yml. You should
-be able to simply copy it to credentials.py.
+### Going further
 
-If you wish to connect to a wiki replica database on toolforge, you will need
-to fill out your credentials in WIKIDB section. This is not required for
-developing the frontend.
+- **ZIM file creation** — run a complete local Zimfarm with the `zimfarm` and
+  `zimfarm-worker` compose profiles: see
+  [docker/zimfarm/README.md](docker/zimfarm/README.md).
+- **Parallel dev stacks** — every port and container name is parameterized,
+  so multiple checkouts/worktrees can run side by side:
+  `./scripts/util/create_worktree.sh <branch>`, documented in
+  [scripts/util/README.md](scripts/util/README.md).
+- **Manual update endpoints** — in development some project endpoints are
+  overlaid with fakes for easier frontend work: see
+  [wp1/web/dev/README.md](wp1/web/dev/README.md).
+- **Editing the docs** — the Read the Docs site rebuilds from `docs/` on
+  every push to `main`, and CI runs `mkdocs build --strict` on every PR. To
+  preview locally: install `docs/requirements.txt` into a virtualenv, then run
+  `mkdocs serve` from the repository root.
 
-## Development overlay
+## Production
 
-The API server has a built-in development overlay, currently used for manual
-update endpoints. What this means is that the endpoints defined in
-`wp1.web.dev.projects` are used with priority, instead of the production endpoints,
-**only if the credentials.py ENV == Environment.DEVELOPMENT**. This is to allow
-for easier manual and CI testing of the manual update page.
+Deploys are done with `./scripts/wp1/deploy.sh`, which pushes `main` to the
+`release` branch (triggering the image builds on CI) and then updates the
+production box. Rollbacks, one-off operational scripts, SSH access to the box,
+and the Redis persistence rules are all documented in
+[scripts/wp1/README.md](scripts/wp1/README.md).
 
-If you wish to test the manual update job with a real Wikipedia replica database
-and RQ jobs, you will have to disable this overlay. The easiest way would be to
-change the following line in wp1.web.app:
+## Contributing
 
-```
-  if ENV == environment.Environment.DEVELOPMENT:
-    # In development, override some project endpoints, mostly manual
-    # update, to provide an easier env for developing the frontend.
-    print('DEVELOPMENT: overlaying dev_projects blueprint. '
-          'Some endpoints will be replaced with development versions')
-    app.register_blueprint(dev_projects, url_prefix='/v1/projects')
-```
-
-to something like:
-
-```
-  if false:  # false while manually testing
-    # In development, override some project endpoints, mostly manual
-    ...
-```
-
-# Building/editing the docs
-
-Documentation lives at [Read the Docs](https://wp1.readthedocs.io/en/latest/). It is
-built using [mkdocs](https://www.mkdocs.org/). The Read the Docs site automatically
-monitors the WP1 github HEAD and re-builds the documentation on every push.
-
-## Local docs
-
-If you are editing the docs and would like to view them locally before pushing:
+See [CONTRIBUTING.md](CONTRIBUTING.md) for code standards, testing
+requirements, and PR guidelines. Before your first commit, install the
+[pre-commit](https://pre-commit.com/) hooks that keep the code formatted:
 
 ```bash
-$ cd docs
-$ python -m venv venv
-$ source venv/bin/activate
-$ pip install -r requirements.txt
-$ cd ..
-$ mkdocs serve
+pipenv run pre-commit install
 ```
 
-The `serve` command should print out the port to view the docs at, likely localhost:8000.
+(Details in the comments of [.pre-commit-config.yaml](.pre-commit-config.yaml).)
 
-# Updating production
-
-- Push to the release branch of the github repository:
-  - `git checkout main`
-  - `git pull origin main`
-  - `git checkout release`
-  - `git merge main`
-  - `git push origin release`
-- Wait for the release images [to be built](https://github.com/openzim/wp1/actions/workflows/publish.yml)
-- Log in to the box that contains the production docker images. It is
-  called mwcurator.
-- `cd /data/code/wp1/`
-- `sudo git pull origin main`
-- Pull the docker images from docker hub:
-  - `sudo docker pull ghcr.io/openzim/wp1-workers:release`
-  - `sudo docker pull ghcr.io/openzim/wp1-web:release`
-  - `sudo docker pull ghcr.io/openzim/wp1-frontend:release`
-- If you've made changes to the format or contents of `credentials.py`, update `/data/wp1bot/credentials.py`.
-- Run docker-compose to bring the production images online.
-  - `sudo docker compose up -d`
-- Run the production database migrations in the worker container:
-  - `sudo docker exec -ti -e PYTHONPATH=. wp1bot-workers yoyo -c /usr/src/app/db/production/yoyo.ini apply`
-
-# Pre-commit hooks
-
-This project is configured to use git pre-commit hooks managed by the
-Python program `pre-commit` ([website](https://pre-commit.com/)). Pre-
-commit checks let us ensure that the code is properly formatted with
-[Black](https://github.com/psf/black) amongst other things.
-
-If you've installed the requirements for this repository, the pre-commit
-binary should be available to you. To install the hooks, use:
-
-```bash
-pre-commit install
-```
-
-Then, when you try to commit a change that would fail pre-commit, you get:
-
-```
-(venv) host:wikimedia_wp1_bot audiodude$ git commit -am 'Test commit'
-Trim Trailing Whitespace.................................................Passed
-Fix End of Files.........................................................Passed
-black....................................................................Failed
-hookid: black
-```
-
-From there, the pre-commit hook will have modified and thus unstaged some or all
-of the files you were trying to commit. Look through the changes to make sure
-they are sane, then re-add them with git add, before trying your commit again.
-
-# License
+## License
 
 GPLv2 or later, see [LICENSE](LICENSE) for more details.

@@ -94,6 +94,25 @@ class BuildersScheduleTest(BaseWebTestcase):
         self.assertEqual(5, active_schedule["remaining_generations"])
         self.assertEqual("test@example.com", active_schedule["email"])
 
+    def test_zim_status_redacts_schedule_for_anonymous_and_non_owner(self):
+        self._insert_builder()
+        schedule = self._create_active_schedule()
+        for user in (None, {"identity": {"sub": "other-user"}}):
+            with self.subTest(user=user):
+                with self.override_db(self.app), self.app.test_client() as client:
+                    if user is not None:
+                        with client.session_transaction() as sess:
+                            sess["user"] = user
+                    rv = client.get(
+                        f"/v1/builders/{self.builder.id}/zim/status",
+                        query_string={"user_id": self.USER["identity"]["sub"]},
+                    )
+                self.assertEqual(200, rv.status_code)
+                self.assertIsNone(rv.get_json()["active_schedule"])
+                self.assertIn("status", rv.get_json())
+                self.assertNotIn(schedule.s_email, rv.data)
+                self.assertNotIn(schedule.s_id, rv.data)
+
     def test_zim_status_no_active_schedule(self):
         """Test ZIM status when no active schedule exists."""
         self._insert_builder()

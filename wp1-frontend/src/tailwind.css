@@ -1,0 +1,220 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Base styles for the app's screens. Everything lives under a .wp1r
+ * wrapper (page shells and the header/footer chrome), which also gives
+ * these rules enough specificity for the anchor-palette opt-outs below.
+ */
+@layer components {
+  .wp1r {
+    @apply font-sans text-ink antialiased;
+    text-wrap: pretty;
+  }
+
+  .wp1r a,
+  .wp1r a:visited {
+    color: theme('colors.accent.DEFAULT');
+    text-decoration: none;
+  }
+
+  .wp1r a:hover {
+    color: theme('colors.accent.link-hover');
+    text-decoration: underline;
+  }
+
+  /* Links that render as buttons or nav pills opt out of the link
+     palette; two class selectors outweigh the .wp1r a rules above. */
+  .wp1r a.wp1r-btn-primary,
+  .wp1r a.wp1r-btn-primary:visited,
+  .wp1r a.wp1r-btn-primary:hover {
+    color: #ffffff;
+    text-decoration: none;
+  }
+
+  .wp1r a.wp1r-btn-secondary,
+  .wp1r a.wp1r-btn-secondary:visited,
+  .wp1r a.wp1r-btn-secondary:hover {
+    color: theme('colors.ink.DEFAULT');
+    text-decoration: none;
+  }
+
+  .wp1r a.wp1r-btn-danger,
+  .wp1r a.wp1r-btn-danger:visited,
+  .wp1r a.wp1r-btn-danger:hover {
+    color: theme('colors.danger.DEFAULT');
+    text-decoration: none;
+  }
+
+  .wp1r a.wp1r-brand,
+  .wp1r a.wp1r-brand:visited,
+  .wp1r a.wp1r-brand:hover {
+    color: theme('colors.ink.DEFAULT');
+    text-decoration: none;
+  }
+
+  .wp1r-navlink {
+    @apply whitespace-nowrap rounded px-[9px] py-[5px] text-sm;
+  }
+
+  .wp1r a.wp1r-navlink,
+  .wp1r a.wp1r-navlink:visited {
+    color: theme('colors.ink.2');
+    text-decoration: none;
+  }
+
+  .wp1r a.wp1r-navlink:hover {
+    color: theme('colors.ink.DEFAULT');
+    text-decoration: none;
+    background-color: theme('colors.border.row');
+  }
+
+  .wp1r a.wp1r-navlink-active,
+  .wp1r a.wp1r-navlink-active:visited,
+  .wp1r a.wp1r-navlink-active:hover {
+    color: theme('colors.accent.DEFAULT');
+    background-color: theme('colors.accent.tint-2');
+  }
+
+  .wp1r :focus-visible {
+    outline: 2px solid theme('colors.accent.DEFAULT');
+    outline-offset: 2px;
+  }
+
+  .wp1r input[type='checkbox'],
+  .wp1r input[type='radio'] {
+    accent-color: theme('colors.accent.DEFAULT');
+  }
+
+  .wp1r input::placeholder,
+  .wp1r textarea::placeholder {
+    color: theme('colors.ink.4');
+    opacity: 1;
+  }
+
+  /* Micro label: 10px mono uppercase, used as section headers everywhere. */
+  .wp1r-microlabel {
+    @apply font-mono text-[10px] uppercase tracking-[0.08em] text-ink-3;
+  }
+
+  /* Type badge: 10px mono uppercase chip. */
+  .wp1r-badge {
+    @apply inline-block rounded-[3px] border border-border-strong px-[5px] py-px font-mono text-[10px] uppercase tracking-[0.04em] text-ink-2;
+  }
+
+  /* Buttons. Heights vary per context; set them with h-* utilities. */
+  .wp1r-btn {
+    @apply inline-flex cursor-pointer items-center justify-center gap-1 whitespace-nowrap rounded border border-solid bg-surface text-[13px] font-medium text-ink no-underline transition-colors duration-100;
+  }
+
+  .wp1r-btn-primary {
+    @apply wp1r-btn border-accent bg-accent text-white hover:border-accent-hover hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .wp1r-btn-secondary {
+    @apply wp1r-btn border-border-strong hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .wp1r-btn-danger {
+    @apply wp1r-btn border-danger-border text-danger hover:bg-danger-tint disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .wp1r-input {
+    @apply rounded border border-border bg-surface px-[9px] text-[13px] text-ink outline-none;
+  }
+
+  /* Cell in the detail pane's stat strip. */
+  .wp1r-stat {
+    @apply flex min-w-0 flex-col gap-1 px-[18px] py-3;
+  }
+
+  /* Item inside the ⋯ overflow menu. */
+  .wp1r-menuitem {
+    @apply block cursor-pointer px-3 py-1.5 text-[13px];
+  }
+
+  .wp1r a.wp1r-menuitem,
+  .wp1r a.wp1r-menuitem:visited {
+    color: theme('colors.ink.DEFAULT');
+    text-decoration: none;
+  }
+
+  .wp1r a.wp1r-menuitem:hover,
+  .wp1r .wp1r-menuitem:hover {
+    color: theme('colors.ink.DEFAULT');
+    text-decoration: none;
+    background-color: theme('colors.surface.muted');
+  }
+
+  /* Click-to-edit field row (2b), read state. */
+  .wp1r-fieldrow {
+    @apply grid w-full cursor-pointer grid-cols-[180px_minmax(0,1fr)_60px] items-center gap-3 border-0 border-b border-solid border-border-row-light bg-transparent px-[18px] py-[11px] text-left hover:bg-surface-muted;
+  }
+
+  .wp1r a.wp1r-fieldrow,
+  .wp1r a.wp1r-fieldrow:visited,
+  .wp1r a.wp1r-fieldrow:hover {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* Row in the selections rail. The 2px left border is the selection
+     marker. */
+  .wp1r-railrow {
+    @apply block w-full cursor-pointer border-0 border-b border-l-2 border-solid border-b-border-row border-l-transparent bg-surface py-[9px] pl-2.5 pr-3 text-left hover:bg-surface-muted;
+  }
+
+  .wp1r-railrow-selected {
+    @apply border-l-accent bg-accent-tint hover:bg-accent-tint;
+  }
+
+  /* Collapsed rail variant used while the detail pane is in edit mode. */
+  .wp1r-railrow-collapsed {
+    @apply border-b-0 bg-transparent py-[7px] hover:bg-border-row-light;
+  }
+
+  .wp1r-railrow-collapsed-selected {
+    @apply border-l-accent bg-surface hover:bg-surface;
+  }
+
+  .wp1r-select {
+    @apply wp1r-input appearance-none bg-no-repeat pr-7;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='none' stroke='%236b7480' stroke-width='1.5' d='m1 1 4 4 4-4'/%3E%3C/svg%3E");
+    background-position: right 9px center;
+  }
+
+  /* Wikipedia wikitable identity for the assessment tables (project
+     matrix, article-list rating cells, compare table): 1px #a2a9b1 grid,
+     #eaecf0 header band, full-cell class fills from labels.css. These
+     colours are the canonical WP 1.0 bot vocabulary, not design tokens. */
+  .wp1r .wt {
+    border-collapse: collapse;
+  }
+  .wp1r .wt th,
+  .wp1r .wt td {
+    border: 1px solid #a2a9b1;
+  }
+  .wp1r .wt-head {
+    background-color: #eaecf0;
+  }
+  /* Matrix counts read as links even at rest (openzim/wp1#427): dotted
+     underline resting, solid on hover. Two class selectors outweigh the
+     .wp1r a palette rules above, same trick as the button opt-outs. */
+  .wp1r a.wt-link,
+  .wp1r a.wt-link:visited {
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+  }
+  .wp1r a.wt-link:hover {
+    text-decoration: underline solid;
+    text-underline-offset: 3px;
+  }
+  /* Borderless white channel separating the two project column-groups in
+     the compare table, so colour fills never touch across projects. */
+  .wp1r .wt .wt-gap {
+    border: 0;
+    width: 16px;
+    background-color: #ffffff;
+  }
+}

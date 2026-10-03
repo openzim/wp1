@@ -1,4 +1,5 @@
 from wp1.base_db_test import BaseWpOneDbTest
+from wp1.config import override_settings
 from wp1.constants import AssessmentKind
 from wp1.logic import log as logic_log
 from wp1.logic import rating as logic_rating
@@ -50,6 +51,23 @@ class LogicRatingTest(BaseWpOneDbTest):
         self.assertEqual(b"Mid-Class", log.l_new)
         self.assertEqual(b"NotA-Class", log.l_old)
         self.assertEqual(b"importance", log.l_action)
+
+    def test_add_log_suppressed_by_settings(self):
+        rating = Rating(
+            r_project=b"Test Project",
+            r_namespace=0,
+            r_article=b"Testing Stuff",
+            r_quality=b"GA-Class",
+            r_quality_timestamp=b"2018-04-01T12:30:00Z",
+        )
+        with override_settings(SUPPRESS_RATING_LOGS=1):
+            logic_rating.add_log_for_rating(
+                self.redis, rating, AssessmentKind.QUALITY, b"NotA-Class"
+            )
+
+        self.assertEqual(
+            0, len(logic_log.get_logs(self.redis, article=b"Testing Stuff"))
+        )
 
 
 class GetProjectRatingByTypeTest(BaseWpOneDbTest):
@@ -418,6 +436,49 @@ class GetProjectRatingByTypeTest(BaseWpOneDbTest):
             self.assertEqual(b"A-Class", r[0].r_quality)
             self.assertEqual(b"Project 0", r[0].r_project)
             self.assertEqual(b"Project 1", r[1].r_project)
+
+    def test_iterate_returns_all_rows(self):
+        self._add_ratings()
+        ratings = list(
+            logic_rating.iterate_project_rating_by_type(self.wp10db, b"Project 0")
+        )
+
+        # All 150 ratings are returned, not just the first page of 100.
+        self.assertEqual(150, len(ratings))
+        for rating in ratings:
+            self.assertEqual(b"Project 0", rating.r_project)
+
+    def test_iterate_batches_smaller_than_total(self):
+        self._add_ratings()
+        ratings = list(
+            logic_rating.iterate_project_rating_by_type(
+                self.wp10db, b"Project 0", batch_size=7
+            )
+        )
+
+        self.assertEqual(150, len(ratings))
+
+    def test_iterate_quality(self):
+        self._add_ratings()
+        ratings = list(
+            logic_rating.iterate_project_rating_by_type(
+                self.wp10db, b"Project 0", quality=b"FA-Class"
+            )
+        )
+
+        self.assertEqual(50, len(ratings))
+        for rating in ratings:
+            self.assertEqual(b"FA-Class", rating.r_quality)
+
+    def test_iterate_pattern(self):
+        self._add_ratings()
+        ratings = list(
+            logic_rating.iterate_project_rating_by_type(
+                self.wp10db, b"Project 0", pattern="xyz"
+            )
+        )
+
+        self.assertEqual(0, len(ratings))
 
 
 class GetRandomArticleTest(BaseWpOneDbTest):

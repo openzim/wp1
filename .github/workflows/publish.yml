@@ -35,6 +35,13 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.project }}
+          # In addition to the moving `release` tag, publish immutable
+          # tags (`release-<run number>` and `sha-<git sha>`) so that
+          # previous versions can be pulled for rollbacks. See #974.
+          tags: |
+            type=ref,event=branch
+            type=raw,value=release-${{ github.run_number }}
+            type=sha
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v4

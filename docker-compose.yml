@@ -1,10 +1,19 @@
 version: '3.5'
 services:
   redis:
-    image: redis
+    # Pin the minor version: an unpinned `redis` tag caused the container to
+    # be recreated on a routine deploy pull (2026-08-01), which destroyed all
+    # data because it had no volume. See
+    # https://github.com/openzim/wp1/issues/1244. Upgrade deliberately by
+    # bumping this tag.
+    image: redis:8.10
     container_name: wp1bot-redis
     expose:
       - 6379
+    volumes:
+      # RQ queue state and the 7-day article assessment log history live only
+      # in Redis. This volume makes them survive container recreation.
+      - redis-data:/data
     restart: always
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
@@ -16,8 +25,10 @@ services:
   workers:
     image: ghcr.io/openzim/wp1-workers:release
     container_name: wp1bot-workers
+    env_file:
+      # All app configuration and secrets, hand-managed on the host.
+      - /data/wp1bot/wp1.env
     volumes:
-      - /data/wp1bot/credentials.py:/usr/src/app/wp1/credentials.py
       - /data/wp1bot/db/yoyo.ini:/usr/src/app/db/production/yoyo.ini
       - /srv/log/wp1bot/:/var/log/wp1bot/
       - /srv/data/wp1bot/:/var/data/wp1bot/
@@ -41,10 +52,11 @@ services:
       - LETSENCRYPT_HOST=api.wp1.openzim.org
       - LETSENCRYPT_EMAIL=contact@openzim.org
       - HTTPS_METHOD=redirect
+    env_file:
+      # See the comment on the workers service.
+      - /data/wp1bot/wp1.env
     expose:
       - 6555
-    volumes:
-      - /data/wp1bot/credentials.py:/usr/src/app/wp1/credentials.py
     links:
       - redis
     logging:
@@ -122,3 +134,6 @@ services:
 networks:
   default:
     name: openzim.org
+
+volumes:
+  redis-data:

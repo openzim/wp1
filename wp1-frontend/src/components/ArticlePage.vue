@@ -1,60 +1,62 @@
 <template>
-  <div class="container">
-    <div class="row">
-      <div class="col" v-if="notFound">
-        <h4>The project with the name {{ currentProject }} was not found.</h4>
-      </div>
-      <div class="col" v-else>
-        <h4>
-          {{ currentProject }} articles
-          <span v-if="$route.query.importance || $route.query.quality">
-            -
-          </span>
-          <span v-if="$route.query.importance">
-            <WikiLink
-              v-if="hasImportanceLink()"
-              :href="categoryLinks[$route.query.importance].href"
-              :text="categoryLinks[$route.query.importance].text"
-            ></WikiLink>
-            <span v-if="!hasImportanceLink()">{{
-              categoryLinks[$route.query.importance]
-            }}</span>
-            importance</span
+  <div class="wp1r flex flex-1 flex-col bg-page">
+    <div
+      class="mx-auto flex w-full max-w-[1200px] flex-1 flex-col border-x border-border bg-surface"
+    >
+      <div class="px-[18px] pb-16 pt-6 max-md:px-3">
+        <div v-if="notFound">
+          <h2 class="m-0 text-[19px] font-semibold tracking-[-0.015em]">
+            The project with the name {{ currentProject }} was not found.
+          </h2>
+        </div>
+        <div v-else>
+          <router-link
+            class="text-[13px]"
+            :to="`/project/${currentProject.replace(/_/g, ' ')}`"
+            >← {{ currentProject }} table</router-link
           >
-          <span v-if="$route.query.quality"
-            ><span v-if="$route.query.importance"> / </span>
-            <WikiLink
-              v-if="hasQualityLink()"
-              :href="categoryLinks[$route.query.quality].href"
-              :text="categoryLinks[$route.query.quality].text"
-            ></WikiLink>
-            <span v-if="!hasQualityLink()">{{
-              categoryLinks[$route.query.quality]
-            }}</span>
-            quality</span
-          >
-        </h4>
-        <p>
-          <a :href="'#/project/' + currentProject.replace(/_/g, '%20')"
-            >Back to table</a
-          >
-        </p>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col">
-        <ArticleTable
-          :projectId="currentProjectId"
-          :importance="$route.query.importance"
-          :quality="$route.query.quality"
-          :page="$route.query.page"
-          :numRows="$route.query.numRows"
-          :articlePattern="$route.query.articlePattern"
-          v-on:page-select="onPageSelect($event)"
-          v-on:rating-select="onRatingSelect($event)"
-          v-on:name-filter="onNameFilter($event)"
-          v-on:update-page="onUpdatePage($event)"
-        ></ArticleTable>
+          <div class="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            <h2 class="m-0 text-[19px] font-semibold tracking-[-0.015em]">
+              {{ currentProject }} articles
+            </h2>
+            <template v-if="$route.query.importance">
+              <a
+                v-if="hasImportanceLink()"
+                class="wp1r-badge border-accent-border bg-accent-tint text-[11px] !normal-case !tracking-normal !text-accent-hover"
+                :href="categoryLinks[$route.query.importance].href"
+                >{{ categoryLinks[$route.query.importance].text }} importance</a
+              >
+              <span
+                v-else
+                class="wp1r-badge text-[11px] !normal-case !tracking-normal"
+                >{{ categoryLinks[$route.query.importance] }} importance</span
+              >
+            </template>
+            <template v-if="$route.query.quality">
+              <a
+                v-if="hasQualityLink()"
+                class="wp1r-badge border-accent-border bg-accent-tint text-[11px] !normal-case !tracking-normal !text-accent-hover"
+                :href="categoryLinks[$route.query.quality].href"
+                >{{ categoryLinks[$route.query.quality].text }} quality</a
+              >
+              <span
+                v-else
+                class="wp1r-badge text-[11px] !normal-case !tracking-normal"
+                >{{ categoryLinks[$route.query.quality] }} quality</span
+              >
+            </template>
+          </div>
+          <ArticleTable
+            :projectId="currentProjectId"
+            :importance="$route.query.importance"
+            :quality="$route.query.quality"
+            :page="$route.query.page"
+            :numRows="$route.query.numRows"
+            :articlePattern="$route.query.articlePattern"
+            v-on:update-filters="onUpdateFilters($event)"
+            v-on:update-page="onUpdatePage($event)"
+          ></ArticleTable>
+        </div>
       </div>
     </div>
   </div>
@@ -62,13 +64,11 @@
 
 <script>
 import ArticleTable from './ArticleTable.vue';
-import WikiLink from './WikiLink.vue';
 
 export default {
   name: 'article-page',
   components: {
     ArticleTable,
-    WikiLink,
   },
   props: ['currentProject'],
   data: function () {
@@ -124,54 +124,28 @@ export default {
       );
       this.notFound = response.status === 404;
     },
-    onPageSelect: function (selection) {
+    // The filter bar's single commit: every filter and pagination field is
+    // pushed to the query at once.
+    onUpdateFilters: function (selection) {
+      const query = this.$route.query;
       if (
-        this.$route.query.numRows === selection.rows &&
-        this.$route.query.page === selection.page
+        (query.quality || '') === selection.quality &&
+        (query.importance || '') === selection.importance &&
+        (query.articlePattern || '') === selection.articlePattern &&
+        String(query.numRows || 100) === String(selection.rows) &&
+        String(query.page || 1) === String(selection.page)
       ) {
         return;
       }
       this.$router.push({
         path: `/project/${this.currentProject}/articles`,
         query: {
-          quality: this.$route.query.quality,
-          importance: this.$route.query.importance,
-          page: selection.page,
-          numRows: selection.rows,
-          articlePattern: this.$route.query.articlePattern,
-        },
-      });
-    },
-    onRatingSelect: function (selection) {
-      if (
-        this.$route.query.quality === selection.qualty &&
-        this.$route.query.importance === selection.importance
-      ) {
-        return;
-      }
-      this.$router.push({
-        path: `/project/${this.currentProject}/articles`,
-        query: {
-          quality: selection.quality,
-          importance: selection.importance,
-          page: this.$route.query.page,
-          numRows: this.$route.query.numRows,
-          articlePattern: this.$route.query.articlePattern,
-        },
-      });
-    },
-    onNameFilter: function (selection) {
-      if (this.$route.query.articlePattern == selection) {
-        return;
-      }
-      this.$router.push({
-        path: `/project/${this.currentProject}/articles`,
-        query: {
-          quality: this.$route.query.quality,
-          importance: this.$route.query.importance,
-          page: this.$route.query.page,
-          numRows: this.$route.query.numRows,
-          articlePattern: selection,
+          quality: selection.quality || undefined,
+          importance: selection.importance || undefined,
+          page: String(selection.page) === '1' ? undefined : selection.page,
+          numRows:
+            String(selection.rows) === '100' ? undefined : selection.rows,
+          articlePattern: selection.articlePattern || undefined,
         },
       });
     },
@@ -193,9 +167,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-h4 a:visited {
-  color: #5d7791 !important;
-}
-</style>

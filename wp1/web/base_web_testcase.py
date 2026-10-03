@@ -1,13 +1,24 @@
 from contextlib import contextmanager
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from flask import appcontext_pushed, g
+from flask.testing import FlaskClient
 import fakeredis
 import pymysql
 
 from wp1.base_db_test import BaseCombinedDbTest
 from wp1.web.app import create_app
+
+
+class FrontendTestClient(FlaskClient):
+    """Existing web tests model requests from the configured frontend."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.environ_base["HTTP_ORIGIN"] = next(
+            iter(self.application.config["TRUSTED_CLIENT_ORIGINS"])
+        )
 
 
 class BaseWebTestcase(BaseCombinedDbTest):
@@ -16,6 +27,9 @@ class BaseWebTestcase(BaseCombinedDbTest):
         super().setUp()
 
         self.redis = fakeredis.FakeStrictRedis()
+        client_patch = patch("flask.Flask.test_client_class", FrontendTestClient)
+        client_patch.start()
+        self.addCleanup(client_patch.stop)
 
         self.app = create_app()
         self.app.config["TESTING"] = True
