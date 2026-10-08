@@ -455,6 +455,7 @@ def _get_schedule_create_params(
             },
         },
         "context": "wikimedia",
+        "teams": get_settings().ZIMFARM_TEAMS,
     }
 
 
