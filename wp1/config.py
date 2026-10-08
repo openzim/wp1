@@ -336,7 +336,7 @@ class Settings:
         section="Client URLs",
         required_in_production=True,
         help=(
-            "URL the zimfarm worker uses to reach the selection files over " "S3/MinIO."
+            "URL the zimfarm worker uses to reach the selection files over S3/MinIO."
         ),
     )
 
@@ -388,6 +388,12 @@ class Settings:
     )
     ZIMFARM_USER: str = _field("admin", section="Zimfarm")
     ZIMFARM_PASSWORD: str = _field("admin", section="Zimfarm")
+    ZIMFARM_TEAMS: list[str] = _field(
+        ["Kiwix"],
+        kind="list",
+        section="Zimfarm",
+        help="Comma-separated list of Zimfarm teams that own the recipes and tasks.",
+    )
     ZIMFARM_HOOK_TOKEN: str | None = _field(
         None,
         section="Zimfarm",
@@ -675,7 +681,7 @@ _SECTION_DOCS = {
         '  python3 -c "import os; print(os.urandom(24).hex())"'
     ),
     "Client URLs": (
-        "URLs used for redirections, CORS, and internal service " "communication."
+        "URLs used for redirections, CORS, and internal service communication."
     ),
     "Storage (S3/MinIO)": (
         "Configuration for the storage backend for storing selection list "

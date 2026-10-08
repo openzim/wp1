@@ -65,6 +65,7 @@ class ZimFarmTest(BaseWpOneDbTest):
             },
         },
         "version": "latest",
+        "teams": ["Kiwix"],
     }
 
     def _insert_builder(self):
@@ -191,7 +192,10 @@ class ZimFarmTest(BaseWpOneDbTest):
         s3 = MagicMock()
         s3.client.head_object.return_value = {"ContentLength": 20000000}
 
-        with override_settings(ZIMFARM_CACHE_URL="https://wasabi.fake/bucket"):
+        with override_settings(
+            ZIMFARM_CACHE_URL="https://wasabi.fake/bucket",
+            ZIMFARM_TEAMS=["Kiwix"],
+        ):
             actual = zimfarm._get_schedule_create_params(
                 self.builder,
                 self.selection,
@@ -217,6 +221,7 @@ class ZimFarmTest(BaseWpOneDbTest):
         with override_settings(
             ZIMFARM_CACHE_URL="https://wasabi.fake/bucket",
             ZIMFARM_IMAGE="ghcr.io/openzim/mwoffliner-advanced:1.23.45",
+            ZIMFARM_TEAMS=["Kiwix"],
         ):
             actual = zimfarm._get_schedule_create_params(
                 self.builder,
@@ -243,7 +248,6 @@ class ZimFarmTest(BaseWpOneDbTest):
         ZIMFARM_OAUTH_ISSUER="https://oauth.example.com",
     )
     def test_token_provider_init_oauth_valid(self):
-
         provider = ZimfarmClientTokenProvider()
         provider._validate_creds()
 
@@ -256,7 +260,6 @@ class ZimFarmTest(BaseWpOneDbTest):
         ZIMFARM_PASSWORD="test_pass",
     )
     def test_token_provider_init_local_valid(self):
-
         provider = ZimfarmClientTokenProvider()
         provider._validate_creds()
 
@@ -270,7 +273,6 @@ class ZimFarmTest(BaseWpOneDbTest):
         ZIMFARM_OAUTH_AUDIENCE_ID=None,
     )
     def test_token_provider_init_oauth_missing_credentials(self):
-
         with self.assertRaises(ZimFarmError):
             ZimfarmClientTokenProvider()._validate_creds()
 
@@ -280,13 +282,11 @@ class ZimFarmTest(BaseWpOneDbTest):
         ZIMFARM_PASSWORD="",
     )
     def test_token_provider_init_local_missing_credentials(self):
-
         with self.assertRaises(ZimFarmError):
             ZimfarmClientTokenProvider()._validate_creds()
 
     @override_settings(ZIMFARM_AUTH_MODE="unknown")
     def test_token_provider_init_unknown_auth_mode(self):
-
         with self.assertRaises(ZimFarmError):
             ZimfarmClientTokenProvider()._validate_creds()
 
@@ -329,7 +329,6 @@ class ZimFarmTest(BaseWpOneDbTest):
     )
     @patch("wp1.zimfarm.requests")
     def test_token_provider_generate_oauth_access_token_http_error(self, mock_requests):
-
         mock_response = MagicMock()
         mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError
         mock_requests.post.return_value = mock_response
@@ -429,7 +428,6 @@ class ZimFarmTest(BaseWpOneDbTest):
     )
     @patch("wp1.zimfarm.naive_utcnow")
     def test_token_provider_get_access_token_not_expired(self, mock_naive_utcnow):
-
         mock_naive_utcnow.return_value = datetime.datetime(
             2023, 1, 1, 11, 50, 0, tzinfo=None
         )
@@ -511,7 +509,6 @@ class ZimFarmTest(BaseWpOneDbTest):
     def test_token_provider_get_access_token_expired_oauth(
         self, mock_requests, mock_naive_utcnow
     ):
-
         mock_naive_utcnow.return_value = datetime.datetime(
             2023, 1, 1, 12, 0, 0, tzinfo=None
         )
@@ -587,7 +584,6 @@ class ZimFarmTest(BaseWpOneDbTest):
     def test_token_provider_get_access_token_no_redis_data_oauth(
         self, mock_requests, mock_naive_utcnow
     ):
-
         mock_naive_utcnow.return_value = datetime.datetime(
             2023, 1, 1, 12, 0, 0, tzinfo=None
         )
@@ -651,7 +647,6 @@ class ZimFarmTest(BaseWpOneDbTest):
     )
     @patch("wp1.zimfarm.naive_utcnow")
     def test_token_provider_get_access_token_stores_in_redis(self, mock_naive_utcnow):
-
         mock_naive_utcnow.return_value = datetime.datetime(
             2023, 1, 1, 12, 0, 0, tzinfo=None
         )
