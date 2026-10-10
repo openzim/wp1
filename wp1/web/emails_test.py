@@ -251,6 +251,7 @@ class EmailsTest(BaseWpOneDbTest):
 
         self.assertFalse(result)
 
+    @override_settings(CLIENT_HOMEPAGE="https://wp1.example.org/#/")
     @patch("wp1.web.emails.send_zim_ready_email")
     @patch("wp1.web.emails.zim_schedules.get_username_by_zim_schedule_id")
     @patch("wp1.zimfarm.requests.get")
@@ -283,6 +284,7 @@ class EmailsTest(BaseWpOneDbTest):
             recipient_email="test@example.com",
             zim_title="Test ZIM File",
             download_url="https://fake.wasabisys.com/org-kiwix-zimit/wikipedia/foo.zim",
+            manage_schedule_url="https://wp1.example.org/#/selections/test-builder-id/zim",
             unsubscribe_url=ANY,
             next_generation_months=3,
         )
@@ -321,6 +323,7 @@ class EmailsTest(BaseWpOneDbTest):
             recipient_email="test@example.com",
             zim_title="Test ZIM File",
             download_url="https://download.example.com/test.zim",
+            manage_schedule_url=None,  # CLIENT_HOMEPAGE is not set in tests
             unsubscribe_url=ANY,
             next_generation_months=None,  # Should be None when no remaining generations
         )
