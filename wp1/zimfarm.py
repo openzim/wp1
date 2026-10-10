@@ -228,6 +228,13 @@ class ZimfarmClientTokenProvider:
             raise ZimFarmError("Failed to generate access token.")
         return self._access_token
 
+    def invalidate(self, redis) -> None:
+        """Drop the cached token so the next call mints a fresh one."""
+        redis.delete(REDIS_AUTH_KEY)
+        self._access_token = None
+        self._refresh_token = None
+        self._expires_at = datetime.fromtimestamp(0, UTC).replace(tzinfo=None)
+
 
 token_provider = ZimfarmClientTokenProvider()
 
@@ -463,15 +470,31 @@ def _get_zimfarm_headers(token):
     return {"Authorization": "Bearer %s" % token, "User-Agent": WP1_USER_AGENT}
 
 
+def _zimfarm_request(redis, method, url, **kwargs):
+    """Sends an authenticated request to the Zimfarm.
+
+    If the Zimfarm rejects the token with a 401, the cached token is dropped
+    and the request is retried once with a fresh one.
+    """
+    send = getattr(requests, method)
+    token = token_provider.get_access_token(redis)
+    r = send(url, headers=_get_zimfarm_headers(token), **kwargs)
+    if r.status_code == 401:
+        logger.warning("Zimfarm rejected the access token, retrying with a new one")
+        token_provider.invalidate(redis)
+        token = token_provider.get_access_token(redis)
+        r = send(url, headers=_get_zimfarm_headers(token), **kwargs)
+    return r
+
+
 def zimfarm_schedule_exists(redis, builder_id: str) -> bool:
     """Checks if a ZimSchedule exists in the zimfarm"""
-    token = token_provider.get_access_token(redis)
     base_url = get_zimfarm_url()
-    headers = _get_zimfarm_headers(token)
 
-    r = requests.get(
+    r = _zimfarm_request(
+        redis,
+        "get",
         "%s/recipes/%s" % (base_url, get_zimfarm_schedule_name(builder_id)),
-        headers=headers,
     )
     # 404 means the schedule doesn't exist, which is not an error
     if r.status_code == 404:
@@ -505,8 +528,6 @@ def create_or_update_zimfarm_schedule(
     """
     Requests a ZIM file schedule from the Zimfarm for the given builder.
     """
-    token = token_provider.get_access_token(redis)
-
     if builder is None:
         raise ObjectNotFoundError("Cannot schedule for None builder")
 
@@ -527,7 +548,6 @@ def create_or_update_zimfarm_schedule(
         )
 
     base_url = get_zimfarm_url()
-    headers = _get_zimfarm_headers(token)
 
     builder_id = builder.b_id.decode("utf-8")
 
@@ -546,9 +566,10 @@ def create_or_update_zimfarm_schedule(
                 flavour=flavour,
             )
             schedule_name = get_zimfarm_schedule_name(builder_id)
-            r = requests.patch(
+            r = _zimfarm_request(
+                redis,
+                "patch",
                 "%s/recipes/%s" % (base_url, schedule_name),
-                headers=headers,
                 json=params,
             )
             r.raise_for_status()
@@ -571,7 +592,7 @@ def create_or_update_zimfarm_schedule(
                 long_description,
                 flavour=flavour,
             )
-            r = requests.post("%s/recipes" % base_url, headers=headers, json=params)
+            r = _zimfarm_request(redis, "post", "%s/recipes" % base_url, json=params)
             if r.status_code == 409:
                 # The recipe already exists on the Zimfarm even though there is
                 # no matching local schedule row (e.g. it was orphaned by an
@@ -592,9 +613,10 @@ def create_or_update_zimfarm_schedule(
                     "Recipe %s already exists on the Zimfarm, adopting it",
                     schedule_name,
                 )
-                r = requests.patch(
+                r = _zimfarm_request(
+                    redis,
+                    "patch",
                     "%s/recipes/%s" % (base_url, schedule_name),
-                    headers=headers,
                     json=params,
                 )
             r.raise_for_status()
@@ -632,7 +654,6 @@ def request_zimfarm_task(redis, wp10db, builder):
     """
     Requests a ZIM file task from the Zimfarm for the given builder.
     """
-    token = token_provider.get_access_token(redis)
     if builder is None:
         raise ObjectNotFoundError("Cannot schedule for None builder")
 
@@ -650,13 +671,13 @@ def request_zimfarm_task(redis, wp10db, builder):
         )
 
     base_url = get_zimfarm_url()
-    headers = _get_zimfarm_headers(token)
 
     schedule_name = get_zimfarm_schedule_name(builder.b_id.decode("utf-8"))
     logger.info("Creating ZIM task for builder id=%s", builder.b_id.decode("utf-8"))
-    r = requests.post(
+    r = _zimfarm_request(
+        redis,
+        "post",
         "%s/requested-tasks" % base_url,
-        headers=headers,
         json={"recipe_names": [schedule_name]},
     )
     try:
@@ -726,12 +747,10 @@ def cancel_zim_by_task_id(redis, task_id):
     if isinstance(task_id, bytes):
         task_id = task_id.decode("utf-8")
 
-    token = token_provider.get_access_token(redis)
     base_url = get_zimfarm_url()
-    headers = _get_zimfarm_headers(token)
 
     logger.info("Deleting requested task_id=%s", task_id)
-    r = requests.delete("%s/requested-tasks/%s" % (base_url, task_id), headers=headers)
+    r = _zimfarm_request(redis, "delete", "%s/requested-tasks/%s" % (base_url, task_id))
 
     try:
         r.raise_for_status()
@@ -743,7 +762,7 @@ def cancel_zim_by_task_id(redis, task_id):
             ) from e
 
     logger.info("Task was no longer requested, cancelling (task_id=%s)", task_id)
-    r = requests.post("%s/tasks/%s/cancel" % (base_url, task_id), headers=headers)
+    r = _zimfarm_request(redis, "post", "%s/tasks/%s/cancel" % (base_url, task_id))
 
     try:
         r.raise_for_status()
@@ -758,16 +777,13 @@ def delete_zimfarm_schedule_by_builder_id(redis, builder_id):
     if isinstance(builder_id, bytes):
         builder_id = builder_id.decode("utf-8")
 
-    token = token_provider.get_access_token(redis)
-
     base_url = get_zimfarm_url()
-    headers = _get_zimfarm_headers(token)
     schedule_name = get_zimfarm_schedule_name(builder_id)
 
     logger.info(
         "Deleting zimfarm schedule=%s for builder_id=%s", schedule_name, builder_id
     )
-    r = requests.delete("%s/recipes/%s" % (base_url, schedule_name), headers=headers)
+    r = _zimfarm_request(redis, "delete", "%s/recipes/%s" % (base_url, schedule_name))
 
     try:
         r.raise_for_status()
