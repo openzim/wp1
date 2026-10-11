@@ -437,19 +437,12 @@ def _delete_builder_and_assets(
     rq_cancel_success = True
     with wp10db.cursor() as cursor:
         cursor.execute(
-            """SELECT s_rq_job_id, s_id FROM zim_schedules
+            """SELECT s_rq_job_id FROM zim_schedules
          WHERE s_builder_id = %s AND s_rq_job_id IS NOT NULL""",
             (builder_id,),
         )
         row = cursor.fetchone()
         job_id = row["s_rq_job_id"] if row else None
-        schedule_id = row["s_id"] if row else None
-
-        # Delete the zim_schedules row for this builder
-        if schedule_id:
-            cursor.execute(
-                """DELETE FROM zim_schedules WHERE s_id = %s""", (schedule_id,)
-            )
 
         # Cancel the scheduled rq job if it exists
         if job_id:
@@ -473,8 +466,10 @@ def _delete_builder_and_assets(
         )
         keys_to_delete = [d["object_key"] for d in cursor.fetchall()]
         cursor.execute(
-            """DELETE b, s FROM builders AS b
+            """DELETE b, s, z, zs FROM builders AS b
            LEFT JOIN selections AS s ON s.s_builder_id = b.b_id
+           LEFT JOIN zim_tasks AS z ON z.z_selection_id = s.s_id
+           LEFT JOIN zim_schedules AS zs ON zs.s_builder_id = b.b_id
            WHERE b.b_user_id = %s AND b.b_id = %s
         """,
             (user_id_str, builder_id),
