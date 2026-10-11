@@ -271,17 +271,6 @@ class Settings:
         commented=True,
     )
 
-    # --- Overlay (development mock queue) ---
-    OVERLAY_UPDATE_WAIT_TIME: int | None = _field(
-        40, kind="int", section="Overlay (development mock queue)"
-    )
-    OVERLAY_JOB_ELAPSED_TIME: int | None = _field(
-        10, kind="int", section="Overlay (development mock queue)"
-    )
-    OVERLAY_BASIC_INCOME_TOTAL_TIME: int | None = _field(
-        60, kind="int", section="Overlay (development mock queue)"
-    )
-
     # --- MWOAUTH (Wikimedia OAuth) ---
     MWOAUTH_CONSUMER_KEY: str = _field(
         "",
@@ -653,11 +642,6 @@ _SECTION_DOCS = {
         "Credentials used by the bot backend to log in to English Wikipedia "
         "and edit\narticles. Not necessary in development (there's no wiki "
         "to edit locally)."
-    ),
-    "Overlay (development mock queue)": (
-        'Options for the "Development overlay" which mocks queue '
-        "functionality in the\ndevelopment environment, so you can test "
-        "update flows without a real job queue."
     ),
     "MWOAUTH (Wikimedia OAuth)": (
         "Credentials for authentication to Wikimedia through mwoauth. Used "
