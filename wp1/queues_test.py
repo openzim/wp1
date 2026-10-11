@@ -12,6 +12,7 @@ from wp1 import queues
 from wp1.selection.models.simple import Builder as SimpleBuilder
 import wp1.logic.builder as logic_builder
 import wp1.logic.rating as logic_rating
+from wp1.web import emails
 
 
 class QueuesTest(BaseWpOneDbTest):
@@ -222,6 +223,9 @@ class QueuesTest(BaseWpOneDbTest):
         self.assertEqual(
             "wp1.logic.builder.request_scheduled_zim_file_for_builder",
             job.func_name,
+        )
+        self.assertEqual(
+            emails.respond_to_scheduled_zim_job_failed, job.failure_callback
         )
 
     def test_schedule_recurring_zimfarm_task_single_run(self):
