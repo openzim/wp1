@@ -444,11 +444,6 @@ def _delete_builder_and_assets(
         row = cursor.fetchone()
         job_id = row["s_rq_job_id"] if row else None
 
-        # Delete all zim_schedules rows for this builder
-        cursor.execute(
-            """DELETE FROM zim_schedules WHERE s_builder_id = %s""", (builder_id,)
-        )
-
         # Cancel the scheduled rq job if it exists
         if job_id:
             try:
@@ -471,9 +466,10 @@ def _delete_builder_and_assets(
         )
         keys_to_delete = [d["object_key"] for d in cursor.fetchall()]
         cursor.execute(
-            """DELETE b, s, z FROM builders AS b
+            """DELETE b, s, z, zs FROM builders AS b
            LEFT JOIN selections AS s ON s.s_builder_id = b.b_id
            LEFT JOIN zim_tasks AS z ON z.z_selection_id = s.s_id
+           LEFT JOIN zim_schedules AS zs ON zs.s_builder_id = b.b_id
            WHERE b.b_user_id = %s AND b.b_id = %s
         """,
             (user_id_str, builder_id),
