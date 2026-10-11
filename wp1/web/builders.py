@@ -385,6 +385,19 @@ def update_zimfarm_status():
     if data.get("status") in ("failed", "cancelled", None):
         # Update the status as FAILED and return.
         logic_selection.update_zimfarm_task(wp10db, task_id, "FAILED")
+
+        # Cancelled tasks are skipped: WP1 cancels its own pending tasks when
+        # a selection is rebuilt.
+        if data.get("status") == "failed":
+            zim_task = logic_zim_tasks.get_zim_task_by_task_id(wp10db, task_id)
+            if zim_task is not None and zim_task.z_zim_schedule_id is not None:
+                zim_schedule = logic_zim_schedules.get_zim_schedule(
+                    wp10db, zim_task.z_zim_schedule_id
+                )
+                if zim_schedule is not None:
+                    emails.notify_user_for_failed_scheduled_zim(
+                        wp10db, zim_schedule, schedule_ended=False
+                    )
         return "", 204
 
     files = data.get("files", {})
