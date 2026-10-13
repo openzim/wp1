@@ -12,6 +12,7 @@ from kiwixstorage import KiwixStorage
 from pymysql.connections import Connection
 from redis import Redis
 from redis.exceptions import RedisError
+from rq import Retry, get_current_job
 import wp1.logic.selection as logic_selection
 import wp1.logic.sites as logic_sites
 import wp1.logic.util as logic_util
@@ -21,6 +22,8 @@ from wp1 import app_logging, queues, zimfarm
 from wp1.constants import (
     CONTENT_TYPE_TO_EXT,
     EXT_TO_CONTENT_TYPE,
+    SCHEDULED_SELECTION_MAX_RETRIES,
+    SCHEDULED_SELECTION_RETRY_INTERVAL,
     TS_FORMAT_WP10,
 )
 from wp1.config import get_settings
@@ -29,6 +32,7 @@ from wp1.exceptions import (
     BuilderDeleteConfirmationError,
     ObjectNotFoundError,
     UserNotAuthorizedError,
+    Wp1SelectionError,
     ZimFarmError,
 )
 from wp1.models.wp10.builder import Builder
@@ -1140,7 +1144,7 @@ def request_zim_file_task_for_builder(
 
 def request_scheduled_zim_file_for_builder(
     builder: Builder, zim_schedule_id: bytes
-) -> ZimTask | None:
+) -> ZimTask | Retry | None:
     """
     Requests a scheduled ZIM file generation from the Zimfarm for the given builder.
     It will reopen connections and rebuild the selection for the builder.
@@ -1165,6 +1169,29 @@ def request_scheduled_zim_file_for_builder(
     materialize_builder(
         builder_cls, builder, "text/tab-separated-values", s3, redis, wp10db
     )
+
+    job = get_current_job()
+    selection = latest_selection_for(wp10db, builder.id, "text/tab-separated-values")
+    if selection is not None and logic_util.as_text(selection.s_status) == "CAN_RETRY":
+        if (
+            job is not None
+            and (job.number_of_retries or 0) < SCHEDULED_SELECTION_MAX_RETRIES
+        ):
+            logger.warning(
+                "Selection for builder id=%s can be retried, retrying scheduled job",
+                builder.id,
+            )
+            return Retry(
+                max=SCHEDULED_SELECTION_MAX_RETRIES,
+                interval=SCHEDULED_SELECTION_RETRY_INTERVAL,
+            )
+        raise Wp1SelectionError(
+            "Selection for builder id=%s still failed after %s retries"
+            % (builder.id, SCHEDULED_SELECTION_MAX_RETRIES)
+        )
+    if job is not None:
+        # RQ keeps counting retries across repeats, so each scheduled run starts fresh.
+        job.number_of_retries = 0
 
     if zim_schedule_id is None:
         return None
