@@ -11,17 +11,6 @@
     "> 1%",
     "last 2 versions"
   ],
-  "eslintConfig": {
-    "env": {
-      "node": true
-    },
-    "extends": [
-      "plugin:vue/vue3-essential",
-      "eslint:recommended"
-    ],
-    "rules": {},
-    "root": true
-  },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^4.5.0",
     "@fontsource/ibm-plex-sans": "^4.5.0",
@@ -31,16 +20,13 @@
     "axios": "^1.20.0",
     "cli-highlight": "^2.1.5",
     "cypress": "^15.19.0",
-    "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^9.4.0",
     "minimist": "^1.2.6",
-    "node-forge": "^1.4.0",
     "path-to-regexp": "^3.3.0",
     "postcss": "^8.5.18",
     "split-by-grapheme": "^1.0.1",
     "tailwindcss": "^3.4.0",
     "vite": "^6.0.0",
-    "vue": "^3.5.0",
+    "vue": "^3.5.43",
     "vue-router": "^4.4.0"
   },
   "packageManager": "pnpm@11.13.0"
