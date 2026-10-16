@@ -120,6 +120,22 @@ and before the volume existed that meant losing the entire keyspace
 with false "no logs" notices; see
 [issue #1244](https://github.com/openzim/wp1/issues/1244)).
 
+## Pausing the maintenance jobs
+
+The daily maintenance jobs in `wp1/maintenance.py` (`enqueue_all`,
+`update_global_articles` and `enqueue_global`) can be paused without a
+deploy. On the production box:
+
+```bash
+sudo docker exec wp1bot-workers python -m wp1.maintenance pause
+sudo docker exec wp1bot-workers python -m wp1.maintenance status
+sudo docker exec wp1bot-workers python -m wp1.maintenance resume
+```
+
+While paused, each job logs a warning and does nothing. The flag is the
+`maintenance.paused` key in Redis, so it survives restarts and deploys. Jobs
+that are already queued or running are not stopped.
+
 ## Operational one-offs
 
 The Python scripts in this directory are small operational tools, run inside a

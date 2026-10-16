@@ -128,3 +128,85 @@ class MaintenanceTest(BaseWpOneDbTest):
         maintenance.update_global_articles()
 
         mock_rebuild.assert_called_once_with()
+
+    def test_pause_and_resume(self):
+        self.assertFalse(maintenance.is_paused(self.redis))
+
+        maintenance.pause(self.redis)
+        self.assertTrue(maintenance.is_paused(self.redis))
+
+        maintenance.resume(self.redis)
+        self.assertFalse(maintenance.is_paused(self.redis))
+
+    @patch("wp1.maintenance._restart_upload_workers")
+    @patch("wp1.maintenance.queues.enqueue_all_projects")
+    @patch("wp1.maintenance.redis_connect")
+    def test_enqueue_all_paused(
+        self, mock_redis_connect, mock_enqueue_all, mock_restart
+    ):
+        mock_redis_connect.return_value = self.redis
+        maintenance.pause(self.redis)
+
+        maintenance.enqueue_all()
+
+        mock_restart.assert_not_called()
+        mock_enqueue_all.assert_not_called()
+
+    @override_settings(ENV=Environment.PRODUCTION)
+    def test_enqueue_global_paused(self):
+        maintenance.pause(self.redis)
+        with patch("wp1.maintenance.redis_connect", return_value=self.redis):
+            maintenance.enqueue_global()
+
+        self.assertEqual(0, Queue("upload", connection=self.redis).count)
+
+    @patch("wp1.maintenance._supervisorctl")
+    @patch("wp1.maintenance.rebuild_global_articles")
+    @patch("wp1.maintenance.redis_connect")
+    def test_update_global_articles_paused(
+        self, mock_redis_connect, mock_rebuild, mock_supervisorctl
+    ):
+        mock_redis_connect.return_value = self.redis
+        maintenance.pause(self.redis)
+
+        maintenance.update_global_articles()
+
+        mock_rebuild.assert_not_called()
+        mock_supervisorctl.assert_not_called()
+
+    @patch("builtins.print")
+    @patch("wp1.maintenance.redis_connect")
+    def test_main_pause(self, mock_redis_connect, mock_print):
+        mock_redis_connect.return_value = self.redis
+
+        maintenance.main(["pause"])
+
+        self.assertTrue(maintenance.is_paused(self.redis))
+        mock_print.assert_called_once_with("Maintenance is", "paused")
+
+    @patch("builtins.print")
+    @patch("wp1.maintenance.redis_connect")
+    def test_main_resume(self, mock_redis_connect, mock_print):
+        mock_redis_connect.return_value = self.redis
+        maintenance.pause(self.redis)
+
+        maintenance.main(["resume"])
+
+        self.assertFalse(maintenance.is_paused(self.redis))
+        mock_print.assert_called_once_with("Maintenance is", "running")
+
+    @patch("builtins.print")
+    @patch("wp1.maintenance.redis_connect")
+    def test_main_status(self, mock_redis_connect, mock_print):
+        mock_redis_connect.return_value = self.redis
+        maintenance.pause(self.redis)
+
+        maintenance.main(["status"])
+
+        self.assertTrue(maintenance.is_paused(self.redis))
+        mock_print.assert_called_once_with("Maintenance is", "paused")
+
+    def test_main_bad_command(self):
+        for args in ([], ["stop"], ["pause", "now"]):
+            with self.assertRaises(SystemExit):
+                maintenance.main(args)

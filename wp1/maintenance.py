@@ -7,6 +7,7 @@ executed by the single-worker 'maintenance' queue, which serializes them.
 
 import logging
 import subprocess
+import sys
 
 from redis import Redis
 from rq import Queue
@@ -36,11 +37,19 @@ SUPERVISORD_CONF = "/usr/src/app/supervisord.conf"
 UPDATE_WORKER_GROUPS = ("wp1-update:*", "wp1-manual-update:*")
 _UPDATE_QUEUE_NAMES = ("update", "manual-update")
 
+# While this key is set, the daily maintenance jobs below do nothing. It lets
+# the bot be turned off without a commit + deploy, by running
+# `python -m wp1.maintenance pause` (and later `resume`) in the workers
+# container.
+PAUSED_KEY = "maintenance.paused"
+
 
 def enqueue_all():
     """Nightly (midnight UTC): enqueue update + upload jobs for all projects."""
-    _restart_upload_workers()
     redis = redis_connect()
+    if _skip_if_paused(redis, "enqueue_all"):
+        return
+    _restart_upload_workers()
     wp10db = wp10_connect()
     queues.enqueue_all_projects(redis, wp10db)
 
@@ -57,6 +66,8 @@ def update_global_articles():
     upload) keep serving users throughout.
     """
     redis = redis_connect()
+    if _skip_if_paused(redis, "update_global_articles"):
+        return
     _stop_inflight_update_jobs(redis)
     # If the workers can't be stopped, this raises and the rebuild is
     # aborted: rebuilding while update jobs run risks inconsistent data.
@@ -70,6 +81,8 @@ def update_global_articles():
 def enqueue_global():
     """Daily (05:00 UTC): enqueue the global table upload and project count."""
     redis = redis_connect()
+    if _skip_if_paused(redis, "enqueue_global"):
+        return
     upload_q = Queue("upload", connection=redis)
 
     if get_settings().ENV == Environment.PRODUCTION:
@@ -93,6 +106,25 @@ def rebuild_global_articles():
 
     for project_name in logic_project.project_names_to_update(wikidb):
         logic_project.update_global_articles_for_project_name(wp10db, project_name)
+
+
+def is_paused(redis: Redis) -> bool:
+    return bool(redis.exists(PAUSED_KEY))
+
+
+def pause(redis: Redis):
+    redis.set(PAUSED_KEY, 1)
+
+
+def resume(redis: Redis):
+    redis.delete(PAUSED_KEY)
+
+
+def _skip_if_paused(redis: Redis, job_name: str) -> bool:
+    if is_paused(redis):
+        logger.warning("Maintenance is paused, skipping %s", job_name)
+        return True
+    return False
 
 
 def _stop_inflight_update_jobs(redis: Redis):
@@ -128,3 +160,20 @@ def _supervisorctl(*args: str):
         # worker (supervisord's TERM-then-kill window).
         timeout=300,
     )
+
+
+def main(args: list[str]):
+    """Command line entry point: pause, resume or show the maintenance jobs."""
+    commands = {"pause": pause, "resume": resume}
+    command = args[0] if len(args) == 1 else None
+    if command not in (*commands, "status"):
+        sys.exit("Usage: python -m wp1.maintenance pause|resume|status")
+
+    redis = redis_connect()
+    if command in commands:
+        commands[command](redis)
+    print("Maintenance is", "paused" if is_paused(redis) else "running")
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
