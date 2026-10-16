@@ -1173,9 +1173,9 @@ def request_scheduled_zim_file_for_builder(
     job = get_current_job()
     selection = latest_selection_for(wp10db, builder.id, "text/tab-separated-values")
     if selection is not None and logic_util.as_text(selection.s_status) == "CAN_RETRY":
-        if (
-            job is not None
-            and (job.number_of_retries or 0) < SCHEDULED_SELECTION_MAX_RETRIES
+        if job is not None and (
+            job.number_of_retries is None
+            or job.number_of_retries < SCHEDULED_SELECTION_MAX_RETRIES
         ):
             logger.warning(
                 "Selection for builder id=%s can be retried, retrying scheduled job",
