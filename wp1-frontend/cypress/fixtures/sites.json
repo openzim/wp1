@@ -1,3 +1,8 @@
 {
-  "sites": ["aa.wikipedia.org", "en.wiktionary.org", "en.wikipedia.org"]
+  "sites": ["aa.wikipedia.org", "en.wiktionary.org", "en.wikipedia.org"],
+  "dbnames": {
+    "aa.wikipedia.org": "aawiki",
+    "en.wiktionary.org": "enwiktionary",
+    "en.wikipedia.org": "enwiki"
+  }
 }

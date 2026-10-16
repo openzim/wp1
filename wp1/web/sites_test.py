@@ -54,6 +54,7 @@ class SitesTest(BaseWebTestcase):
         },
     }
     sites = ["aa.wikipedia.org", "ab.wikipedia.org"]
+    dbnames = {"aa.wikipedia.org": "aawiki", "ab.wikipedia.org": "abwiki"}
 
     @patch("wp1.logic.sites.mwclient.Site")
     def test_get_cached_sites(self, patched_site):
@@ -62,10 +63,20 @@ class SitesTest(BaseWebTestcase):
             self.redis.setex(
                 logic_sites.CACHE_KEY,
                 timedelta(days=1),
-                value=json.dumps({"projects": self.sites, "dbnames": {}}),
+                value=json.dumps(
+                    {
+                        "projects": self.sites,
+                        "dbnames": {
+                            **self.dbnames,
+                            "advisors.wikimedia.org": "advisorswiki",
+                        },
+                    }
+                ),
             )
             rv = client.get("/v1/sites/")
-            self.assertEqual({"sites": self.sites}, rv.get_json())
+            self.assertEqual(
+                {"sites": self.sites, "dbnames": self.dbnames}, rv.get_json()
+            )
             self.assertEqual(patched_site.called, False)
 
     @patch("wp1.logic.sites.mwclient.Site")
@@ -74,4 +85,6 @@ class SitesTest(BaseWebTestcase):
         self.app = create_app()
         with self.override_db(self.app), self.app.test_client() as client:
             rv = client.get("/v1/sites/")
-            self.assertEqual({"sites": self.sites}, rv.get_json())
+            self.assertEqual(
+                {"sites": self.sites, "dbnames": self.dbnames}, rv.get_json()
+            )
