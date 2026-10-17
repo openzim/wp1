@@ -7,3 +7,8 @@ allowBuilds:
 # The pnpm version is pinned via packageManager, so "a newer pnpm exists"
 # notices in build and CI logs are just noise.
 updateNotifier: false
+
+# tailwindcss 3 still asks for postcss-selector-parser 6, which has no fix
+# for GHSA-rj75-hqrm-r3gf. 7.x is API-compatible for tailwind's usage.
+overrides:
+  postcss-selector-parser: ^7.1.6

@@ -1463,6 +1463,67 @@ class BuildersTest(BaseWebTestcase):
         self.assertEqual(b"FILE_READY", status["z_status"])
         self.assertEqual(b"20221225000102", status["z_updated_at"])
 
+    @patch("wp1.web.emails.notify_user_for_failed_scheduled_zim")
+    def test_update_zimfarm_status_failed_scheduled(self, patched_notify_user):
+        builder_id = self._insert_builder()
+        self._insert_selections(builder_id)
+        self._insert_zim_schedule(
+            schedule_id=b"schedule_123",
+            builder_id=builder_id.encode("utf-8"),
+            email="test@example.com",
+        )
+        self.app = create_app()
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.post(
+                "/v1/builders/zim/status?token=hook-token-abc",
+                json={"id": "task-id-1234", "status": "failed"},
+            )
+            self.assertEqual("204 NO CONTENT", rv.status)
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                'SELECT z_status FROM zim_tasks WHERE z_task_id = "task-id-1234"'
+            )
+            status = cursor.fetchone()
+
+        self.assertEqual(b"FAILED", status["z_status"])
+        patched_notify_user.assert_called_once()
+        self.assertEqual(b"schedule_123", patched_notify_user.call_args[0][1].s_id)
+        self.assertFalse(patched_notify_user.call_args.kwargs["schedule_ended"])
+
+    @patch("wp1.web.emails.notify_user_for_failed_scheduled_zim")
+    def test_update_zimfarm_status_cancelled_scheduled(self, patched_notify_user):
+        builder_id = self._insert_builder()
+        self._insert_selections(builder_id)
+        self._insert_zim_schedule(
+            schedule_id=b"schedule_123",
+            builder_id=builder_id.encode("utf-8"),
+            email="test@example.com",
+        )
+        self.app = create_app()
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.post(
+                "/v1/builders/zim/status?token=hook-token-abc",
+                json={"id": "task-id-1234", "status": "cancelled"},
+            )
+            self.assertEqual("204 NO CONTENT", rv.status)
+
+        patched_notify_user.assert_not_called()
+
+    @patch("wp1.web.emails.notify_user_for_failed_scheduled_zim")
+    def test_update_zimfarm_status_failed_missing_schedule(self, patched_notify_user):
+        builder_id = self._insert_builder()
+        self._insert_selections(builder_id)
+        self.app = create_app()
+        with self.override_db(self.app), self.app.test_client() as client:
+            rv = client.post(
+                "/v1/builders/zim/status?token=hook-token-abc",
+                json={"id": "task-id-1234", "status": "failed"},
+            )
+            self.assertEqual("204 NO CONTENT", rv.status)
+
+        patched_notify_user.assert_not_called()
+
     def test_update_zimfarm_status_bad_token(self):
         builder_id = self._insert_builder()
         self._insert_selections(builder_id)

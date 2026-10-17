@@ -11,12 +11,10 @@ from flask_session import Session
 from werkzeug.exceptions import HTTPException
 
 import wp1.logic.project as logic_project
-from wp1 import environment
 from wp1.config import get_settings, validate_client_domains
 from wp1.web.articles import articles
 from wp1.web.builders import builders
 from wp1.web.db import get_db, has_db
-from wp1.web.dev.projects import dev_projects
 from wp1.web.oauth import oauth
 from wp1.web.projects import projects
 from wp1.web.selection import selection
@@ -110,15 +108,6 @@ def create_app(session_type="redis"):
     @nocache
     def swagger_api_docs_yml():
         return flask.send_from_directory(".", "openapi.yml")
-
-    if get_settings().ENV == environment.Environment.DEVELOPMENT:
-        # In development, override some project endpoints, mostly manual
-        # update, to provide an easier env for developing the frontend.
-        print(
-            "DEVELOPMENT: overlaying dev_projects blueprint. "
-            "Some endpoints will be replaced with development versions"
-        )
-        app.register_blueprint(dev_projects, url_prefix="/v1/projects")
 
     app.register_blueprint(projects, url_prefix="/v1/projects")
     app.register_blueprint(articles, url_prefix="/v1/articles")

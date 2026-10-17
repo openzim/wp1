@@ -1485,6 +1485,50 @@ class BuilderTest(BaseWpOneDbTest):
             schedule = cursor.fetchone()
         self.assertIsNone(schedule)
 
+    @patch("wp1.logic.builder.queues.cancel_scheduled_job")
+    @patch("wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id")
+    @patch("wp1.logic.builder.logic_selection")
+    def test_delete_builder_deletes_all_zim_schedules(
+        self, mock_selection, mock_delete_schedule, mock_cancel_job
+    ):
+        builder_id = self._insert_builder()
+        self._insert_zim_schedule(schedule_id=b"schedule_1", builder_id=builder_id)
+        self._insert_zim_schedule(
+            schedule_id=b"schedule_2", builder_id=builder_id, rq_job_id=None
+        )
+        self._insert_builder_record("other-builder", "Other Builder")
+        self._insert_zim_schedule(
+            schedule_id=b"schedule_3", builder_id=b"other-builder"
+        )
+
+        actual = logic_builder.delete_builder(self.wp10db, 1234, builder_id)
+
+        self.assertTrue(actual["db_delete_success"])
+        with self.wp10db.cursor() as cursor:
+            cursor.execute("SELECT s_id FROM zim_schedules")
+            schedule_ids = [row["s_id"] for row in cursor.fetchall()]
+        self.assertEqual([b"schedule_3"], schedule_ids)
+
+    @patch("wp1.logic.builder.queues.cancel_scheduled_job")
+    @patch("wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id")
+    @patch("wp1.logic.builder.logic_selection")
+    def test_delete_builder_deletes_zim_tasks(
+        self, mock_selection, mock_delete_schedule, mock_cancel_job
+    ):
+        builder_id = self._insert_builder_with_multiple_version_selections()
+        self._insert_builder_record("other-builder", "Other Builder")
+        self._insert_selection(
+            5, "text/tab-separated-values", builder_id=b"other-builder"
+        )
+
+        actual = logic_builder.delete_builder(self.wp10db, 1234, builder_id)
+
+        self.assertTrue(actual["db_delete_success"])
+        with self.wp10db.cursor() as cursor:
+            cursor.execute("SELECT z_selection_id FROM zim_tasks")
+            selection_ids = [row["z_selection_id"] for row in cursor.fetchall()]
+        self.assertEqual([b"5"], selection_ids)
+
     @patch("wp1.logic.builder.zimfarm.delete_zimfarm_schedule_by_builder_id")
     @patch("wp1.logic.builder.logic_selection")
     def test_delete_builder_zimfarm_delete_fails(
