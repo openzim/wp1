@@ -23,7 +23,6 @@ class MetaBuilder(AbstractBuilder):
             wp10db, builder_id, "text/tab-separated-values"
         )
 
-        # TODO: #1196 - Add retry handling for Combinator referenced selections.
         if selection is None:
             raise Wp1RetryableMetaSelectionError(
                 f"Referenced builder {label} has no usable selection "

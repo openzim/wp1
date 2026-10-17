@@ -27,6 +27,8 @@ LIST_V2_URL = "https://wp1.openzim.org/#/project"
 JOB_TIMEOUT = 60 * 60 * 2  # 2 hours
 JOB_FAILURE_TTL = 60 * 60 * 24 * 7  # 7 days
 ZIM_FILE_TTL = 2 * 7 * 24 * 60 * 60  # 2 weeks
+SCHEDULED_SELECTION_MAX_RETRIES = 3
+SCHEDULED_SELECTION_RETRY_INTERVAL = 5 * 60  # 5 minutes
 
 LOG_NS = 4
 MAX_LOGS_PER_DAY = 100000

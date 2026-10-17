@@ -4,6 +4,7 @@ from unittest.mock import ANY, MagicMock, call, patch
 
 import attr
 from redis.exceptions import RedisError
+from rq import Retry
 
 from wp1.base_db_test import BaseWpOneDbTest
 from wp1.config import override_settings
@@ -13,6 +14,7 @@ from wp1.exceptions import (
     InvalidZimTitleError,
     ObjectNotFoundError,
     UserNotAuthorizedError,
+    Wp1SelectionError,
     ZimFarmError,
 )
 from wp1.logic import builder as logic_builder
@@ -2429,6 +2431,64 @@ class BuilderTest(BaseWpOneDbTest):
 
         self.assertEqual(b"test_task_id_456", actual_zim_file.z_task_id)
         mock_materialize_builder.assert_called_once()
+        mock_request_zimfarm_task.assert_called_once()
+
+    def _request_scheduled_zim_file(self, status, job):
+        self._insert_builder()
+        self._insert_selection(
+            1, "text/tab-separated-values", builder_id=self.builder.b_id, status=status
+        )
+        self._insert_zim_schedule(b"schedule_123", self.builder.b_id, b"rq_job_id_123")
+
+        with (
+            patch("wp1.logic.builder.wp10_connect", return_value=self.wp10db),
+            patch("wp1.logic.builder.redis_connect"),
+            patch("wp1.logic.builder.connect_storage"),
+            patch("wp1.logic.builder.materialize_builder"),
+            patch("wp1.logic.builder.get_current_job", return_value=job),
+            patch("wp1.logic.builder.importlib.import_module"),
+        ):
+            return logic_builder.request_scheduled_zim_file_for_builder(
+                builder=self.builder, zim_schedule_id=b"schedule_123"
+            )
+
+    @patch("wp1.logic.builder.zimfarm.request_zimfarm_task")
+    def test_request_scheduled_zim_file_for_builder_retries_retryable_selection(
+        self, mock_request_zimfarm_task
+    ):
+        actual = self._request_scheduled_zim_file(
+            "CAN_RETRY", MagicMock(number_of_retries=None)
+        )
+
+        self.assertIsInstance(actual, Retry)
+        self.assertEqual(3, actual.max)
+        self.assertEqual([300], actual.intervals)
+        mock_request_zimfarm_task.assert_not_called()
+
+    @patch("wp1.logic.builder.zimfarm.request_zimfarm_task")
+    def test_request_scheduled_zim_file_for_builder_retries_exhausted(
+        self, mock_request_zimfarm_task
+    ):
+        with self.assertRaises(Wp1SelectionError):
+            self._request_scheduled_zim_file(
+                "CAN_RETRY", MagicMock(number_of_retries=3)
+            )
+
+        mock_request_zimfarm_task.assert_not_called()
+
+    @patch(
+        "wp1.logic.builder.zimfarm.request_zimfarm_task",
+        return_value="test_task_id_456",
+    )
+    def test_request_scheduled_zim_file_for_builder_resets_retries(
+        self, mock_request_zimfarm_task
+    ):
+        job = MagicMock(number_of_retries=2)
+
+        actual = self._request_scheduled_zim_file("OK", job)
+
+        self.assertEqual(b"test_task_id_456", actual.z_task_id)
+        self.assertEqual(0, job.number_of_retries)
         mock_request_zimfarm_task.assert_called_once()
 
     @patch("wp1.logic.builder.zimfarm.request_zimfarm_task")
