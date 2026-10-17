@@ -8,4 +8,8 @@ sites = flask.Blueprint("sites", __name__)
 
 @sites.route("/")
 def get_sites():
-    return {"sites": logic_sites.get_projects(get_redis())}
+    redis = get_redis()
+    return {
+        "sites": logic_sites.get_projects(redis),
+        "dbnames": logic_sites.get_project_dbnames(redis),
+    }
