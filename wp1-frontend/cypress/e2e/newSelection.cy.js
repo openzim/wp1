@@ -251,3 +251,41 @@ describe('the new selection page', () => {
     });
   });
 });
+
+describe('the new WikiProject query selection page', () => {
+  beforeEach(() => {
+    cy.intercept('v1/oauth/identify', { fixture: 'identity.json' }).as('login');
+    cy.visit(
+      '/#/selections/new?source=wikiproject_query&wikiproject=Alien&quality=B-Class'
+    );
+    cy.wait('@login');
+  });
+
+  it('shows the filters from the article list', () => {
+    cy.contains('h1', 'New WikiProject query selection');
+    cy.get('#query-filters').contains('Alien');
+    cy.get('#query-filters').contains('B-Class');
+    cy.get('#query-filters').contains('Any');
+    cy.get('#project-select').should('have.value', 'en.wikipedia.org');
+  });
+
+  it('saves the WikiProject and filters', () => {
+    cy.intercept('POST', 'v1/builders/', (req) => {
+      expect(req.body.model).to.equal('wp1.selection.models.wikiproject_query');
+      expect(req.body.params).to.deep.equal({
+        wikiproject: 'Alien',
+        quality: 'B-Class',
+        importance: '',
+        pattern: '',
+      });
+      req.reply({
+        statusCode: 200,
+        body: { success: true, id: 'new-id-5', items: {} },
+      });
+    }).as('save');
+    cy.get('#name-input').type('Alien B-Class');
+    cy.get('#saveListButton').click();
+    cy.wait('@save');
+    cy.url().should('include', '/selections/user/new-id-5');
+  });
+});

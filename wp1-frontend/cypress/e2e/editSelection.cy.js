@@ -267,6 +267,19 @@ describe('the selection detail editor', () => {
     });
   });
 
+  describe('for a WikiProject query selection', () => {
+    beforeEach(() => {
+      visitEditor('wikiproject_query_builder.json');
+    });
+
+    it('shows the WikiProject and filters', () => {
+      cy.get('#row-wpq_wikiproject').contains('Alien');
+      cy.get('#row-wpq_quality').contains('B-Class');
+      cy.get('#row-wpq_importance').contains('Any');
+      cy.get('#row-wpq_pattern').contains('Any');
+    });
+  });
+
   describe('selection errors', () => {
     it('shows a retryable error with a Retry button that re-saves', () => {
       visitEditor('simple_builder_retryable_error.json');

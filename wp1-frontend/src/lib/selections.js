@@ -6,6 +6,7 @@ export const MODEL_LABELS = {
   sparql: 'SPARQL',
   petscan: 'Petscan',
   wikiproject: 'WikiProject',
+  wikiproject_query: 'WikiProject query',
   combinator: 'Combinator',
 };
 

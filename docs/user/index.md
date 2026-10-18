@@ -38,7 +38,9 @@ A listing of every WikiProject tracked in the WP 1.0 index. Type in the project
 name, which will be auto-completed, and select from the drop-down list in order
 to select a project. When viewing a project's article list (optionally filtered
 by quality or importance), a "Download all results as TSV" link is available
-that exports the entire filtered list as a tab-separated-values file.
+that exports the entire filtered list as a tab-separated-values file. The "Save
+as selection" link next to it creates a selection from the same filters, which is
+rebuilt from the latest assessments.
 
 ## Selections
 

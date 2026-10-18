@@ -255,6 +255,17 @@
             </div>
           </div>
 
+          <dl
+            v-else-if="source === 'wikiproject_query'"
+            id="query-filters"
+            class="m-0 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 text-[14px]"
+          >
+            <template v-for="filter in queryFilters" :key="filter.label">
+              <dt class="text-xs font-medium text-ink-2">{{ filter.label }}</dt>
+              <dd class="m-0">{{ filter.value }}</dd>
+            </template>
+          </dl>
+
           <!-- Validation errors -->
           <div v-if="errors" id="invalid_articles">
             <div class="text-[13px] text-danger">{{ errors }}</div>
@@ -322,6 +333,13 @@ const SOURCE_CONFIG = {
       'Every article assessed by the WikiProjects you choose. English ' +
       'Wikipedia only.',
   },
+  wikiproject_query: {
+    titleNoun: 'WikiProject query',
+    model: 'wp1.selection.models.wikiproject_query',
+    description:
+      'The articles of a WikiProject that match the filters you chose on ' +
+      'its article list. The list is rebuilt from the latest assessments.',
+  },
 };
 
 export default {
@@ -338,6 +356,7 @@ export default {
       url: '',
       wpInclude: [],
       wpExclude: [],
+      wpQuery: this.queryFromRoute(),
       showSparqlImport: false,
       sparqlImportUrl: '',
       sparqlImportError: false,
@@ -373,8 +392,19 @@ export default {
     title: function () {
       return `New ${this.currentSource.titleNoun} selection`;
     },
+    queryFilters: function () {
+      return [
+        { label: 'WikiProject', value: this.wpQuery.wikiproject },
+        { label: 'Quality', value: this.wpQuery.quality || 'Any' },
+        { label: 'Importance', value: this.wpQuery.importance || 'Any' },
+        { label: 'Title contains', value: this.wpQuery.pattern || 'Any' },
+      ];
+    },
     projectOptions: function () {
-      if (this.source === 'wikiproject') {
+      if (
+        this.source === 'wikiproject' ||
+        this.source === 'wikiproject_query'
+      ) {
         return ['en.wikipedia.org'];
       }
       return this.sites.length ? this.sites : ['en.wikipedia.org'];
@@ -409,7 +439,10 @@ export default {
       }
     },
     source: function () {
-      if (this.source === 'wikiproject') {
+      if (
+        this.source === 'wikiproject' ||
+        this.source === 'wikiproject_query'
+      ) {
         this.project = 'en.wikipedia.org';
       }
       this.errors = '';
@@ -433,6 +466,15 @@ export default {
         return requested === 'combinator' ? 'simple' : requested;
       }
       return 'simple';
+    },
+    queryFromRoute: function () {
+      const query = this.$route.query;
+      return {
+        wikiproject: query.wikiproject || '',
+        quality: query.quality || '',
+        importance: query.importance || '',
+        pattern: query.pattern || '',
+      };
     },
     pickSource: function (key) {
       if (key === 'combinator') {
@@ -492,6 +534,11 @@ export default {
             return 'Please provide at least one WikiProject to include.';
           }
           break;
+        case 'wikiproject_query':
+          if (!this.wpQuery.wikiproject) {
+            return 'Please open this page from a WikiProject article list.';
+          }
+          break;
       }
       return null;
     },
@@ -505,6 +552,8 @@ export default {
           return { url: this.url };
         case 'wikiproject':
           return { include: [...this.wpInclude], exclude: [...this.wpExclude] };
+        case 'wikiproject_query':
+          return { ...this.wpQuery };
       }
       return {};
     },

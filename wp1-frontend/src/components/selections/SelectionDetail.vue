@@ -776,6 +776,22 @@ export default {
             }
           );
           break;
+        case 'wikiproject_query':
+          rows.push(
+            ...[
+              ['wikiproject', 'WikiProject'],
+              ['quality', 'Quality'],
+              ['importance', 'Importance'],
+              ['pattern', 'Title contains'],
+            ].map(([key, label]) => ({
+              key: 'wpq_' + key,
+              label: label,
+              control: 'static',
+              action: '',
+              display: () => params[key] || 'Any',
+            }))
+          );
+          break;
         case 'combinator':
           rows.push({
             key: 'combinator',
