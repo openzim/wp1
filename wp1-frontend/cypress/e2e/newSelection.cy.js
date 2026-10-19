@@ -287,5 +287,17 @@ describe('the new selection page', () => {
       cy.visit('/#/selections/new');
       cy.contains('a', 'Sign in with Wikipedia');
     });
+
+    it('keeps the query string in the sign-in links', () => {
+      const next =
+        'next=selections%2Fnew%3Fsource%3Dwikiproject_query%26wikiproject%3DAlien';
+      cy.visit('/#/selections/new?source=wikiproject_query&wikiproject=Alien');
+      cy.contains('a', 'Sign in with Wikipedia')
+        .should('have.attr', 'href')
+        .and('include', next);
+      cy.contains('a', 'Login')
+        .should('have.attr', 'href')
+        .and('include', next);
+    });
   });
 });

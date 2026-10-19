@@ -219,7 +219,9 @@ describe('the manual update page', () => {
     it('shows the login required page', () => {
       cy.visit('/#/update');
       cy.contains('Sign in required');
-      cy.contains('a', 'Sign in with Wikipedia');
+      cy.contains('a', 'Sign in with Wikipedia')
+        .should('have.attr', 'href')
+        .and('match', /next=update$/);
     });
   });
 });
