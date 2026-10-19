@@ -52,16 +52,14 @@
             placeholder="Selection name"
             aria-label="Selection name"
           />
-          <select
-            id="combinator-project"
+          <SitePicker
             v-model="project"
-            class="wp1r-select h-[30px]"
+            input-id="combinator-project"
             aria-label="Project"
-          >
-            <option v-for="site in projectOptions" :key="site">
-              {{ site }}
-            </option>
-          </select>
+            input-class="h-[30px] w-[180px]"
+            :sites="projectOptions"
+            :dbnames="dbnames"
+          />
           <button
             id="saveListButton"
             type="button"
@@ -287,6 +285,7 @@
 
 <script>
 import SelectionsNullState from './SelectionsNullState.vue';
+import SitePicker from './SitePicker.vue';
 import { loginStore } from '../../store.js';
 import {
   COMBINATOR_MODEL,
@@ -297,13 +296,14 @@ import {
 
 export default {
   name: 'CombinatorPage',
-  components: { SelectionsNullState },
+  components: { SelectionsNullState, SitePicker },
   data: function () {
     return {
       allBuilders: [],
       buildersFetchFinished: false,
       buildersLoadError: '',
       sites: [],
+      dbnames: {},
       name: '',
       project: 'en.wikipedia.org',
       groups: {
@@ -437,6 +437,7 @@ export default {
       if (response.ok) {
         const data = await response.json();
         this.sites = data.sites;
+        this.dbnames = data.dbnames;
       }
     },
     fetchBuilders: async function () {
