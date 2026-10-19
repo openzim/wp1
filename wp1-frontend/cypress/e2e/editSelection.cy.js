@@ -269,14 +269,42 @@ describe('the selection detail editor', () => {
 
   describe('for a WikiProject query selection', () => {
     beforeEach(() => {
+      cy.intercept('v1/projects/Alien/table', {
+        fixture: 'project_table_alien.json',
+      });
       visitEditor('wikiproject_query_builder.json');
     });
 
     it('shows the WikiProject and filters', () => {
-      cy.get('#row-wpq_wikiproject').contains('Alien');
-      cy.get('#row-wpq_quality').contains('B-Class');
-      cy.get('#row-wpq_importance').contains('Any');
-      cy.get('#row-wpq_pattern').contains('Any');
+      cy.get('#row-wpq').contains('WikiProject: Alien');
+      cy.get('#row-wpq').contains('Quality: B-Class');
+      cy.get('#row-wpq').contains('Importance: Any');
+    });
+
+    it('edits the filters', () => {
+      cy.intercept('POST', 'v1/builders/1', (req) => {
+        expect(req.body.params).to.deep.equal({
+          wikiproject: 'Alien',
+          quality: 'B-Class',
+          importance: 'Top-Class',
+          pattern: '',
+        });
+        req.reply({
+          statusCode: 200,
+          body: { success: true, id: '1', items: {} },
+        });
+      }).as('save');
+      cy.get('#row-wpq').click();
+      cy.get('#query-importance').select('Top-Class');
+      cy.get('#save-wpq').click();
+      cy.wait('@save');
+    });
+
+    it('requires a WikiProject', () => {
+      cy.get('#row-wpq').click();
+      cy.get('button[aria-label="Remove Alien"]').click();
+      cy.get('#save-wpq').click();
+      cy.contains('Please choose a WikiProject.');
     });
   });
 

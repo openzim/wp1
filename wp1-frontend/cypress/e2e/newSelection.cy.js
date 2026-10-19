@@ -21,10 +21,15 @@ describe('the new selection page', () => {
       cy.get('#project-select').contains('en.wikipedia.org');
     });
 
-    it('shows all five sources in the picker', () => {
-      ['Simple', 'SPARQL', 'Petscan', 'WikiProject', 'Combinator'].map(
-        (label) => cy.contains('button', label)
-      );
+    it('shows all six sources in the picker', () => {
+      [
+        'Simple',
+        'SPARQL',
+        'Petscan',
+        'WikiProject',
+        'WikiProject query',
+        'Combinator',
+      ].map((label) => cy.contains('button', label));
     });
 
     it('counts titles as they are typed', () => {
@@ -255,18 +260,37 @@ describe('the new selection page', () => {
 describe('the new WikiProject query selection page', () => {
   beforeEach(() => {
     cy.intercept('v1/oauth/identify', { fixture: 'identity.json' }).as('login');
+    cy.intercept('v1/projects/Alien/table', {
+      fixture: 'project_table_alien.json',
+    }).as('table');
     cy.visit(
       '/#/selections/new?source=wikiproject_query&wikiproject=Alien&quality=B-Class'
     );
     cy.wait('@login');
+    cy.wait('@table');
   });
 
   it('shows the filters from the article list', () => {
     cy.contains('h1', 'New WikiProject query selection');
     cy.get('#query-filters').contains('Alien');
-    cy.get('#query-filters').contains('B-Class');
-    cy.get('#query-filters').contains('Any');
+    cy.get('#query-quality').should('have.value', 'B-Class');
+    cy.get('#query-importance').should('have.value', '');
+    cy.get('#query-pattern').should('have.value', '');
     cy.get('#project-select').should('have.value', 'en.wikipedia.org');
+  });
+
+  it("offers the project's classes", () => {
+    cy.get('#query-quality option').should('have.length', 16);
+    cy.get('#query-importance').select('Top-Class');
+    cy.get('#query-importance').should('have.value', 'Top-Class');
+  });
+
+  it('clears the classes when the WikiProject is removed', () => {
+    cy.get('button[aria-label="Remove Alien"]').click();
+    cy.get('#query-quality').should('have.value', '');
+    cy.get('#name-input').type('No project');
+    cy.get('#saveListButton').click();
+    cy.contains('Please choose a WikiProject.');
   });
 
   it('saves the WikiProject and filters', () => {
@@ -275,8 +299,8 @@ describe('the new WikiProject query selection page', () => {
       expect(req.body.params).to.deep.equal({
         wikiproject: 'Alien',
         quality: 'B-Class',
-        importance: '',
-        pattern: '',
+        importance: 'Mid-Class',
+        pattern: 'Xeno',
       });
       req.reply({
         statusCode: 200,
@@ -284,6 +308,8 @@ describe('the new WikiProject query selection page', () => {
       });
     }).as('save');
     cy.get('#name-input').type('Alien B-Class');
+    cy.get('#query-importance').select('Mid-Class');
+    cy.get('#query-pattern').type('Xeno');
     cy.get('#saveListButton').click();
     cy.wait('@save');
     cy.url().should('include', '/selections/user/new-id-5');

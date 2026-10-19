@@ -255,16 +255,11 @@
             </div>
           </div>
 
-          <dl
+          <WikiProjectQueryFields
             v-else-if="source === 'wikiproject_query'"
             id="query-filters"
-            class="m-0 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 text-[14px]"
-          >
-            <template v-for="filter in queryFilters" :key="filter.label">
-              <dt class="text-xs font-medium text-ink-2">{{ filter.label }}</dt>
-              <dd class="m-0">{{ filter.value }}</dd>
-            </template>
-          </dl>
+            v-model="wpQuery"
+          />
 
           <!-- Validation errors -->
           <div v-if="errors" id="invalid_articles">
@@ -301,6 +296,7 @@
 <script>
 import ProjectAutocomplete from './ProjectAutocomplete.vue';
 import SelectionsNullState from './SelectionsNullState.vue';
+import WikiProjectQueryFields from './WikiProjectQueryFields.vue';
 import { loginStore } from '../../store.js';
 import { SOURCES } from '../../lib/selections.js';
 
@@ -337,14 +333,18 @@ const SOURCE_CONFIG = {
     titleNoun: 'WikiProject query',
     model: 'wp1.selection.models.wikiproject_query',
     description:
-      'The articles of a WikiProject that match the filters you chose on ' +
-      'its article list. The list is rebuilt from the latest assessments.',
+      'The articles of one WikiProject, filtered by quality, importance or ' +
+      'title. The list is rebuilt from the latest assessments.',
   },
 };
 
 export default {
   name: 'NewSelectionPage',
-  components: { ProjectAutocomplete, SelectionsNullState },
+  components: {
+    ProjectAutocomplete,
+    SelectionsNullState,
+    WikiProjectQueryFields,
+  },
   data: function () {
     return {
       source: this.initialSource(),
@@ -391,14 +391,6 @@ export default {
     },
     title: function () {
       return `New ${this.currentSource.titleNoun} selection`;
-    },
-    queryFilters: function () {
-      return [
-        { label: 'WikiProject', value: this.wpQuery.wikiproject },
-        { label: 'Quality', value: this.wpQuery.quality || 'Any' },
-        { label: 'Importance', value: this.wpQuery.importance || 'Any' },
-        { label: 'Title contains', value: this.wpQuery.pattern || 'Any' },
-      ];
     },
     projectOptions: function () {
       if (
@@ -536,7 +528,7 @@ export default {
           break;
         case 'wikiproject_query':
           if (!this.wpQuery.wikiproject) {
-            return 'Please open this page from a WikiProject article list.';
+            return 'Please choose a WikiProject.';
           }
           break;
       }

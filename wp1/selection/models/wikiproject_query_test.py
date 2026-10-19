@@ -15,7 +15,16 @@ class WikiProjectQueryTest(BaseWpOneDbTest):
             ("Water_Elements", 0, "Pond", "B-Class", "Low-Class"),
             ("Water_Elements", 0, "Puddle", "Unassessed-Class", "Low-Class"),
             ("Water_Elements", 14, "Famous_bodies_of_water", "B-Class", "Top-Class"),
+            ("Water_Elements", 14, "Lakes", "Category-Class", "NA-Class"),
             ("Fire", 0, "Campfire", "B-Class", "Top-Class"),
+        )
+        categories = (
+            ("Water_Elements", "quality", "FA-Class"),
+            ("Water_Elements", "quality", "B-Class"),
+            ("Water_Elements", "quality", "Category-Class"),
+            ("Water_Elements", "importance", "Top-Class"),
+            ("Water_Elements", "importance", "Low-Class"),
+            ("Water_Elements", "importance", "NA-Class"),
         )
         with self.wp10db.cursor() as cursor:
             cursor.executemany(
@@ -26,6 +35,11 @@ class WikiProjectQueryTest(BaseWpOneDbTest):
             cursor.executemany(
                 "INSERT INTO projects (p_project, p_timestamp) VALUES (%s, 0)",
                 ("Water_Elements", "Fire"),
+            )
+            cursor.executemany(
+                "INSERT INTO categories (c_project, c_type, c_rating, c_replacement,"
+                " c_category, c_ranking) VALUES (%s, %s, %s, '', '', 0)",
+                categories,
             )
         self.wp10db.commit()
 
@@ -88,6 +102,64 @@ class WikiProjectQueryTest(BaseWpOneDbTest):
     def test_validate_spaces(self):
         actual = self.builder.validate(wp10db=self.wp10db, wikiproject="Water Elements")
         self.assertEqual((["Water Elements"], [], []), actual)
+
+    def test_validate_filters(self):
+        actual = self.builder.validate(
+            wp10db=self.wp10db,
+            wikiproject="Water Elements",
+            quality="B-Class",
+            importance="Low-Class",
+        )
+        self.assertEqual((["Water Elements"], [], []), actual)
+
+    def test_validate_assessed_quality(self):
+        actual = self.builder.validate(
+            wp10db=self.wp10db, wikiproject="Water Elements", quality="Assessed-Class"
+        )
+        self.assertEqual((["Water Elements"], [], []), actual)
+
+    def test_validate_unassessed_quality(self):
+        actual = self.builder.validate(
+            wp10db=self.wp10db,
+            wikiproject="Water Elements",
+            quality="Unassessed-Class",
+        )
+        self.assertEqual((["Water Elements"], [], []), actual)
+
+    def test_validate_invalid_quality(self):
+        actual = self.builder.validate(
+            wp10db=self.wp10db, wikiproject="Water Elements", quality="great"
+        )
+        self.assertEqual(([], ["great"], ["Invalid quality or importance"]), actual)
+
+    def test_validate_invalid_importance(self):
+        actual = self.builder.validate(
+            wp10db=self.wp10db, wikiproject="Water Elements", importance="High-Class"
+        )
+        self.assertEqual(
+            ([], ["High-Class"], ["Invalid quality or importance"]), actual
+        )
+
+    def test_validate_other_project_class(self):
+        actual = self.builder.validate(
+            wp10db=self.wp10db, wikiproject="Fire", quality="FA-Class"
+        )
+        self.assertEqual(([], ["FA-Class"], ["Invalid quality or importance"]), actual)
+
+    def test_validate_only_other_namespaces(self):
+        actual = self.builder.validate(
+            wp10db=self.wp10db,
+            wikiproject="Water Elements",
+            quality="Category-Class",
+            importance="NA-Class",
+        )
+        self.assertEqual(([], [], ["No articles match these filters"]), actual)
+
+    def test_validate_pattern_no_match(self):
+        actual = self.builder.validate(
+            wp10db=self.wp10db, wikiproject="Water Elements", pattern="Sea"
+        )
+        self.assertEqual(([], [], ["No articles match these filters"]), actual)
 
     def test_validate_unknown_project(self):
         actual = self.builder.validate(wp10db=self.wp10db, wikiproject="Lava")

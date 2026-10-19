@@ -480,6 +480,36 @@ class GetProjectRatingByTypeTest(BaseWpOneDbTest):
 
         self.assertEqual(0, len(ratings))
 
+    def test_iterate_namespace(self):
+        self._add_ratings()
+        ratings = list(
+            logic_rating.iterate_project_rating_by_type(
+                self.wp10db, b"Project 0", namespace=0
+            )
+        )
+
+        self.assertEqual(150, len(ratings))
+
+    def test_iterate_other_namespace(self):
+        self._add_ratings()
+        ratings = list(
+            logic_rating.iterate_project_rating_by_type(
+                self.wp10db, b"Project 0", namespace=14
+            )
+        )
+
+        self.assertEqual(0, len(ratings))
+
+    def test_iterate_limit(self):
+        self._add_ratings()
+        ratings = list(
+            logic_rating.iterate_project_rating_by_type(
+                self.wp10db, b"Project 0", limit=1
+            )
+        )
+
+        self.assertEqual(1, len(ratings))
+
 
 class GetRandomArticleTest(BaseWpOneDbTest):
 
