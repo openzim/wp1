@@ -70,3 +70,9 @@ def get_projects(redis: Redis) -> list[str]:
 def dbname_for_project(redis: Redis, project: str) -> str | None:
     """Returns the dbname (eg 'enwiki') for a project domain, or None."""
     return get_site_data(redis)["dbnames"].get(project)
+
+
+def get_project_dbnames(redis: Redis) -> dict[str, str]:
+    """Returns the dbname of each language project domain, eg 'enwiki'."""
+    data = get_site_data(redis)
+    return {project: data["dbnames"][project] for project in data["projects"]}

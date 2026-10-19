@@ -496,6 +496,10 @@ paths:
                     type: array
                     items:
                       type: string
+                  dbnames:
+                    type: object
+                    additionalProperties:
+                      type: string
   /builders/:
     post:
       summary: 'Save a new Builder, validating it first and returning invalid items if they exist'

@@ -15,10 +15,44 @@ describe('the new selection page', () => {
       cy.get('#articles').should('be.visible');
     });
 
-    it('displays wiki projects in the project select', () => {
-      cy.get('#project-select').contains('aa.wikipedia.org');
-      cy.get('#project-select').contains('en.wiktionary.org');
-      cy.get('#project-select').contains('en.wikipedia.org');
+    it('displays wiki projects with their database names', () => {
+      cy.get('#project-select').should('have.value', 'en.wikipedia.org');
+      cy.get('#project-select').click();
+      cy.get('#project-select-options li').should('have.length', 3);
+      cy.get('#project-select-options').contains('li', 'aa.wikipedia.org');
+      cy.get('#project-select-options').contains('li', 'aawiki');
+      cy.get('#project-select-options').contains('li', 'en.wiktionary.org');
+      cy.get('#project-select-options').contains('li', 'enwiktionary');
+    });
+
+    it('filters projects by domain or database name', () => {
+      cy.get('#project-select').click().type('wiktionary');
+      cy.get('#project-select-options li').should('have.length', 1);
+      cy.get('#project-select').clear().type('aawiki');
+      cy.get('#project-select-options li').should('have.length', 1);
+      cy.get('#project-select-options').contains('li', 'aa.wikipedia.org');
+    });
+
+    it('selects the first match with Enter', () => {
+      cy.get('#project-select').click().type('enwikt{enter}');
+      cy.get('#project-select').should('have.value', 'en.wiktionary.org');
+      cy.get('#project-select-options').should('not.be.visible');
+    });
+
+    it('selects a project with the keyboard', () => {
+      cy.get('#project-select').click().type('a{downArrow}');
+      cy.focused().should('contain', 'aa.wikipedia.org').type('{enter}');
+      cy.get('#project-select').should('have.value', 'aa.wikipedia.org');
+    });
+
+    it('keeps the selected project when the input is left unmatched', () => {
+      cy.get('#project-select').click().clear();
+      cy.get('#name-input').click();
+      cy.get('#project-select').should('have.value', 'en.wikipedia.org');
+      cy.get('#project-select').click().type('nothing matches');
+      cy.get('#project-select-options').should('not.be.visible');
+      cy.get('#project-select').type('{esc}');
+      cy.get('#project-select').should('have.value', 'en.wikipedia.org');
     });
 
     it('shows all six sources in the picker', () => {
@@ -53,7 +87,10 @@ describe('the new selection page', () => {
 
     it('keeps project and name when switching sources', () => {
       cy.get('#name-input').type('My List');
-      cy.get('#project-select').select('en.wiktionary.org');
+      cy.get('#project-select').click();
+      cy.get('#project-select-options')
+        .contains('li', 'en.wiktionary.org')
+        .click();
       cy.get('#source-sparql').click();
       cy.contains('h1', 'New SPARQL selection');
       cy.get('#name-input').should('have.value', 'My List');
@@ -167,7 +204,8 @@ describe('the new selection page', () => {
       });
 
       it('restricts the project to en.wikipedia.org', () => {
-        cy.get('#project-select option').should('have.length', 1);
+        cy.get('#project-select').click();
+        cy.get('#project-select-options li').should('have.length', 1);
         cy.get('#project-select').should('have.value', 'en.wikipedia.org');
       });
 

@@ -53,11 +53,16 @@ describe('the combinator builder page', () => {
         cy.intercept('v1/sites/', {
           body: {
             sites: ['de.wikipedia.org', 'en.wikipedia.org'],
+            dbnames: {
+              'de.wikipedia.org': 'dewiki',
+              'en.wikipedia.org': 'enwiki',
+            },
           },
         });
         // Reload so the new sites list is fetched.
         cy.reload();
-        cy.get('#combinator-project').select('de.wikipedia.org');
+        cy.get('#combinator-project').click().type('dewiki{enter}');
+        cy.get('#combinator-project').should('have.value', 'de.wikipedia.org');
         cy.contains('German Simple');
         cy.contains('Simple Ready').should('not.exist');
       });

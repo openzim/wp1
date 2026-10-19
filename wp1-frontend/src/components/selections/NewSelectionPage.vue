@@ -73,15 +73,12 @@
                 class="mb-1 block text-xs font-medium text-ink-2"
                 >Project</label
               >
-              <select
-                id="project-select"
+              <SitePicker
                 v-model="project"
-                class="wp1r-select h-8 w-full"
-              >
-                <option v-for="site in projectOptions" :key="site">
-                  {{ site }}
-                </option>
-              </select>
+                input-id="project-select"
+                :sites="projectOptions"
+                :dbnames="dbnames"
+              />
             </div>
             <div id="listName">
               <label
@@ -295,6 +292,7 @@
 
 <script>
 import ProjectAutocomplete from './ProjectAutocomplete.vue';
+import SitePicker from './SitePicker.vue';
 import SelectionsNullState from './SelectionsNullState.vue';
 import WikiProjectQueryFields from './WikiProjectQueryFields.vue';
 import { loginStore } from '../../store.js';
@@ -343,6 +341,7 @@ export default {
   components: {
     ProjectAutocomplete,
     SelectionsNullState,
+    SitePicker,
     WikiProjectQueryFields,
   },
   data: function () {
@@ -351,6 +350,7 @@ export default {
       name: '',
       project: 'en.wikipedia.org',
       sites: [],
+      dbnames: {},
       articles: '',
       query: '',
       url: '',
@@ -446,6 +446,7 @@ export default {
     if (response.ok) {
       const data = await response.json();
       this.sites = data.sites;
+      this.dbnames = data.dbnames;
     }
   },
   methods: {
