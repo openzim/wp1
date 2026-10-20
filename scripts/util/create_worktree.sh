@@ -148,9 +148,9 @@ echo "worktree ready at $dest"
 if [ -t 0 ]; then
   read -r -p "Start servers now? [Y/n] " answer
   case "$answer" in
-    n* | N*) echo "skipped; start later with: (cd $dest && docker compose -f docker-compose-dev.yml up -d --build)" ;;
-    *) (cd "$dest" && docker compose -f docker-compose-dev.yml up -d --build) ;;
+    n* | N*) echo "skipped; start later with: (cd $dest && ./scripts/util/dev-up.sh -d)" ;;
+    *) (cd "$dest" && ./scripts/util/dev-up.sh -d) ;;
   esac
 else
-  echo "non-interactive; start servers with: (cd $dest && docker compose -f docker-compose-dev.yml up -d --build)"
+  echo "non-interactive; start servers with: (cd $dest && ./scripts/util/dev-up.sh -d)"
 fi

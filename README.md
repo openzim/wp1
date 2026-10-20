@@ -41,14 +41,18 @@ Everything runs in Docker: the only hard requirement is
 checkout:
 
 ```bash
-docker compose -f docker-compose-dev.yml up --build
+./scripts/util/dev-up.sh
 ```
 
-This starts the full development stack — frontend with hot reload at
-http://localhost:5173, API server at http://localhost:5000, plus the dev
+This builds and starts the full development stack — frontend with hot reload
+at http://localhost:5173, API server at http://localhost:5000, plus the dev
 database (MariaDB), Redis, materializer workers, and MinIO (s3-compatible
-storage). No configuration is needed: the defaults in `wp1/config.py` already
-point at these services.
+storage) — prints the URL of every running service, then follows the logs
+(Ctrl-C stops the stack). Pass `-d` to return after printing the URLs, and
+enable the local Zimfarm with `COMPOSE_PROFILES=zimfarm`. It wraps
+`docker compose -f docker-compose-dev.yml up --build`, which also works. No
+configuration is needed: the defaults in `wp1/config.py` already point at
+these services.
 
 On the first run (and after new migrations land), migrate the dev database as
 described in [docker/dev-db/README.md](docker/dev-db/README.md), which also
