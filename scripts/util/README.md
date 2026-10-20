@@ -1,5 +1,11 @@
 # Development utility scripts
 
+- [`dev-up.sh`](dev-up.sh) — build and start the dev stack
+  (`docker-compose-dev.yml`), print the host URL of every running service
+  (reflecting worktree port remaps and enabled profiles), then follow the
+  logs; Ctrl-C stops the stack. `-d` returns after printing the URLs; other
+  arguments are forwarded to `docker compose up`. Enable profiles with
+  `COMPOSE_PROFILES`, e.g. `COMPOSE_PROFILES=zimfarm ./scripts/util/dev-up.sh`.
 - [`run_tests.sh`](run_tests.sh) — run the backend test suite. Starts the test
   containers (`docker-compose-test.yml`) if they aren't already running,
   cleans dirty tables left behind by interrupted runs, then runs
@@ -20,7 +26,8 @@ The easiest way is `./scripts/util/create_worktree.sh <branch>`, which creates
 the worktree under `.worktrees/<branch>`, writes a worktree-local `.env`
 (based on the main checkout's `.env`, if present) with a unique project name,
 suffix, and free port set (remapping the port-coupled app config values to
-match), and offers to start the stack ("Start servers now? [Y/n]").
+match), and offers to start the stack ("Start servers now? [Y/n]"), printing
+its URLs.
 
 Manually, the mechanism is: all host ports, container names, and built image
 tags in `docker-compose-dev.yml` are parameterized with environment variables
