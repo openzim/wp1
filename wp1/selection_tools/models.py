@@ -35,6 +35,15 @@ class Page(NamedTuple):
     size: int
 
 
+class PageWithRedirect(NamedTuple):
+    """A page with its latest size and whether it is a redirect."""
+
+    page_id: int
+    title: str
+    size: int
+    is_redirect: int
+
+
 class PageLink(NamedTuple):
     """A link from a page to another page's title"""
 
@@ -58,10 +67,10 @@ class LangLink(NamedTuple):
 
 
 class Redirect(NamedTuple):
-    """A redirecting page and the title it points to"""
+    """A redirecting page's id and the id of the page it points to"""
 
-    source_title: str
-    target_title: str
+    source_id: int
+    target_id: int | None
 
 
 class ArticleRating(NamedTuple):

@@ -45,5 +45,8 @@ flask_session/
 
 # Local files
 pageviews
-data
+/data
 credentials.py
+
+wp1/selection_tools/data/tmp/
+wp1/selection_tools/data/en.needed/

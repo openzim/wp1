@@ -78,10 +78,10 @@ steps = [
         """
         CREATE TABLE temp_redirects (
             tr_lang VARBINARY(255),
-            tr_source VARBINARY(1024),
-            tr_target VARBINARY(1024),
-            PRIMARY KEY (`tr_lang`, `tr_source`),
-            KEY `idx_tr_target` (tr_lang, tr_target)
+            tr_source_id INTEGER NOT NULL,
+            tr_target_id INTEGER,
+            PRIMARY KEY (`tr_lang`, `tr_source_id`),
+            KEY `idx_tr_target` (tr_lang, tr_target_id)
         )
         """,
         "DROP TABLE temp_redirects",

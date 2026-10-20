@@ -199,11 +199,12 @@ def wiki_languages() -> Generator[WikiLang, None, None]:
 def get_wiki_languages_exceeding_count(count: int) -> list[WikiLang]:
     """Get only wikipedia languages whose total exceeds count.
 
-    Entries are sorted by name in descending order
+    Entries are sorted by article count in descending order, so English is
+    processed first and populates en.needed before the other languages run.
     """
     return sorted(
         (wiki_lang for wiki_lang in wiki_languages() if wiki_lang.total > count),
-        key=lambda w: w.name,
+        key=lambda w: w.total,
         reverse=True,
     )
 
@@ -339,15 +340,38 @@ def pageview_components(fp: pathlib.Path) -> Generator[Pageview, None, None]:
         yield tally
 
 
-def reset_missing_articles_pageviews(wp10db: "Connection[Cursor]"):
+def reset_missing_articles_pageviews(wp10db: "Connection[Cursor]", lang: str):
     with wp10db.cursor() as cursor:
-        cursor.execute("""
-      UPDATE page_scores
-      LEFT JOIN temp_pageviews
-      ON page_scores.ps_article = temp_pageviews.tp_article
-      SET page_scores.ps_views = 0
-      WHERE temp_pageviews.tp_article IS NULL;
-      """)
+        cursor.execute(
+            """
+            UPDATE page_scores ps
+            LEFT JOIN temp_pageviews tp
+                ON tp.tp_lang = ps.ps_lang
+               AND tp.tp_page_id = ps.ps_page_id
+            SET ps.ps_views = 0
+            WHERE ps.ps_lang = %s
+              AND tp.tp_page_id IS NULL
+            """,
+            (lang,),
+        )
+    wp10db.commit()
+
+
+def delete_non_current_page_scores(wp10db: "Connection[Cursor]", lang: str):
+    """Remove rows that are not part of this run's page set."""
+    with wp10db.cursor() as cursor:
+        cursor.execute(
+            """
+            DELETE ps
+            FROM page_scores ps
+            LEFT JOIN temp_pagesize t
+                ON t.tp_lang = ps.ps_lang
+               AND t.tp_page_id = ps.ps_page_id
+            WHERE ps.ps_lang = %s
+              AND t.tp_page_id IS NULL
+            """,
+            (lang,),
+        )
     wp10db.commit()
 
 
@@ -371,18 +395,18 @@ def insert_temp_pageviews(
 def insert_temp_redirects(
     wp10db: "Connection[Cursor]",
     lang: str,
-    rows: Iterable[tuple[str, str]],
+    rows: Iterable[tuple[int, int | None]],
 ):
-    """Stage the redirects as source -> target title pairs.
+    """Stage the redirects as source page id -> target page id pairs.
 
     Chains are flattened afterwards by resolve_temp_redirects.
     """
     with wp10db.cursor() as cursor:
         cursor.executemany(
-            """INSERT INTO temp_redirects (tr_lang, tr_source, tr_target)
+            """INSERT INTO temp_redirects (tr_lang, tr_source_id, tr_target_id)
               VALUES (%s, %s, %s)
-              ON DUPLICATE KEY UPDATE tr_target = VALUES(tr_target)""",
-            ((lang, source, target) for source, target in rows),
+              ON DUPLICATE KEY UPDATE tr_target_id = VALUES(tr_target_id)""",
+            ((lang, source_id, target_id) for source_id, target_id in rows),
         )
     wp10db.commit()
 
@@ -491,9 +515,9 @@ def resolve_temp_redirects(wp10db: "Connection[Cursor]"):
         while True:
             cursor.execute("""UPDATE temp_redirects r
                 JOIN temp_redirects n
-                    ON n.tr_lang = r.tr_lang AND n.tr_source = r.tr_target
-                SET r.tr_target = n.tr_target
-                WHERE r.tr_target <> n.tr_target""")
+                    ON n.tr_lang = r.tr_lang AND n.tr_source_id = r.tr_target_id
+                SET r.tr_target_id = n.tr_target_id
+                WHERE r.tr_target_id <> n.tr_target_id""")
             if cursor.rowcount == 0:
                 break
     wp10db.commit()
@@ -508,18 +532,22 @@ def fold_redirect_metrics(wp10db: "Connection[Cursor]"):
     )
     with wp10db.cursor() as cursor:
         for table, column in folds:
-            cursor.execute(f"""UPDATE {table} tgt
-                JOIN temp_redirects r
-                    ON r.tr_lang = tgt.tp_lang AND r.tr_target = tgt.tp_article
+            cursor.execute(
+                f"""INSERT INTO {table} (tp_lang, tp_page_id, tp_article, {column})
+                SELECT p.tp_lang, p.tp_page_id, p.tp_article, SUM(src.{column})
+                FROM temp_redirects r
+                JOIN temp_pagesize p
+                    ON p.tp_lang = r.tr_lang AND p.tp_page_id = r.tr_target_id
                 JOIN {table} src
-                    ON src.tp_lang = r.tr_lang AND src.tp_article = r.tr_source
-                SET tgt.{column} = tgt.{column} + src.{column}""")
-            cursor.execute(f"""DELETE src FROM {table} src
+                    ON src.tp_lang = r.tr_lang AND src.tp_page_id = r.tr_source_id
+                GROUP BY p.tp_lang, p.tp_page_id, p.tp_article
+                ON DUPLICATE KEY UPDATE {column} = {column} + VALUES({column})"""
+            )
+            cursor.execute(
+                f"""DELETE src FROM {table} src
                 JOIN temp_redirects r
-                    ON r.tr_lang = src.tp_lang AND r.tr_source = src.tp_article""")
-        cursor.execute("""DELETE p FROM temp_pagesize p
-            JOIN temp_redirects r
-                ON r.tr_lang = p.tp_lang AND r.tr_source = p.tp_article""")
+                    ON r.tr_lang = src.tp_lang AND r.tr_source_id = src.tp_page_id"""
+            )
     wp10db.commit()
 
 
@@ -615,16 +643,20 @@ def truncate_temp_pagescores(wp10db: "Connection[Cursor]"):
     wp10db.commit()
 
 
-def finalize_page_scores(wp10db: "Connection[Cursor]"):
-    """Run the delayed final update of page_scores from the temp tables."""
+def finalize_page_scores(wp10db: "Connection[Cursor]", lang: str):
+    """Apply the staged metrics and enforce the current-run page set."""
     logger.debug("Swapping data from the temp tables to the page_scores table")
     swap_temp_pageviews_to_scores(wp10db)
     swap_temp_pagesize_to_scores(wp10db)
     swap_temp_pagelinks_to_scores(wp10db)
     swap_temp_pagelanglinks_to_scores(wp10db)
     swap_temp_pagescores_to_scores(wp10db)
-    reset_missing_articles_pageviews(wp10db)
+
+    delete_non_current_page_scores(wp10db, lang)
+    reset_missing_articles_pageviews(wp10db, lang)
+
     truncate_temp_pageviews(wp10db)
+    truncate_temp_redirects(wp10db)
     truncate_temp_pagesize(wp10db)
     truncate_temp_pagelinks(wp10db)
     truncate_temp_pagelanglinks(wp10db)

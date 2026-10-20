@@ -19,7 +19,11 @@ from wp1.selection_tools.scores import (
     insert_temp_redirects,
     load_temp_pageviews,
     resolve_temp_redirects,
+    truncate_temp_pagelanglinks,
+    truncate_temp_pagelinks,
+    truncate_temp_pagescores,
     truncate_temp_pagesize,
+    truncate_temp_pageviews,
     truncate_temp_redirects,
 )
 from wp1.selection_tools.constants import BASE_DIR, DATA_DIR
@@ -27,6 +31,7 @@ from wp1.selection_tools.custom import build_custom_selections
 from wp1.selection_tools.models import (
     LangLink,
     Page,
+    PageWithRedirect,
     PageLangLinkCount,
     PageLink,
     PageLinkCount,
@@ -177,10 +182,13 @@ def fetch_redirects_from_db(
     wikidb: "Connection[Cursor]",
 ) -> Generator[Redirect, None, None]:
     stmt = """
-    SELECT page.page_title, redirect.rd_title
+    SELECT redirect.rd_from, target.page_id
     FROM redirect
-    JOIN page ON page.page_id = redirect.rd_from
-    WHERE redirect.rd_namespace = 0 AND page.page_namespace = 0
+    JOIN page AS source ON source.page_id = redirect.rd_from
+    LEFT JOIN page AS target
+        ON target.page_title = redirect.rd_title
+       AND target.page_namespace = 0
+    WHERE redirect.rd_namespace = 0 AND source.page_namespace = 0
     """
     with wikidb.cursor() as cursor:
         cursor.execute(stmt)
@@ -272,7 +280,7 @@ def fetch_page_scores_and_ratings_from_db(
     SELECT ps_article, ps_page_id, ps_size, ps_links, ps_lang_links, ps_views,
            GROUP_CONCAT(CONCAT(r_project, '=', r_quality, ':', r_importance)) as ratings_str
     FROM page_scores
-    JOIN ratings ON ps_article = r_article
+    LEFT JOIN ratings ON ps_article = r_article
     WHERE ps_lang = %s
     GROUP BY ps_page_id, ps_article, ps_size, ps_links, ps_lang_links, ps_views
     ORDER BY ps_score DESC
@@ -397,6 +405,13 @@ def build_selections(lang_code: str, data_dir: pathlib.Path):
     readme_fp = lang_dir / "README"
     readme_lines: list[str] = []
 
+    truncate_temp_pageviews(wp10db)
+    truncate_temp_redirects(wp10db)
+    truncate_temp_pagesize(wp10db)
+    truncate_temp_pagelinks(wp10db)
+    truncate_temp_pagelanglinks(wp10db)
+    truncate_temp_pagescores(wp10db)
+
     ######################################################################
     # GATHER PAGES KEYS VALUES                                           #
     ######################################################################
@@ -414,7 +429,6 @@ def build_selections(lang_code: str, data_dir: pathlib.Path):
     ## Gather redirects so their links, language links and views can be folded
     ## onto the pages they point at.
     logger.info("Gathering redirects...")
-    truncate_temp_redirects(wp10db)
     insert_temp_redirects(wp10db, lang_code, fetch_redirects_from_db(wikidb))
     resolve_temp_redirects(wp10db)
 
@@ -423,7 +437,7 @@ def build_selections(lang_code: str, data_dir: pathlib.Path):
     readme_lines.append("pages.tsv: page_id page_title page_size\n")
     pages_tsv_fp = lang_dir / "pages.tsv"
     pages_sql = """
-    SELECT page.page_id, page.page_title, revision.rev_len
+    SELECT page.page_id, page.page_title, revision.rev_len, page.page_is_redirect
     FROM page
     JOIN revision ON revision.rev_id = page.page_latest
     WHERE page.page_namespace = 0
@@ -431,15 +445,18 @@ def build_selections(lang_code: str, data_dir: pathlib.Path):
     ORDER BY page.page_id
     """
     # Maps an article title to its page id so that links, language links and
-    # scores can be attributed to the page they belong to.
+    # scores can be attributed to the page they belong to. Redirect pages are
+    # included here so their metrics can be folded into their targets
     page_ids: dict[str, int] = {}
 
     def _page_size_rows(page_ids: dict[str, int]) -> Generator[PageSize, None, None]:
-        for page in fetch_paginated_rows_from_db(wikidb, pages_sql, 100_000, Page):
+        for page in fetch_paginated_rows_from_db(
+            wikidb, pages_sql, 100_000, PageWithRedirect
+        ):
             page_ids[page.title] = page.page_id
-            yield PageSize(page.page_id, page.title, page.size)
+            if not page.is_redirect:
+                yield PageSize(page.page_id, page.title, page.size)
 
-    truncate_temp_pagesize(wp10db)
     insert_temp_pagesize(wp10db, lang_code, _page_size_rows(page_ids))
 
     ## Page links
@@ -468,11 +485,18 @@ def build_selections(lang_code: str, data_dir: pathlib.Path):
 
     ## Language links
     logger.info("Gathering language links...")
+    readme_lines.append(
+        "langlinks.tsv: source_page_title language_code target_page_title\n"
+    )
+    langlinks_tsv_fp = lang_dir / "langlinks.tsv"
     langlink_counts: dict[str, int] = {}
-    for langlink in fetch_langlinks_from_db(wikidb):
-        title = langlink.source_title
-        if title in page_ids:
-            langlink_counts[title] = langlink_counts.get(title, 0) + 1
+
+    with langlinks_tsv_fp.open("w", encoding="utf-8") as f:
+        for langlink in fetch_langlinks_from_db(wikidb):
+            write_tsv_rows_to_file(f, (langlink,))
+            title = langlink.source_title
+            if title in page_ids:
+                langlink_counts[title] = langlink_counts.get(title, 0) + 1
 
     insert_temp_pagelanglinks(
         wp10db,
@@ -535,7 +559,7 @@ def build_selections(lang_code: str, data_dir: pathlib.Path):
 
     del page_ids, scores_by_title
 
-    finalize_page_scores(wp10db)
+    finalize_page_scores(wp10db, lang_code)
 
     ######################################################################
     # COMPUTE SCORES                                                     #
@@ -590,6 +614,7 @@ def build_selections(lang_code: str, data_dir: pathlib.Path):
         en_needed_dir.mkdir(parents=True)
         shutil.copytree(projects_dir, en_needed_dir / "projects")
         shutil.copy(pages_tsv_fp, en_needed_dir / pages_tsv_fp.name)
+        shutil.copy(langlinks_tsv_fp, en_needed_dir / langlinks_tsv_fp.name)
     else:
         if (en_needed_dir / "projects").exists():
             build_langlinks(lang_code, en_needed_dir, wiki_langlinks_fp)
@@ -750,8 +775,8 @@ def main():
     elif args.command == "build-all":
         build_all_selections(args.min_articles, args.offset, args.data_dir)
     elif args.command == "list":
-        for lang, _, count in get_wiki_languages_exceeding_count(args.min_articles):
-            print(f"{lang} {count}")
+        for wiki_lang in get_wiki_languages_exceeding_count(args.min_articles):
+            print(f"{wiki_lang.code} {wiki_lang.total}")
 
 
 if __name__ == "__main__":

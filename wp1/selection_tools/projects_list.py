@@ -4,6 +4,13 @@ import pathlib
 def build_langlinks(
     lang_code: str, en_needed_dir: pathlib.Path, out_fp: pathlib.Path
 ) -> None:
+    langlinks_fp = en_needed_dir / "langlinks.tsv"
+    if not langlinks_fp.is_file():
+        raise FileNotFoundError(
+            f"Missing {langlinks_fp}; run the English build first so "
+            "en.needed/langlinks.tsv exists"
+        )
+
     lines = set()
     for name in ("langlinks.tsv", "medicine.langlinks.tsv"):
         src = en_needed_dir / name

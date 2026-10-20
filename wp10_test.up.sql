@@ -194,10 +194,10 @@ CREATE TABLE `temp_pagescores` (
 
 CREATE TABLE `temp_redirects` (
   `tr_lang` varbinary(255) NOT NULL,
-  `tr_source` varbinary(1024) NOT NULL,
-  `tr_target` varbinary(1024) DEFAULT NULL,
-  PRIMARY KEY (`tr_lang`,`tr_source`),
-  KEY `idx_tr_target` (`tr_lang`,`tr_target`)
+  `tr_source_id` int(11) NOT NULL,
+  `tr_target_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`tr_lang`,`tr_source_id`),
+  KEY `idx_tr_target` (`tr_lang`,`tr_target_id`)
 );
 
 CREATE TABLE `page_scores` (

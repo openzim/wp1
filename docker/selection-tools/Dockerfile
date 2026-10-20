@@ -18,11 +18,16 @@ RUN pipenv install --system --deploy --ignore-pipfile
 COPY . .
 
 ENV PYTHONPATH=/app
+ENV FILE_PATH_PAGEVIEWS=/data/pageviews
 
 
 RUN mkdir -p /etc/cron.monthly && \
-    echo "#!/bin/sh" > /etc/cron.monthly/wp1_selection_tools && \
-    echo "/usr/bin/flock -w 0 /dev/shm/cron.lock python -m wp1.selection_tools.entrypoint build-all --data-dir /data" >> /etc/cron.monthly/wp1_selection_tools && \
+    { \
+      echo "#!/bin/sh"; \
+      echo "cd /app"; \
+      echo "export PYTHONPATH=/app"; \
+      echo "/usr/bin/flock -w 0 /dev/shm/cron.lock python -m wp1.selection_tools.entrypoint build-all --data-dir /data"; \
+    } > /etc/cron.monthly/wp1_selection_tools && \
     chmod a+x /etc/cron.monthly/wp1_selection_tools
 
 CMD ["cron", "-f"]

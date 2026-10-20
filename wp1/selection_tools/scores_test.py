@@ -294,33 +294,47 @@ class ScoresTest(BaseWpOneDbTest):
                 "INSERT INTO page_scores (ps_lang, ps_article, ps_page_id, ps_views)"
                 """VALUES
         ("en", "Statue_of_Liberty", 1234, 100),
-        ("fr", "Tour_Eiffel", 5678, 200),
-        ("es", "Sagrada_Familia", 9101, 150)"""
+        ("en", "Eiffel_Tower", 2222, 50),
+        ("fr", "Tour_Eiffel", 5678, 200)"""
             )
-
-        with self.wp10db.cursor() as cursor:
             cursor.execute(
                 "INSERT INTO temp_pageviews (tp_lang, tp_article, tp_page_id, tp_views)"
-                """VALUES
-        ("fr", "Tour_Eiffel", 5678, 200),
-        ("es", "Sagrada_Familia", 9101, 150)"""
+                'VALUES ("en", "Eiffel_Tower", 2222, 50)'
             )
 
-        scores.reset_missing_articles_pageviews(self.wp10db)
-
-        with self.wp10db.cursor() as cursor:
-            cursor.execute("SELECT COUNT(*) as cnt FROM page_scores")
-            n = cursor.fetchone()["cnt"]
-            self.assertEqual(3, n)
+        scores.reset_missing_articles_pageviews(self.wp10db, "en")
 
         with self.wp10db.cursor() as cursor:
             cursor.execute("SELECT * FROM page_scores WHERE ps_page_id = 1234")
-            result = cursor.fetchone()
-            self.assertIsNotNone(result)
-            self.assertEqual(result["ps_lang"], b"en")
-            self.assertEqual(result["ps_article"], b"Statue_of_Liberty")
-            self.assertEqual(result["ps_page_id"], 1234)
-            self.assertEqual(result["ps_views"], 0)
+            self.assertEqual(cursor.fetchone()["ps_views"], 0)
+            cursor.execute("SELECT * FROM page_scores WHERE ps_page_id = 2222")
+            self.assertEqual(cursor.fetchone()["ps_views"], 50)
+            cursor.execute("SELECT * FROM page_scores WHERE ps_page_id = 5678")
+            self.assertEqual(cursor.fetchone()["ps_views"], 200)
+
+    def test_delete_non_current_page_scores(self):
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO page_scores (ps_lang, ps_article, ps_page_id, ps_views)"
+                """VALUES
+        ("en", "Current_Article", 1234, 100),
+        ("en", "Old_Redirect", 999, 900),
+        ("fr", "Tour_Eiffel", 5678, 200)"""
+            )
+            cursor.execute(
+                "INSERT INTO temp_pagesize (tp_lang, tp_article, tp_page_id, tp_size)"
+                'VALUES ("en", "Current_Article", 1234, 4096)'
+            )
+
+        scores.delete_non_current_page_scores(self.wp10db, "en")
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute("SELECT * FROM page_scores WHERE ps_page_id = 999")
+            self.assertIsNone(cursor.fetchone())
+            cursor.execute("SELECT * FROM page_scores WHERE ps_page_id = 1234")
+            self.assertIsNotNone(cursor.fetchone())
+            cursor.execute("SELECT * FROM page_scores WHERE ps_page_id = 5678")
+            self.assertIsNotNone(cursor.fetchone())
 
     def test_insert_temp_pageviews(self):
         scores.insert_temp_pageviews(self.wp10db, "en", "Statue_of_Liberty", 1234, 100)
@@ -413,7 +427,16 @@ class ScoresTest(BaseWpOneDbTest):
             n = cursor.fetchone()["cnt"]
             self.assertEqual(3, n)
 
-        scores.finalize_page_scores(self.wp10db)
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO temp_pagesize (tp_lang, tp_article, tp_page_id, tp_size)"
+                """VALUES
+        ("en", "Statue_of_Liberty", 100, 0),
+        ("en", "Eiffel_Tower", 200, 0),
+        ("fr", "George-Étienne_Cartier_Monument", 300, 0)"""
+            )
+
+        scores.finalize_page_scores(self.wp10db, "en")
 
         with self.wp10db.cursor() as cursor:
             cursor.execute("SELECT COUNT(*) as cnt FROM page_scores")
@@ -480,7 +503,13 @@ class ScoresTest(BaseWpOneDbTest):
             n = cursor.fetchone()["cnt"]
             self.assertEqual(1, n)
 
-        scores.finalize_page_scores(self.wp10db)
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO temp_pagesize (tp_lang, tp_article, tp_page_id, tp_size)"
+                'VALUES ("fr", "George-Étienne_Cartier_Monument", 300, 0)'
+            )
+
+        scores.finalize_page_scores(self.wp10db, "fr")
 
         with self.wp10db.cursor() as cursor:
             cursor.execute("SELECT COUNT(*) as cnt FROM page_scores")
@@ -520,6 +549,41 @@ class ScoresTest(BaseWpOneDbTest):
             self.assertEqual(result["ps_lang_links"], 3)
             self.assertEqual(result["ps_score"], 555)
 
+    def test_finalize_page_scores_removes_stale_pages(self):
+        with self.wp10db.cursor() as cursor:
+            cursor.execute(
+                "INSERT INTO page_scores (ps_lang, ps_article, ps_page_id, ps_views)"
+                """VALUES
+        ("en", "Old_Redirect", 999, 900),
+        ("fr", "Tour_Eiffel", 5678, 200)"""
+            )
+            cursor.execute(
+                "INSERT INTO temp_pagesize (tp_lang, tp_article, tp_page_id, tp_size)"
+                'VALUES ("en", "Current_Article", 1234, 4096)'
+            )
+            cursor.execute(
+                "INSERT INTO temp_pageviews (tp_lang, tp_article, tp_page_id, tp_views)"
+                'VALUES ("en", "Current_Article", 1234, 100)'
+            )
+            cursor.execute(
+                "INSERT INTO temp_pagescores (tp_lang, tp_article, tp_page_id, tp_score)"
+                'VALUES ("en", "Current_Article", 1234, 555)'
+            )
+
+        scores.finalize_page_scores(self.wp10db, "en")
+
+        with self.wp10db.cursor() as cursor:
+            cursor.execute("SELECT * FROM page_scores WHERE ps_page_id = 999")
+            self.assertIsNone(cursor.fetchone())
+            cursor.execute("SELECT * FROM page_scores WHERE ps_page_id = 1234")
+            result = cursor.fetchone()
+            self.assertIsNotNone(result)
+            self.assertEqual(result["ps_views"], 100)
+            self.assertEqual(result["ps_size"], 4096)
+            self.assertEqual(result["ps_score"], 555)
+            cursor.execute("SELECT * FROM page_scores WHERE ps_page_id = 5678")
+            self.assertIsNotNone(cursor.fetchone())
+
     def test_finalize_page_scores(self):
         with self.wp10db.cursor() as cursor:
             cursor.execute(
@@ -544,7 +608,7 @@ class ScoresTest(BaseWpOneDbTest):
                 'VALUES ("en", "Statue_of_Liberty", 1234, 555)'
             )
 
-        scores.finalize_page_scores(self.wp10db)
+        scores.finalize_page_scores(self.wp10db, "en")
 
         with self.wp10db.cursor() as cursor:
             cursor.execute("SELECT * FROM page_scores WHERE ps_page_id = 1234")
