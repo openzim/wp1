@@ -1,5 +1,11 @@
 # Development utility scripts
 
+- [`dev-up.sh`](dev-up.sh) — build and start the dev stack
+  (`docker-compose-dev.yml`), print the host URL of every running service
+  (reflecting worktree port remaps and enabled profiles), then follow the
+  logs; Ctrl-C stops the stack. `-d` returns after printing the URLs; other
+  arguments are forwarded to `docker compose up`. Enable profiles with
+  `COMPOSE_PROFILES`, e.g. `COMPOSE_PROFILES=zimfarm ./scripts/util/dev-up.sh`.
 - [`run_tests.sh`](run_tests.sh) — run the backend test suite. Starts the test
   containers (`docker-compose-test.yml`) if they aren't already running,
   cleans dirty tables left behind by interrupted runs, then runs
@@ -20,7 +26,8 @@ The easiest way is `./scripts/util/create_worktree.sh <branch>`, which creates
 the worktree under `.worktrees/<branch>`, writes a worktree-local `.env`
 (based on the main checkout's `.env`, if present) with a unique project name,
 suffix, and free port set (remapping the port-coupled app config values to
-match), and offers to start the stack ("Start servers now? [Y/n]").
+match), and offers to start the stack ("Start servers now? [Y/n]"), printing
+its URLs.
 
 Manually, the mechanism is: all host ports, container names, and built image
 tags in `docker-compose-dev.yml` are parameterized with environment variables
@@ -53,6 +60,14 @@ Notes:
 - The backend is referred to by the in-network hostname `wp1bot-web-dev`
   (the `CLIENT_BACKEND_URL` default in `wp1/config.py`); this keeps
   working in a suffixed stack via a network alias, no changes needed.
+- `dev-web` and `dev-workers` run as `WP1_UID:WP1_GID` (default `0:0`,
+  root). `create_worktree.sh` sets these to your host user so `__pycache__`
+  and `log/` files written through the bind mounts aren't root-owned, which
+  would otherwise make `git worktree remove` fail with "Permission denied".
+  Set them in the main checkout's `.env` for the same effect there.
+- Stop a worktree's stack (`docker compose -f docker-compose-dev.yml down`)
+  before removing the worktree: with `restart: always`, orphaned containers
+  recreate their missing bind-mount paths as root-owned directories.
 - Caveat: the zimfarm UI config
   (`docker/zimfarm/zimfarm_ui_dev/config.json`) hardcodes the API URL
   `http://localhost:8004`, so a second stack's zimfarm UI won't reach its
