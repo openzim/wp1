@@ -94,6 +94,16 @@ describe('the selections page', () => {
       cy.contains('34 articles').should('not.exist');
     });
 
+    it('shows the filters of a WikiProject query selection', () => {
+      stubDetailFor(
+        'aafcc4a2-cd5c-4236-85ca-3a10d16f13aa',
+        'wikiproject_query_builder.json'
+      );
+      cy.contains('.wp1r-railrow', 'updated list').click();
+      cy.get('#definition').should('contain.text', 'Title contains');
+      cy.get('#definition').should('contain.text', 'B-Class');
+    });
+
     it('disables Create ZIM when the selection failed to materialize', () => {
       stubDetailFor(
         '7368f534-27f5-4350-bfe3-23b90363df7b',
