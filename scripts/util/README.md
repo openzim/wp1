@@ -53,6 +53,14 @@ Notes:
 - The backend is referred to by the in-network hostname `wp1bot-web-dev`
   (the `CLIENT_BACKEND_URL` default in `wp1/config.py`); this keeps
   working in a suffixed stack via a network alias, no changes needed.
+- `dev-web` and `dev-workers` run as `WP1_UID:WP1_GID` (default `0:0`,
+  root). `create_worktree.sh` sets these to your host user so `__pycache__`
+  and `log/` files written through the bind mounts aren't root-owned, which
+  would otherwise make `git worktree remove` fail with "Permission denied".
+  Set them in the main checkout's `.env` for the same effect there.
+- Stop a worktree's stack (`docker compose -f docker-compose-dev.yml down`)
+  before removing the worktree: with `restart: always`, orphaned containers
+  recreate their missing bind-mount paths as root-owned directories.
 - Caveat: the zimfarm UI config
   (`docker/zimfarm/zimfarm_ui_dev/config.json`) hardcodes the API URL
   `http://localhost:8004`, so a second stack's zimfarm UI won't reach its

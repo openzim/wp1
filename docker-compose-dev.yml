@@ -63,6 +63,10 @@ services:
       dockerfile: docker/dev-workers/Dockerfile
     image: wp1bot-workers-dev${WP1_SUFFIX:-}
     container_name: wp1bot-workers-dev${WP1_SUFFIX:-}
+    # Run as the host user so files written through the bind mounts
+    # (__pycache__, log/) aren't root-owned. Defaults to root; set in .env
+    # (create_worktree.sh does) as WP1_UID=$(id -u), WP1_GID=$(id -g).
+    user: '${WP1_UID:-0}:${WP1_GID:-0}'
     env_file:
       # Optional overrides of the schema defaults in wp1/config.py (the
       # defaults already point at the in-network docker hostnames).
@@ -88,6 +92,8 @@ services:
       dockerfile: docker/web/Dockerfile
     image: wp1bot-web-dev${WP1_SUFFIX:-}
     container_name: wp1bot-web-dev${WP1_SUFFIX:-}
+    # See the comment on the dev-workers service.
+    user: '${WP1_UID:-0}:${WP1_GID:-0}'
     environment:
       - FLASK_DEBUG=1
       - FLASK_RUN_HOST=0.0.0.0

@@ -16,6 +16,8 @@ cookies.txt
 
 # Don't commit logs
 log/**
+# ...but keep the dir, so docker doesn't create it root-owned on bind mount
+!log/.gitkeep
 
 # Don't commit the active .env file (contains secrets).
 # .env.example and .env.docker are committed and safe to share.
