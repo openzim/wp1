@@ -58,6 +58,24 @@ describe('the article page', () => {
       );
   });
 
+  it('links to a new selection with the current filters', () => {
+    cy.visit('/#/project/Alien/articles');
+    cy.intercept('v1/projects/Alien/articles?quality=B-Class', {
+      fixture: 'articles_alien_top_b.json',
+    }).as('BArticles');
+
+    cy.get('#qualitySelect').select('B');
+    cy.get('#updateRating').click();
+    cy.wait('@BArticles');
+
+    cy.get('#save-as-selection')
+      .should('have.attr', 'href')
+      .and(
+        'match',
+        /#\/selections\/new\?source=wikiproject_query&wikiproject=Alien&quality=B-Class$/
+      );
+  });
+
   it('displays article on wikipedia', () => {
     // Serve a minimal stand-in for the Wikipedia article page, echoing the
     // requested title, so the test doesn't depend on wikipedia.org.

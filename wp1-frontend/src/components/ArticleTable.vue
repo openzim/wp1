@@ -30,9 +30,12 @@
               >s</template
             ></span
           >
-          <a v-if="!projectIdB" :href="tsvUrl" download class="text-[12.5px]"
-            >Download all results as TSV</a
-          >
+          <span v-if="!projectIdB" class="flex gap-3 text-[12.5px]">
+            <router-link id="save-as-selection" :to="saveAsSelectionRoute"
+              >Save as selection</router-link
+            >
+            <a :href="tsvUrl" download>Download all results as TSV</a>
+          </span>
         </div>
         <ArticleTablePagination
           v-if="articleData.pagination.total_pages > 1"
@@ -294,6 +297,22 @@ export default {
         return [];
       }
       return this.articleData['articles'];
+    },
+    saveAsSelectionRoute: function () {
+      const query = {
+        source: 'wikiproject_query',
+        wikiproject: this.projectId,
+      };
+      if (this.quality) {
+        query.quality = this.quality;
+      }
+      if (this.importance) {
+        query.importance = this.importance;
+      }
+      if (this.articlePattern) {
+        query.pattern = this.articlePattern;
+      }
+      return { path: '/selections/new', query: query };
     },
     tsvUrl: function () {
       const url = this.articlesUrl(false);

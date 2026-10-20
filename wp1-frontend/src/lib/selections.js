@@ -6,6 +6,7 @@ export const MODEL_LABELS = {
   sparql: 'SPARQL',
   petscan: 'Petscan',
   wikiproject: 'WikiProject',
+  wikiproject_query: 'WikiProject query',
   combinator: 'Combinator',
 };
 
@@ -24,6 +25,11 @@ export const SOURCES = [
     key: 'wikiproject',
     label: 'WikiProject',
     blurb: 'Every article a project assesses.',
+  },
+  {
+    key: 'wikiproject_query',
+    label: 'WikiProject query',
+    blurb: "One project's articles, filtered by class.",
   },
   {
     key: 'combinator',
@@ -268,6 +274,15 @@ export function combinatorSentence(params) {
 
 // The type-specific definition, rendered as preformatted text for the
 // detail pane. nameForId resolves combinator member ids to names.
+export function wikiprojectQueryFilters(params) {
+  return [
+    { label: 'WikiProject', value: params.wikiproject || '' },
+    { label: 'Quality', value: params.quality || 'Any' },
+    { label: 'Importance', value: params.importance || 'Any' },
+    { label: 'Title contains', value: params.pattern || 'Any' },
+  ];
+}
+
 export function definitionText(model, params, nameForId) {
   switch (modelFragment(model)) {
     case 'simple':
@@ -285,6 +300,10 @@ export function definitionText(model, params, nameForId) {
       }
       return lines.join('\n');
     }
+    case 'wikiproject_query':
+      return wikiprojectQueryFilters(params)
+        .map((filter) => `${filter.label}: ${filter.value}`)
+        .join('\n');
     case 'combinator':
       return combinatorExpression(params, nameForId);
     default:
@@ -307,6 +326,8 @@ export function definitionNote(model, params) {
       return 'A Petscan query, re-run on every rebuild.';
     case 'wikiproject':
       return 'Every article assessed by the listed WikiProjects.';
+    case 'wikiproject_query':
+      return 'Re-run on every rebuild, using the latest assessments.';
     case 'combinator':
       return combinatorSentence(params);
     default:
