@@ -73,11 +73,14 @@ class NppTest(BaseCombinedDbTest):
         )
 
     def test_get_backlog_caches(self):
-        npp.get_backlog(self.redis, self.wikidb)
-        self.assertEqual(
-            npp.fetch_backlog(self.wikidb),
-            pickle.loads(self.redis.get(npp.BACKLOG_KEY)),
-        )
+        expected = npp.get_backlog(self.redis, self.wikidb)
+        wikidb = MagicMock()
+
+        actual = npp.get_backlog(self.redis, wikidb)
+
+        self.assertEqual(expected, actual)
+        self.assertLessEqual(self.redis.ttl(npp.BACKLOG_KEY), 3600)
+        wikidb.cursor.assert_not_called()
 
     def test_get_backlog_uses_cache(self):
         cached = {b"Cached_Article": b"20260101000000"}
