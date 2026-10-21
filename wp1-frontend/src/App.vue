@@ -52,12 +52,12 @@
         </div>
       </nav>
     </header>
-    <div class="main-content">
+    <main class="main-content">
       <router-view></router-view>
-    </div>
+    </main>
     <footer class="wp1r border-t border-chrome-edge bg-chrome">
       <div class="flex h-12 items-center gap-1 px-3">
-        <span v-if="isSelectionsRoute" class="px-[9px] text-sm text-ink-3"
+        <span v-if="isSelectionsRoute" class="px-[9px] text-sm text-ink-2"
           >All times are local.</span
         >
         <span class="ml-auto"></span>

@@ -58,7 +58,7 @@
                   >
                     <button
                       type="button"
-                      class="group w-full cursor-pointer border-0 bg-transparent px-3 py-[8px] text-left hover:bg-border-row"
+                      class="group w-full cursor-pointer border-0 bg-transparent px-3 py-[8px] text-left hover:bg-border-row focus-visible:-outline-offset-2"
                       :class="{ 'text-right': index > 0 }"
                       v-on:click="sortBy(index)"
                     >
