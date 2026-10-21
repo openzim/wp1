@@ -543,11 +543,9 @@ def fold_redirect_metrics(wp10db: "Connection[Cursor]"):
                 GROUP BY p.tp_lang, p.tp_page_id, p.tp_article
                 ON DUPLICATE KEY UPDATE {column} = {column} + VALUES({column})"""
             )
-            cursor.execute(
-                f"""DELETE src FROM {table} src
+            cursor.execute(f"""DELETE src FROM {table} src
                 JOIN temp_redirects r
-                    ON r.tr_lang = src.tp_lang AND r.tr_source_id = src.tp_page_id"""
-            )
+                    ON r.tr_lang = src.tp_lang AND r.tr_source_id = src.tp_page_id""")
     wp10db.commit()
 
 
