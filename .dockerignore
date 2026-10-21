@@ -1,3 +1,11 @@
 wp1-frontend/node_modules
 log
 venv
+pageviews
+/data
+wp1/selection_tools/data/tmp
+wp1/selection_tools/data/en.needed
+.env
+wp1/credentials.py*
+.last-deploy
+cookies.txt

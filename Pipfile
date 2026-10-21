@@ -31,10 +31,10 @@ pytest-cov = "*"
 supervisor = "~=4.2"
 pysocks = "*"
 regex = "==2024.11.6"
-# Versions required for dependabot
 idna = "~=3.7"
 yoyo-migrations = "==9.0.0"
 sqlparse = "*"
+lxml = "*"
 
 [dev-packages]
 pre-commit = "==2.21.0"

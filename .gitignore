@@ -40,3 +40,15 @@ id_rsa
 
 # Flask session
 flask_session/
+
+
+# Editors
+*.vim
+
+# Local files
+pageviews
+/data
+credentials.py
+
+wp1/selection_tools/data/tmp/
+wp1/selection_tools/data/en.needed/
