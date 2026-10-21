@@ -138,6 +138,16 @@ class SettingsFromEnvTest(unittest.TestCase):
         self.assertEqual(1234, settings.WP10DB_PORT)
         self.assertEqual(["http://a", "http://b"], settings.CLIENT_DOMAINS)
 
+    def test_zimfarm_team_defaults_to_kiwix(self):
+        with patch.dict("os.environ", {}, clear=True):
+            settings = Settings.from_env()
+        self.assertEqual(["Kiwix"], settings.ZIMFARM_TEAMS)
+
+    @patch.dict("os.environ", {"ZIMFARM_TEAMS": "Kiwix, Wikipedia"}, clear=False)
+    def test_zimfarm_team_parses_comma_separated(self):
+        settings = Settings.from_env()
+        self.assertEqual(["Kiwix", "Wikipedia"], settings.ZIMFARM_TEAMS)
+
     def test_defaults_apply_when_unset(self):
         with patch.dict("os.environ", {}, clear=True):
             settings = Settings.from_env()

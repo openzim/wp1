@@ -10,7 +10,13 @@ from wp1.constants import TS_FORMAT_WP10
 from wp1.models.wp10.zim_file import ZimTask
 from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.timestamp import utcnow
-from wp1.web.emails import respond_to_zim_task_completed, send_zim_ready_email
+from wp1.web.emails import (
+    notify_user_for_failed_scheduled_zim,
+    respond_to_scheduled_zim_job_failed,
+    respond_to_zim_task_completed,
+    send_zim_failed_email,
+    send_zim_ready_email,
+)
 
 
 class EmailsTest(BaseWpOneDbTest):
@@ -251,6 +257,7 @@ class EmailsTest(BaseWpOneDbTest):
 
         self.assertFalse(result)
 
+    @override_settings(CLIENT_HOMEPAGE="https://wp1.example.org/#/")
     @patch("wp1.web.emails.send_zim_ready_email")
     @patch("wp1.web.emails.zim_schedules.get_username_by_zim_schedule_id")
     @patch("wp1.zimfarm.requests.get")
@@ -283,6 +290,7 @@ class EmailsTest(BaseWpOneDbTest):
             recipient_email="test@example.com",
             zim_title="Test ZIM File",
             download_url="https://fake.wasabisys.com/org-kiwix-zimit/wikipedia/foo.zim",
+            manage_schedule_url="https://wp1.example.org/#/selections/test-builder-id/zim",
             unsubscribe_url=ANY,
             next_generation_months=3,
         )
@@ -321,6 +329,7 @@ class EmailsTest(BaseWpOneDbTest):
             recipient_email="test@example.com",
             zim_title="Test ZIM File",
             download_url="https://download.example.com/test.zim",
+            manage_schedule_url=None,  # CLIENT_HOMEPAGE is not set in tests
             unsubscribe_url=ANY,
             next_generation_months=None,  # Should be None when no remaining generations
         )
@@ -350,3 +359,153 @@ class EmailsTest(BaseWpOneDbTest):
         self.assertEqual(200, response.status_code)
         fetched = zim_schedules.get_zim_schedule(self.wp10db, self.zim_schedule.s_id)
         self.assertIsNone(fetched.s_email)
+
+    @patch("wp1.web.emails.requests.post")
+    @override_settings(
+        MAILGUN_API_KEY="test-api-key",
+        MAILGUN_URL="https://api.mailgun.net/v3/test.com/messages",
+    )
+    @patch("wp1.web.emails.jinja_env")
+    def test_send_zim_failed_email(self, mock_jinja_env, mock_post):
+        mock_template = Mock()
+        mock_template.render.return_value = "<html>Test email content</html>"
+        mock_jinja_env.get_template.return_value = mock_template
+
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_post.return_value = mock_response
+
+        result = send_zim_failed_email(
+            recipient_username="testuser",
+            recipient_email="test@example.com",
+            zim_title="Test ZIM",
+            schedule_ended=True,
+            manage_schedule_url="https://manage.example.com",
+            unsubscribe_url="https://unsubscribe.example.com",
+        )
+
+        self.assertTrue(result)
+        mock_jinja_env.get_template.assert_called_once_with(
+            "failed-scheduled-zim-email.html.jinja2"
+        )
+        mock_template.render.assert_called_once_with(
+            user="testuser",
+            title="Test ZIM",
+            schedule_ended=True,
+            manage_schedule_url="https://manage.example.com",
+            unsubscribe_url="https://unsubscribe.example.com",
+        )
+
+        email_data = mock_post.call_args[1]["data"]
+        self.assertEqual(email_data["to"], "testuser <test@example.com>")
+        self.assertEqual(
+            email_data["subject"], "Your ZIM File Could Not Be Generated - Test ZIM"
+        )
+        self.assertIn("Your schedule has stopped", email_data["text"])
+        self.assertEqual(email_data["html"], "<html>Test email content</html>")
+
+    @patch("wp1.web.emails.requests.post")
+    @override_settings(
+        MAILGUN_API_KEY="test-api-key",
+        MAILGUN_URL="https://api.mailgun.net/v3/test.com/messages",
+    )
+    def test_send_zim_failed_email_schedule_not_ended(self, mock_post):
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_post.return_value = mock_response
+
+        result = send_zim_failed_email(
+            recipient_username="testuser",
+            recipient_email="test@example.com",
+            zim_title="Test ZIM",
+            schedule_ended=False,
+        )
+
+        self.assertTrue(result)
+        email_data = mock_post.call_args[1]["data"]
+        self.assertNotIn("Your schedule has stopped", email_data["text"])
+        self.assertNotIn("Your Schedule Has Stopped", email_data["html"])
+        self.assertIn("Test ZIM", email_data["html"])
+
+    @override_settings(MAILGUN_API_KEY="")
+    def test_send_zim_failed_email_no_api_key(self):
+        result = send_zim_failed_email(
+            recipient_username="testuser",
+            recipient_email="test@example.com",
+            zim_title="Test ZIM",
+            schedule_ended=True,
+        )
+
+        self.assertFalse(result)
+
+    @override_settings(CLIENT_HOMEPAGE="https://wp1.example.org/#/")
+    @patch("wp1.web.emails.send_zim_failed_email")
+    @patch("wp1.web.emails.zim_schedules.get_username_by_zim_schedule_id")
+    def test_notify_user_for_failed_scheduled_zim(
+        self, mock_get_username, mock_send_email
+    ):
+        mock_get_username.return_value = "testuser"
+
+        notify_user_for_failed_scheduled_zim(
+            self.wp10db, self.zim_schedule, schedule_ended=False
+        )
+
+        mock_send_email.assert_called_once_with(
+            recipient_username="testuser",
+            recipient_email="test@example.com",
+            zim_title="Test ZIM File",
+            schedule_ended=False,
+            manage_schedule_url="https://wp1.example.org/#/selections/test-builder-id/zim",
+            unsubscribe_url=ANY,
+        )
+
+    @patch("wp1.web.emails.send_zim_failed_email")
+    def test_notify_user_for_failed_scheduled_zim_unconfirmed_email(
+        self, mock_send_email
+    ):
+        self.zim_schedule.s_email_confirmation_token = b"not-confirmed"
+
+        notify_user_for_failed_scheduled_zim(
+            self.wp10db, self.zim_schedule, schedule_ended=False
+        )
+
+        mock_send_email.assert_not_called()
+
+    @patch("wp1.web.emails.send_zim_failed_email")
+    def test_notify_user_for_failed_scheduled_zim_no_email(self, mock_send_email):
+        self.zim_schedule.s_email = None
+
+        notify_user_for_failed_scheduled_zim(
+            self.wp10db, self.zim_schedule, schedule_ended=False
+        )
+
+        mock_send_email.assert_not_called()
+
+    @patch("wp1.web.emails.notify_user_for_failed_scheduled_zim")
+    @patch("wp1.web.emails.wp10_connect")
+    def test_respond_to_scheduled_zim_job_failed(self, mock_connect, mock_notify):
+        mock_connect.return_value = self.wp10db
+        job = Mock()
+        job.args = [Mock(), self.zim_schedule.s_id]
+
+        with patch.object(self.wp10db, "close") as mock_close:
+            respond_to_scheduled_zim_job_failed(job, None, None, None, None)
+            mock_close.assert_called_once()
+
+        mock_notify.assert_called_once()
+        self.assertEqual(self.zim_schedule.s_id, mock_notify.call_args[0][1].s_id)
+        self.assertTrue(mock_notify.call_args.kwargs["schedule_ended"])
+
+    @patch("wp1.web.emails.notify_user_for_failed_scheduled_zim")
+    @patch("wp1.web.emails.wp10_connect")
+    def test_respond_to_scheduled_zim_job_failed_deleted_schedule(
+        self, mock_connect, mock_notify
+    ):
+        mock_connect.return_value = self.wp10db
+        job = Mock()
+        job.args = [Mock(), b"deleted-schedule"]
+
+        with patch.object(self.wp10db, "close"):
+            respond_to_scheduled_zim_job_failed(job, None, None, None, None)
+
+        mock_notify.assert_not_called()

@@ -119,6 +119,7 @@ def _project_rating_query(
     quality_b=None,
     importance_b=None,
     pattern=None,
+    namespace=None,
     page=None,
     count=False,
     limit=100,
@@ -165,6 +166,9 @@ def _project_rating_query(
     query += " WHERE rating_a.r_project = %(r_project)s"
     if project_b_name is not None:
         query += " AND rating_b.r_project = %(r_project_b)s"
+
+    if namespace is not None:
+        query += " AND rating_a.r_namespace = %(r_namespace)s"
 
     if pattern is not None:
         query += " AND rating_a.r_article LIKE %(article_pattern_compiled)s"
@@ -214,11 +218,13 @@ def _project_rating_params(
     quality_b=None,
     importance_b=None,
     pattern=None,
+    namespace=None,
 ):
     params = {
         "r_project": project_name,
         "r_quality": quality,
         "r_importance": importance,
+        "r_namespace": namespace,
     }
 
     if pattern is not None:
@@ -336,6 +342,8 @@ def iterate_project_rating_by_type(
     quality=None,
     importance=None,
     pattern=None,
+    namespace=None,
+    limit=None,
     batch_size=500,
 ):
     """Yields every Rating matching the filters, without pagination.
@@ -349,13 +357,15 @@ def iterate_project_rating_by_type(
         quality=quality,
         importance=importance,
         pattern=pattern,
-        limit=None,
+        namespace=namespace,
+        limit=limit,
     )
     params = _project_rating_params(
         project_name,
         quality=quality,
         importance=importance,
         pattern=pattern,
+        namespace=namespace,
     )
 
     with wp10db.cursor() as cursor:

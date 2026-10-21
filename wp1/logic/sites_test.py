@@ -102,6 +102,18 @@ class SitesTest(BaseWpOneDbTest):
         self.assertEqual(EXPECTED_PROJECTS, logic_sites.get_projects(self.redis))
 
     @patch("wp1.logic.sites.mwclient.Site")
+    def test_get_project_dbnames(self, patched_site):
+        patched_site.return_value.api.return_value = SITEMATRIX_RESULT
+        self.assertEqual(
+            {
+                "aa.wikipedia.org": "aawiki",
+                "aa.wiktionary.org": "aawiktionary",
+                "ab.wikipedia.org": "abwiki",
+            },
+            logic_sites.get_project_dbnames(self.redis),
+        )
+
+    @patch("wp1.logic.sites.mwclient.Site")
     def test_dbname_for_project(self, patched_site):
         patched_site.return_value.api.return_value = SITEMATRIX_RESULT
         self.assertEqual(

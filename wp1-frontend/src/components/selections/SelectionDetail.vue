@@ -324,6 +324,10 @@
                 Nothing selected yet.
               </div>
             </div>
+            <WikiProjectQueryFields
+              v-else-if="row.control === 'wpquery'"
+              v-model="draftQuery"
+            />
 
             <div v-if="fieldErrors" class="text-[13px] text-danger">
               {{ fieldErrors }}
@@ -403,7 +407,8 @@
           :type="
             row.control === 'text' ||
             row.control === 'textarea' ||
-            row.control === 'projects'
+            row.control === 'projects' ||
+            row.control === 'wpquery'
               ? 'button'
               : undefined
           "
@@ -470,8 +475,18 @@
         class="min-w-0 border-b border-border-row px-[18px] py-4 lg:border-b-0 lg:border-r"
       >
         <div class="wp1r-microlabel mb-1.5">Definition</div>
+        <dl
+          v-if="builder && fragment === 'wikiproject_query'"
+          id="definition"
+          class="m-0 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1.5 text-[14px]"
+        >
+          <template v-for="filter in queryFilters" :key="filter.label">
+            <dt class="text-xs font-medium text-ink-2">{{ filter.label }}</dt>
+            <dd class="m-0">{{ filter.value }}</dd>
+          </template>
+        </dl>
         <pre
-          v-if="builder"
+          v-else-if="builder"
           id="definition"
           class="m-0 max-h-72 overflow-auto whitespace-pre-wrap rounded border border-border-strong bg-surface-muted px-3 py-[11px] font-mono text-xs leading-[1.6] text-ink"
           >{{ definition }}</pre
@@ -545,6 +560,7 @@ import DeleteSelectionDialog from './DeleteSelectionDialog.vue';
 import ProjectAutocomplete from './ProjectAutocomplete.vue';
 import StatusDot from './StatusDot.vue';
 import TypeBadge from './TypeBadge.vue';
+import WikiProjectQueryFields from './WikiProjectQueryFields.vue';
 import { isoDateTime } from '../../lib/util.js';
 import {
   canRequestZim,
@@ -556,6 +572,7 @@ import {
   selectionIsPending,
   tsvReady,
   definitionNote,
+  wikiprojectQueryFilters,
   describeSchedule,
   modelFragment,
   zimDownloadUrl,
@@ -569,6 +586,7 @@ export default {
     ProjectAutocomplete,
     StatusDot,
     TypeBadge,
+    WikiProjectQueryFields,
   },
   props: {
     // Row from /v1/selection/lists for this builder. Null while the list
@@ -590,9 +608,11 @@ export default {
       editingField: null,
       draft: '',
       draftList: [],
+      draftQuery: {},
       // Snapshots taken when a field opens, to detect unsaved changes.
       originalDraft: '',
       originalDraftList: [],
+      originalDraftQuery: {},
       fieldErrors: '',
       // null until the first save attempt: claiming "all changes saved"
       // before anything was touched is a lie.
@@ -661,6 +681,9 @@ export default {
         this.nameForId
       );
     },
+    queryFilters: function () {
+      return wikiprojectQueryFilters(this.builder.params || {});
+    },
     note: function () {
       return definitionNote(
         this.builder.model || this.item.model,
@@ -704,7 +727,9 @@ export default {
       return (
         this.draft !== this.originalDraft ||
         JSON.stringify(this.draftList) !==
-          JSON.stringify(this.originalDraftList)
+          JSON.stringify(this.originalDraftList) ||
+        JSON.stringify(this.draftQuery) !==
+          JSON.stringify(this.originalDraftQuery)
       );
     },
     fieldRows: function () {
@@ -775,6 +800,17 @@ export default {
               display: () => (params.exclude || []).join(', ') || 'None',
             }
           );
+          break;
+        case 'wikiproject_query':
+          rows.push({
+            key: 'wpq',
+            label: 'WikiProject and filters',
+            control: 'wpquery',
+            display: () =>
+              this.queryFilters
+                .map((filter) => `${filter.label}: ${filter.value}`)
+                .join(' · '),
+          });
           break;
         case 'combinator':
           rows.push({
@@ -1013,9 +1049,18 @@ export default {
         case 'wp_exclude':
           this.draftList = [...(params.exclude || [])];
           break;
+        case 'wpq':
+          this.draftQuery = {
+            wikiproject: params.wikiproject || '',
+            quality: params.quality || '',
+            importance: params.importance || '',
+            pattern: params.pattern || '',
+          };
+          break;
       }
       this.originalDraft = this.draft;
       this.originalDraftList = [...this.draftList];
+      this.originalDraftQuery = { ...this.draftQuery };
       this.$nextTick(() => {
         const control = this.$refs.editControl;
         const el = Array.isArray(control) ? control[0] : control;
@@ -1084,6 +1129,14 @@ export default {
           break;
         case 'wp_exclude':
           params.exclude = [...this.draftList];
+          definitionChanged = true;
+          break;
+        case 'wpq':
+          if (!this.draftQuery.wikiproject) {
+            this.fieldErrors = 'Please choose a WikiProject.';
+            return;
+          }
+          Object.assign(params, this.draftQuery);
           definitionChanged = true;
           break;
       }

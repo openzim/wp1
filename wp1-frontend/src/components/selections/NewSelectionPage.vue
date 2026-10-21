@@ -73,15 +73,12 @@
                 class="mb-1 block text-xs font-medium text-ink-2"
                 >Project</label
               >
-              <select
-                id="project-select"
+              <SitePicker
                 v-model="project"
-                class="wp1r-select h-8 w-full"
-              >
-                <option v-for="site in projectOptions" :key="site">
-                  {{ site }}
-                </option>
-              </select>
+                input-id="project-select"
+                :sites="projectOptions"
+                :dbnames="dbnames"
+              />
             </div>
             <div id="listName">
               <label
@@ -255,6 +252,12 @@
             </div>
           </div>
 
+          <WikiProjectQueryFields
+            v-else-if="source === 'wikiproject_query'"
+            id="query-filters"
+            v-model="wpQuery"
+          />
+
           <!-- Validation errors -->
           <div v-if="errors" id="invalid_articles">
             <div class="text-[13px] text-danger">{{ errors }}</div>
@@ -289,7 +292,9 @@
 
 <script>
 import ProjectAutocomplete from './ProjectAutocomplete.vue';
+import SitePicker from './SitePicker.vue';
 import SelectionsNullState from './SelectionsNullState.vue';
+import WikiProjectQueryFields from './WikiProjectQueryFields.vue';
 import { loginStore } from '../../store.js';
 import { SOURCES } from '../../lib/selections.js';
 
@@ -322,22 +327,36 @@ const SOURCE_CONFIG = {
       'Every article assessed by the WikiProjects you choose. English ' +
       'Wikipedia only.',
   },
+  wikiproject_query: {
+    titleNoun: 'WikiProject query',
+    model: 'wp1.selection.models.wikiproject_query',
+    description:
+      'The articles of one WikiProject, filtered by quality, importance or ' +
+      'title. The list is rebuilt from the latest assessments.',
+  },
 };
 
 export default {
   name: 'NewSelectionPage',
-  components: { ProjectAutocomplete, SelectionsNullState },
+  components: {
+    ProjectAutocomplete,
+    SelectionsNullState,
+    SitePicker,
+    WikiProjectQueryFields,
+  },
   data: function () {
     return {
       source: this.initialSource(),
       name: '',
       project: 'en.wikipedia.org',
       sites: [],
+      dbnames: {},
       articles: '',
       query: '',
       url: '',
       wpInclude: [],
       wpExclude: [],
+      wpQuery: this.queryFromRoute(),
       showSparqlImport: false,
       sparqlImportUrl: '',
       sparqlImportError: false,
@@ -374,7 +393,10 @@ export default {
       return `New ${this.currentSource.titleNoun} selection`;
     },
     projectOptions: function () {
-      if (this.source === 'wikiproject') {
+      if (
+        this.source === 'wikiproject' ||
+        this.source === 'wikiproject_query'
+      ) {
         return ['en.wikipedia.org'];
       }
       return this.sites.length ? this.sites : ['en.wikipedia.org'];
@@ -409,7 +431,10 @@ export default {
       }
     },
     source: function () {
-      if (this.source === 'wikiproject') {
+      if (
+        this.source === 'wikiproject' ||
+        this.source === 'wikiproject_query'
+      ) {
         this.project = 'en.wikipedia.org';
       }
       this.errors = '';
@@ -421,6 +446,7 @@ export default {
     if (response.ok) {
       const data = await response.json();
       this.sites = data.sites;
+      this.dbnames = data.dbnames;
     }
   },
   methods: {
@@ -433,6 +459,15 @@ export default {
         return requested === 'combinator' ? 'simple' : requested;
       }
       return 'simple';
+    },
+    queryFromRoute: function () {
+      const query = this.$route.query;
+      return {
+        wikiproject: query.wikiproject || '',
+        quality: query.quality || '',
+        importance: query.importance || '',
+        pattern: query.pattern || '',
+      };
     },
     pickSource: function (key) {
       if (key === 'combinator') {
@@ -492,6 +527,11 @@ export default {
             return 'Please provide at least one WikiProject to include.';
           }
           break;
+        case 'wikiproject_query':
+          if (!this.wpQuery.wikiproject) {
+            return 'Please choose a WikiProject.';
+          }
+          break;
       }
       return null;
     },
@@ -505,6 +545,8 @@ export default {
           return { url: this.url };
         case 'wikiproject':
           return { include: [...this.wpInclude], exclude: [...this.wpExclude] };
+        case 'wikiproject_query':
+          return { ...this.wpQuery };
       }
       return {};
     },

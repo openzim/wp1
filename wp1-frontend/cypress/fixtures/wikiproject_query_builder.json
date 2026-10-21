@@ -1,0 +1,12 @@
+{
+  "params": {
+    "wikiproject": "Alien",
+    "quality": "B-Class",
+    "importance": "",
+    "pattern": ""
+  },
+  "name": "Builder 4",
+  "model": "wp1.selection.models.wikiproject_query",
+  "project": "en.wikipedia.org",
+  "selection_errors": []
+}

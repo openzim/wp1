@@ -5,7 +5,7 @@ from redis import Redis
 from rq import Queue
 from rq.command import send_stop_job_command
 import rq.exceptions
-from rq.job import Job, JobStatus
+from rq.job import Callback, Job, JobStatus
 from rq.repeat import Repeat
 
 from wp1 import constants
@@ -216,7 +216,8 @@ def schedule_recurring_zimfarm_task(
     stays valid for cancellation for the lifetime of the schedule.
 
     Note that unlike rq-scheduler, RQ's Repeat only re-schedules a job after it
-    completes *successfully*: a failed run ends the remaining repetitions.
+    completes *successfully*: a failed run ends the remaining repetitions, and
+    the user is emailed about it.
     """
     queue = _get_zimfile_scheduling_queue(redis)
 
@@ -231,6 +232,8 @@ def schedule_recurring_zimfarm_task(
         logic_builder.request_scheduled_zim_file_for_builder,
         args=args,
         repeat=repeat,
+        # Imported by name, wp1.web.emails imports this module.
+        on_failure=Callback("wp1.web.emails.respond_to_scheduled_zim_job_failed"),
         job_timeout=constants.JOB_TIMEOUT,
         failure_ttl=constants.JOB_FAILURE_TTL,
     )

@@ -271,17 +271,6 @@ class Settings:
         commented=True,
     )
 
-    # --- Overlay (development mock queue) ---
-    OVERLAY_UPDATE_WAIT_TIME: int | None = _field(
-        40, kind="int", section="Overlay (development mock queue)"
-    )
-    OVERLAY_JOB_ELAPSED_TIME: int | None = _field(
-        10, kind="int", section="Overlay (development mock queue)"
-    )
-    OVERLAY_BASIC_INCOME_TOTAL_TIME: int | None = _field(
-        60, kind="int", section="Overlay (development mock queue)"
-    )
-
     # --- MWOAUTH (Wikimedia OAuth) ---
     MWOAUTH_CONSUMER_KEY: str = _field(
         "",
@@ -336,7 +325,7 @@ class Settings:
         section="Client URLs",
         required_in_production=True,
         help=(
-            "URL the zimfarm worker uses to reach the selection files over " "S3/MinIO."
+            "URL the zimfarm worker uses to reach the selection files over S3/MinIO."
         ),
     )
 
@@ -388,6 +377,12 @@ class Settings:
     )
     ZIMFARM_USER: str = _field("admin", section="Zimfarm")
     ZIMFARM_PASSWORD: str = _field("admin", section="Zimfarm")
+    ZIMFARM_TEAMS: list[str] = _field(
+        ["Kiwix"],
+        kind="list",
+        section="Zimfarm",
+        help="Comma-separated list of Zimfarm teams that own the recipes and tasks.",
+    )
     ZIMFARM_HOOK_TOKEN: str | None = _field(
         None,
         section="Zimfarm",
@@ -648,11 +643,6 @@ _SECTION_DOCS = {
         "and edit\narticles. Not necessary in development (there's no wiki "
         "to edit locally)."
     ),
-    "Overlay (development mock queue)": (
-        'Options for the "Development overlay" which mocks queue '
-        "functionality in the\ndevelopment environment, so you can test "
-        "update flows without a real job queue."
-    ),
     "MWOAUTH (Wikimedia OAuth)": (
         "Credentials for authentication to Wikimedia through mwoauth. Used "
         'by the\nfrontend/backend to enable the "Login" functionality on '
@@ -675,7 +665,7 @@ _SECTION_DOCS = {
         '  python3 -c "import os; print(os.urandom(24).hex())"'
     ),
     "Client URLs": (
-        "URLs used for redirections, CORS, and internal service " "communication."
+        "URLs used for redirections, CORS, and internal service communication."
     ),
     "Storage (S3/MinIO)": (
         "Configuration for the storage backend for storing selection list "
