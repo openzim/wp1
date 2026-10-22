@@ -3,3 +3,4 @@ DROP TABLE IF EXISTS `categorylinks`;
 DROP TABLE IF EXISTS `redirect`;
 DROP TABLE IF EXISTS `revision`;
 DROP TABLE IF EXISTS `linktarget`;
+DROP TABLE IF EXISTS `pagetriage_page`;

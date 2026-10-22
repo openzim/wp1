@@ -17,6 +17,7 @@ import wp1.logic.rating as logic_rating
 from wp1.models.wp10.zim_schedule import ZimSchedule
 from wp1.wiki_db import connect as wiki_connect
 from wp1 import logs
+from wp1 import npp
 from wp1 import tables
 from wp1.timestamp import utcnow
 from wp1.config import get_settings
@@ -183,6 +184,14 @@ def enqueue_project(project_name, update_q, upload_q, redis=None, track_progress
         logger.info("Enqueuing log upload (dependent) %s", project_name)
         upload_q.enqueue(
             logs.update_log_page_for_project,
+            project_name,
+            depends_on=update_job,
+            job_timeout=constants.JOB_TIMEOUT,
+            failure_ttl=constants.JOB_FAILURE_TTL,
+        )
+        logger.info("Enqueuing NPP upload (dependent) %s", project_name)
+        upload_q.enqueue(
+            npp.upload_project_npp_table,
             project_name,
             depends_on=update_job,
             job_timeout=constants.JOB_TIMEOUT,

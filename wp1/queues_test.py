@@ -44,8 +44,9 @@ class QueuesTest(BaseWpOneDbTest):
     @patch("wp1.queues.logic_project.update_project_by_name")
     @patch("wp1.queues.tables.upload_project_table")
     @patch("wp1.queues.logs.update_log_page_for_project")
+    @patch("wp1.queues.npp.upload_project_npp_table")
     def test_enqueue_project_production(
-        self, mock_log_fn, mock_tables_fn, mock_project_fn
+        self, mock_npp_fn, mock_log_fn, mock_tables_fn, mock_project_fn
     ):
         update_q = MagicMock()
         upload_q = MagicMock()
@@ -72,6 +73,13 @@ class QueuesTest(BaseWpOneDbTest):
         )
         upload_q.enqueue.assert_any_call(
             mock_log_fn,
+            project_name,
+            depends_on=update_job,
+            job_timeout=constants.JOB_TIMEOUT,
+            failure_ttl=constants.JOB_FAILURE_TTL,
+        )
+        upload_q.enqueue.assert_any_call(
+            mock_npp_fn,
             project_name,
             depends_on=update_job,
             job_timeout=constants.JOB_TIMEOUT,

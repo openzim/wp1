@@ -1,0 +1,14 @@
+{% raw %}<noinclude>{{Automatically generated}}</noinclude>{% endraw %}
+{% if articles -%}
+{{ articles|length|commas }} {{ 'article' if articles|length == 1 else 'articles' }} tagged by WikiProject {{project}} {{ 'is' if articles|length == 1 else 'are' }} waiting for review by [[Wikipedia:New pages patrol|New Pages Patrol]], oldest first.
+
+{| class="wikitable sortable"
+! Article !! Created !! Quality !! Importance
+{% for art in articles -%}
+|-
+| [[{{art.title}}]] || {{art.created.strftime('%Y-%m-%d')}} || {{art.quality.decode('utf-8') if art.quality else ''}} || {{art.importance|importance_label if art.importance else ''}}
+{% endfor -%}
+|}
+{%- else -%}
+No articles tagged by WikiProject {{project}} are waiting for review by [[Wikipedia:New pages patrol|New Pages Patrol]].
+{%- endif %}
