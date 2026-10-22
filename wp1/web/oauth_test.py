@@ -84,6 +84,23 @@ class IdentifyTest(BaseWebTestcase):
             self.assertEqual(f"http://localhost:5173/#/update", rv.location)
 
     @override_settings(**TEST_OAUTH_SETTINGS)
+    def test_initiate_authorized_user_with_next_query(self):
+        self.app = create_app()
+        with self.app.test_client() as client:
+            with client.session_transaction() as sess:
+                sess["user"] = USER
+            rv = client.get(
+                "/v1/oauth/initiate?next=selections%2Fnew%3Fsource%3Dwikiproject_query"
+                "%26wikiproject%3DAlien"
+            )
+            self.assertEqual("302 FOUND", rv.status)
+            self.assertEqual(
+                "http://localhost:5173/#/selections/new"
+                "?source=wikiproject_query&wikiproject=Alien",
+                rv.location,
+            )
+
+    @override_settings(**TEST_OAUTH_SETTINGS)
     def test_complete_unauthorized_user(self):
         self.app = create_app()
         with self.app.test_client() as client:
