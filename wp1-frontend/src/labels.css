@@ -71,3 +71,63 @@
 .Unassessed {
   background: #d3d3d3;
 }
+
+.Top,
+.High,
+.Mid,
+.Low,
+.FA,
+.GA,
+.B,
+.C,
+.Start,
+.Stub,
+.List,
+.Category,
+.Disambig,
+.File,
+.Project,
+.Redirect,
+.Template,
+.Unassessed {
+  color: #14171a;
+}
+
+.Top a,
+.High a,
+.Mid a,
+.Low a,
+.FA a,
+.GA a,
+.B a,
+.C a,
+.Start a,
+.Stub a,
+.List a,
+.Category a,
+.Disambig a,
+.File a,
+.Project a,
+.Redirect a,
+.Template a,
+.Unassessed a,
+.Top a:visited,
+.High a:visited,
+.Mid a:visited,
+.Low a:visited,
+.FA a:visited,
+.GA a:visited,
+.B a:visited,
+.C a:visited,
+.Start a:visited,
+.Stub a:visited,
+.List a:visited,
+.Category a:visited,
+.Disambig a:visited,
+.File a:visited,
+.Project a:visited,
+.Redirect a:visited,
+.Template a:visited,
+.Unassessed a:visited {
+  color: #1a3f97;
+}

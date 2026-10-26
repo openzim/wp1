@@ -2,6 +2,98 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    color-scheme: light;
+    --color-page: #eceeef;
+    --color-chrome: #d8dde1;
+    --color-chrome-edge: #bfc6cc;
+    --color-surface: #ffffff;
+    --color-surface-muted: #fafbfb;
+    --color-border: #dfe3e6;
+    --color-border-strong: #ced3d7;
+    --color-border-subtle: #eef0f2;
+    --color-border-row: #eef0f2;
+    --color-border-row-light: #eef0f2;
+    --color-ink: #14171a;
+    --color-ink-2: #4c545c;
+    --color-ink-3: #5d6670;
+    --color-ink-4: #697380;
+    --color-ink-5: #c3c9cf;
+    --color-accent: #2456c9;
+    --color-accent-hover: #1d49ad;
+    --color-accent-link-hover: #1a3f97;
+    --color-accent-tint: #f7f9fe;
+    --color-accent-tint-2: #eef2fc;
+    --color-accent-border: #cfdcf8;
+    --color-accent-border-2: #b9cbf3;
+    --color-ok: #1f7a4d;
+    --color-ok-border: #cfe4d8;
+    --color-ok-tint: #f2f9f5;
+    --color-ok-tint-2: #f7faf8;
+    --color-warn: #b8860b;
+    --color-warn-text: #8a5b00;
+    --color-warn-text-strong: #6b4b00;
+    --color-warn-tint: #fdf8ec;
+    --color-warn-border: #f2e2bd;
+    --color-warn-border-2: #e6d3a8;
+    --color-danger: #b3261e;
+    --color-danger-border: #f0d5d2;
+    --color-danger-tint: #fdf5f4;
+    --color-danger-tint-2: #fdf8f7;
+    --shadow-card: 0 1px 2px rgba(20, 23, 26, 0.06), 0 4px 12px rgba(20, 23, 26, 0.1);
+
+    --color-wt-border: #a2a9b1;
+    --color-wt-head: #eaecf0;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --color-page: #101418;
+      --color-chrome: #161b22;
+      --color-chrome-edge: #2d333b;
+      --color-surface: #1c2128;
+      --color-surface-muted: #22272e;
+      --color-border: #373e47;
+      --color-border-strong: #444c56;
+      --color-border-subtle: #272c34;
+      --color-border-row: #272c34;
+      --color-border-row-light: #272c34;
+      --color-ink: #f0f3f6;
+      --color-ink-2: #c5cdd5;
+      --color-ink-3: #9ca7b3;
+      --color-ink-4: #828e9c;
+      --color-ink-5: #444c56;
+      --color-accent: #5b93ff;
+      --color-accent-hover: #7cb2ff;
+      --color-accent-link-hover: #9ec5ff;
+      --color-accent-tint: #16243b;
+      --color-accent-tint-2: #1c2f4d;
+      --color-accent-border: #284470;
+      --color-accent-border-2: #345791;
+      --color-ok: #34a86d;
+      --color-ok-border: #1b4931;
+      --color-ok-tint: #12261c;
+      --color-ok-tint-2: #162f22;
+      --color-warn: #d49b1a;
+      --color-warn-text: #f0b843;
+      --color-warn-text-strong: #fcd36b;
+      --color-warn-tint: #2b220d;
+      --color-warn-border: #4a3a16;
+      --color-warn-border-2: #5e4a1c;
+      --color-danger: #e5534b;
+      --color-danger-border: #521f1d;
+      --color-danger-tint: #2a1413;
+      --color-danger-tint-2: #341918;
+      --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.6);
+
+      --color-wt-border: #444c56;
+      --color-wt-head: #22272e;
+    }
+  }
+}
+
 /*
  * Base styles for the app's screens. Everything lives under a .wp1r
  * wrapper (page shells and the header/footer chrome), which also gives
@@ -193,10 +285,10 @@
   }
   .wp1r .wt th,
   .wp1r .wt td {
-    border: 1px solid #a2a9b1;
+    border: 1px solid var(--color-wt-border);
   }
   .wp1r .wt-head {
-    background-color: #eaecf0;
+    background-color: var(--color-wt-head);
   }
   /* Matrix counts read as links even at rest (openzim/wp1#427): dotted
      underline resting, solid on hover. Two class selectors outweigh the
@@ -215,6 +307,37 @@
   .wp1r .wt .wt-gap {
     border: 0;
     width: 16px;
-    background-color: #ffffff;
+    background-color: var(--color-surface);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .wp1r-input {
+    background-color: var(--color-chrome);
+  }
+
+  .wp1r-select {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='none' stroke='%239ca7b3' stroke-width='1.5' d='m1 1 4 4 4-4'/%3E%3C/svg%3E");
+  }
+
+  .wp1r select option {
+    background-color: var(--color-surface);
+    color: var(--color-ink);
+  }
+
+  .wp1r-btn-primary {
+    background-color: #2b5fb8;
+    border-color: #3b73d6;
+    color: #ffffff;
+  }
+
+  .wp1r-btn-primary:hover:not(:disabled) {
+    background-color: #336ecf;
+    border-color: #4a82e4;
+  }
+
+  .wp1r .bg-ink.text-white,
+  .wp1r .border-ink.bg-ink.text-white {
+    color: var(--color-page) !important;
   }
 }

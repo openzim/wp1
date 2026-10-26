@@ -147,7 +147,7 @@ export default {
     return {
       assessments: [],
       loading: false,
-      loaderColor: '#2456c9',
+      loaderColor: 'var(--color-accent)',
       loaderSize: '1rem',
       query: '',
       // Default order matches the API: most unassessed articles first.

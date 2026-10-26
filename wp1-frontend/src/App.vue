@@ -31,7 +31,7 @@
             >
             <span
               aria-hidden="true"
-              class="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-[#e9edf6] text-[11px] font-medium text-ink-2"
+              class="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-accent-tint-2 text-[11px] font-medium text-ink-2"
               >{{ username.charAt(0).toUpperCase() }}</span
             >
             <span
@@ -173,6 +173,8 @@ export default {
 html,
 body {
   height: 100%;
+  background-color: var(--color-page);
+  color: var(--color-ink);
 }
 
 #app {
