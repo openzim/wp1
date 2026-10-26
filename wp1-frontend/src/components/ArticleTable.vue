@@ -275,7 +275,7 @@ export default {
       articleData: null,
       categoryLinks: {},
       loading: false,
-      loaderColor: '#2456c9',
+      loaderColor: 'var(--color-accent)',
       loaderSize: '1rem',
     };
   },

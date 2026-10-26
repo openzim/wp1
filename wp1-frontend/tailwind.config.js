@@ -8,16 +8,16 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        page: '#eceeef',
+        page: 'var(--color-page)',
         // Header/footer chrome bands: a step darker than the page grey so
         // the white content column reads between them.
         chrome: {
-          DEFAULT: '#d8dde1',
-          edge: '#bfc6cc',
+          DEFAULT: 'var(--color-chrome)',
+          edge: 'var(--color-chrome-edge)',
         },
         surface: {
-          DEFAULT: '#ffffff',
-          muted: '#fafbfb',
+          DEFAULT: 'var(--color-surface)',
+          muted: 'var(--color-surface-muted)',
         },
         // Two effective border weights: DEFAULT for standard control/card
         // edges, strong for emphasized structure (genuinely darker than
@@ -26,50 +26,50 @@ module.exports = {
         // color on purpose — the old ~4-hex-step distinctions were
         // invisible.
         border: {
-          DEFAULT: '#dfe3e6',
-          strong: '#ced3d7',
-          subtle: '#eef0f2',
-          row: '#eef0f2',
-          'row-light': '#eef0f2',
+          DEFAULT: 'var(--color-border)',
+          strong: 'var(--color-border-strong)',
+          subtle: 'var(--color-border-subtle)',
+          row: 'var(--color-border-row)',
+          'row-light': 'var(--color-border-row-light)',
         },
         // Text tiers. Every tier used for text must hold WCAG AA (>= 4.5:1)
         // on both surface.DEFAULT and surface.muted; ink-5 is reserved for
         // decorative, aria-hidden glyphs only.
         ink: {
-          DEFAULT: '#14171a',
-          2: '#4c545c',
-          3: '#5d6670',
-          4: '#697380',
-          5: '#c3c9cf',
+          DEFAULT: 'var(--color-ink)',
+          2: 'var(--color-ink-2)',
+          3: 'var(--color-ink-3)',
+          4: 'var(--color-ink-4)',
+          5: 'var(--color-ink-5)',
         },
         accent: {
-          DEFAULT: '#2456c9',
-          hover: '#1d49ad',
-          'link-hover': '#1a3f97',
-          tint: '#f7f9fe',
-          'tint-2': '#eef2fc',
-          border: '#cfdcf8',
-          'border-2': '#b9cbf3',
+          DEFAULT: 'var(--color-accent)',
+          hover: 'var(--color-accent-hover)',
+          'link-hover': 'var(--color-accent-link-hover)',
+          tint: 'var(--color-accent-tint)',
+          'tint-2': 'var(--color-accent-tint-2)',
+          border: 'var(--color-accent-border)',
+          'border-2': 'var(--color-accent-border-2)',
         },
         ok: {
-          DEFAULT: '#1f7a4d',
-          border: '#cfe4d8',
-          tint: '#f2f9f5',
-          'tint-2': '#f7faf8',
+          DEFAULT: 'var(--color-ok)',
+          border: 'var(--color-ok-border)',
+          tint: 'var(--color-ok-tint)',
+          'tint-2': 'var(--color-ok-tint-2)',
         },
         warn: {
-          DEFAULT: '#b8860b',
-          text: '#8a5b00',
-          'text-strong': '#6b4b00',
-          tint: '#fdf8ec',
-          border: '#f2e2bd',
-          'border-2': '#e6d3a8',
+          DEFAULT: 'var(--color-warn)',
+          text: 'var(--color-warn-text)',
+          'text-strong': 'var(--color-warn-text-strong)',
+          tint: 'var(--color-warn-tint)',
+          border: 'var(--color-warn-border)',
+          'border-2': 'var(--color-warn-border-2)',
         },
         danger: {
-          DEFAULT: '#b3261e',
-          border: '#f0d5d2',
-          tint: '#fdf5f4',
-          'tint-2': '#fdf8f7',
+          DEFAULT: 'var(--color-danger)',
+          border: 'var(--color-danger-border)',
+          tint: 'var(--color-danger-tint)',
+          'tint-2': 'var(--color-danger-tint-2)',
         },
       },
       fontFamily: {
@@ -85,7 +85,7 @@ module.exports = {
       boxShadow: {
         // Used by floating surfaces (overflow menu, autocomplete, dialog);
         // strong enough to read as elevation on a white page.
-        card: '0 1px 2px rgba(20,23,26,0.06), 0 4px 12px rgba(20,23,26,0.10)',
+        card: 'var(--shadow-card)',
       },
     },
   },
