@@ -40,7 +40,7 @@ sqlparse = "*"
 pre-commit = "==2.21.0"
 pytest = "~=9.0"
 yapf = "==0.28.0"
-black = "~=26.3"
+black = "~=26.10"
 ty = "*"
 
 [requires]
