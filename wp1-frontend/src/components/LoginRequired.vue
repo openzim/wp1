@@ -24,7 +24,7 @@ export default {
     return {
       loginInitiateUrl:
         `${import.meta.env.VITE_API_URL}/oauth/initiate?next=` +
-        this.$route.path.toString().substr(1),
+        encodeURIComponent(this.$route.fullPath.substr(1)),
     };
   },
 };
