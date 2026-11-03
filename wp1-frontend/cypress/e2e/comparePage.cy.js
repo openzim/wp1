@@ -60,5 +60,39 @@ describe('the compare projects page', () => {
       cy.contains('button', 'Compare').should('not.exist');
       cy.contains('Alien vs. Predator (film)');
     });
+
+    it('labels quality and importance filter dropdowns for accessibility', () => {
+      cy.get('label[for="project-a-quality"]').should('contain.text', 'Quality');
+      cy.get('#project-a-quality').should(
+        'have.attr',
+        'aria-label',
+        'Project A Quality'
+      );
+      cy.get('label[for="project-a-importance"]').should(
+        'contain.text',
+        'Importance'
+      );
+      cy.get('#project-a-importance').should(
+        'have.attr',
+        'aria-label',
+        'Project A Importance'
+      );
+
+      cy.get('label[for="project-b-quality"]').should('contain.text', 'Quality');
+      cy.get('#project-b-quality').should(
+        'have.attr',
+        'aria-label',
+        'Project B Quality'
+      );
+      cy.get('label[for="project-b-importance"]').should(
+        'contain.text',
+        'Importance'
+      );
+      cy.get('#project-b-importance').should(
+        'have.attr',
+        'aria-label',
+        'Project B Importance'
+      );
+    });
   });
 });

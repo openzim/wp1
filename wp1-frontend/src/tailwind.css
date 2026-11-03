@@ -55,7 +55,12 @@
   }
 
   .wp1r-navlink {
-    @apply whitespace-nowrap rounded px-[9px] py-[5px] text-sm;
+    @apply relative whitespace-nowrap rounded px-[9px] py-[5px] text-sm;
+  }
+
+  .wp1r-navlink:focus-visible,
+  .wp1r a.wp1r-navlink:focus-visible {
+    z-index: 10;
   }
 
   .wp1r a.wp1r-navlink,

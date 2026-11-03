@@ -3,8 +3,10 @@
 <template>
   <div class="flex flex-wrap items-center gap-3">
     <span class="flex items-center gap-1.5">
-      <label class="wp1r-microlabel">Quality</label>
+      <label :for="qualityId" class="wp1r-microlabel">Quality</label>
       <select
+        :id="qualityId"
+        :aria-label="qualityAriaLabel"
         :disabled="!projectId"
         @change="onSelectChange()"
         class="wp1r-select h-7 pl-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -21,8 +23,10 @@
       </select>
     </span>
     <span class="flex items-center gap-1.5">
-      <label class="wp1r-microlabel">Importance</label>
+      <label :for="importanceId" class="wp1r-microlabel">Importance</label>
       <select
+        :id="importanceId"
+        :aria-label="importanceAriaLabel"
         :disabled="!projectId"
         @change="onSelectChange()"
         class="wp1r-select h-7 pl-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -44,7 +48,13 @@
 <script>
 export default {
   name: 'rating-select',
-  props: ['initialQuality', 'initialImportance', 'projectId'],
+  props: [
+    'initialQuality',
+    'initialImportance',
+    'projectId',
+    'idPrefix',
+    'labelPrefix',
+  ],
   data: function () {
     return {
       categoryLinks: {},
@@ -59,6 +69,20 @@ export default {
     },
     selectedImportance: function () {
       return this.initialImportance || '';
+    },
+    qualityId: function () {
+      return this.idPrefix ? `${this.idPrefix}-quality` : 'quality-select';
+    },
+    importanceId: function () {
+      return this.idPrefix ? `${this.idPrefix}-importance` : 'importance-select';
+    },
+    qualityAriaLabel: function () {
+      return this.labelPrefix ? `${this.labelPrefix} Quality` : 'Quality';
+    },
+    importanceAriaLabel: function () {
+      return this.labelPrefix
+        ? `${this.labelPrefix} Importance`
+        : 'Importance';
     },
   },
   watch: {

@@ -24,6 +24,8 @@
             ></Autocomplete>
             <RatingSelect
               class="mt-2.5"
+              idPrefix="project-a"
+              labelPrefix="Project A"
               :projectId="projectIdA"
               :initialQuality="$route.query.quality"
               :initialImportance="$route.query.importance"
@@ -40,6 +42,8 @@
             ></Autocomplete>
             <RatingSelect
               class="mt-2.5"
+              idPrefix="project-b"
+              labelPrefix="Project B"
               :projectId="projectIdB"
               :initialQuality="$route.query.qualityB"
               :initialImportance="$route.query.importanceB"

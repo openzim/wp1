@@ -9,6 +9,7 @@ describe('the assessments by project page', () => {
     cy.visit('/');
     cy.get('header nav').contains('a', 'Assessments by Project').click();
     cy.url().should('include', '/assessments');
+    cy.get('main.main-content').should('exist');
   });
 
   it('lists the assessment numbers in a table', () => {
